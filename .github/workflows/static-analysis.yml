@@ -17,3 +17,14 @@ jobs:
         uses: ./.github/actions/prepare-backend
 
       - run: uv run ruff check .
+
+  python-type-check:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare back-end environment
+        uses: ./.github/actions/prepare-backend
+
+      - run: uv run pyright .

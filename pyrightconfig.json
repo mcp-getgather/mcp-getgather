@@ -1,0 +1,19 @@
+{
+  "ignore": [],
+  "include": ["getgather", "tests"],
+  "reportGeneralTypeIssues": "error",
+  "reportMissingImports": "error",
+  "reportMissingModuleSource": "error",
+  "reportMissingTypeStubs": false,
+  "reportOptionalMemberAccess": "error",
+  "reportOptionalSubscript": "warning",
+  "reportSelfClsParameterName": "error",
+  "reportUnboundVariable": "warning",
+  "reportUndefinedMember": "error",
+  "reportUndefinedVariable": "error",
+  "reportUninitializedInstanceVariable": "error",
+  "reportUntypedClassDecorator": "error",
+  "reportUnusedImport": "error",
+  "reportUnusedVariable": "error",
+  "typeCheckingMode": "strict"
+}
