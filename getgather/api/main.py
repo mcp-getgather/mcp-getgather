@@ -1,13 +1,20 @@
+from contextlib import asynccontextmanager
 from datetime import datetime
 
 from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
 from fastapi.routing import APIRoute
 
+from getgather.startup import startup
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     tag = route.tags[0] if route.tags else "no-tag"
     return f"{tag}-{route.name}"
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await startup()
+    yield
 
 app = FastAPI(
     title="Get Gather API",
@@ -17,6 +24,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     generate_unique_id_function=custom_generate_unique_id,
+    lifespan=lifespan,
 )
 
 @app.get("/health")

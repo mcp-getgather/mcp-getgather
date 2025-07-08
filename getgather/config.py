@@ -1,6 +1,7 @@
 from pathlib import Path
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing_extensions import Self
 
 from getgather.logs import logger
 
@@ -15,11 +16,22 @@ class Settings(BaseSettings):
     APP_NAME: str = "getgather-local"
     LOG_LEVEL: str = "INFO"
 
+    # Logging
+    SENTRY_DSN: str = ""
+
     @field_validator("LOG_LEVEL", mode="after")
     @classmethod
     def set_log_level(cls, v: str) -> str:
         logger.setLevel(v)
         return v
 
+    def validate_sentry_dsn(self) -> Self:
+        if not self.SENTRY_DSN:
+            from getgather.logs import logger
+
+            logger.warning("SENTRY_DSN is not set, logging will not be captured in Sentry.")
+        return self
+
 
 settings = Settings()
+settings.validate_sentry_dsn()  # normal Pydantic validator would cause circular import due to logger
