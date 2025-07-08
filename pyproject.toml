@@ -18,6 +18,7 @@ dependencies = [
 dev = [
   "pyright>=1.1.399",
   "ruff>=0.11.6",
+  "yamlfix>=1.6.1",
 ]
 
 [tool.ruff]
@@ -43,3 +44,9 @@ select = ["UP045", "UP006", "UP007"]
 [tool.ruff.lint.isort]
 combine-as-imports = true
 known-first-party = ["getgather", "tests"]
+
+[tool.yamlfix]
+exclude = ["**/.venv/**"]
+explicit_start = false
+line_length = 120
+whitelines = 1
