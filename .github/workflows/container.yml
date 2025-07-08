@@ -1,0 +1,28 @@
+name: Container
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  container:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - run: docker build -t getgather .
+
+      - run: docker run -p 8000:8000 --name getgather -d getgather
+        timeout-minutes: 3
+
+      - name: Run the health check validation
+        run: while ! curl -s 'http://localhost:8000/health' | grep 'OK'; do sleep 1; done
+        timeout-minutes: 3
+
+      - name: Get the container logs
+        run: docker logs --details getgather
+        if: always()
