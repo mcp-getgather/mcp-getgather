@@ -7,6 +7,7 @@ requires-python = ">=3.11"
 license = "MIT"
 dependencies = [
   "aiofiles>=24.1.0",
+  "nanoid>=2.0.0",
   "pydantic>=2.11.3",
   "pydantic-settings>=2.9.1",
   "pyyaml>=6.0.2",
@@ -14,11 +15,14 @@ dependencies = [
   "rich>=14.0.0",
   "fastapi>=0.115.12",
   "uvicorn>=0.34.2",
+  # Browser Automation: Locked to specific versions to avoid breaking changes.
+  "patchright==1.52.4",
 ]
 
 [dependency-groups]
 dev = [
   "assertpy>=1.1",
+  "nanoid>=2.0.0",
   "pyright>=1.1.399",
   "pytest>=8.3.5",
   "pytest-asyncio>=0.23.5",

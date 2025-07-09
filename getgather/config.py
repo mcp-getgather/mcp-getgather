@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     # Logging
     SENTRY_DSN: str = ""
 
+    # Browser Package Settings
+    PROFILES_DIR: str = ""
+    HEADLESS: bool = False
+
     @property
     def brand_spec_dir(self) -> Path:
         return PROJECT_DIR / "getgather" / "connectors" / "brand_specs"
@@ -29,6 +33,17 @@ class Settings(BaseSettings):
             PROJECT_DIR / "tests" / "connectors" / "brand_specs" / "fsm",
             PROJECT_DIR / "tests" / "connectors" / "brand_specs" / "linear",
         )
+
+    @property
+    def profiles_dir(self) -> Path:
+        path = (
+            Path(self.PROFILES_DIR).resolve()
+            if self.PROFILES_DIR
+            else PROJECT_DIR / "data/profiles"
+        )
+        if not path.exists():
+            path.mkdir(parents=True, exist_ok=True)
+        return path
 
     @field_validator("LOG_LEVEL", mode="after")
     @classmethod
