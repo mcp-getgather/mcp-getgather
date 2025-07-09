@@ -19,6 +19,17 @@ class Settings(BaseSettings):
     # Logging
     SENTRY_DSN: str = ""
 
+    @property
+    def brand_spec_dir(self) -> Path:
+        return PROJECT_DIR / "getgather" / "connectors" / "brand_specs"
+
+    @property
+    def test_brand_spec_dir(self) -> tuple[Path, Path]:
+        return (
+            PROJECT_DIR / "tests" / "connectors" / "brand_specs" / "fsm",
+            PROJECT_DIR / "tests" / "connectors" / "brand_specs" / "linear",
+        )
+
     @field_validator("LOG_LEVEL", mode="after")
     @classmethod
     def set_log_level(cls, v: str) -> str:
