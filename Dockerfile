@@ -22,6 +22,7 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock* ./
 COPY getgather /app/getgather
+COPY tests /app/tests
 COPY entrypoint.sh /app/entrypoint.sh
 
 RUN uv sync --no-dev
@@ -33,6 +34,7 @@ WORKDIR /app
 
 COPY --from=builder /app/.venv /opt/venv
 COPY --from=builder /app/getgather /app/getgather
+COPY --from=builder /app/tests /app/tests
 COPY --from=builder /app/entrypoint.sh /app/entrypoint.sh
 
 ENV PYTHONUNBUFFERED=1 \
