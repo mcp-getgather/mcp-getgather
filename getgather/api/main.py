@@ -5,6 +5,8 @@ from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
 from fastapi.routing import APIRoute
 
+from getgather.api.routes.brands.endpoints import router as brands_router
+
 from getgather.startup import startup
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -32,3 +34,5 @@ def health():
     return PlainTextResponse(
         content=f"OK {int(datetime.now().timestamp())}"
     )
+
+app.include_router(brands_router)
