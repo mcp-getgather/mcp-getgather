@@ -23,6 +23,10 @@ jobs:
         run: while ! curl -s 'http://localhost:8000/health' | grep 'OK'; do sleep 1; done
         timeout-minutes: 3
 
+      - name: Run the extended health check validation
+        run: while ! curl -s 'http://localhost:8000/extended-health' | grep 'OK'; do sleep 1; done
+        timeout-minutes: 3
+
       - name: Get the container logs
         run: docker logs --details getgather
         if: always()
