@@ -1,0 +1,72 @@
+name: Delta
+
+auth:
+  fields:
+    - name: username
+      type: text
+      prompt: Username
+      selector: input#userId
+    - name: password
+      type: password
+      prompt: Password
+      selector: input#password
+    - name: last_name
+      type: text
+      prompt: Last name
+      selector: input#lastName
+    - name: submit
+      type: click
+      prompt: Log In
+      selector: button[type=submit]:has-text("Log In")
+      expect_nav: true
+      url: https://www.delta.com/
+    - name: login_modal_button
+      type: click
+      prompt: Log In
+      selector: button#login-modal-button
+    - name: login_modal_header
+      type: wait
+      selector: div#login_modal_header
+    - name: home_page
+      type: wait
+      selector: span.pax-name
+    - name: incorrect_account_error
+      type: wait
+      selector: span:has-text("We're unable to locate an account with the login information you provided.")
+
+  pages:
+    - name: Delta homepage
+      url: https://www.delta.com
+      fields: [login_modal_button]
+
+    - name: Fill in login modal
+      fields: [login_modal_header, username]
+
+    - name: Fill in last name and password
+      fields: [last_name, password, submit]
+
+    - name: Incorrect account error
+      message: ❌ No account found. Please try again.
+      fields: [incorrect_account_error, login_modal_header, username]
+    - name: Incorrect account error fill last name
+      fields: [incorrect_account_error, last_name, password, submit]
+
+    - name: Wait for login
+      fields: [home_page]
+      end: true
+
+  start: Delta homepage
+
+extract:
+  steps:
+    - name: Go to the trip history
+      url: https://www.delta.com/my-trips/upcoming-trips
+
+    - name: Wait for the loading
+      sleep: 3
+      timeout: 5
+      wait_for_selector: section.ut-landing__travel-cards-item.ng-star-inserted
+
+    - name: Extract the list of orders
+      bundle: trips.html
+      slurp_selector: section.ut-landing__travel-cards.ng-star-inserted
