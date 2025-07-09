@@ -1,0 +1,150 @@
+name: AmericanAirlines
+
+auth:
+  fields:
+    - name: username
+      type: text
+      prompt: AAdvantage \# or username
+      label: label.aileron-text-input__label slot[name="label"]
+      selector: input[name="username"]
+    - name: password
+      type: password
+      prompt: Password
+      selector: input[name="password"]
+    - name: login
+      type: click
+      selector: div.loginButton adc-button
+      prompt: Log in
+      expect_nav: true
+      delay_ms: 10000
+    - name: Logged out Join
+      type: wait
+      selector: text="Join"
+    - name: Logged out Log in
+      type: autoclick
+      selector: text="Log in"
+    - name: Logged in indicator
+      type: wait
+      selector: hp-account-dropdown-button#accountButtonDesktop
+    - name: mfa_code
+      type: text
+      selectors: '[type="text"][inputmode="numeric"]'
+      prompt: Enter the verification code you received by email
+      label: span[class*='_info_'], span[class*='_email_']
+    - name: mfa_code_submit
+      type: click
+      selector: button:has-text("Verify"), adc-button:has-text("Verify")
+      prompt: Verify
+      expect_nav: true
+      url: https://www.aa.com/login/oauth2/
+    - name: message_login_error
+      type: message
+      selector: adc-inline-notification[role="alert"][kind="error"]
+      prompt: Check your login information and try again.
+
+    - name: wrong_mfa_code
+      type: message
+      selector: span[slot="title"]:has-text("Verification failed")
+      prompt: Verification failed. Please recheck your 6 digit code.
+
+    - name: Something went wrong
+      type: wait
+      selector: text="Something went wrong"
+
+    - name: Something went wrong redirect
+      type: autoclick
+      selector: text="Go to aa.com"
+
+  pages:
+    - name: Login Page
+      fields:
+        required: [username, password, login]
+        optional: [message_login_error]
+
+    - name: MFA Page
+      fields:
+        required: [mfa_code, mfa_code_submit]
+        optional: [wrong_mfa_code]
+
+    - name: Logged out Home Page
+      url: https://www.aa.com/homePage.do
+      fields: [Logged out Join, Logged out Log in]
+
+    - name: Logged in Home Page
+      url: https://www.aa.com/homePage.do
+      fields: [Logged in indicator]
+      end: true
+
+    - name: Something Went Wrong Page
+      fields: [Something went wrong, Something went wrong redirect]
+
+  start: https://www.aa.com/loyalty/login?uri=%2floyalty%2flogin&previousPage=%2FhomePage.do&from=comp_nav
+
+extract:
+  steps:
+    - name: Extract past flights
+      bundle: past_flights.json
+      url: https://www.aa.com/aadvantage-program/profile/account-summary
+      listen_to_url_stub_json: https://www.aa.com/api/loyalty/miles/transaction/orchestrator/memberActivity
+
+    - name: Extract upcoming flights
+      bundle: upcoming_flights.json
+      url: https://www.aa.com/aadvantage-program/profile/account-summary
+      listen_to_url_stub_json: https://www.aa.com/loyalty/api/upcoming-trips
+# states:
+#   - name: LOGIN_STATE
+#     url: https://www.aa.com/loyalty/login?uri=%2floyalty%2flogin&previousPage=%2FhomePage.do&from=comp_nav
+#     ignore_url_for_detection: true
+#     actions:
+#       - type: input
+#         name: username
+#         selector: input[name='username']
+#         prompt: Please enter your AAdvantage number or username
+
+#       - type: input
+#         name: password
+#         selector: input[name='password']
+#         prompt: Password
+
+#       - type: click
+#         selector: div.loginButton adc-button
+#         wait_ms: 2000
+#         wait_ms_max: 5000
+
+#     transitions: [MFA_STATE, BOT_CHALLENGE_STATE, HOME_STATE]
+
+#   - name: BOT_CHALLENGE_STATE
+#     url: https://login.aa.com/login
+#     actions:
+#       - type: bot_challenge
+#         name: akamai_checkbox_challenge
+#         frame_selector: iframe#sec-cpt-if
+#         checkbox_selector: adc-checkbox#robot-checkbox
+#         submit_selector: adc-button#robot-button
+
+#   - name: MFA_STATE
+#     url: https://login.aa.com/login
+#     actions:
+#       - type: input
+#         name: mfa_code_multi_input
+#         selector: >-
+#           input[type="text"][inputmode="numeric"],
+#           adc-text-input[type="text"][inputmode="numeric"]
+#         prompt: Please enter the 6-digit code from {verification_email}
+#         dynamic_prompts:
+#           - name: verification_email
+#             type: extracted
+#             selector: >-
+#               p.verification-email,
+#               span[class^="_email_"]
+
+#       - type: click
+#         selector: >-
+#           button:has-text("Verify"),
+#           adc-button:has-text("Verify")
+#         wait_ms: 2000
+#         wait_ms_max: 5000
+
+#   - name: HOME_STATE
+#     url: https://www.aa.com/homePage.do
+#     terminal: true
