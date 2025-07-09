@@ -1,11 +1,14 @@
 from contextlib import asynccontextmanager
 from datetime import datetime
+from typing import Final
 
 from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
 from fastapi.routing import APIRoute
 
 from getgather.api.routes.brands.endpoints import router as brands_router
+from getgather.browser.profile import BrowserProfile
+from getgather.browser.session import BrowserSession
 
 from getgather.startup import startup
 
@@ -34,5 +37,22 @@ def health():
     return PlainTextResponse(
         content=f"OK {int(datetime.now().timestamp())}"
     )
+
+IP_CHECK_URL: Final[str] = "https://ifconfig.me/ip"
+
+@app.get("/extended-health")
+async def extended_health():
+    browser_profile = BrowserProfile.create(config_data={"browser": "chromium"})
+    session = await BrowserSession.get(browser_profile)
+    try:
+        await session.start()
+        page = await session.page()
+        await page.goto(IP_CHECK_URL, timeout=3000)
+        ip_text: str = await page.evaluate("() => document.body.innerText.trim()")
+    except Exception as e:
+        return PlainTextResponse(content=f"Error: {e}")
+    finally:
+        await session.stop()
+    return PlainTextResponse(content=f"OK IP: {ip_text}")
 
 app.include_router(brands_router)
