@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
 from fastapi.routing import APIRoute
 
+from getgather.api.routes.auth.endpoints import router as auth_router
 from getgather.api.routes.brands.endpoints import router as brands_router
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
@@ -56,3 +57,4 @@ async def extended_health():
     return PlainTextResponse(content=f"OK IP: {ip_text}")
 
 app.include_router(brands_router)
+app.include_router(auth_router)

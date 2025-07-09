@@ -21,6 +21,8 @@ class Settings(BaseSettings):
 
     # Browser Package Settings
     PROFILES_DIR: str = ""
+    BUNDLES_DIR: str = ""
+    SCREENSHOTS_DIR: str = ""
     HEADLESS: bool = False
 
     @property
@@ -33,6 +35,21 @@ class Settings(BaseSettings):
             PROJECT_DIR / "tests" / "connectors" / "brand_specs" / "fsm",
             PROJECT_DIR / "tests" / "connectors" / "brand_specs" / "linear",
         )
+
+    @property
+    def bundles_dir(self) -> Path:
+        return Path(self.BUNDLES_DIR) if self.BUNDLES_DIR else PROJECT_DIR / "data" / "bundles"
+
+    @property
+    def screenshots_dir(self) -> Path:
+        dir = (
+            Path(self.SCREENSHOTS_DIR)
+            if self.SCREENSHOTS_DIR
+            else PROJECT_DIR / "data" / "screenshots"
+        )
+        if not dir.exists():
+            dir.mkdir(parents=True)
+        return dir
 
     @property
     def profiles_dir(self) -> Path:
