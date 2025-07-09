@@ -1,0 +1,47 @@
+name: Revolve
+
+auth:
+  fields:
+    - name: wait-for-modal
+      type: wait
+      selector: '#ntf_dialog_all.modal.is-active'
+    - name: close-dialog-x
+      type: autoclick
+      prompt: Close dialog with X button
+      selector: '#ntf_dialog_close'
+    - name: close-dialog-no-thanks
+      type: autoclick
+      prompt: Close dialog with No thanks button
+      selector: '#ntf_just_let_shop'
+    - name: email
+      type: email
+      prompt: Email address
+      selector: input#emailCustomer
+    - name: password
+      type: password
+      prompt: Password
+      selector: input#passwordCustomer
+    - name: submit
+      type: click
+      prompt: Submit
+      selector: input#signInButton
+    - name: login_error
+      type: message
+      selector: '#login_error_message'
+      label: '#login_error_message .js-email-login-error-element:first-child'
+      prompt: ❌ Login failed. Please check your credentials and try again.
+    - name: customer-name
+      type: wait
+      selector: header span#customer_name
+  pages:
+    - name: Dialog page
+      fields: [wait-for-modal, close-dialog-x, close-dialog-no-thanks]
+    - name: Login page
+      fields:
+        required: [email, password, submit]
+        optional: [login_error]
+    - name: Account page
+      fields: [customer-name]
+      end: true
+
+  start: https://www.revolve.com/r/SignIn.jsp

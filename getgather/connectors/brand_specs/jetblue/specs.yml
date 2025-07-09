@@ -1,0 +1,83 @@
+name: Jetblue
+
+auth:
+  fields:
+    - name: email
+      type: text
+      prompt: Email
+      selector: input[name=identifier]
+    - name: password
+      type: password
+      prompt: Password
+      selector: input[type=password]
+    - name: remember_me
+      type: click
+      prompt: Remember me
+      selector: div.custom-checkbox label
+    - name: submit
+      type: click
+      prompt: Submit
+      selector: input[type=submit]
+      expect_nav: true
+      url: https://accounts.jetblue.com/idp/idx/identify
+    - name: otp
+      type: text
+      prompt: Verification code
+      selector: input[type=tel], input[type=text]
+    - name: sign_in_error
+      type: message
+      prompt: Sign in error
+      selector: div.infobox-error
+      label: div.infobox-error p
+    - name: submit_send_otp_email
+      type: click
+      prompt: Send OTP to Email
+      selector: input[type=submit]
+      expect_nav: true
+      url: https://accounts.jetblue.com/idp/idx/challenge
+    - name: submit_otp
+      type: click
+      prompt: Submit
+      selector: input[type=submit]
+      expect_nav: true
+      url: https://accounts.jetblue.com/idp/idx/challenge/answer
+      delay_ms: 4000  # After the API responds, it still needs to wait several seconds before redirecting to the home page
+    - name: wait_home_page
+      type: wait
+      prompt: Wait for home page
+      selector: jb-avatar
+    - name: accept_cookie_button
+      type: click
+      prompt: Accept cookie
+      iframe_selector: iframe[name="trustarc_cm"]
+      selector: a:has-text("Accept All Cookies")
+    - name: wait_otp_page
+      type: wait
+      prompt: Wait for OTP page
+      selector: h2:has-text("Verify with your email"), h2:has-text("Verify with Email Authentication")
+    - name: wait_send_otp_page
+      type: wait
+      prompt: Wait for send OTP page
+      selector: h2:has-text("Get a verification email")
+
+  pages:
+    - name: Sign in page
+      url: https://www.jetblue.com/signin?useIdx=true
+      fields:
+        required: [email, password, submit]
+        optional: [sign_in_error]
+    - name: Sign in page with Cookie Dialog
+      fields:
+        required: [email, password, accept_cookie_button, submit]
+        optional: [sign_in_error]
+    - name: Send OTP to Email
+      fields: [submit_send_otp_email, wait_send_otp_page]
+    - name: OTP Page
+      fields:
+        required: [otp, submit_otp, wait_otp_page]
+        optional: [sign_in_error]
+    - name: Home Page
+      fields: [wait_home_page]
+      end: true
+
+  start: Sign in page

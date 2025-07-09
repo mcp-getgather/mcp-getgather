@@ -1,0 +1,66 @@
+name: Hilton
+
+auth:
+  fields:
+    - name: username
+      type: text
+      prompt: Username or Hilton Member Number
+      selector: input#username
+    - name: password
+      type: password
+      prompt: Password
+      selector: input#password
+    - name: submit
+      type: click
+      prompt: Sign In
+      selector: button[data-e2e="signInButton"]
+      expect_nav: true
+    - name: otp_code
+      type: text
+      prompt: Enter the 6-digit verification code sent to your email
+      selector: input[aria-label="Temporary code"]
+    - name: otp_submit
+      type: click
+      prompt: Submit Code
+      selector: input[type=submit][value="Submit"]
+      expect_nav: true
+    - name: error_message
+      type: message
+      selector: div[data-e2e="errorBlock"]
+      label: div[data-e2e="errorBlock"]
+      prompt: ❌ Something went wrong. Please try again.
+    - name: otp_error
+      type: message
+      selector: p[id^="code-expired"]
+      label: p[id^="code-expired"]
+      prompt: ❌ The verification code is expired or invalid. Please try again.
+    - name: activity
+      type: wait
+      selector: h1:has-text("Activity")
+
+  pages:
+    - name: Sign in
+      fields:
+        required: [username, password, submit]
+        optional: [error_message]
+    - name: OTP Verification
+      fields:
+        required: [otp_code, otp_submit]
+        optional: [otp_error]
+    - name: Activity page
+      fields: [activity]
+      end: true
+
+  start: https://www.hilton.com/en/hilton-honors/guest/activity/
+
+extract:
+  steps:
+    - name: Go to the account activity page
+      url: https://www.hilton.com/en/hilton-honors/guest/activity/
+
+    - name: Wait for the loading
+      wait_for_selector: div[data-testid^=past-row]
+
+    - name: Extract the list of activities
+      bundle: activities.html
+      slurp_selector: div[data-testid^=past-row]

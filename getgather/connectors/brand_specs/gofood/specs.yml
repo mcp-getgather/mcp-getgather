@@ -1,0 +1,69 @@
+name: Gofood
+
+auth:
+  fields:
+    - name: login_button
+      type: click
+      prompt: Login
+      selector: button:has-text("Log in")
+
+    - name: phone
+      type: text
+      prompt: Phone
+      selector: input[data-testid="phone-number-field"]
+
+    - name: otp
+      type: text
+      prompt: One-time code
+      label: form div p.text-gf-content-secondary
+      selector: input[id="otp"]
+
+    - name: continue
+      type: click
+      prompt: Continue
+      selector: button:has-text('Continue')
+
+    - name: message_invalid_otp
+      type: message
+      selector: p:has-text('Invalid verification code. Please try again')
+      prompt: ❌ The OTP you entered is incorrect. Please try again.
+
+    - name: resend_otp
+      type: click
+      prompt: Resend OTP
+      selector: button.cursor_pointer:has-text('Resend OTP')
+
+  pages:
+    - name: Login Page
+      url: https://gofood.co.id/en/login
+      fields: [login_button]
+
+    - name: Fill in the phone number
+      fields: [phone, continue]
+
+    - name: Agreement
+      fields: [continue]
+
+    - name: Fill in the OTP
+      fields:
+        required: [otp, continue]
+        optional: [message_invalid_otp]
+
+    - name: resend OTP
+      message: ❌ wait too long for OTP, resend new otp code...
+      fields: [resend_otp, otp, continue]
+
+    - name: Home
+      url: https://gofood.co.id/en
+      end: true
+
+  start: Login Page
+
+extract:
+  steps:
+    - name: Go to orders page
+      url: https://gofood.co.id/en/orders
+
+    - name: Extract orders
+      bundle: orders.json
+      listen_to_url_stub_json: https://gofood.co.id/api/orders

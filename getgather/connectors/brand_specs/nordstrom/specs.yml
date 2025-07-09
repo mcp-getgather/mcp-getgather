@@ -1,0 +1,138 @@
+name: Nordstrom
+
+auth:
+  fields:
+    - name: email
+      type: text
+      prompt: Email address
+      selector: input[name='email']
+    - name: password
+      type: password
+      prompt: Password
+      selector: input[name='password']
+    - name: submit
+      type: click
+      prompt: Next
+      selector: button[id='account-check-next-button']
+      expect_nav: true
+    - name: sign_in
+      type: click
+      prompt: Sign In
+      selector: button[alt="sign in button"]
+      expect_nav: true
+    - name: stay_signed_in
+      type: click
+      prompt: Keep me signed in
+      selector: label:has-text("Keep me signed in.")
+      expect_nav: false
+    - name: otp
+      type: text
+      prompt: Please enter your one-time code
+      label: '[role="dialog"] >> text=/^We sent a code to:/'
+      selectors: input[name^='otpEntry']
+    - name: otp_choice_button
+      prompt: Sign In with a Code Instead
+      type: click
+      selector: button[alt="otp button"]
+    - name: send_code
+      type: click
+      prompt: Send Code
+      selector: button:has-text("Send Code")
+      expect_nav: true
+    - name: email_mfa_choice
+      type: click
+      prompt: Get code by email
+      selector: input[name="delivery-method"][value="EMAIL"]
+    - name: sms_mfa_choice
+      type: click
+      prompt: Get code by text message
+      selector: input[name="delivery-method"][value="sms"]
+    - name: mfa_code
+      type: text
+      prompt: Enter your code
+      selector: input[name="code"][type="text"][inputmode="numeric"]
+    - name: mfa_submit
+      type: click
+      prompt: Verify and Sign in
+      selector: button:has-text("Verify and Sign in")
+      expect_nav: true
+    - name: loading-button
+      type: wait
+      selector: button:has-text("Loading...")
+    - name: loading-spinner
+      type: wait
+      selector: div[data-testid="loading-spinner"]
+    - name: forgot-password-button
+      type: wait
+      selector: button:has-text("Forgot password?")
+    - name: wrong-user-credentials-error
+      type: wait
+      selector: '[data-cy="wrong-user-credentials-error"]'
+    - name: wrong-user-credentials-error-message
+      type: wait
+      selector: span:has-text("Your email or password wasn't recognized")
+    - name: create-account-title
+      type: wait
+      selector: h1:has-text("Create Account")
+    - name: signed-in-homepage
+      type: wait
+      selector: span[data-qm-block=true]
+
+  pages:
+    - name: Sign in page
+      url: https://www.nordstrom.com/signin
+      fields: [email, submit]
+    - name: Password page
+      choices:
+        name: verification_choice
+        prompt: Would you like to use a password or a one-time code?
+        groups:
+          - name: password
+            prompt: Password
+            fields: [password, sign_in]
+          - name: otp
+            prompt: One-time code
+            fields: [otp_choice_button]
+    - name: Waiting submit password
+      fields: [loading-button, loading-spinner, forgot-password-button]
+    - name: Incorrect password page
+      fields: [password, sign_in, wrong-user-credentials-error, wrong-user-credentials-error-message]
+      message: ❌ The password you entered is incorrect. Please try again.
+
+    - name: OTP form
+      fields: [otp, otp_choice_button, sign_in, stay_signed_in]
+
+    - name: MFA choice form
+      choices:
+        name: MFA_choice
+        prompt: How should we send your code?
+        groups:
+          - name: email
+            prompt: Email
+            fields: [email_mfa_choice, send_code]
+          - name: phone
+            prompt: Text message
+            fields: [sms_mfa_choice, send_code]
+
+    - name: MFA code form
+      fields: [mfa_code, mfa_submit]
+
+    - name: Create Account
+      fields: [create-account-title]
+      end: true
+      message: You do not have an account with this email, please try again with a different email.
+
+    - name: Signed in homepage
+      fields: [signed-in-homepage]
+      end: true
+
+  start: Sign in page
+
+extract:
+  steps:
+    - name: Go to Nordstrom orders page
+      url: https://www.nordstrom.com/my-account?count=100&page=1&range=all
+
+    - name: Extract the orders
+      bundle: orders.json
+      listen_to_url_stub_json: https://www.nordstrom.com/api/shoppers/
