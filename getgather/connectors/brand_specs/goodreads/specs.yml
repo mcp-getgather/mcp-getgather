@@ -1,0 +1,79 @@
+name: Goodreads
+auth:
+  fields:
+    - name: login
+      type: autoclick
+      selector: button.authPortalSignInButton
+    - name: email
+      type: text
+      prompt: Email
+      selector: input[type=email]
+    - name: password
+      type: password
+      prompt: Password
+      selector: input[type=password]
+    - name: submit
+      type: autoclick
+      prompt: Submit
+      selector: input[type=submit]
+    - name: remember_me
+      type: autoclick
+      prompt: Remember me
+      selector: input[name=rememberMe]
+    - name: mybooks
+      type: autoclick
+      prompt: My Books
+      selector: a:has-text("My Books")
+    - name: alert-header
+      type: message
+      prompt: Something wrong.
+      label: div[id="auth-error-message-box"] h4
+      selector: div[id="auth-error-message-box"] h4
+    - name: alert-message
+      type: message
+      prompt: Something wrong.
+      label: div[id="auth-error-message-box"] .a-alert-content
+      selector: div[id="auth-error-message-box"] .a-alert-content
+  pages:
+    - name: Sign in
+      url: https://www.goodreads.com/user/sign_in
+      fields: [login]
+    - name: Fill in the credentials
+      fields:
+        required: [remember_me, email, password, submit]
+        optional: [alert-header, alert-message]
+    - name: Have navigation to My Books
+      fields: [mybooks]
+      end: true
+    - name: Captcha
+      url: https://www.goodreads.com/ap/cvf/
+      message: Got captcha.
+      end: true
+  start: Sign in
+
+extract:
+  steps:
+    - name: Go to the books list
+      url: https://www.goodreads.com/review/list/
+    - name: Wait for the loading
+      timeout: 9
+      wait_for_selector: form#perPageForm
+    - name: Extract the list of books
+      bundle: books.html
+      slurp_selector: div.myBooksPage
+
+parse:
+  - bundle: books.html
+    format: html
+    output: books.json
+    row_selector: tr.review
+    columns:
+      - name: cover
+        selector: img
+        attribute: src
+      - name: title
+        selector: td.title > div > a
+      - name: author
+        selector: td.author > div > a
+      - name: rating
+        selector: td.avg_rating > div
