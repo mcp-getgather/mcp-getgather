@@ -1,0 +1,120 @@
+name: Shein
+
+auth:
+  fields:
+    - name: username
+      type: text
+      prompt: Username
+      selector: input[aria-label="Email Address:"]
+
+    - name: username_submit
+      type: click
+      prompt: Continue
+      selector: button span:has-text("Continue")
+
+    - name: header_sign_in
+      type: wait
+      selector: h2 > p:has-text("Sign In With Your Account")
+
+    - name: password
+      type: password
+      prompt: Password
+      selector: div.page__login-newUI-emailPannel input[type="password"]
+
+    - name: password_submit
+      type: click
+      prompt: Sign In
+      selector: button:has-text("Sign In"):enabled
+
+    - name: wait_bind_phone
+      type: wait
+      selector: label[for="register-bind-phoneInput"]
+
+    - name: wait_bind_phone_code
+      type: wait
+      selector: label[for="register-bind-phoneCode"]
+
+    - name: wait_sms_subscribe
+      type: wait
+      selector: div.login__sms_subScribe
+
+    - name: skip_registering_phone_number
+      type: click
+      prompt: Skip registering phone number
+      selector: span:has-text("Skip")
+
+    - name: close_dialog_promo
+      type: click
+      prompt: Closing dialog promo
+      selector: div.dialog-header-v2__close-btn > svg
+
+    - name: wait_otp_header
+      type: wait
+      selector: div:has-text("To ensure that this login is by yourself, please complete the following verification.")
+
+    - name: otp_input
+      type: text
+      prompt: Input OTP
+      selector: input[placeholder="Verification Code:"]
+
+    - name: otp_submit
+      type: click
+      prompt: Submit OTP
+      selector: button:has-text("SUBMIT")
+
+    - name: wait_header_create_account
+      type: message
+      prompt: ❌ Username not found, type correct email or phone number.
+      selector: h2 > p:has-text("Create Your shein Account")
+
+    - name: close_dialog_register
+      type: click
+      prompt: Close dialog register
+      selector: div.page__login-newUI-emailPannel > div.go-close > span > svg
+
+    - name: wait_wrong_password
+      type: message
+      prompt: ❌ Your password is incorrect, try again.
+      selector: p:has-text("The Email Address or Password you entered is incorrect.")
+
+  pages:
+    - name: Login
+      url: https://us.shein.com/user/auth/login
+
+    - name: Fill in the username
+      fields: [username, username_submit]
+    - name: Username not found
+      fields: [wait_header_create_account, close_dialog_register, username, username_submit]
+
+    - name: Wrong password
+      fields: [wait_wrong_password, header_sign_in, password, password_submit]
+
+    - name: Fill in the password
+      fields: [header_sign_in, password, password_submit]
+
+    - name: Skip verifying phone
+      fields: [wait_bind_phone, wait_bind_phone_code, wait_sms_subscribe, skip_registering_phone_number]
+
+    - name: Home
+      url: https://us.shein.com/
+      end: true
+
+    - name: Close dialog promo
+      fields: [close_dialog_promo]
+
+    - name: OTP
+      fields: [wait_otp_header, otp_input, otp_submit]
+
+  start: Login
+
+extract:
+  steps:
+    - name: Go to orders page
+      url: https://us.shein.com/user/orders/list
+
+    - name: Wait for the orders page to load
+      wait_for_selector: div.page-title h1:has-text("My Orders")
+
+    - name: Extract the orders
+      bundle: order.html
+      slurp_selector: div.order-list-container

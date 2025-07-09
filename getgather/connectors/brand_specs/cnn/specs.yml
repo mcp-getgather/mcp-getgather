@@ -1,0 +1,50 @@
+name: CNN
+
+auth:
+  fields:
+    - name: email
+      type: text
+      prompt: Email address
+      selector: input[type=email]
+    - name: password
+      type: password
+      prompt: Password
+      selector: input[type=password]
+    - name: submit
+      type: click
+      prompt: Submit
+      selector: button[type=submit]
+      expect_nav: true
+      url: https://audience.cnn.com/core/api/2/user/login
+    - name: message_error
+      type: message
+      selector: form.user-account-login-form__form p.feedback-message__text
+      label: form.user-account-login-form__form p.feedback-message__text
+      prompt: ❌ The username/password you entered is incorrect. Please try again.
+    - name: newsletter-section
+      type: wait
+      selector: section li[data-newsletter-id]:nth-child(1)
+  pages:
+    - name: Email form
+      url: https://edition.cnn.com/account/log-in
+      fields:
+        required: [email, password, submit]
+        optional: [message_error]
+    - name: Home address
+      url: https://edition.cnn.com/
+      end: true
+
+  start: Email form
+
+extract:
+  steps:
+    - name: Go to the newsletter list
+      url: https://www.cnn.com/newsletters
+
+    - name: Wait for the loading
+      timeout: 5
+      wait_for_selector: section li[data-newsletter-id]:nth-child(1)
+
+    - name: Extract the list of subscribed newsletters
+      bundle: subscriptions.html
+      slurp_selector: li[data-subscription-status=subscribed]

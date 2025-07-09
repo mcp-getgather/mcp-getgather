@@ -1,0 +1,80 @@
+name: Zillow
+
+auth:
+  fields:
+    - name: email
+      type: email
+      prompt: Email
+      selector: input#username
+    - name: password
+      type: password
+      prompt: Password
+      selector: input#password
+    - name: continue
+      type: click
+      prompt: Continue
+      selector: button[data-action-button-primary=true][type=submit]
+    - name: submit
+      type: click
+      prompt: Submit
+      selector: button[type=submit]
+    - name: wait_home_page
+      type: wait
+      selector: h1:has-text("Saved homes")
+    - name: message_error
+      type: message
+      selector: span#error-element-password
+      prompt: ❌ Incorrect email or password. Please try again.
+
+  pages:
+    - name: Redirect to Sign In Page
+      url: https://www.zillow.com/myzillow/favorites
+
+    - name: Login Page
+      fields: [email, continue]
+
+    - name: Password Page
+      fields:
+        required: [password, submit]
+        optional: [message_error]
+
+    - name: Home Page
+      fields: [wait_home_page]
+      end: true
+
+  start: Redirect to Sign In Page
+
+extract:
+  steps:
+    - name: Go to favorite page
+      url: https://www.zillow.com/myzillow/favorites
+
+    - name: Wait for favorite page to load
+      wait_for_selector: h1:has-text("Saved homes")
+
+    - name: Extract the list of favorites
+      bundle: favorites.html
+      slurp_selector: div#mz-page-template-content
+
+parse:
+  - bundle: favorites.html
+    format: html
+    output: favorites.json
+    row_selector: article[role="group"]
+    columns:
+      - name: price
+        selector: span[data-testid="data-price-row"]
+      - name: address
+        selector: address
+      - name: details
+        selector: span[class*="StyledPropertyCardHomeDetails"]
+      - name: mls_id
+        selector: div[class*="StyledPropertyCardDataArea"]:has-text("MLS ID")
+      - name: status
+        selector: span:has(.list-card-status-icon)
+      - name: image_url
+        selector: div[class*="StyledPropertyCardPhoto"] img[src*="zillowstatic.com"]
+        attribute: src
+      - name: property_url
+        selector: a[href*="/homedetails/"]
+        attribute: href

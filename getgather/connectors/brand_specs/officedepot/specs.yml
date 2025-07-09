@@ -1,0 +1,140 @@
+name: Office Depot
+
+auth:
+  fields:
+    - name: dismiss_cookies
+      type: click
+      prompt: Accept cookies
+      selector: '#onetrust-accept-btn-handler'
+      expect_nav: false
+    - name: email
+      type: text
+      prompt: Email
+      selector: input[name=username]
+    - name: password
+      type: password
+      prompt: Password
+      selector: input[name=password]
+    - name: submit
+      type: click
+      prompt: Submit
+      selector: button[data-auid="LoginPage_OdButton_LoginBtn"]
+      expect_nav: true
+    - name: email-login-order
+      type: text
+      prompt: Email
+      selector: input[name="loginName"]
+    - name: login-order-btn
+      type: click
+      prompt: Login
+      selector: input[id="order_history_login_btn"]
+      expect_nav: true
+    - name: loading
+      type: wait
+      selector: div[data-auid="LoginPage_OdSpinner_LoginSpinner"]
+    - name: text-radio-btn
+      type: click
+      prompt: Text Message (SMS)
+      selector: label[for="textMessage"]
+      label: label[for="textMessage"]
+      expect_nav: false
+    - name: voice-radio-btn
+      type: click
+      prompt: Voice
+      selector: label[for="voice"]
+      label: label[for="voice"]
+      expect_nav: false
+    - name: email-radio-btn
+      type: click
+      prompt: Email
+      selector: label[for="email"]
+      label: label[for="email"]
+      expect_nav: false
+    - name: send-code-btn
+      type: click
+      prompt: Send Code
+      selector: button:has-text("Send Code")
+    - name: validation-code
+      type: text
+      prompt: Validation Code
+      selector: input[name="validationCode"], input#validation-code-input-element
+    - name: validation-btn
+      type: click
+      prompt: Validate
+      selector: button.validate-code-btn
+      expect_nav: true
+    - name: error-container
+      type: message
+      prompt: error
+      selector: div[data-auid="LoginPage_OdCallout_LoginCallout"]
+      label: div.od-callout-description p
+    - name: welcome-text
+      type: wait
+      selector: div.od-container:has-text("Welcome")
+
+  pages:
+    - name: Log in
+      url: https://www.officedepot.com/account/loginAccountDisplay.do
+      fields: [dismiss_cookies, email, password, submit]
+    - name: Order Log in
+      fields: [email-login-order, password, login-order-btn]
+    - name: Login error
+      fields: [error-container, email, password, submit]
+      message: Something wrong
+    - name: Loading page
+      fields: [loading]
+    - name: 2FA page
+      choices:
+        name: 2FA-choices
+        prompt: How should we send your code?
+        groups:
+          - name: text
+            prompt: Text Message (SMS)
+            fields: [text-radio-btn, send-code-btn]
+          - name: voice
+            prompt: Voice
+            fields: [voice-radio-btn, send-code-btn]
+          - name: email
+            prompt: Email
+            fields: [email-radio-btn, send-code-btn]
+    - name: 2FA code page
+      fields: [validation-code, validation-btn]
+    - name: Home page
+      fields: [welcome-text]
+      end: true
+  start: Log in
+
+extract:
+  steps:
+    - name: Go to orders
+      url: https://www.officedepot.com/orderhistory/orderHistoryList.do
+
+    - name: Wait a bit
+      sleep: 3
+
+    - name: Extract past orders
+      bundle: orders.html
+      slurp_selector: div.oh-list
+
+parse:
+  - bundle: orders.html
+    format: html
+    output: orders.json
+    row_selector: section.oh-list-section
+    columns:
+      - name: order_number
+        selector: .oh-list-order-number a
+      - name: order_date
+        selector: .oh-list-ordered-date
+      - name: order_status
+        selector: .oh-list-order-status
+      - name: total_amount
+        selector: .oh-list-order-total
+      - name: image_url
+        selector: .oh-list-sku-info img[src]:not([src=""])
+        attribute: src
+        multiple: true
+      - name: product_names
+        selector: .oh-list-sku-info img[alt]:not([alt=""])
+        attribute: alt
+        multiple: true

@@ -1,0 +1,95 @@
+name: Adidas
+
+auth:
+  fields:
+    - name: email
+      type: email
+      prompt: Email address
+      selector: input#email
+    - name: email_button
+      type: click
+      prompt: Continue with E-Mail
+      selector: button#email-login-button
+    - name: password
+      type: password
+      prompt: Password
+      selector: input#password
+    - name: submit
+      type: click
+      prompt: Submit
+      selector: button[type=submit]
+    - name: submit_password
+      type: click
+      prompt: Submit
+      selector: button[type=submit]
+    - name: wait_disabled_button
+      type: wait
+      selector: button.gl-cta--disabled[type=submit]
+    - name: wait_input_email
+      type: wait
+      selector: input#email
+    - name: wait_input_password
+      type: wait
+      selector: input#password
+    - name: wait_button_submit
+      type: wait
+      selector: button[type=submit]
+    - name: wait_loading_page
+      type: wait
+      selector: div.gl-loader
+    - name: message_error
+      type: message
+      selector: p._error_tbedu_60
+      prompt: ❌ Error occurred. Please try again.
+      label: p._error_tbedu_60
+    - name: message_error_password
+      type: message
+      selector: div#password--error
+      label: div#password--error
+      prompt: ❌ The password you entered are incorrect. Please try again.
+    - name: message_text_register
+      type: message
+      prompt: ❌ The Email you entered is not registered. Please try again.
+      selector: h1:has-text("Welcome to adiClub!")
+
+  pages:
+    - name: Login Page
+      url: https://www.adidas.com/us/account-login
+      fields:
+        required: [email, submit]
+        optional: [message_error]
+
+    - name: Select Login Method
+      fields: [email_button]
+
+    - name: Password Page
+      fields:
+        required: [password, submit_password]
+        optional: [message_error_password]
+
+    - name: Loading Input Email
+      fields: [wait_disabled_button, wait_input_email, wait_button_submit]
+
+    - name: Loading Input Password
+      fields: [wait_disabled_button, wait_input_password, wait_button_submit]
+
+    - name: Global Loading
+      fields: [wait_loading_page]
+    - name: Email Not Found
+      fields: [password, submit_password, wait_input_password, wait_button_submit, message_text_register]
+      end: true
+
+    - name: Home
+      url: https://www.adidas.com/us/my-account
+      end: true
+
+  start: Login Page
+
+extract:
+  steps:
+    - name: Go to orders page
+      url: https://www.adidas.com/us/my-account/order-history
+
+    - name: Extract orders
+      bundle: orders.json
+      listen_to_url_stub_json: https://www.adidas.com/api/order-mf/orders

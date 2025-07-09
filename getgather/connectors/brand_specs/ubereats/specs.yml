@@ -1,0 +1,64 @@
+name: UberEats
+
+auth:
+  fields:
+    - name: username
+      type: text
+      prompt: Email or Phone Number
+      selector: input#PHONE_NUMBER_or_EMAIL_ADDRESS
+    - name: otp
+      type: text
+      prompt: OTP
+      selectors: input[id^="EMAIL_OTP_CODE-"]
+      label: p#subtitle
+    - name: continue
+      type: click
+      prompt: Continue
+      selector: button#forward-button
+    - name: login_error_message
+      type: message
+      prompt: Login Error
+      selector: p#field-error
+      label: p#field-error
+    - name: otp_error_message
+      type: message
+      prompt: OTP Error
+      selector: p#EMAIL_OTP_CODE-error
+      label: p#EMAIL_OTP_CODE-error
+    - name: dialog_error
+      type: message
+      prompt: Error
+      selector: div[role="dialog"]
+      label: div[role="dialog"] h1, div[role="dialog"] p:nth-of-type(1)
+
+  pages:
+    - name: Go to Uber login page
+      url: https://auth.uber.com/v2/?next_url=https%3A%2F%2Fwww.ubereats.com%2Flogin-redirect%2F%3Fredirect%3D%252Forders
+
+    - name: Login Page
+      fields:
+        required: [username, continue]
+        optional: [login_error_message]
+
+    - name: OTP Page
+      fields:
+        required: [otp, continue]
+        optional: [otp_error_message]
+
+    - name: Orders Page
+      url: https://www.ubereats.com/
+      end: true
+
+  start: Go to Uber login page
+
+extract:
+  steps:
+    - name: Go to orders page
+      url: https://www.ubereats.com/orders
+
+    - name: Wait for content to load
+      wait_for_selector: main
+
+    - name: Extract orders
+      bundle: orders.html
+      slurp_selector: main

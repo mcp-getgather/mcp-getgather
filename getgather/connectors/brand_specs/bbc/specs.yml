@@ -1,0 +1,68 @@
+name: BBC
+
+auth:
+  fields:
+    - name: email
+      type: text
+      prompt: Email
+      selector: input[name='username']
+    - name: password
+      type: password
+      prompt: Password
+      selector: input[type=password]
+    - name: continue
+      type: click
+      prompt: Continue
+      selector: button#submit-button:has-text("Continue")
+    - name: submit
+      type: click
+      prompt: Submit
+      selector: button#submit-button:has-text("Log In")
+      expect_nav: true
+    - name: wrong-password
+      type: wait
+      selector: div[data-bbc-metadata*="validation.signin.wrongPassword"]
+    - name: create-account-title
+      type: wait
+      selector: h1:has-text("Create your account password")
+    - name: edit-email-button
+      type: wait
+      selector: button:has-text("edit email")
+    - name: register-span
+      type: wait
+      selector: span:has-text("register")
+    - name: your-account-button
+      type: wait
+      selector: button:has-text("Your Account")
+    - name: unmatch-password-spec
+      type: wait
+      selector: div.sb-form-message--error.sb-form-message--password
+  pages:
+    - name: Sign in
+      url: https://account.bbc.com/auth/identifier/signin
+      fields: [email, continue]
+    - name: Incorrect password page
+      fields: [password, submit, wrong-password]
+      message: ❌ The password you entered is incorrect. Please try again.
+    - name: Password spec not match
+      fields: [password, submit, unmatch-password-spec]
+      message: ❌ The password you entered is incorrect. Please try again.
+    - name: Password page
+      fields: [password, submit]
+    - name: Create account page
+      fields: [create-account-title, edit-email-button, register-span]
+      end: true
+      message: You do not have an account with this email, please try again with a different email.
+    - name: Login complete page
+      url: https://www.bbc.com
+      fields: [your-account-button]
+      end: true
+  start: https://session.bbc.com/session?userOrigin=BBCS_BBC&ptrt=https%3A%2F%2Fwww.bbc.com%2F
+
+extract:
+  steps:
+    - name: Go to BBC bookmarks page
+      url: https://middleware.bbcx.api.bbc.com/bookmark
+    - name: Extract bookmarks
+      bundle: bookmarks.json
+      slurp_selector: pre

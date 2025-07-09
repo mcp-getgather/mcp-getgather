@@ -1,0 +1,43 @@
+name: Starbucks
+
+auth:
+  fields:
+    - name: email
+      type: email
+      prompt: Email address
+      selector: input[type=email]#username
+    - name: password
+      type: password
+      prompt: Password
+      selector: input[type=password]#password
+    - name: submit
+      type: click
+      prompt: Submit
+      selector: button[type=submit]
+    - name: login_error_message
+      type: message
+      prompt: Login Error
+      selector: div[class*="alert___"]
+      label: div[class*="alert___"] h2, div[class*="alert___"] p
+
+  pages:
+    - name: Sign in
+      url: https://www.starbucks.com/account/signin
+      fields:
+        required: [email, password, submit]
+        optional: [login_error_message]
+
+    - name: Home
+      url: https://app.starbucks.com/
+      end: true
+
+  start: Sign in
+
+extract:
+  steps:
+    - name: Go to the Orders and Rewards History page
+      url: https://app.starbucks.com/account/history
+
+    - name: Extract orders
+      bundle: orders.html
+      slurp_selector: main#content

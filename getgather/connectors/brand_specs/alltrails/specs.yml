@@ -1,0 +1,53 @@
+name: Alltrails
+
+auth:
+  fields:
+    - name: email
+      type: text
+      prompt: Email address
+      selector: input[type=email]#userEmail
+    - name: password
+      type: password
+      prompt: Password
+      selector: input[type=password]#userPassword
+    - name: submit
+      type: click
+      prompt: Submit
+      selector: button[type=submit]
+      expect_nav: true
+      url: https://www.alltrails.com/identity/oauth/token
+    - name: message_error
+      type: message
+      selector: form div[class*=serverError]
+      label: form div[class*=serverError]
+      prompt: ❌ Incorrect email or password. Please try again.
+
+  pages:
+    - name: Sign in page
+      url: https://www.alltrails.com/login
+      fields:
+        required: [email, password, submit]
+        optional: [message_error]
+
+    - name: Signed in homepage
+      url: https://www.alltrails.com/explore
+      end: true
+
+  start: Sign in page
+
+extract:
+  steps:
+    - name: Go to the profile page
+      url: https://www.alltrails.com/my/profile/
+
+    - name: Wait for the loading
+      timeout: 15
+      wait_for_selector: div[data-test-id="virtuoso-item-list"]
+
+    - name: Extract profile
+      bundle: profile.html
+      slurp_selector: aside
+
+    - name: Extract feed
+      bundle: feed.html
+      slurp_selector: div[data-test-id="virtuoso-item-list"]

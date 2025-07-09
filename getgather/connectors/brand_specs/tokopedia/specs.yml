@@ -1,0 +1,87 @@
+name: Tokopedia
+
+auth:
+  fields:
+    - name: email
+      type: text
+      prompt: Email or phone number
+      selector: input[name=login]
+    - name: password
+      type: password
+      prompt: Password
+      selector: input[type=password]
+    - name: otp
+      type: text
+      prompt: One-time code
+      selector: input[aria-label="otp input"][autocomplete="one-time-code"]
+    - name: submit
+      type: click
+      prompt: Submit
+      selector: button[type="submit"]
+    - name: loading
+      type: wait
+      selector: div[aria-label="loading"]
+    - name: profile_button
+      type: wait
+      selector: '[data-testid="btnHeaderMyProfile"]'
+    - name: message_email_not_registered
+      type: wait
+      selector: div:has-text("Email belum terdaftar")
+    - name: order_list_header
+      type: wait
+      selector: h3:has-text("Daftar Transaksi")
+
+  pages:
+    - name: Log in
+      url: https://www.tokopedia.com/login
+      fields: [email, submit]
+    - name: Password page
+      fields: [password, submit]
+    - name: Loading
+      fields: [loading]
+    - name: OTP page
+      fields: [otp]
+    - name: Home page
+      url: https://www.tokopedia.com/
+      fields: [profile_button]
+      end: true
+    - name: Create account page
+      fields: [email, submit, message_email_not_registered]
+      end: true
+      message: You do not have an account with this email, please try again with a different email.
+  start: Log in
+
+extract:
+  steps:
+    - name: Go to orders
+      url: https://www.tokopedia.com/order-list
+
+    - name: Wait for orders to load
+      wait_for_selector: h3:has-text("Daftar Transaksi")
+
+    - name: Extract past orders
+      bundle: orders.html
+      slurp_selector: div.css-9a2rio
+
+parse:
+  - bundle: orders.html
+    format: html
+    output: orders.json
+    row_selector: section[data-unify="Card"]
+    columns:
+      - name: order_number
+        selector: .css-wwiyeb div:nth-child(5) p.css-914s59-unf-heading
+      - name: order_date
+        selector: .css-wwiyeb div:nth-child(3) p.css-99398n-unf-heading
+      - name: order_status
+        selector: .css-wwiyeb div:nth-child(4) div[data-unify="Label"]
+      - name: order_type
+        selector: .css-wwiyeb div:nth-child(2) p.css-1klu095-unf-heading
+      - name: shop_name
+        selector: .css-1nimb8j p[data-testid^="shopName-"], .css-7wkibd h6[data-unify="Typography"]
+      - name: product_name
+        selector: .css-7wkibd h6[data-unify="Typography"]
+      - name: product_quantity
+        selector: .css-7wkibd p.label-info.css-914s59-unf-heading, .css-7wkibd p.css-914s59-unf-heading
+      - name: total_price
+        selector: .css-7wkibd div.sum-price p.css-1klu095-unf-heading

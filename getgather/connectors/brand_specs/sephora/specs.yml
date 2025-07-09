@@ -1,0 +1,80 @@
+name: Sephora
+
+auth:
+  fields:
+    - name: email
+      type: text
+      prompt: Email address
+      selector: input[data-at="signin_email"]
+    - name: password
+      type: password
+      prompt: Password
+      selector: input[type="password"]
+    - name: submit
+      type: click
+      prompt: Submit
+      selector: button[type="submit"]
+      expect_nav: true
+      url: https://www.sephora.com/gway/v1/dotcom/auth/v1/login
+      delay_ms: 2000
+    - name: wait_order_page
+      type: wait
+      selector: h1:has-text("Orders")
+    - name: sign_in_error
+      type: message
+      prompt: There is an error with your email and/or password
+      selector: p[data-at="sign_in_error"]
+    - name: email_error
+      type: message
+      prompt: Please enter an e-mail address in the format username@domain.com.
+      selector: form div:nth-of-type(2) p[role="alert"]
+      label: form div:nth-of-type(2) p[role="alert"]
+    - name: password_error
+      type: message
+      prompt: Please review your password. Passwords are 6 to 12 characters long.
+      selector: form div:nth-of-type(3) p[role="alert"]
+      label: form div:nth-of-type(3) p[role="alert"]
+
+  pages:
+    - name: Sign in page
+      url: https://www.sephora.com/profile/MyAccount/Orders
+      fields:
+        required: [email, password, submit]
+        optional: [sign_in_error, email_error, password_error]
+    - name: Order History Page
+      fields: [wait_order_page]
+      end: true
+
+  start: Sign in page
+
+extract:
+  steps:
+    - name: Go to the order history
+      url: https://www.sephora.com/purchase-history
+
+    - name: Wait for the loading
+      wait_for_selector: a:has-text("Start Shopping"), button#sort_menu_trigger
+
+    - name: Extract orders
+      bundle: orders.html
+      slurp_selector: main
+
+parse:
+  - bundle: orders.html
+    format: html
+    output: orders.json
+    row_selector: div[data-at="purchase_history_item"]
+    columns:
+      - name: price
+        selector: span[data-at="sku_item_price_list"]
+      - name: brand
+        selector: span[data-at="sku_item_brand"]
+      - name: product_name
+        selector: span[data-at="sku_item_name"]
+      - name: item_number
+        selector: div[data-at="size_and_item_number"]
+      - name: item_variant
+        selector: span[data-at="item_variation_type"]
+      - name: image_url
+        selector: picture img
+        attribute: src

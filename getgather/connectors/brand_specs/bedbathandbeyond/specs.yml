@@ -1,0 +1,57 @@
+name: Bed Bath and Beyond
+
+auth:
+  fields:
+    - name: email
+      type: text
+      prompt: Email
+      selector: input[id=login-email]
+    - name: password
+      type: password
+      prompt: Password
+      selector: input[id=login-password]
+    - name: submit
+      type: click
+      selector: form[id=login-form] button[type=submit]
+      prompt: Submit
+    - name: message_email_error
+      type: message
+      selector: div:has-text("Please enter a valid email address.")
+      prompt: ❌ Invalid email. Please enter a valid email address.
+    - name: message_credentials_error
+      type: message
+      selector: div:has-text("Email and/or password incorrect. Please try again or reset your password.")
+      prompt: ❌ Incorrect email or password. Please try again.
+    - name: message_error
+      type: message
+      selector: div.cl-alert-error
+      prompt: ❌ An error occurred. Please try again.
+    - name: wait_dashboard_tiles
+      type: wait
+      selector: div#dashboard-tiles
+
+  pages:
+    - name: Login Page
+      url: https://www.bedbathandbeyond.com/myaccount
+      fields:
+        required: [email, password, submit]
+        optional: [message_email_error, message_credentials_error, message_error]
+
+    - name: Account Page
+      fields: [wait_dashboard_tiles]
+      end: true
+
+  start: Login Page
+
+extract:
+  steps:
+    - name: Go to Favorites List
+      url: https://www.bedbathandbeyond.com/profile/me/lists
+
+    - name: Wait for the Favorites page to load
+      timeout: 10
+      wait_for_selector: nav h2:has-text("My Lists")
+
+    - name: Extract the list of favorites
+      bundle: favorites.html
+      slurp_selector: div[class*="Lists_lists"]
