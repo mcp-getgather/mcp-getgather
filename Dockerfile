@@ -27,8 +27,30 @@ COPY entrypoint.sh /app/entrypoint.sh
 
 RUN uv sync --no-dev
 
+# Install Playwright browsers only for full deployment
+# so it can be copied to the final stage easily.
+ENV PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
+RUN $VENV_PATH/bin/patchright install --with-deps chromium
+
 # Stage 2: Final image
 FROM python:3.13-slim
+
+RUN apt-get update && apt-get install -y \
+    xvfb \
+    xauth \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
+    libxss1 \
+    libasound2 \
+    libgbm1 \
+    libxshmfence1 \
+    fonts-liberation \
+    libu2f-udev \
+    libvulkan1 \
+    --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -36,10 +58,15 @@ COPY --from=builder /app/.venv /opt/venv
 COPY --from=builder /app/getgather /app/getgather
 COPY --from=builder /app/tests /app/tests
 COPY --from=builder /app/entrypoint.sh /app/entrypoint.sh
+COPY --from=builder /opt/ms-playwright /opt/ms-playwright
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONFAULTHANDLER=1 \
     PATH="/opt/venv/bin:$PATH"
+
+# Set Playwright-specific environment variables only for full deployment
+ENV PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 
 EXPOSE 8000
 
