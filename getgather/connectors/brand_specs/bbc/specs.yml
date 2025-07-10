@@ -17,7 +17,7 @@ auth:
     - name: submit
       type: click
       prompt: Submit
-      selector: button#submit-button:has-text("Log In")
+      selector: button#submit-button:has-text("Log In"), button#submit-button:has-text("Sign In")
       expect_nav: true
     - name: wrong-password
       type: wait
