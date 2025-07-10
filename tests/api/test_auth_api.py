@@ -7,9 +7,9 @@ import requests
 HOST = os.environ.get("HOST", "http://localhost:8000")
 API_KEY = os.environ.get("API_KEY")
 
-ACME_TEST_CASES = [
+TEST_CASES = [
     # Simple tests
-    {"test": "acme-email-password-checkbox"},
+    {"test": "cnn"},
     
 ]
 
@@ -24,12 +24,10 @@ def get_test_id(test_case: dict[str, str]):
     return "-".join(parts)
 
 
-@pytest.mark.api
-@pytest.mark.acme
 @pytest.mark.parametrize(
-    "test_case", ACME_TEST_CASES, ids=[get_test_id(tc) for tc in ACME_TEST_CASES]
+    "test_case", TEST_CASES, ids=[get_test_id(tc) for tc in TEST_CASES]
 )
-def test_acme_auth_flow(test_case: dict[str, str]):
+def test_auth_api_flow(test_case: dict[str, str]):
     brand_id = test_case["test"]
     headers: dict[str, str] = {}
     if API_KEY:
@@ -70,22 +68,9 @@ def test_acme_auth_flow(test_case: dict[str, str]):
                     inputs[prompt_name] = "true"
                 # Handle specific field types
                 elif prompt_name == "email":
-                    inputs[prompt_name] = os.environ.get("ACME_EMAIL", "joe@example.com")
+                    inputs[prompt_name] = os.environ.get("CNN_USERNAME", "")
                 elif prompt_name == "password":
-                    inputs[prompt_name] = os.environ.get("ACME_PASSWORD", "trustno1")
-                elif prompt_name == "lastname":
-                    inputs[prompt_name] = os.environ.get("ACME_LASTNAME", "Sixpack")
-                elif prompt_name == "otp":
-                    inputs[prompt_name] = os.environ.get("ACME_OTP", "123456")
-                elif prompt_name == "mfa_code":
-                    # Use the correct MFA code based on the choice
-                    mfa_choice = test_case.get("mfa_choice")
-                    if mfa_choice == "email":
-                        inputs[prompt_name] = "654321"
-                    elif mfa_choice == "phone":
-                        inputs[prompt_name] = "654321"
-                    else:
-                        inputs[prompt_name] = os.environ.get("ACME_MFA_CODE", "123456")
+                    inputs[prompt_name] = os.environ.get("CNN_PASSWORD", "")
 
         state["inputs"] = inputs
         state["inputs"]["submit"] = "true"
