@@ -4,13 +4,13 @@ from typing import Any
 import pytest
 import requests
 
-HOST = os.environ.get("HOST", "http://localhost:8000")
+HOST = os.environ.get("HOST", "http://localhost:5001")
 API_KEY = os.environ.get("API_KEY")
 
 TEST_CASES = [
     # Simple tests
     {"test": "cnn"},
-    
+    {"test": "acme-email-password-checkbox"},
 ]
 
 
