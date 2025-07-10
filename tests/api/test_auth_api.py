@@ -23,7 +23,7 @@ def get_test_id(test_case: dict[str, str]):
         parts.append(f"mc_{test_case['mfa_choice']}")
     return "-".join(parts)
 
-
+@pytest.mark.api
 @pytest.mark.parametrize(
     "test_case", TEST_CASES, ids=[get_test_id(tc) for tc in TEST_CASES]
 )
