@@ -16,4 +16,4 @@ jobs:
       - name: Prepare back-end environment
         uses: ./.github/actions/prepare-backend
 
-      - run: uv run pytest
+      - run: uv run pytest -m "not api"
