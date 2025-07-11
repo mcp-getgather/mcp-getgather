@@ -16,7 +16,7 @@ from fasthtml.common import (
 app = FastHTML(hdrs=(picolink,))
 
 
-@app.get("/")  # type: ignore
+@app.get("/")
 def index() -> Any:
     return Html(
         Head(Title("ACME Corp"), picolink),

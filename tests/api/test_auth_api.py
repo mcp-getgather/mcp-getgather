@@ -3,8 +3,9 @@ from typing import Any
 
 import pytest
 import requests
+from tests.acme_corp.constants import VALID_EMAIL, VALID_PASSWORD
 
-HOST = os.environ.get("HOST", "http://localhost:5001")
+HOST = os.environ.get("HOST", "http://localhost:8000")
 API_KEY = os.environ.get("API_KEY")
 
 TEST_CASES = [
@@ -68,9 +69,9 @@ def test_auth_api_flow(test_case: dict[str, str]):
                     inputs[prompt_name] = "true"
                 # Handle specific field types
                 elif prompt_name == "email":
-                    inputs[prompt_name] = os.environ.get("CNN_USERNAME", "")
+                    inputs[prompt_name] = os.environ.get("CNN_USERNAME", "") if brand_id == "cnn" else VALID_EMAIL
                 elif prompt_name == "password":
-                    inputs[prompt_name] = os.environ.get("CNN_PASSWORD", "")
+                    inputs[prompt_name] = os.environ.get("CNN_PASSWORD", "") if brand_id == "cnn" else VALID_PASSWORD
 
         state["inputs"] = inputs
         state["inputs"]["submit"] = "true"
