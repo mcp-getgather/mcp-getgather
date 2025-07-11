@@ -1,10 +1,13 @@
 from contextlib import asynccontextmanager
 from datetime import datetime
+from os import path
 from typing import Final
 
 from fastapi import FastAPI
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.routing import APIRoute
+from fastapi.staticfiles import StaticFiles
+from jinja2 import Template
 
 from getgather.api.routes.auth.endpoints import router as auth_router
 from getgather.api.routes.brands.endpoints import router as brands_router
@@ -32,6 +35,24 @@ app = FastAPI(
     generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan,
 )
+
+STATIC_ASSETS_DIR = path.abspath(path.join(path.dirname(__file__), "..", "static", "assets"))
+app.mount("/assets", StaticFiles(directory=STATIC_ASSETS_DIR), name="assets")
+
+@app.get("/", response_class=HTMLResponse)
+def index():
+    file_path = path.join(path.dirname(__file__), "frontend", "index.html")
+    with open(file_path) as f:
+        return HTMLResponse(content=f.read())
+
+
+@app.get("/start/{brand}", response_class=HTMLResponse)
+def start(brand: str):
+    file_path = path.join(path.dirname(__file__), "frontend", "start.html")
+    with open(file_path) as f:
+        template = Template(f.read())
+    rendered = template.render(brand=brand)
+    return HTMLResponse(content=rendered)
 
 @app.get("/health")
 def health():
