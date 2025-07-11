@@ -63,9 +63,8 @@ class BrowserSession:
             )
 
             self._playwright = await async_playwright().start()
-            bt = getattr(self.playwright, self.profile.config.browser)
             self._context = await self.profile.config.launch(
-                profile_id=self.profile.profile_id, browser_type=bt
+                profile_id=self.profile.profile_id, browser_type=self.playwright.chromium
             )
         except Exception as e:
             logger.error(f"Error starting browser: {e}")
