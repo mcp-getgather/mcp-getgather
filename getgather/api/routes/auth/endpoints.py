@@ -27,10 +27,7 @@ async def auth_flow_redirect(
     brand_id: BrandIdEnum,
 ) -> RedirectResponse:
     """Redirect old auth flow endpoint to versioned endpoint."""
-    return RedirectResponse(
-        url=f"/auth/v1/{brand_id}",
-        status_code=307
-    )
+    return RedirectResponse(url=f"/auth/v1/{brand_id}", status_code=307)
 
 
 @router.post("/v1/{brand_id}")
@@ -49,14 +46,10 @@ async def auth_flow(
     try:
         # Initialize the auth manager
         if auth_request.profile_id:
-            browser_profile = BrowserProfile.get(
-                profile_id=auth_request.profile_id
-            )
+            browser_profile = BrowserProfile.get(profile_id=auth_request.profile_id)
         else:
             # TODO: allow web api to pass into browser config
-            browser_profile = BrowserProfile.create(
-                config_data={"browser": auth_request.browser}
-            )
+            browser_profile = BrowserProfile.create()
         auth_orchestrator = AuthOrchestrator(
             brand_id=brand_id,
             browser_profile=browser_profile,
@@ -68,8 +61,7 @@ async def auth_flow(
         if state.finished:
             if state.error:
                 logger.warning(
-                    f"❗ Unauthenticated terminal page during auth: "
-                    f"{state.error}",
+                    f"❗ Unauthenticated terminal page during auth: {state.error}",
                     extra={"profile_id": browser_profile.profile_id},
                 )
             elif auth_request.extract:

@@ -2,7 +2,6 @@ from pydantic import BaseModel, Field
 
 from getgather.api.types import RequestInfo
 from getgather.auth_orchestrator import AuthStatus
-from getgather.browser.profile import BROWSER_APP
 from getgather.extract_orchestrator import ExtractState
 from getgather.flow_state import FlowState
 from getgather.parse import BundleOutput
@@ -13,9 +12,6 @@ class AuthFlowRequest(BaseModel):
 
     profile_id: str | None = Field(
         description="The browser profile ID used for the extraction.", default=None
-    )
-    browser: BROWSER_APP = Field(
-        description="The browser to use for the auth flow.", default="chromium"
     )
     state: FlowState | None = Field(description="The state of the auth flow.", default=None)
     extract: bool = Field(
