@@ -3,7 +3,7 @@
 ## Repo file structure
 [Diagram](./diagram.md) (genereated at [GitDiagram](https://gitdiagram.com/getgather-hub/getgather))
 
-Build and run locally:
+## Build and run locally
 
 ```bash
 docker build -t getgather .
