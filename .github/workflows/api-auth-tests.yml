@@ -18,10 +18,8 @@ jobs:
       - name: Prepare back-end environment
         uses: ./.github/actions/prepare-backend
 
-      - run: docker build -t getgather .
-
-      - run: docker run -p 8000:8000 --name getgather -d getgather
-        timeout-minutes: 3
+      - name: Run the API server
+        run: uv run uvicorn getgather.api.main:app --reload --host 127.0.0.1 --port 8000
 
       - name: Wait for the API server to start
         run: while ! curl -s 'http://localhost:8000/health' | grep 'OK'; do sleep 1; done
