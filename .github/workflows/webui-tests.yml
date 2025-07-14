@@ -1,0 +1,39 @@
+name: Web UI Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  webui-tests:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare back-end environment
+        uses: ./.github/actions/prepare-backend
+
+      - run: docker build -t getgather .
+
+      - run: docker run -p 8000:8000 --name getgather -d getgather
+        timeout-minutes: 3
+
+      - name: Run the health check validation
+        run: while ! curl -s 'http://localhost:8000/health' | grep 'OK'; do sleep 1; done
+        timeout-minutes: 3
+
+      - name: Run the extended health check validation
+        run: while ! curl -s 'http://localhost:8000/extended-health' | grep 'OK'; do sleep 1; done
+        timeout-minutes: 3
+
+      - name: Install Chromium for Playwright tests
+        run: uv run playwright install chromium
+
+      - run: uv run pytest -s -m webui
+
+      - name: Get the container logs
+        run: docker logs --details getgather
+        if: always()
