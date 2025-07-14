@@ -42,5 +42,5 @@ jobs:
         env:
           DISPLAY: :1
           HOST: http://localhost:8000
-          VALID_EMAIL: joe@example.com
-          VALID_PASSWORD: trustno1
+          CNN_USERNAME: ${{ secrets.CNN_USERNAME }}
+          CNN_PASSWORD: ${{ secrets.CNN_PASSWORD }}
