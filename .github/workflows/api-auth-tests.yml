@@ -15,9 +15,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup xvfb for screen 0
-        run: Xvfb :1 -screen 0 1920x1080x24 &
-
       - name: Prepare back-end environment
         uses: ./.github/actions/prepare-backend
 
@@ -34,8 +31,8 @@ jobs:
         run: uv run playwright install chromium
 
       - name: Run the ACME Corp test server
-        run: uv run uvicorn tests.acme_corp.acme_corp:app --reload --host 127.0.0.1 --port 5001 > >(tee /dev/stdout) 2> >(tee /dev/stderr
-          >&2) &
+        run: uv run uvicorn tests.acme_corp.acme_corp:app --reload --host 127.0.0.1 --port 5001 > >(tee /dev/stdout) 2> >(tee
+          /dev/stderr >&2) &
 
       - name: Wait for the ACME server to start
         run: while ! curl -s 'http://localhost:5001' | grep 'ACME'; do sleep 1; done
@@ -48,3 +45,7 @@ jobs:
           HOST: http://localhost:8000
           CNN_USERNAME: ${{ secrets.CNN_USERNAME }}
           CNN_PASSWORD: ${{ secrets.CNN_PASSWORD }}
+
+      - name: Get the container logs
+        run: docker logs --details getgather
+        if: always()
