@@ -1,0 +1,46 @@
+name: API Authentication Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  api-auth-tests:
+    name: API Authentication Tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup xvfb for screen 0
+        run: Xvfb :1 -screen 0 1920x1080x24 &
+
+      - name: Prepare back-end environment
+        uses: ./.github/actions/prepare-backend
+
+      - run: docker build -t getgather .
+
+      - run: docker run -p 8000:8000 --name getgather -d getgather
+        timeout-minutes: 3
+
+      - name: Wait for the API server to start
+        run: while ! curl -s 'http://localhost:8000/health' | grep 'OK'; do sleep 1; done
+        timeout-minutes: 3
+
+      - name: Run the ACME Corp test server
+        run: uvicorn tests.acme_corp.acme_corp:app --reload --host 127.0.0.1 --port 5001 > >(tee /dev/stdout) 2> >(tee /dev/stderr >&2) &
+
+      - name: Wait for the ACME server to start
+        run: while ! curl -s 'http://localhost:5001' | grep 'ACME'; do sleep 1; done
+        timeout-minutes: 3
+
+      - name: Run the API authentication tests
+        run: uv run pytest -n 2 -m "api" tests/api/test_auth_api.py
+        env:
+          DISPLAY: :1
+          HOST: http://localhost:8000
+          VALID_EMAIL: joe@example.com
+          VALID_PASSWORD: trustno1
