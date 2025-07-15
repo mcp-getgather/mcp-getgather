@@ -7,7 +7,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  webui-tests:
+
+  webui-list-tests:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
@@ -32,8 +33,49 @@ jobs:
       - name: Install Chromium for Playwright tests
         run: uv run playwright install chromium
 
-      - run: uv run pytest -s -m webui
+      - run: uv run pytest -s tests/api/test_webui_list.py
 
       - name: Get the container logs
         run: docker logs --details getgather
         if: always()
+
+  webui-auth-tests:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup xvfb for screen 0
+        run: Xvfb :1 -screen 0 1920x1080x24 &
+
+      - name: Prepare back-end environment
+        uses: ./.github/actions/prepare-backend
+
+      - name: Install Patchright and Chromium
+        run: uv run patchright install chromium
+
+      - name: Run the API server
+        run: uv run -m uvicorn getgather.api.main:app &
+        env:
+          DISPLAY: :1
+
+      - name: Run the health check validation
+        run: while ! curl -s 'http://localhost:8000/health' | grep 'OK'; do sleep 1; done
+        timeout-minutes: 3
+
+      - name: Run the extended health check validation
+        run: while ! curl -s 'http://localhost:8000/extended-health' | grep 'OK'; do sleep 1; done
+        timeout-minutes: 3
+
+      - name: Run ACME test server
+        run: uv run -m uvicorn tests.acme_corp.acme_corp:app --port 5001 &
+        timeout-minutes: 3
+
+      - name: Wait for the ACME server to start
+        run: while ! curl -s 'http://localhost:5001' | grep 'ACME'; do sleep 1; done
+        timeout-minutes: 3
+
+      - name: Install Chromium for Playwright tests
+        run: uv run playwright install chromium
+
+      - run: uv run pytest -s tests/api/test_webui_auth.py
