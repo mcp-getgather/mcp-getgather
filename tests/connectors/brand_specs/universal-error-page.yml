@@ -1,0 +1,23 @@
+name: Universal Error Page
+
+auth:
+  fields:
+    - name: signin_button
+      type: click
+      prompt: Sign In
+      selector: button[data-testid="signin-button"]
+
+    - name: message
+      type: wait
+      selector: p:has-text("Success")
+
+  pages:
+    - name: Sign in
+      url: http://localhost:5001/universal-error-test
+      fields: [signin_button]
+
+    - name: Wait for message
+      fields: [message]
+      end: true
+
+  start: Sign in

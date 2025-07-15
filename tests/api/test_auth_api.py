@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 import requests
-from tests.acme_corp.constants import VALID_EMAIL, VALID_PASSWORD
+from tests.acme_corp.constants import VALID_EMAIL, VALID_PASSWORD, VALID_LASTNAME, VALID_OTP
 
 HOST = os.environ.get("HOST", "http://localhost:8000")
 API_KEY = os.environ.get("API_KEY")
@@ -11,7 +11,19 @@ API_KEY = os.environ.get("API_KEY")
 TEST_CASES = [
     # Simple tests
     {"test": "cnn"},
+    {"test": "acme-email-and-password-navigate-action"},
     {"test": "acme-email-password-checkbox"},
+    {"test": "acme-email-password-lastname-overlay"},
+    {"test": "acme-email-password-overlay"},
+    {"test": "acme-email-password"},
+    {"test": "acme-email-then-otp-multi-inputs"},
+    {"test": "acme-email-then-otp"},
+    {"test": "acme-email-then-password-labels"},
+    {"test": "acme-email-then-password-long-delay"},
+    {"test": "acme-email-then-password-then-mfa"},
+    {"test": "acme-email-then-password"},
+    {"test": "acme-email-validation-and-password"},
+    {"test": "universal-error-page"},
 ]
 
 
@@ -73,6 +85,10 @@ def test_auth_api_flow(test_case: dict[str, str]):
                     inputs[prompt_name] = os.environ.get("CNN_USERNAME", "") if brand_id == "cnn" else VALID_EMAIL
                 elif prompt_name == "password":
                     inputs[prompt_name] = os.environ.get("CNN_PASSWORD", "") if brand_id == "cnn" else VALID_PASSWORD
+                elif prompt_name == "lastname":
+                    inputs[prompt_name] = VALID_LASTNAME
+                elif prompt_name == "otp":
+                    inputs[prompt_name] = VALID_OTP
 
         state["inputs"] = inputs
         state["inputs"]["submit"] = "true"
