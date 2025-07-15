@@ -19,11 +19,9 @@ if TYPE_CHECKING:
 def _get_brand_spec_path(brand: str) -> Path:
     possible_paths = [
         settings.brand_spec_dir / f"{brand}.yml",
-        settings.test_brand_spec_dir[0] / f"{brand}.yml",
-        settings.test_brand_spec_dir[1] / f"{brand}.yml",
+        settings.test_brand_spec_dir / f"{brand}.yml",
         settings.brand_spec_dir / brand / "specs.yml",
-        settings.test_brand_spec_dir[0] / brand / "specs.yml",
-        settings.test_brand_spec_dir[1] / brand / "specs.yml",
+        settings.test_brand_spec_dir / brand / "specs.yml",
     ]
     path = next((p for p in possible_paths if p.exists()), None)
     if not path:
@@ -79,17 +77,11 @@ def brand_id_set(*, include: Literal["all", "test", "prod"] = "prod") -> set[str
     if include == "all" or include == "test":
         test_brand_spec_dir = settings.test_brand_spec_dir
         # test specs are not available in the production container image
-        if len(test_brand_spec_dir) == 2:
+        if test_brand_spec_dir.exists():
             # Get YAML files directly in the test_brand_spec_dir
-            yml_files.extend(test_brand_spec_dir[0].glob("*.y*ml"))
-            yml_files.extend(test_brand_spec_dir[1].glob("*.y*ml"))
+            yml_files.extend(test_brand_spec_dir.glob("*.y*ml"))
             # Get YAML files in subdirectories
-            for subdir in test_brand_spec_dir[0].iterdir():
-                if subdir.is_dir():
-                    specs_file = subdir / "specs.yml"
-                    if specs_file.exists():
-                        yml_files.append(specs_file)
-            for subdir in test_brand_spec_dir[1].iterdir():
+            for subdir in test_brand_spec_dir.iterdir():
                 if subdir.is_dir():
                     specs_file = subdir / "specs.yml"
                     if specs_file.exists():

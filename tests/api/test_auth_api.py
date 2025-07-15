@@ -39,6 +39,7 @@ def test_auth_api_flow(test_case: dict[str, str]):
     res = requests.post(
         f"{HOST}/auth/{brand_id}", json=initial_payload, headers=headers, timeout=120
     )
+    print(res.text)
     res.raise_for_status()
     data: dict[str, Any] = res.json()
 
@@ -94,3 +95,6 @@ def test_auth_api_flow(test_case: dict[str, str]):
         ), (
             f"Expected an error message but didn't get one that matched for {brand_id}. Got {state.get('error')}"
         )
+
+if __name__ == "__main__":
+    test_auth_api_flow({"test": "acme-email-password-checkbox"})

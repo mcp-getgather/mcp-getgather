@@ -30,11 +30,8 @@ class Settings(BaseSettings):
         return PROJECT_DIR / "getgather" / "connectors" / "brand_specs"
 
     @property
-    def test_brand_spec_dir(self) -> tuple[Path, Path]:
-        return (
-            PROJECT_DIR / "tests" / "connectors" / "brand_specs" / "fsm",
-            PROJECT_DIR / "tests" / "connectors" / "brand_specs" / "linear",
-        )
+    def test_brand_spec_dir(self) -> Path:
+        return PROJECT_DIR / "tests" / "connectors" / "brand_specs"
 
     @property
     def bundles_dir(self) -> Path:
