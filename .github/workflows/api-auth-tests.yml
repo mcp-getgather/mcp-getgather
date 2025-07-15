@@ -22,7 +22,9 @@ jobs:
         uses: ./.github/actions/prepare-backend
 
       - name: Run the API server
-        run: uv run -m uvicorn getgather.api.main:app --reload --host 127.0.0.1 --port 8000
+        run: uv run -m uvicorn getgather.api.main:app --host 127.0.0.1 --port 8000 &
+        env:
+          DISPLAY: :1
 
       - name: Wait for the API server to start
         run: while ! curl -s 'http://localhost:8000/health' | grep 'OK'; do sleep 1; done
