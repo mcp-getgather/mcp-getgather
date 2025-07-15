@@ -43,7 +43,3 @@ jobs:
           HOST: http://localhost:8000
           CNN_USERNAME: ${{ secrets.CNN_USERNAME }}
           CNN_PASSWORD: ${{ secrets.CNN_PASSWORD }}
-
-      - name: Get the container logs
-        run: docker logs --details getgather
-        if: always()
