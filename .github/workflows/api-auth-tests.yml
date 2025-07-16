@@ -45,7 +45,7 @@ jobs:
         timeout-minutes: 3
 
       - name: Run the API authentication tests
-        run: uv run pytest -n 2 -m "api" tests/api/test_auth_api.py
+        run: uv run pytest -n 7 -m "api" tests/api/test_auth_api.py
         env:
           DISPLAY: :1
           HOST: http://localhost:8000
