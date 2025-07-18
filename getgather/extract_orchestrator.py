@@ -4,12 +4,6 @@ from pathlib import Path
 from typing import Literal
 
 import sentry_sdk
-
-from getgather.analytics import (
-    Event,
-    ExtractStepProperties,
-    send_analytics_event,
-)
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
 from getgather.config import settings
@@ -178,22 +172,8 @@ class ExtractOrchestrator:
                         sentry_sdk.capture_exception(e)
                 raise e
             finally:
-                await self._send_analytics_event()
+                pass
 
-    async def _send_analytics_event(self):
-        """Sends an analytics event indicating the final status of the extraction flow."""
-        payload = ExtractStepProperties(
-            brand_id=self.brand_id.value,
-            extract_status=self.state,
-            parsing_status=self.parsing_status,
-            num_orders=None,  # TODO, need to do some counting in the JSON
-        )
-        event = Event(
-            profile_id=self.browser_profile.profile_id,
-            event_name="extract_step",
-            event_payload=payload,
-        )
-        await send_analytics_event(event)
 
     @property
     def bundle_dir(self) -> Path:

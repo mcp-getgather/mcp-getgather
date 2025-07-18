@@ -5,7 +5,7 @@ import sentry_sdk
 from fastapi import HTTPException
 from patchright.async_api import Page, Route
 
-from getgather.analytics import Event, LoginAttemptProperties, send_analytics_event
+
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession, BrowserStartupError
 from getgather.config import settings
@@ -151,23 +151,10 @@ class AuthOrchestrator:
                 raise ProxyError("Proxy connection failed") from e
             raise e
         finally:
-            await self._send_analytics_event()
+            pass
 
         return self.state
 
-    async def _send_analytics_event(self):
-        """Sends an analytics event indicating the final status of the auth flow."""
-        payload = LoginAttemptProperties(
-            brand_id=self.brand_id.value,
-            login_status=self.status,
-            auth_state=self.state.model_dump(),
-        )
-        event = Event(
-            profile_id=self.browser_profile.profile_id,
-            event_name="login_attempt",
-            event_payload=payload,
-        )
-        await send_analytics_event(event)
 
     async def finalize(self) -> None:
         logger.info(
