@@ -85,6 +85,22 @@ def index() -> Any:
                         )
                     ),
                 ),
+                Ul(
+                    Li(
+                        A(
+                            "Email then Password or OTP via Radio Buttons",
+                            href="/auth/email-then-password-or-otp",
+                        )
+                    ),
+                ),
+                Ul(
+                    Li(
+                        A(
+                            "Email then OTP or Password",
+                            href="/auth/email-then-otp-or-password",
+                        )
+                    ),
+                ),
                 cls="container",
             )
         ),
