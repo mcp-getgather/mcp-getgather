@@ -88,14 +88,6 @@ def index() -> Any:
                 Ul(
                     Li(
                         A(
-                            "Email then Password or OTP via Radio Buttons",
-                            href="/auth/email-then-password-or-otp-radio-buttons",
-                        )
-                    ),
-                ),
-                Ul(
-                    Li(
-                        A(
                             "Email then OTP or Password",
                             href="/auth/email-then-otp-or-password",
                         )
@@ -104,8 +96,16 @@ def index() -> Any:
                 Ul(
                     Li(
                         A(
-                            "Email then Password/OTP via Raw Selection",
+                            "Email then Password or OTP",
                             href="/auth/email-then-pass-or-otp",
+                        )
+                    ),
+                ),
+                                Ul(
+                    Li(
+                        A(
+                            "Email then Password or OTP via Radio Buttons",
+                            href="/auth/email-then-password-or-otp-radio-buttons",
                         )
                     ),
                 ),
