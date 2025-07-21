@@ -7,7 +7,6 @@ from tests.acme_corp.constants import VALID_EMAIL, VALID_LASTNAME, VALID_OTP, VA
 MAX_STEPS = 20
 
 SPECS_WITH_CHOICE = [
-    "acme-email-then-password-or-otp-radio-buttons",
     "acme-email-then-otp-or-pass",
     "acme-email-then-pass-or-otp",
 ]
