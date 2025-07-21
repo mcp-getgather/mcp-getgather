@@ -8,7 +8,7 @@ MAX_STEPS = 20
 
 SPECS_WITH_CHOICE = [
     "acme-email-then-password-or-otp-radio-buttons",
-    "acme-email-then-otp-direct-or-password",
+    "acme-email-then-otp-or-pass",
 ]
 SKIPPED_BRANDS = [
     "acme-email-then-password-mfa-choice-phone-email",
