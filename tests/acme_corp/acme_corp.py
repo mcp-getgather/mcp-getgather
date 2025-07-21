@@ -89,7 +89,7 @@ def index() -> Any:
                     Li(
                         A(
                             "Email then Password or OTP via Radio Buttons",
-                            href="/auth/email-then-password-or-otp",
+                            href="/auth/email-then-password-or-otp-radio-buttons",
                         )
                     ),
                 ),

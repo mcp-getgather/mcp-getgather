@@ -19,7 +19,7 @@ auth:
       type: click
       selector: form button[type=submit]
       expect_nav: true
-    - name: log in
+    - name: log_in
       prompt: Log in with password
       type: click
       selector: button:has-text("Log in")
@@ -45,7 +45,7 @@ auth:
         groups:
           - name: password
             prompt: Password
-            fields: [password, log in]
+            fields: [password, log_in]
           - name: otp
             prompt: One-time code
             fields: [otp_choice_button]

@@ -126,16 +126,16 @@ def create_verification_choice_form(
     )
 
 
-@app.get("/auth/email-then-password-or-otp")
+@app.get("/auth/email-then-password-or-otp-radio-buttons")
 def email_only_form_choice():
     """First page: ask for email before choosing verification method."""
     return render_form(
         email_fields,
-        action="/auth/email-then-password-or-otp",
+        action="/auth/email-then-password-or-otp-radio-buttons",
     )
 
 
-@app.post("/auth/email-then-password-or-otp")
+@app.post("/auth/email-then-password-or-otp-radio-buttons")
 def choose_verification_method(email: str):
     """After collecting the email, present the method-selection page."""
     time.sleep(random.uniform(MIN_TIME_DELAY, MAX_TIME_DELAY))
@@ -143,7 +143,7 @@ def choose_verification_method(email: str):
     if email != VALID_EMAIL:
         return render_form(
             email_fields,
-            action="/auth/email-then-password-or-otp",
+            action="/auth/email-then-password-or-otp-radio-buttons",
             error_message="Unknown email",
         )
 
@@ -153,7 +153,7 @@ def choose_verification_method(email: str):
     )
 
 
-@app.post("/submit/email-then-password-or-otp/verify")
+@app.post("/submit/email-then-password-or-otp-radio-buttons/verify")
 def verify_password_or_otp(
     email: str,
     method: str = "password",
