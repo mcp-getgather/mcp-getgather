@@ -14,5 +14,6 @@ and then navigate to `http://localhost:8000/docs` to see the API docs.
 
 All additional documentation is located in the [docs](./docs) directory:
 
+- [Deploying on Dokku](./docs/deploy_dokku.md)
 - [Deploying on Fly.io](./docs/deploy_fly.md)
 - [Deploying on Railway](./docs/deploy_railway.md)
