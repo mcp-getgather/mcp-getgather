@@ -24,6 +24,23 @@ TEST_CASES = [
     {"test": "acme-email-then-password"},
     {"test": "acme-email-validation-and-password"},
     {"test": "universal-error-page"},
+    # Complex tests with choices
+    {
+        "test": "acme-email-then-pass-or-otp",
+        "verification_choice": "password",
+    },
+    {
+        "test": "acme-email-then-pass-or-otp",
+        "verification_choice": "otp",
+    },
+    {
+        "test": "acme-email-then-otp-or-pass",
+        "verification_choice": "password",
+    },
+    {
+        "test": "acme-email-then-otp-or-pass",
+        "verification_choice": "otp",
+    },
 ]
 
 
@@ -67,9 +84,22 @@ def test_auth_api_flow(test_case: dict[str, str]):
         inputs: dict[str, str] = {}
 
         if prompt and prompt.get("choices"):
-            # Only process the first choice group (like CLI does one step at a time)
-            choice = prompt["choices"][0]
-            # Set the choice value for the group name if it exists in test case (like CLI does)
+            choice = None
+            if len(test_case.items()) > 1:  # This indicates a test with choices
+                # Look through all test case parameters (except "test")
+                for param_key, param_value in test_case.items():
+                    if param_key != "test":  # Skip the "test" parameter
+                        # Try to find a choice group whose name matches this parameter's value
+                        for c in prompt["choices"]:
+                            if c.get("name") == param_value:
+                                choice = c
+                                break
+                        if choice:
+                            break  # Found a match, stop looking
+            if not choice:
+                choice = prompt["choices"][0]
+
+            # Set the choice value for the group name if it exists in test case
             if choice.get("name") and choice.get("name") in test_case:
                 inputs[choice["name"]] = test_case[choice["name"]]
             # Only send fields present in the current prompt group

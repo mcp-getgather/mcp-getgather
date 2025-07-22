@@ -7,8 +7,8 @@ from tests.acme_corp.constants import VALID_EMAIL, VALID_LASTNAME, VALID_OTP, VA
 MAX_STEPS = 20
 
 SPECS_WITH_CHOICE = [
-    "acme-email-then-password-or-otp",
-    "acme-email-then-otp-direct-or-password",
+    "acme-email-then-otp-or-pass",
+    "acme-email-then-pass-or-otp",
 ]
 SKIPPED_BRANDS = [
     "acme-email-then-password-mfa-choice-phone-email",

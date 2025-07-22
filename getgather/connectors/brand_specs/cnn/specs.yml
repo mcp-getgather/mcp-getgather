@@ -10,12 +10,19 @@ auth:
       type: password
       prompt: Password
       selector: input[type=password]
+    - name: agree_to_terms
+      type: click
+      prompt: Agree to terms
+      selector: a:has-text("Agree")
     - name: submit
       type: click
       prompt: Submit
       selector: button[type=submit]
       expect_nav: true
       url: https://audience.cnn.com/core/api/2/user/login
+    - name: home_page
+      type: wait
+      selector: button#headerSearchIcon
     - name: message_error
       type: message
       selector: form.user-account-login-form__form p.feedback-message__text
@@ -26,15 +33,14 @@ auth:
       selector: section li[data-newsletter-id]:nth-child(1)
   pages:
     - name: Email form
-      url: https://edition.cnn.com/account/log-in
       fields:
-        required: [email, password, submit]
+        required: [agree_to_terms, email, password, submit]
         optional: [message_error]
     - name: Home address
-      url: https://edition.cnn.com/
+      fields: [home_page]
       end: true
 
-  start: Email form
+  start: https://edition.cnn.com/account/log-in
 
 extract:
   steps:
