@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import Literal
 
 import sentry_sdk
+import base64
+
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
 from getgather.config import settings
@@ -77,10 +79,7 @@ class ExtractOrchestrator:
                     if flow_state.bundle:
                         bundle_file_path = self.bundle_dir / flow_state.bundle.name
                         logger.info(
-                            (
-                                f"📦 Saving {flow_state.bundle.name} to "
-                                f"{bundle_file_path}"
-                            ),
+                            (f"📦 Saving {flow_state.bundle.name} to {bundle_file_path}"),
                             extra={
                                 "profile_id": self.browser_profile.profile_id,
                             },
@@ -98,15 +97,13 @@ class ExtractOrchestrator:
                             with open(bundle_file_path, "w") as f:
                                 f.write(flow_state.bundle.content)
                             logger.info(
-                                (
-                                    f"📦 {flow_state.bundle.name} saved to "
-                                    f"{bundle_file_path}"
-                                ),
+                                (f"📦 {flow_state.bundle.name} saved to {bundle_file_path}"),
                                 extra={
                                     "profile_id": self.browser_profile.profile_id,
                                 },
                             )
-                        flow_state.bundle = None  # Prevent re-processing
+                        # Prevent re-processing of bundle.
+                        flow_state.bundle = None if not flow_state.finished else flow_state.bundle
 
                 # TODO: Some way to return the file names and the raw data to the object and store in `files`
 
@@ -125,12 +122,30 @@ class ExtractOrchestrator:
                                 "profile_id": self.browser_profile.profile_id,
                             },
                         )
-                        parsed_bundles = await parse(
-                            brand_id=self.brand_id, bundle_dir=self.bundle_dir
-                        )
-                        if parsed_bundles:
-                            self.bundles.extend(parsed_bundles)
-                            self.parsing_status = "success"
+
+                        # Snapshot before iterating to avoid mutation while looping.
+                        original_bundles = list(self.bundles)
+                        for bundle_output in original_bundles:
+                            # Skip already-parsed bundles to avoid duplicate work
+                            if bundle_output.parsed:
+                                logger.info(f"Skipping already-parsed bundle: {bundle_output.name}")
+                                continue
+
+                            utf8_bytes = bundle_output.content.encode("utf-8")
+                            b64_str = base64.b64encode(utf8_bytes).decode("ascii")
+
+                            parsed_bundles = await parse(
+                                brand_id=self.brand_id,
+                                bundle=bundle_output.name,
+                                b64_content=b64_str,
+                            )
+
+                            if parsed_bundles:
+                                # Replace the raw bundle with the parsed version
+                                self.bundles.extend(parsed_bundles)
+
+                        # If we reach here without raising, consider parsing successful
+                        self.parsing_status = "success"
                     except Exception as e:
                         logger.error(f"Error parsing bundles: {e}")
                         self.state = ExtractState.ERROR

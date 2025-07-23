@@ -305,10 +305,6 @@ async def flow_step(*, page: Page, flow_state: FlowState) -> FlowState:
         assert not steps, "Cannot have both page_specs and steps"
         return await flow_step_fsm(page=page, flow_state=flow_state)
 
-    if flow_state.step_index >= len(steps):
-        await flow_state.set_finished(True)
-        return flow_state
-
     step = steps[flow_state.step_index]
     timeout = step.timeout * 1000 if step.timeout else 3000
 
@@ -455,6 +451,9 @@ async def flow_step(*, page: Page, flow_state: FlowState) -> FlowState:
             bundle = Bundle(name=step.bundle, content=content)
             logger.info(f"📦 {step.bundle} is {len(content)} bytes.")
 
+    # before the increment, but after the work is done
+    if flow_state.step_index >= len(flow_state.flow.steps)-1:
+        await flow_state.set_finished(True)
     flow_state.step_index += 1
     flow_state.paused = step.pause
     flow_state.bundle = bundle
