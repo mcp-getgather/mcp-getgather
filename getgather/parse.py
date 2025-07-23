@@ -40,10 +40,16 @@ async def parse(
     Returns:
         Parsed data when using b64_content, None when using bundle_dir
     """
+    logger.info(
+        f"Parsing bundle: {bundle} with b64_content: {b64_content[:200] if b64_content else 'None'}",
+        extra={"brand_id": brand_id},
+    )
     parsed_bundles: list[BundleOutput] = []
 
     if not (bundle_dir is None) ^ (b64_content is None):
-        raise ValueError("Either bundle_dir or b64_content must be provided, but not both")
+        raise ValueError(
+            f"Either bundle_dir or b64_content must be provided, but not both. \nbundle_dir:{bundle_dir} \nb64_content:{b64_content[:200] if b64_content else 'None'}"
+        )
 
     spec = await load_brand_spec(brand_id)
     if not spec.parse:
@@ -58,8 +64,9 @@ async def parse(
         bundle_config = next((p for p in spec.parse if p.bundle == bundle), None)
         if not bundle_config:
             raise ValueError(f"No parse configuration found for bundle '{bundle}' in {brand_id}")
+        b64_bytes = b64_content.encode("ascii")
 
-        content = base64.b64decode(b64_content).decode("utf-8")
+        content = base64.b64decode(b64_bytes).decode("utf-8")
         parsed_bundle = await _parse_by_format(schema=bundle_config, content=content)
         if parsed_bundle:
             parsed_bundles.append(parsed_bundle)
@@ -103,6 +110,10 @@ async def parse_html(
     and schema.columns is a list of CSS selectors to identify the individual
     columns within a row.
     """
+    logger.info(
+        f"Parsing HTML content: {html_content[:200] if html_content else 'None'}",
+        extra={"schema": schema},
+    )
     if not (bundle_dir is None) ^ (html_content is None):
         raise ValueError("Exactly one of bundle_dir or html_content must be provided")
 
@@ -164,6 +175,9 @@ async def parse_html(
         )
     else:
         # Return the data directly if no bundle_dir provided
+        logger.info(
+            f"Returning data directly: {data[:200] if data else 'None'}", extra={"schema": schema}
+        )
         return BundleOutput(
             name=schema.bundle,
             parsed=True,

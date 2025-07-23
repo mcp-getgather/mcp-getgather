@@ -78,6 +78,11 @@ async def auth_flow(
                 )
             await auth_orchestrator.finalize()
 
+        if extract_result:
+            logger.info(
+                f"Extracted Data sample: {extract_result.bundles[0].content[:200] if extract_result.bundles else 'None'}",
+                extra={"brand_id": brand_id},
+            )
         # Convert response to API format
         return AuthFlowResponse(
             profile_id=browser_profile.profile_id,
