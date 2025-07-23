@@ -1,4 +1,4 @@
-name: Deploy to GetGather GCE Dev on Tailscale
+name: Deploy to Dokku
 
 on:
   push:
@@ -29,6 +29,6 @@ jobs:
           trace: 1
           branch: main
           git_push_flags: --force
-          git_remote_url: ${{ secrets.DEV_TAILSCALE_GCE_GIT_REMOTE_URL }}
-          ssh_host_key: ${{ secrets.DEV_TAILSCALE_GCE_SSH_HOST_KEY }}
-          ssh_private_key: ${{ secrets.DEV_TAILSCALE_GCE_SSH_PRIVATE_KEY }}
+          git_remote_url: ${{ secrets.DOKKU_GIT_REMOTE_URL }}
+          ssh_host_key: ${{ secrets.DOKKU_SSH_HOST_KEY }}
+          ssh_private_key: ${{ secrets.DOKKU_SSH_PRIVATE_KEY }}
