@@ -140,7 +140,7 @@ Deployment is triggered automatically via git push, which runs the [deploy workf
 - `DOKKU_SSH_HOST_KEY`
 - `DOKKU_GIT_REMOTE_URL`
 
-First, create a new SSH key (marked it as e.g. `github@getgather.com`). Add the public key to Dokku, following [its documentation](https://dokku.com/docs/deployment/user-management/#adding-ssh-keys). Copy the private key and use it for `DOKKU_SSH_PRIVATE_KEY`.
+First, create a new SSH key (mark it as e.g. `github@getgather.com`). Add the public key to Dokku, following [its documentation](https://dokku.com/docs/deployment/user-management/#adding-ssh-keys). Copy the private key and use it for `DOKKU_SSH_PRIVATE_KEY`.
 
 Meanwhile, `DOKKU_SSH_HOST_KEY` is obtained by scanning the instance:
 
