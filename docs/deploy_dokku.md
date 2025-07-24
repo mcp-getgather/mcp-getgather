@@ -131,3 +131,23 @@ Add the following line, which does the pruning every hour:
 ```bash
 3 * * * * docker system prune -f -a --volumes
 ```
+
+## Continuous Deployment via GitHub Actions
+
+Deployment is triggered automatically via git push, which runs the [deploy workflow](./github/workflows/deploy-dokku.yml). This workflow needs 3 [repository secrets](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository):
+
+- `DOKKU_SSH_PRIVATE_KEY`
+- `DOKKU_SSH_HOST_KEY`
+- `DOKKU_GIT_REMOTE_URL`
+
+First, create a new SSH key (mark it as e.g. `github@getgather.com`). Add the public key to Dokku, following [its documentation](https://dokku.com/docs/deployment/user-management/#adding-ssh-keys). Copy the private key and use it for `DOKKU_SSH_PRIVATE_KEY`.
+
+Meanwhile, `DOKKU_SSH_HOST_KEY` is obtained by scanning the instance:
+
+```bash
+ssh-keyscan -t rsa <VM_IP_ADDRESS>
+```
+
+Be sure to copy the whole thing (starting with `#`)
+
+Last but not least, `DOKKU_GIT_REMOTE_URL` is in the form of `dokku@<VM_IP_ADDRESS>:getgather` (see the alias in Step 8).
