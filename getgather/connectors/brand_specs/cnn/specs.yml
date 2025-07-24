@@ -11,7 +11,7 @@ auth:
       prompt: Password
       selector: input[type=password]
     - name: agree_to_terms
-      type: click
+      type: autoclick
       prompt: Agree to terms
       selector: a:has-text("Agree")
     - name: submit
@@ -32,6 +32,8 @@ auth:
       type: wait
       selector: section li[data-newsletter-id]:nth-child(1)
   pages:
+    - name: Terms page
+      fields: [agree_to_terms]
     - name: Email form
       fields:
         required: [agree_to_terms, email, password, submit]
