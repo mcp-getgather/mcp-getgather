@@ -23,6 +23,10 @@ TEST_CASES = [
     {"test": "acme-email-then-password-then-mfa"},
     {"test": "acme-email-then-password"},
     {"test": "acme-email-validation-and-password"},
+    {"test": "acme-email-and-password-then-mfa"},
+    {"test": "acme-submit-form"},
+    {"test": "acme-submit-js-inline"},
+    {"test": "acme-submit-js-route"},
     {"test": "universal-error-page"},
     # Complex tests with choices
     {
@@ -40,6 +44,14 @@ TEST_CASES = [
     {
         "test": "acme-email-then-otp-or-pass",
         "verification_choice": "otp",
+    },
+    {
+        "test": "acme-email-then-password-mfa-choice-phone-email",
+        "mfa_choice": "phone",
+    },
+    {
+        "test": "acme-email-then-password-mfa-choice-phone-email",
+        "mfa_choice": "email",
     },
 ]
 

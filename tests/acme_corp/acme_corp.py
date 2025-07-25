@@ -125,6 +125,14 @@ def index() -> Any:
                         )
                     ),
                 ),
+                Ul(
+                    Li(
+                        A(
+                            "Email and Password then MFA",
+                            href="/auth/email-and-password-then-mfa",
+                        )
+                    ),
+                ),
                 cls="container",
             )
         ),
