@@ -23,6 +23,14 @@ jobs:
       - name: Show 5 most recent commits
         run: git log --oneline -n 5
 
+      - name: Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          use-cache: true
+
       - name: Deploy to GCE via dokku
         uses: dokku/github-action@master
         with:
