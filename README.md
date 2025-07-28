@@ -17,3 +17,20 @@ All additional documentation is located in the [docs](./docs) directory:
 - [Deploying on Dokku](./docs/deploy_dokku.md)
 - [Deploying on Fly.io](./docs/deploy_fly.md)
 - [Deploying on Railway](./docs/deploy_railway.md)
+
+
+## MCP configuration
+
+```json
+{
+  "mcpServers": {
+    "getgather": {
+      "url": "http://localhost:8000/mcp",
+      "headers": {
+        "GOODREADS_EMAIL": "example@gmail.com",
+        "GOODREADS_PASSWORD": "examplepassword",
+      }
+    }
+  }
+}
+```

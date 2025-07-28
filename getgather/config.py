@@ -24,6 +24,16 @@ class Settings(BaseSettings):
     BUNDLES_DIR: str = ""
     SCREENSHOTS_DIR: str = ""
     HEADLESS: bool = False
+    
+    # Credentials
+    GOODREADS_EMAIL: str = ""
+    GOODREADS_PASSWORD: str = ""
+    EBIRD_USERNAME: str = ""
+    EBIRD_PASSWORD: str = ""
+    BBC_EMAIL: str = ""
+    BBC_PASSWORD: str = ""
+    ZILLOW_EMAIL: str = ""
+    ZILLOW_PASSWORD: str = ""
 
     @property
     def brand_spec_dir(self) -> Path:
