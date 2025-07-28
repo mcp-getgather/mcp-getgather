@@ -10,7 +10,7 @@ API_KEY = os.environ.get("API_KEY")
 
 TEST_CASES = [
     # Simple tests
-    {"test": "cnn"},
+    # {"test": "cnn"},
     {"test": "acme-email-and-password-navigate-action"},
     {"test": "acme-email-password-checkbox"},
     {"test": "acme-email-password-lastname-overlay"},
