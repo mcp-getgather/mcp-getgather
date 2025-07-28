@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 import requests
-from tests.acme_corp.constants import VALID_EMAIL, VALID_PASSWORD, VALID_LASTNAME, VALID_OTP
+from tests.acme_corp.constants import VALID_EMAIL, VALID_PASSWORD, VALID_LASTNAME, VALID_OTP, VALID_MFA_CODE
 
 HOST = os.environ.get("HOST", "http://localhost:8000")
 API_KEY = os.environ.get("API_KEY")
@@ -131,6 +131,15 @@ def test_auth_api_flow(test_case: dict[str, str]):
                     inputs[prompt_name] = VALID_LASTNAME
                 elif prompt_name == "otp":
                     inputs[prompt_name] = VALID_OTP
+                elif prompt_name == "mfa_code":
+                    # Use the correct MFA code based on the choice
+                    mfa_choice = test_case.get("mfa_choice")
+                    if mfa_choice == "email":
+                        inputs[prompt_name] = "654321"
+                    elif mfa_choice == "phone":
+                        inputs[prompt_name] = VALID_MFA_CODE
+                    else:
+                        inputs[prompt_name] = VALID_MFA_CODE
 
         state["inputs"] = inputs
         state["inputs"]["submit"] = "true"
