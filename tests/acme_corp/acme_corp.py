@@ -101,11 +101,35 @@ def index() -> Any:
                         )
                     ),
                 ),
-                                Ul(
+                Ul(
                     Li(
                         A(
                             "Email then Password or OTP via Radio Buttons",
                             href="/auth/email-then-password-or-otp-radio-buttons",
+                        )
+                    ),
+                ),
+                Ul(
+                    Li(
+                        A(
+                            "Email and Password in Iframe",
+                            href="/auth/email-password-iframe",
+                        ),
+                    ),
+                ),
+                Ul(
+                    Li(
+                        A(
+                            "Email then Password then MFA choice (phone/email)",
+                            href="/auth/email-then-password-then-mfa-choice-phone-email",
+                        )
+                    ),
+                ),
+                Ul(
+                    Li(
+                        A(
+                            "Email and Password then MFA",
+                            href="/auth/email-and-password-then-mfa",
                         )
                     ),
                 ),

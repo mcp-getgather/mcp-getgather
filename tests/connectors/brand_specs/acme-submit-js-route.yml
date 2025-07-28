@@ -1,0 +1,25 @@
+name: ACME
+
+auth:
+  fields:
+    - name: submit
+      type: click
+      prompt: Submit
+      selector: button[type=submit]
+      expect_nav: true
+      url: http://localhost:5001/submit_handler
+
+    - name: message
+      type: wait
+      selector: p:has-text("Message received")
+
+  pages:
+    - name: Fill in message
+      url: http://localhost:5001/submit_js_route
+      fields: [submit]
+
+    - name: Wait for message
+      fields: [message]
+      end: true
+
+  start: Fill in message
