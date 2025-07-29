@@ -25,10 +25,35 @@ All additional documentation is located in the [docs](./docs) directory:
 {
   "mcpServers": {
     "getgather": {
-      "url": "http://localhost:8000/mcp",
+      "url": "http://127.0.0.1:8000/mcp",
       "headers": {
         "GOODREADS_EMAIL": "example@gmail.com",
         "GOODREADS_PASSWORD": "examplepassword",
+      }
+    }
+  }
+}
+```
+
+
+For Claude Desktop (also works for Cursor)
+
+```json
+{
+  "mcpServers": {
+    "getgather": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "http://127.0.0.1:8000/mcp",
+        "--header",
+        "GOODREADS_EMAIL: ${GOODREADS_EMAIL}",
+        "--header",
+        "GOODREADS_PASSWORD: ${GOODREADS_PASSWORD}"
+      ],
+      "env": {
+        "GOODREADS_EMAIL": "example@email.com",
+        "GOODREADS_PASSWORD": "examplepassword"
       }
     }
   }
