@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     BUNDLES_DIR: str = ""
     SCREENSHOTS_DIR: str = ""
     HEADLESS: bool = False
-    
+
     # Credentials
     GOODREADS_EMAIL: str = ""
     GOODREADS_PASSWORD: str = ""

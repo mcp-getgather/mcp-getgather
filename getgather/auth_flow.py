@@ -40,8 +40,7 @@ class AuthFlowRequest(BaseModel):
 class ExtractResult(BaseModel):
     """Result of an extract flow."""
 
-    profile_id: str = Field(
-        description="The browser profile ID used for the extraction.")
+    profile_id: str = Field(description="The browser profile ID used for the extraction.")
     state: ExtractState = Field(
         description="The state of the extract flow.",
     )
@@ -53,8 +52,7 @@ class ExtractResult(BaseModel):
 class AuthFlowResponse(BaseModel):
     """Response from an auth flow step."""
 
-    profile_id: str = Field(
-        description="The browser profile ID used for the extraction.")
+    profile_id: str = Field(description="The browser profile ID used for the extraction.")
     status: AuthStatus = Field(description="The status of the auth flow.")
     state: FlowState = Field(description="The state of the auth flow.")
     extract_result: ExtractResult | None = Field(
@@ -72,9 +70,7 @@ async def auth_flow(
     try:
         # Initialize the auth manager
         if auth_request.profile_id:
-            browser_profile = BrowserProfile.get(
-                profile_id=auth_request.profile_id
-            )
+            browser_profile = BrowserProfile.get(profile_id=auth_request.profile_id)
         else:
             # TODO: allow web api to pass into browser config
             browser_profile = BrowserProfile.create()

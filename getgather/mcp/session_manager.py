@@ -21,28 +21,35 @@ class SessionManager:
     _session_store: ClassVar[dict[str, SessionData]] = {}
 
     @classmethod
-    def create_session(cls, browser_profile_id: str, session_id: str | None = None, ) -> str:
+    def create_session(
+        cls,
+        browser_profile_id: str,
+        session_id: str | None = None,
+    ) -> str:
         """Create a new session with the given parameters."""
-        session_key = session_id or 'local'
+        session_key = session_id or "local"
         if session_key not in cls._session_store:
             cls._session_store[session_key] = SessionData(
-                connected_brand=[], browser_profile_id=browser_profile_id)
+                connected_brand=[], browser_profile_id=browser_profile_id
+            )
         return session_key
 
     @classmethod
     def is_brand_connected(cls, brand_id: str, session_id: str | None = None) -> bool:
         """Retrieve brand auth status for the given session ID."""
-        session_key = session_id or 'local'
+        session_key = session_id or "local"
         if session_key not in cls._session_store:
             raise ValueError(f"Session {session_key} not found")
         return brand_id in cls._session_store[session_key].connected_brand
 
     @classmethod
     def update_connected_brand(
-        cls, brand_id: str, session_id: str | None = None,
+        cls,
+        brand_id: str,
+        session_id: str | None = None,
     ) -> dict[str, Any]:
         """Create a new brand auth status with the given parameters."""
-        session_key = session_id or 'local'
+        session_key = session_id or "local"
         if session_key not in cls._session_store:
             raise ValueError(f"Session {session_key} not found")
         if brand_id not in cls._session_store[session_key].connected_brand:
@@ -52,7 +59,7 @@ class SessionManager:
     @classmethod
     def get_browser_profile_id(cls, session_id: str | None = None) -> str:
         """Retrieve brand auth status for the given session ID."""
-        session_key = session_id or 'local'
+        session_key = session_id or "local"
         if session_key not in cls._session_store:
             raise ValueError(f"Session {session_key} not found")
         return cls._session_store[session_key].browser_profile_id
