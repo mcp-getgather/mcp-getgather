@@ -14,6 +14,7 @@ from getgather.api.routes.brands.endpoints import router as brands_router
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.startup import startup
+from getgather.mcp.main import mcp_app
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -24,7 +25,8 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await startup()
-    yield
+    async with mcp_app.lifespan(app):  # type: ignore
+        yield
 
 
 app = FastAPI(
@@ -85,3 +87,4 @@ async def extended_health():
 
 app.include_router(brands_router)
 app.include_router(auth_router)
+app.mount("/mcp", mcp_app)
