@@ -49,6 +49,9 @@ RUN apt-get update && apt-get install -y \
     fonts-liberation \
     libu2f-udev \
     libvulkan1 \
+    xfce4 \
+    xfce4-goodies \
+    x11vnc \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
@@ -68,6 +71,9 @@ ENV PYTHONUNBUFFERED=1 \
 ENV PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 
+# port for FastAPI server
 EXPOSE 8000
+# port for VNC server
+EXPOSE 5900
 
 ENTRYPOINT ["/app/entrypoint.sh"]
