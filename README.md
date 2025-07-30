@@ -10,6 +10,13 @@ docker build -t getgather .
 docker run -p 8000:8000 --name getgather -d getgather
 ```
 
+Optionally, if you want to live stream the container desktop, run docker with additional parameters
+```bash
+-e VNC_PASSWORD=$YOUR_VNC_PASSWORD -p 5900:5900
+```
+
+
+
 and then navigate to `http://localhost:8000/docs` to see the API docs.
 
 All additional documentation is located in the [docs](./docs) directory:
@@ -59,3 +66,12 @@ For Claude Desktop (also works for Cursor)
   }
 }
 ```
+
+## Live stream container desktop 
+
+On MacOS
+- Open `Finder -> Go -> Connect to Server...`
+- Enter Server Address `vnc://localhost:5900`
+- Enter password `$YOUR_VNC_PASSWORD`, which is set at `docker run`
+
+You can use other VNC clients in a similar way.
