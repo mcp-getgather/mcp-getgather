@@ -50,9 +50,9 @@ RUN apt-get update && apt-get install -y \
     fonts-liberation \
     libu2f-udev \
     libvulkan1 \
-    xfce4 \
-    xfce4-goodies \
     x11vnc \
+    jwm \
+    x11-apps \
     dbus \
     dbus-x11 \
     --no-install-recommends && \
