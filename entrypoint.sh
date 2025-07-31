@@ -29,5 +29,12 @@ else
     echo "VNC_PASSWORD not set, VNC server not started"
 fi
 
+# Run D-BUS daemon
+echo "Starting D-BUS daemon..."
+rm -rf /run/dbus
+mkdir -p /run/dbus
+dbus-daemon --system --fork
+echo "D-BUS daemon started with pid: $(cat /run/dbus/pid)"
+
 # Start FastAPI server
 /opt/venv/bin/python -m uvicorn getgather.api.main:app --host 0.0.0.0 --port 8000 --log-level debug
