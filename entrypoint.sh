@@ -12,9 +12,8 @@ while [ ! -e /tmp/.X11-unix/X99 ]; do
 done
 echo "Xvfb running on DISPLAY=$DISPLAY"
 
-# Start Xfce desktop and VNC server
-echo "Starting Xfce desktop environment..."
-startxfce4 >/dev/null 2>&1 &
+echo "Starting JWM (Joe's Window Manager)"
+jwm >/dev/null 2>&1 &
 
 # Start VNC server only if VNC_PASSWORD is set
 if [ -n "$VNC_PASSWORD" ]; then
