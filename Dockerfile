@@ -1,10 +1,11 @@
 # Stage 1: Builder
 FROM python:3.13-slim AS builder
 
+COPY --from=ghcr.io/astral-sh/uv:0.8.4 /uv /uvx /bin/
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
-    && curl -Ls https://astral.sh/uv/install.sh | sh \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/root/.local/bin:$PATH"
