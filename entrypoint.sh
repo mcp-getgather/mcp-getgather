@@ -2,10 +2,18 @@
 set -e
 
 # Start Xvfb display server
-Xvfb :99 -screen 0 1920x1080x24 >/dev/null 2>&1 &
 export DISPLAY=:99
+echo "Starting Xvfb on DISPLAY=$DISPLAY..."
+Xvfb :99 -screen 0 1920x1080x24 >/dev/null 2>&1 &
+
+# Wait for Xvfb to start
+while [ ! -e /tmp/.X11-unix/X99 ]; do
+  sleep 0.1
+done
+echo "Xvfb running on DISPLAY=$DISPLAY"
 
 # Start Xfce desktop and VNC server
+echo "Starting Xfce desktop environment..."
 startxfce4 >/dev/null 2>&1 &
 
 # Start VNC server only if VNC_PASSWORD is set
@@ -15,6 +23,7 @@ if [ -n "$VNC_PASSWORD" ]; then
     x11vnc -storepasswd "$VNC_PASSWORD" /root/.vncpass
 
     # Start x11vnc
+    echo "Starting x11vnc server..."
     x11vnc \
         -forever \
         -usepw \
