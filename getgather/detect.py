@@ -4,7 +4,7 @@ from datetime import datetime
 from operator import attrgetter
 
 from nanoid import generate
-from patchright.async_api import FrameLocator, Page
+from patchright.async_api import FrameLocator, Page, Locator
 from pydantic import BaseModel
 
 from getgather.config import settings
@@ -123,6 +123,14 @@ class PageSpecDetector:
         raise ValueError(f"❌ No page state found for {page.url}")
 
 
+async def _is_visible(locator: Locator) -> bool:
+    # First try to use the locator directly, but if that fails, try the first element
+    try:
+        return await locator.is_visible()
+    except Exception:
+        return await locator.first.is_visible()
+
+
 async def _detect_field(field: Field, page: Page):
     selector = field.selector or field.selectors
     if selector is None:
@@ -131,9 +139,9 @@ async def _detect_field(field: Field, page: Page):
     # detect field inside iframe
     if field.iframe_selector:
         iframe: FrameLocator = page.frame_locator(field.iframe_selector)
-        return await iframe.locator(selector).is_visible()
+        return await _is_visible(iframe.locator(selector))
 
-    return await page.locator(selector).first.is_visible()
+    return await _is_visible(page.locator(selector))
 
 
 async def _detect_fields(fields: list[Field], page: Page) -> dict[str, bool]:

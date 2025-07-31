@@ -17,7 +17,7 @@ dependencies = [
   "jinja2>=3.1.6",
   "uvicorn>=0.34.2",
   # Browser Automation: Locked to specific versions to avoid breaking changes.
-  "patchright==1.52.4",
+  "patchright==1.52.5",
   "fastmcp>=2.10.5",
   "requests>=2.32.4",
 ]
