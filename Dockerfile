@@ -53,6 +53,8 @@ RUN apt-get update && apt-get install -y \
     xfce4 \
     xfce4-goodies \
     x11vnc \
+    dbus \
+    dbus-x11 \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
