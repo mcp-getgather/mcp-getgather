@@ -1,0 +1,83 @@
+name: Publish Container Image
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test-local-container:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - run: docker build -t getgather .
+
+      - run: docker run -p 8000:8000 --name getgather -d getgather
+        timeout-minutes: 3
+
+      - name: Run the health check validation
+        run: while ! curl -s 'http://localhost:8000/health' | grep 'OK'; do sleep 1; done
+        timeout-minutes: 3
+
+      - name: Run the extended health check validation
+        run: while ! curl -s 'http://localhost:8000/extended-health' | grep 'OK'; do sleep 1; done
+        timeout-minutes: 3
+
+      - name: Get the container logs
+        run: docker logs --details getgather
+        if: always()
+
+  build-and-publish:
+    runs-on: ubuntu-22.04
+    needs: test-local-container
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+  test-published-container:
+    runs-on: ubuntu-22.04
+    needs: build-and-publish
+    timeout-minutes: 5
+
+    steps:
+      - name: Run the container
+        run: docker run -d --rm --name getgather -p 3000:3000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Run the health check validation
+        run: while ! curl -s 'http://localhost:8000/health' | grep 'OK'; do sleep 1; done
+        timeout-minutes: 3
+
+      - name: Run the extended health check validation
+        run: while ! curl -s 'http://localhost:8000/extended-health' | grep 'OK'; do sleep 1; done
+        timeout-minutes: 3
+
+      - name: Get the container logs
+        run: docker logs --details getgather
+        if: always()
