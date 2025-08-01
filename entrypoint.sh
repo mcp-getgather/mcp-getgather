@@ -33,6 +33,8 @@ if [ -n "$VNC_PASSWORD" ]; then
         -quiet \
         -no6 >/dev/null 2>&1 &
     echo "VNC server started on port 5900"
+    websockify --web /usr/share/novnc/ 6080 localhost:5900 &
+    echo "noVNC viewer started on port 6080"
 else
     echo "VNC_PASSWORD not set, VNC server not started"
 fi
