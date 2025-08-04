@@ -15,29 +15,20 @@ echo "Xvfb running on DISPLAY=$DISPLAY"
 echo "Starting JWM (Joe's Window Manager)"
 jwm >/dev/null 2>&1 &
 
-# Start VNC server only if VNC_PASSWORD is set
-if [ -n "$VNC_PASSWORD" ]; then
-    # Create VNC password file
-    mkdir -p /root/.vnc
-    x11vnc -storepasswd "$VNC_PASSWORD" /root/.vncpass
+echo "Starting x11vnc server..."
+x11vnc \
+    -forever \
+    -nopw \
+    -rfbport 5900 \
+    -display :99 \
+    -listen 0.0.0.0 \
+    -quiet \
+    -no6 >/dev/null 2>&1 &
+echo "VNC server started on port 5900"
 
-    # Start x11vnc
-    echo "Starting x11vnc server..."
-    x11vnc \
-        -forever \
-        -usepw \
-        -rfbport 5900 \
-        -display :99 \
-        -rfbauth /root/.vncpass \
-        -listen 0.0.0.0 \
-        -quiet \
-        -no6 >/dev/null 2>&1 &
-    echo "VNC server started on port 5900"
-    websockify --web /usr/share/novnc/ 6080 localhost:5900 &
-    echo "noVNC viewer started on port 6080"
-else
-    echo "VNC_PASSWORD not set, VNC server not started"
-fi
+# So that the desktop is not completely empty
+xeyes &
+xclock &
 
 # Run D-BUS daemon
 echo "Starting D-BUS daemon..."

@@ -507,6 +507,7 @@ dependencies = [
     { name = "aiofiles" },
     { name = "fastapi" },
     { name = "fastmcp" },
+    { name = "httpx" },
     { name = "jinja2" },
     { name = "nanoid" },
     { name = "patchright" },
@@ -516,7 +517,7 @@ dependencies = [
     { name = "requests" },
     { name = "rich" },
     { name = "sentry-sdk", extra = ["fastapi"] },
-    { name = "uvicorn" },
+    { name = "uvicorn", extra = ["standard"] },
 ]
 
 [package.dev-dependencies]
@@ -539,6 +540,7 @@ requires-dist = [
     { name = "aiofiles", specifier = ">=24.1.0" },
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "fastmcp", specifier = ">=2.10.5" },
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "nanoid", specifier = ">=2.0.0" },
     { name = "patchright", specifier = "==1.52.5" },
@@ -548,7 +550,7 @@ requires-dist = [
     { name = "requests", specifier = ">=2.32.4" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "sentry-sdk", extras = ["fastapi"], specifier = ">=2.29.1" },
-    { name = "uvicorn", specifier = ">=0.34.2" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.34.2" },
 ]
 
 [package.metadata.requires-dev]
