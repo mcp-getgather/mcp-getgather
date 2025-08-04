@@ -11,13 +11,7 @@ docker run -p 8000:8000 --name getgather -d getgather
 ```
 and then navigate to `http://localhost:8000/docs` to see the API docs.
 
-Optionally, if you want to live stream the container desktop, run it with additional parameters:
-
-```bash
--e VNC_PASSWORD=$YOUR_VNC_PASSWORD -p 6080:6080
-```
-
-and then open `localhost:6080` with a web browser.
+To live stream the container desktop, go to `http://localhost:8000/live`.
 
 All additional documentation is located in the [docs](./docs) directory:
 
