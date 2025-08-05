@@ -21,18 +21,25 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# Copy only dependency files first for better layer caching
 COPY pyproject.toml uv.lock* ./
-COPY getgather /app/getgather
-COPY tests /app/tests
-COPY entrypoint.sh /app/entrypoint.sh
 
-RUN uv sync --no-dev
+# Install dependencies without workspace members
+RUN uv sync --no-dev --no-install-workspace
 
 # Install Playwright browsers only for full deployment
 # so it can be copied to the final stage easily.
 ENV PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 RUN $VENV_PATH/bin/patchright install --with-deps chromium
+
+# Now copy the actual source code
+COPY getgather /app/getgather
+COPY tests /app/tests
+COPY entrypoint.sh /app/entrypoint.sh
+
+# Install the workspace package
+RUN uv sync --no-dev
 
 # Stage 2: Final image
 FROM python:3.13-slim
