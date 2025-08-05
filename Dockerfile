@@ -55,14 +55,10 @@ RUN apt-get update && apt-get install -y \
     x11-apps \
     dbus \
     dbus-x11 \
-    novnc \
-    websockify \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-
-RUN ln -s /usr/share/novnc/vnc_lite.html /usr/share/novnc/index.html
 
 COPY --from=builder /app/.venv /opt/venv
 COPY --from=builder /app/getgather /app/getgather
@@ -82,7 +78,5 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 EXPOSE 8000
 # port for VNC server
 EXPOSE 5900
-# port for noVNC web client
-EXPOSE 6080
 
 ENTRYPOINT ["/app/entrypoint.sh"]
