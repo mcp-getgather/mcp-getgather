@@ -1,14 +1,11 @@
 # Get Gather
 
-## Repo file structure
-[Diagram](./diagram.md) (genereated at [GitDiagram](https://gitdiagram.com/getgather-hub/getgather))
-
-## Build and run locally
+First, run the container with Docker or Podman:
 
 ```bash
-docker build -t getgather .
-docker run -p 8000:8000 --name getgather -d getgather
+docker run -p 8000:8000 ghcr.io/mcp-getgather/mcp-getgather
 ```
+
 and then navigate to `http://localhost:8000/docs` to see the API docs.
 
 To live stream the container desktop, go to `http://localhost:8000/live`.
@@ -22,6 +19,8 @@ All additional documentation is located in the [docs](./docs) directory:
 
 ## MCP configuration
 
+For VS Code, Cursor, and other MCP clients which support remote MCP servers:
+
 ```json
 {
   "mcpServers": {
@@ -29,15 +28,14 @@ All additional documentation is located in the [docs](./docs) directory:
       "url": "http://127.0.0.1:8000/mcp",
       "headers": {
         "GOODREADS_EMAIL": "example@gmail.com",
-        "GOODREADS_PASSWORD": "examplepassword",
+        "GOODREADS_PASSWORD": "examplepassword"
       }
     }
   }
 }
 ```
 
-
-For Claude Desktop (also works for Cursor)
+For Claude Desktop:
 
 ```json
 {
@@ -60,3 +58,15 @@ For Claude Desktop (also works for Cursor)
   }
 }
 ```
+
+## Build and run locally
+
+```bash
+docker build -t mcp-getgather .
+docker run -p 8000:8000 mcp-getgather
+```
+
+## Repo file structure
+
+[Diagram](./diagram.md) (generated at [GitDiagram](https://gitdiagram.com/getgather-hub/getgather))
+
