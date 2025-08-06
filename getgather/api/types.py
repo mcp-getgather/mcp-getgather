@@ -10,8 +10,10 @@ class Location(TypedDict):
     country: str | None
     postal_code: str | None
 
+
 class RequestInfo(BaseModel):
     """Information about the request that initiated the auth flow."""
+
     city: str | None = Field(description="The city of the client.", default=None)
     state: str | None = Field(description="The state of the client.", default=None)
     country: str | None = Field(description="The country of the client.", default=None)

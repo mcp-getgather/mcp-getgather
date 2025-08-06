@@ -41,7 +41,9 @@ def ep_pw_mfa_login(email: str, password: str):
 
     if not credentials_ok:
         error_msg = "You have entered an invalid email or password"
-        return create_email_password_form(error_message=error_msg, action="/auth/email-and-password-then-mfa")
+        return create_email_password_form(
+            error_message=error_msg, action="/auth/email-and-password-then-mfa"
+        )
 
     return create_mfa_form(email, password)
 
@@ -51,16 +53,13 @@ def ep_pw_mfa_otp(email: str, password: str, otp: str):
     """Verify the one-time code for the email + password then MFA flow."""
     time.sleep(random.uniform(MIN_TIME_DELAY, MAX_TIME_DELAY))
 
-    creds_ok = (
-        otp == VALID_OTP
-        and email == VALID_EMAIL
-        and password == VALID_PASSWORD
-    )
+    creds_ok = otp == VALID_OTP and email == VALID_EMAIL and password == VALID_PASSWORD
 
     if creds_ok:
         return welcome_page(email)
 
     return create_mfa_form(email, password, error_message="Invalid code")
+
 
 def create_mfa_form(email: str, password: str, error_message: str | None = None):
     """Create the MFA form."""

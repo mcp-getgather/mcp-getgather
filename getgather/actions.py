@@ -22,9 +22,7 @@ async def wait_for_selector(page: Page, selector: str, timeout: int = 3000) -> N
         duration = math.floor((time.time() - timestamp) * 1000)
         logger.debug(f"✅ Selector {selector} appears after {duration} ms")
     except Exception as e:
-        logger.warning(
-            f"⚠️ Selector {selector} didn't appear after {timeout} ms: {str(e)}"
-        )
+        logger.warning(f"⚠️ Selector {selector} didn't appear after {timeout} ms: {str(e)}")
         raise
 
 

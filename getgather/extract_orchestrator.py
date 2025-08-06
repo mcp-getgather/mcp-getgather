@@ -189,7 +189,6 @@ class ExtractOrchestrator:
             finally:
                 pass
 
-
     @property
     def bundle_dir(self) -> Path:
         dir = settings.bundles_dir / self.browser_profile.profile_id / self.brand_id

@@ -5,9 +5,11 @@ from getgather.connectors.spec_loader import BrandIdEnum, list_brand_specs, load
 
 router = APIRouter(prefix="/brands", tags=["brands"])
 
+
 class APIBrandSpec(BaseModel):
     id: str
     name: str
+
 
 @router.get("", response_model=list[APIBrandSpec])
 async def get_brands(test: bool = False):

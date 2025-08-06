@@ -154,7 +154,6 @@ class AuthOrchestrator:
 
         return self.state
 
-
     async def finalize(self) -> None:
         logger.info(
             f"🚩 Finalizing auth for {self.brand_id}",
