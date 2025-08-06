@@ -1,4 +1,5 @@
 from typing import Any
+
 from fasthtml.common import (
     H1,
     A,

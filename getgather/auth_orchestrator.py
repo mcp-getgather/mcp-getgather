@@ -5,7 +5,6 @@ import sentry_sdk
 from fastapi import HTTPException
 from patchright.async_api import Page, Route
 
-
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession, BrowserStartupError
 from getgather.config import settings

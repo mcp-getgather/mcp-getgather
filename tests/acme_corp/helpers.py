@@ -24,7 +24,7 @@ from fasthtml.common import (
     picolink,
 )
 
-from tests.acme_corp.constants import VALID_EMAIL, MIN_TIME_DELAY, MAX_TIME_DELAY, VALID_OTP
+from tests.acme_corp.constants import MAX_TIME_DELAY, MIN_TIME_DELAY, VALID_EMAIL, VALID_OTP
 
 
 def create_email_password_form(

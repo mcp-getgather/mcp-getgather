@@ -7,7 +7,7 @@ from typing import Final
 
 import httpx
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, PlainTextResponse, Response, RedirectResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Template
@@ -17,10 +17,10 @@ from getgather.api.routes.brands.endpoints import router as brands_router
 from getgather.api.routes.link.endpoints import router as link_router
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
-from getgather.startup import startup
-from getgather.mcp.main import mcp_app
-
 from getgather.hosted_link_manager import HostedLinkManager
+from getgather.logs import logger
+from getgather.mcp.main import mcp_app
+from getgather.startup import startup
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -67,13 +67,13 @@ async def proxy_live_files(file_path: str):
     # Proxy noVNC libraries to unpkg.com
     unpkg_url = f"https://unpkg.com/@novnc/novnc@1.3.0/{file_path}"
 
-    print(f"Proxying {file_path} to {unpkg_url}")
+    logger.info(f"Proxying {file_path} to {unpkg_url}")
 
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(unpkg_url)
             content = response.content
-            print(f"Response's length: {len(content)}")
+            logger.debug(f"Response's length: {len(content)}")
 
             # Filter out headers that can cause decoding issues
             headers = dict(response.headers)
@@ -113,7 +113,7 @@ async def vnc_websocket_proxy(websocket: WebSocket):
             except WebSocketDisconnect:
                 websocket_closed.set()
             except Exception as e:
-                print(f"Error forwarding to VNC: {e}")
+                logger.error(f"Error forwarding to VNC: {e}")
                 websocket_closed.set()
 
         async def forward_from_vnc():
@@ -130,7 +130,7 @@ async def vnc_websocket_proxy(websocket: WebSocket):
                     except socket.error:
                         continue
             except Exception as e:
-                print(f"Error forwarding from VNC: {e}")
+                logger.error(f"Error forwarding from VNC: {e}")
             finally:
                 websocket_closed.set()
 
