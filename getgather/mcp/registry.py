@@ -1,7 +1,6 @@
 from fastmcp import Context, FastMCP
-from fastmcp.utilities.logging import get_logger
 
-logger = get_logger(__name__)
+from getgather.logs import logger
 
 
 class BrandMCPBase(FastMCP[Context]):

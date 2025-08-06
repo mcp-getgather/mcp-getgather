@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import socket
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -19,10 +18,9 @@ from getgather.api.routes.link.endpoints import router as link_router
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.hosted_link_manager import HostedLinkManager
+from getgather.logs import logger
 from getgather.mcp.main import mcp_app
 from getgather.startup import startup
-
-logger = logging.getLogger(__name__)
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:

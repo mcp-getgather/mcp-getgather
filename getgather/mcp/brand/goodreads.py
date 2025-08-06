@@ -1,13 +1,10 @@
 from typing import Any
 
 from fastmcp import Context
-from fastmcp.utilities.logging import get_logger
 
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract
-
-logger = get_logger(__name__)
 
 goodreads_mcp = BrandMCPBase(prefix="goodreads", name="Goodreads MCP")
 

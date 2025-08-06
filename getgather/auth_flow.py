@@ -1,5 +1,3 @@
-import logging
-
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
 
@@ -10,9 +8,8 @@ from getgather.browser.session import BrowserSession, BrowserStartupError
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.extract_orchestrator import ExtractOrchestrator, ExtractState
 from getgather.flow_state import FlowState
+from getgather.logs import logger
 from getgather.parse import BundleOutput
-
-logger = logging.getLogger(__name__)
 
 
 class AuthFlowRequest(BaseModel):
