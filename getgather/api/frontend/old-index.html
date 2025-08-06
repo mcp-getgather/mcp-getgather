@@ -157,7 +157,7 @@
         categoriesDiv.innerHTML = "";
 
         const filtered = brands.filter((b) =>
-          b.name.toLowerCase().includes(filter.toLowerCase()),
+          b.name.toLowerCase().includes(filter.toLowerCase())
         );
 
         const grid = document.createElement("div");
@@ -172,12 +172,12 @@
 
           const icon = document.createElement("img");
           icon.className = "brand-icon";
-          icon.src = `/assets/logos/${brand.id}.svg`;
+          icon.src = `/static/assets/logos/${brand.id}.svg`;
           icon.alt = brand.name;
           icon.onerror = function () {
-            this.src = `/assets/logos/${brand.id}.png`;
+            this.src = `/static/assets/logos/${brand.id}.png`;
             this.onerror = function () {
-              this.src = "/assets/logos/default.svg";
+              this.src = "/static/assets/logos/default.svg";
             };
           };
           card.appendChild(icon);
@@ -198,10 +198,10 @@
       document.addEventListener("DOMContentLoaded", async () => {
         try {
           const include_test = Boolean(
-            new URL(window.location.href).searchParams.get("test"),
+            new URL(window.location.href).searchParams.get("test")
           );
           const response = await fetch(
-            include_test ? "/brands?test=1" : "/brands",
+            include_test ? "/brands?test=1" : "/brands"
           );
           const brands = await response.json();
           renderBrands(brands);

@@ -49,7 +49,10 @@ app = FastAPI(
 
 
 STATIC_ASSETS_DIR = path.abspath(path.join(path.dirname(__file__), "..", "static", "assets"))
-app.mount("/assets", StaticFiles(directory=STATIC_ASSETS_DIR), name="assets")
+BUILD_ASSETS_DIR = path.abspath(path.join(path.dirname(__file__), "frontend", "assets"))
+
+app.mount("/static/assets", StaticFiles(directory=STATIC_ASSETS_DIR), name="assets")
+app.mount("/assets", StaticFiles(directory=BUILD_ASSETS_DIR), name="assets")
 
 
 @app.get("/live")
@@ -169,6 +172,15 @@ def start(brand: str):
     with open(file_path) as f:
         template = Template(f.read())
     rendered = template.render(brand=brand)
+    return HTMLResponse(content=rendered)
+
+
+@app.get("/activities")
+def activities():
+    file_path = path.join(path.dirname(__file__), "frontend", "index.html")
+    with open(file_path) as f:
+        template = Template(f.read())
+    rendered = template.render()
     return HTMLResponse(content=rendered)
 
 
