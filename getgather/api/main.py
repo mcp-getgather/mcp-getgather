@@ -47,8 +47,7 @@ app = FastAPI(
 )
 
 
-STATIC_ASSETS_DIR = path.abspath(
-    path.join(path.dirname(__file__), "..", "static", "assets"))
+STATIC_ASSETS_DIR = path.abspath(path.join(path.dirname(__file__), "..", "static", "assets"))
 app.mount("/assets", StaticFiles(directory=STATIC_ASSETS_DIR), name="assets")
 
 
@@ -61,8 +60,7 @@ def read_live():
 async def proxy_live_files(file_path: str):
     # noVNC lite's main web UI
     if file_path == "" or file_path == "index.html":
-        local_file_path = path.join(path.dirname(
-            __file__), "frontend", "live.html")
+        local_file_path = path.join(path.dirname(__file__), "frontend", "live.html")
         with open(local_file_path) as f:
             return HTMLResponse(content=f.read())
 
@@ -185,8 +183,7 @@ async def link_page(session_id: str):
     # Look up the brand from the session store
     session_data = HostedLinkManager.get_session_data(session_id)
     if not session_data:
-        raise HTTPException(
-            status_code=404, detail=f"Session ID '{session_id}' not found")
+        raise HTTPException(status_code=404, detail=f"Session ID '{session_id}' not found")
 
     brand = str(session_data.brand_id)
     redirect_url = session_data.redirect_url
@@ -194,8 +191,7 @@ async def link_page(session_id: str):
     file_path = path.join(path.dirname(__file__), "frontend", "link.html")
     with open(file_path) as f:
         template = Template(f.read())
-    rendered = template.render(
-        brand=brand, session_id=session_id, redirect_url=redirect_url)
+    rendered = template.render(brand=brand, session_id=session_id, redirect_url=redirect_url)
     return HTMLResponse(content=rendered)
 
 

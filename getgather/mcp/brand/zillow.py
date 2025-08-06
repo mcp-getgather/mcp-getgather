@@ -1,4 +1,4 @@
-from fastmcp import FastMCP, Context
+from fastmcp import Context
 from typing import Any
 
 from getgather.connectors.spec_loader import BrandIdEnum
@@ -6,11 +6,12 @@ from getgather.connectors.spec_loader import BrandIdEnum
 from fastmcp.utilities.logging import get_logger
 
 from getgather.mcp.shared import extract
+from getgather.mcp.registry import BrandMCPBase
 
 logger = get_logger(__name__)
 
 
-zillow_mcp = FastMCP[Any](name="Zillow MCP")
+zillow_mcp = BrandMCPBase(prefix="zillow", name="Zillow MCP")
 
 
 @zillow_mcp.tool(tags={"private"})

@@ -25,15 +25,7 @@ class Settings(BaseSettings):
     SCREENSHOTS_DIR: str = ""
     HEADLESS: bool = False
 
-    # Credentials
-    GOODREADS_EMAIL: str = ""
-    GOODREADS_PASSWORD: str = ""
-    EBIRD_USERNAME: str = ""
-    EBIRD_PASSWORD: str = ""
-    BBC_EMAIL: str = ""
-    BBC_PASSWORD: str = ""
-    ZILLOW_EMAIL: str = ""
-    ZILLOW_PASSWORD: str = ""
+    HOST_URL_OPENER: str = ""
 
     @property
     def brand_spec_dir(self) -> Path:
@@ -84,4 +76,5 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-settings.validate_sentry_dsn()  # normal Pydantic validator would cause circular import due to logger
+# normal Pydantic validator would cause circular import due to logger
+settings.validate_sentry_dsn()
