@@ -10,3 +10,4 @@ runs:
         cache: "npm"
     - name: Install the project
       run: npm ci
+      shell: bash
