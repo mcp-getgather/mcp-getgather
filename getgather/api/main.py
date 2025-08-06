@@ -60,7 +60,7 @@ def read_live():
 @app.get("/live/{file_path:path}")
 async def proxy_live_files(file_path: str):
     # noVNC lite's main web UI
-    if file_path == "" or file_path == "index.html":
+    if file_path == "" or file_path == "old-index.html":
         local_file_path = path.join(path.dirname(__file__), "frontend", "live.html")
         with open(local_file_path) as f:
             return HTMLResponse(content=f.read())
@@ -88,7 +88,7 @@ async def proxy_live_files(file_path: str):
 
 @app.get("/", response_class=HTMLResponse)
 def index():
-    file_path = path.join(path.dirname(__file__), "frontend", "index.html")
+    file_path = path.join(path.dirname(__file__), "frontend", "old-index.html")
     with open(file_path) as f:
         return HTMLResponse(content=f.read())
 
