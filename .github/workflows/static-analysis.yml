@@ -39,4 +39,4 @@ jobs:
       - name: Prepare back-end environment
         uses: ./.github/actions/prepare-backend
 
-      - run: uv run yamlfix --check $(find . -type f -name '*.yml' -o -name '*.yaml' | grep -v '.venv/')
+      - run: uv run yamlfix --check $(find . -type f -name '*.yml' -o -name '*.yaml' | grep -v -E '\.venv/|node_modules/')
