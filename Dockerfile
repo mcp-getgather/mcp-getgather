@@ -1,4 +1,24 @@
-# Stage 1: Builder
+# Stage 1: Frontend Builder
+FROM node:22-alpine AS frontend-builder
+
+WORKDIR /app
+
+# Copy package files for dependency caching
+COPY package*.json ./
+COPY tsconfig*.json ./
+COPY vite.config.ts ./
+COPY eslint.config.js ./
+
+# Install Node.js dependencies
+RUN npm ci
+
+# Copy frontend source code
+COPY frontend/ ./frontend/
+
+# Build frontend
+RUN npm run build
+
+# Stage 2: Python Builder
 FROM python:3.13-slim AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:0.8.4 /uv /uvx /bin/
@@ -72,6 +92,7 @@ COPY --from=builder /app/getgather /app/getgather
 COPY --from=builder /app/tests /app/tests
 COPY --from=builder /app/entrypoint.sh /app/entrypoint.sh
 COPY --from=builder /opt/ms-playwright /opt/ms-playwright
+COPY --from=frontend-builder /app/getgather/api/frontend /app/getgather/api/frontend
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONFAULTHANDLER=1 \
