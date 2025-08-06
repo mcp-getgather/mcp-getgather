@@ -224,7 +224,7 @@
       const displayExtractResults = async (extractResult) => {
         try {
           const resultsCardContainer = document.getElementById(
-            "results-card-container"
+            "results-card-container",
           );
           const resultsContainer = document.getElementById("results-container");
           const formsContainer = document.getElementById("forms");
@@ -266,7 +266,7 @@
             tabButton.textContent = bundle.name || `Bundle ${index + 1}`;
             tabButton.setAttribute(
               "aria-selected",
-              index === 0 ? "true" : "false"
+              index === 0 ? "true" : "false",
             );
             if (index > 0) tabButton.setAttribute("tabindex", "-1");
 
@@ -368,7 +368,7 @@
                 t.setAttribute("aria-selected", "false");
                 t.setAttribute("tabindex", "-1");
                 const panel = document.getElementById(
-                  t.getAttribute("aria-controls")
+                  t.getAttribute("aria-controls"),
                 );
                 if (panel) panel.hidden = true;
               });
@@ -467,7 +467,7 @@
             const errorData = await response.json();
             progress(
               errorData.detail ||
-                "Browser startup failed. Please try again later."
+                "Browser startup failed. Please try again later.",
             );
             return;
           }
@@ -481,7 +481,7 @@
             if (action.state.error) {
               progress(action.state.error);
               const resultsCardContainer = document.getElementById(
-                "results-card-container"
+                "results-card-container",
               );
               if (resultsCardContainer)
                 resultsCardContainer.style.display = "none"; // Hide results card on error
@@ -490,7 +490,7 @@
             } else {
               progress("Connection successful!");
               const resultsCardContainer = document.getElementById(
-                "results-card-container"
+                "results-card-container",
               );
               if (resultsCardContainer)
                 resultsCardContainer.style.display = "none"; // Hide if successful but no data
@@ -501,7 +501,7 @@
           if (status === "NEED_INPUT") {
             progress(action.state.error || "");
             const resultsCardContainer = document.getElementById(
-              "results-card-container"
+              "results-card-container",
             );
             if (resultsCardContainer)
               resultsCardContainer.style.display = "none"; // Hide results when needing input
