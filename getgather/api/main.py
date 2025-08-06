@@ -17,6 +17,7 @@ from getgather.api.routes.brands.endpoints import router as brands_router
 from getgather.api.routes.link.endpoints import router as link_router
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
+from getgather.config import settings
 from getgather.hosted_link_manager import HostedLinkManager
 from getgather.logs import logger
 from getgather.mcp.main import mcp_app
@@ -173,7 +174,9 @@ def start(brand: str):
 
 @app.get("/health")
 def health():
-    return PlainTextResponse(content=f"OK {int(datetime.now().timestamp())}")
+    return PlainTextResponse(
+        content=f"OK {int(datetime.now().timestamp())} GIT_REV: {settings.GIT_REV}"
+    )
 
 
 @app.get("/link/{session_id}", response_class=HTMLResponse)
