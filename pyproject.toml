@@ -56,7 +56,7 @@ line-length = 100
 preview = true
 
 [tool.ruff.lint]
-select = ["UP045", "UP006", "UP007"]
+select = ["I", "UP045", "UP006", "UP007"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true

@@ -3,7 +3,14 @@ from typing import Any
 
 import pytest
 import requests
-from tests.acme_corp.constants import VALID_EMAIL, VALID_PASSWORD, VALID_LASTNAME, VALID_OTP, VALID_MFA_CODE
+
+from tests.acme_corp.constants import (
+    VALID_EMAIL,
+    VALID_LASTNAME,
+    VALID_MFA_CODE,
+    VALID_OTP,
+    VALID_PASSWORD,
+)
 
 HOST = os.environ.get("HOST", "http://localhost:8000")
 API_KEY = os.environ.get("API_KEY")

@@ -7,7 +7,7 @@ from typing import Final
 
 import httpx
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, PlainTextResponse, Response, RedirectResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Template
@@ -17,10 +17,9 @@ from getgather.api.routes.brands.endpoints import router as brands_router
 from getgather.api.routes.link.endpoints import router as link_router
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
-from getgather.startup import startup
-from getgather.mcp.main import mcp_app
-
 from getgather.hosted_link_manager import HostedLinkManager
+from getgather.mcp.main import mcp_app
+from getgather.startup import startup
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:

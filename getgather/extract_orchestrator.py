@@ -1,10 +1,10 @@
+import base64
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Literal
 
 import sentry_sdk
-import base64
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
