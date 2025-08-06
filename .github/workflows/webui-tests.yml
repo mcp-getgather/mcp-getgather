@@ -53,6 +53,12 @@ jobs:
       - name: Install Patchright and Chromium
         run: uv run patchright install chromium
 
+      - name: Prepare front-end environment
+        uses: ./.github/actions/prepare-frontend
+
+      - name: Build the front-end
+        run: npm run build
+
       - name: Run the API server
         run: uv run -m uvicorn getgather.api.main:app &
         env:
