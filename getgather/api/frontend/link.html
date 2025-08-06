@@ -140,7 +140,7 @@
                      id="${name}-${option.value}" data-testid="choice-${name}-${option.value}">
               <label for="${name}-${option.value}">${escapeHtml(option.label)}</label>
             </div>
-          `,
+          `
             )
             .join("");
 
@@ -267,7 +267,7 @@
           let profileId = state.action?.profile_id;
           if (!state.action) {
             const sessionResponse = await fetch(
-              `/link/status/${state.sessionId}`,
+              `/link/status/${state.sessionId}`
             );
             if (sessionResponse.ok) {
               const sessionData = await sessionResponse.json();
