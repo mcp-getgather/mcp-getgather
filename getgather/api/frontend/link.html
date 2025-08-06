@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ brand|title }} - Connect Account</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
+    <style>
+      :root {
+        --primary: #2563eb;
+      }
+      .auth-card {
+        max-width: 400px;
+        margin: 2rem auto;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        background: #fff;
+      }
+      .auth-header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+      .brand-icon {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 1rem;
+      }
+      .auth-title {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1f2937;
+      }
+      .progress {
+        text-align: center;
+        color: #6b7280;
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+      }
+      .choice-container {
+        display: inline-block;
+        margin-right: 10px;
+      }
+      .error-message {
+        color: #dc2626;
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+        background-color: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 0.375rem;
+        white-space: pre-line;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Template data injection -->
+    <p id="brand" hidden>{{ brand }}</p>
+    <p id="session-id" hidden>{{ session_id }}</p>
+    {% if redirect_url %}
+    <p id="redirect-url" hidden>{{ redirect_url|tojson }}</p>
+    {% endif %}
+
+    <div class="content"></div>
+
+    <script>
+      // ============================================================================
+      // CONFIGURATION FROM SERVER TEMPLATE
+      // ============================================================================
+
+      const CONFIG = {
+        brand: document.querySelector("#brand").textContent,
+        sessionId: document.querySelector("#session-id").textContent,
+        redirectUrl: document.querySelector("#redirect-url")?.textContent
+          ? JSON.parse(document.querySelector("#redirect-url").textContent)
+          : null,
+      };
+
+      function getBrandIcon(brand) {
+        return brand
+          ? `/assets/logos/${brand}.svg`
+          : "/assets/logos/default.svg";
+      }
+
+      function getBrandName(state) {
+        if (state.action?.state?.brand_name)
+          return state.action.state.brand_name;
+        if (state.brand)
+          return state.brand.charAt(0).toUpperCase() + state.brand.slice(1);
+        return "Connect Account";
+      }
+
+      // ============================================================================
+      // STATE MANAGEMENT
+      // ============================================================================
+
+      let state = {
+        brand: CONFIG.brand,
+        sessionId: CONFIG.sessionId,
+        redirectUrl: CONFIG.redirectUrl,
+        view: "loading", // "loading" | "input" | "success" | "error"
+        message: "Connecting...",
+        action: null,
+      };
+
+      function updateState(newState) {
+        state = { ...state, ...newState };
+        render();
+      }
+
+      // ============================================================================
+      // TEMPLATES
+      // ============================================================================
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function renderFormInput(item) {
+        const { type, name, prompt } = item;
+
+        if (type === "text" || type === "email" || type === "password") {
+          return `
+            <label for="${name}">${escapeHtml(prompt)}</label>
+            <input type="${type}" name="${name}" id="${name}" required data-testid="input-${name}">
+          `;
+        }
+
+        if (type === "choice") {
+          const options = item.options
+            .map(
+              (option) => `
+            <div class="choice-container">
+              <input type="radio" name="${name}" value="${escapeHtml(option.value)}"
+                     id="${name}-${option.value}" data-testid="choice-${name}-${option.value}">
+              <label for="${name}-${option.value}">${escapeHtml(option.label)}</label>
+            </div>
+          `,
+            )
+            .join("");
+
+          return `<label>${escapeHtml(prompt)}</label>${options}`;
+        }
+
+        if (type === "click") {
+          return `
+            <button type="submit" name="${name}" value="true" data-testid="button-${name}">
+              ${escapeHtml(prompt)}
+            </button>
+          `;
+        }
+
+        return "";
+      }
+
+      function renderForm(choice) {
+        const errorMessage = state.action?.state?.error
+          ? `<div class="error-message" data-testid="error-message">${escapeHtml(state.action.state.error)}</div>`
+          : "";
+
+        const inputs = choice.prompts.map(renderFormInput).join("");
+
+        return `
+          <form data-testid="form-${choice.name}">
+            ${errorMessage}
+            ${inputs}
+          </form>
+          <hr>
+        `;
+      }
+
+      function renderForms() {
+        const prompt = state.action?.state?.prompt;
+        if (!prompt) return "";
+
+        const promptLabel = prompt.prompt
+          ? `<label>${escapeHtml(prompt.prompt)}</label><hr>`
+          : "";
+        const forms = prompt.choices.map(renderForm).join("");
+
+        return promptLabel + forms;
+      }
+
+      function baseTemplate(content = "") {
+        return `
+          <main class="container">
+            <div class="auth-card">
+              <div class="auth-header">
+                <img class="brand-icon"
+                     src="${getBrandIcon(state.brand)}"
+                     alt="${escapeHtml(state.brand || "")}"
+                     onerror="this.src='/assets/logos/${escapeHtml(state.brand)}.png'; this.onerror=function(){this.src='/assets/logos/default.svg';}">
+                <h1 class="auth-title">${escapeHtml(getBrandName(state))}</h1>
+              </div>
+              <p class="progress" data-testid="progress">${escapeHtml(state.message)}</p>
+              ${content}
+            </div>
+          </main>
+        `;
+      }
+
+      const templates = {
+        loading: () => baseTemplate(),
+        input: () =>
+          baseTemplate(`<section id="forms">${renderForms()}</section>`),
+        success: () => baseTemplate(),
+        error: () => baseTemplate(),
+      };
+
+      // ============================================================================
+      // RENDERING & SIDE EFFECTS
+      // ============================================================================
+
+      function render() {
+        const content = document.querySelector(".content");
+        content.innerHTML = templates[state.view]();
+
+        // Handle side effects after DOM update
+        if (state.view === "input") {
+          // Attach form submission handlers
+          document.querySelectorAll("#forms form").forEach((form) => {
+            if (!form.dataset.handlerAttached) {
+              form.dataset.handlerAttached = "true";
+              form.addEventListener("submit", handleFormSubmit);
+            }
+          });
+        }
+      }
+
+      // ============================================================================
+      // BUSINESS LOGIC
+      // ============================================================================
+
+      function handleFormSubmit(event) {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        if (event.submitter?.name) {
+          formData.append(event.submitter.name, event.submitter.value || true);
+        }
+
+        updateState({
+          view: "loading",
+          message: "Submitting...",
+          action: {
+            ...state.action,
+            state: {
+              ...state.action.state,
+              inputs: {
+                ...state.action.state.inputs,
+                ...Object.fromEntries(formData),
+              },
+            },
+          },
+        });
+
+        authenticateNext();
+      }
+
+      async function authenticateNext() {
+        try {
+          let profileId = state.action?.profile_id;
+          if (!state.action) {
+            const sessionResponse = await fetch(
+              `/link/status/${state.sessionId}`,
+            );
+            if (sessionResponse.ok) {
+              const sessionData = await sessionResponse.json();
+              profileId = sessionData?.profile_id;
+
+              // Check if session is expired
+              if (sessionData?.status === "expired") {
+                updateState({
+                  view: "error",
+                  message:
+                    "This session has expired. Please start a new authentication process.",
+                });
+                return;
+              }
+            } else if (sessionResponse.status === 404) {
+              updateState({
+                view: "error",
+                message:
+                  "Session not found. Please check the URL and try again.",
+              });
+              return;
+            }
+          }
+
+          const response = await fetch(`/auth/v1/${state.brand}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              profile_id: profileId,
+              state: state.action
+                ? {
+                    step_index: state.action.state?.step_index,
+                    current_page_spec_name:
+                      state.action.state?.current_page_spec_name,
+                    inputs: state.action.state?.inputs,
+                  }
+                : null,
+              extract: false,
+            }),
+          });
+
+          if (
+            response.status === 503 &&
+            response.headers.get("X-No-Retry") === "true"
+          ) {
+            const errorData = await response.json();
+            updateState({
+              view: "error",
+              message:
+                errorData.detail ||
+                "Browser startup failed. Please try again later.",
+            });
+            return;
+          }
+
+          if (response.status === 422) {
+            const errorData = await response.json();
+            const errorMsg =
+              errorData.detail?.[0]?.msg || "Invalid brand or parameters";
+            updateState({
+              view: "error",
+              message: `Configuration error: ${errorMsg}`,
+            });
+            return;
+          }
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            updateState({
+              view: "error",
+              message: `HTTP ${response.status}: ${errorText || "Unknown error"}`,
+            });
+            return;
+          }
+
+          const action = await response.json();
+
+          if (action.profile_id) {
+            updateLinkStatus({
+              status: "pending",
+              statusMessage: action.state.current_page_spec_name,
+              profileId: action.profile_id,
+            });
+          }
+
+          handleAuthResponse(action);
+        } catch (error) {
+          console.error("Error in auth flow:", error);
+          updateState({
+            view: "error",
+            message: `Error during authentication: ${error.message}`,
+          });
+        }
+      }
+
+      function handleAuthResponse(action) {
+        if (action.status === "FINISHED") {
+          if (action.state.error) {
+            updateState({
+              view: "error",
+              message: action.state.error,
+            });
+            updateLinkStatus({
+              status: "error",
+              statusMessage: action.state.error,
+            });
+          } else {
+            updateState({
+              view: "success",
+              message:
+                "Authentication successful!\nYou can go back to the app now.",
+            });
+            updateLinkStatus({
+              status: "completed",
+              statusMessage: action.state.current_page_spec_name,
+              extractResult: action.extract_result,
+            });
+            handleSuccess();
+          }
+        } else if (action.status === "ERROR") {
+          const errorMsg = action.state.error || "Error during authentication";
+          updateState({
+            view: "error",
+            message: errorMsg,
+          });
+          updateLinkStatus({
+            status: "error",
+            statusMessage: errorMsg,
+          });
+        } else if (action.status === "NEED_INPUT") {
+          updateState({
+            view: "input",
+            message: action.state.error || "",
+            action,
+          });
+          updateLinkStatus({
+            status: "pending",
+            statusMessage: action.state.current_page_spec_name,
+          });
+        } else {
+          updateState({
+            view: "loading",
+            message: "Loading...",
+            action,
+          });
+          updateLinkStatus({
+            status: "pending",
+            statusMessage: action.state.current_page_spec_name,
+          });
+          setTimeout(authenticateNext, 0);
+        }
+      }
+
+      function handleSuccess() {
+        if (state.redirectUrl) {
+          setTimeout(() => {
+            window.location.href = `${state.redirectUrl}?profile_id=${state.sessionId}`;
+          }, 2000);
+        } else {
+          setTimeout(() => window.close(), 2000);
+        }
+      }
+
+      async function updateLinkStatus({
+        status,
+        statusMessage = undefined,
+        extractResult = undefined,
+        profileId = undefined,
+      }) {
+        try {
+          const updateData = {
+            status,
+            statusMessage,
+            extractResult,
+            profileId,
+          };
+
+          const response = await fetch(`/link/status/${state.sessionId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updateData),
+          });
+
+          // Handle expired session gracefully
+          if (response.status === 400) {
+            const errorData = await response.json();
+            if (errorData.detail && errorData.detail.includes("expired")) {
+              console.warn("Session expired - unable to update status");
+              updateState({
+                view: "error",
+                message:
+                  "This session has expired. Please start a new authentication process.",
+              });
+              return;
+            }
+          }
+
+          if (!response.ok) {
+            console.warn(`Failed to update link status: ${response.status}`);
+          }
+        } catch (error) {
+          console.error("Failed to update link status:", error);
+        }
+      }
+
+      // ============================================================================
+      // INITIALIZATION
+      // ============================================================================
+
+      // Always render initial state first
+      render();
+
+      if (!state.sessionId || state.sessionId === "link") {
+        updateState({
+          view: "error",
+          message: "Invalid session ID. Please check the URL.",
+        });
+      } else {
+        // Start auth flow immediately since we have all data from server template
+        setTimeout(authenticateNext, 100);
+      }
+    </script>
+  </body>
+</html>
