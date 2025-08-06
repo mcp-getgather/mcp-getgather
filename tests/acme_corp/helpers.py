@@ -72,6 +72,7 @@ def create_email_password_form(
         script=email_script if email_validation else None,
     )
 
+
 def render_form(
     fields: list,
     action: str,
@@ -101,6 +102,7 @@ def render_form(
         ),
     )
 
+
 def welcome_page(email: str):
     """Return the success page after a completed login."""
     return Html(
@@ -115,7 +117,8 @@ def welcome_page(email: str):
         ),
     )
 
-email_fields: list[Union[Label, Input, Button]] = [ # noqa
+
+email_fields: list[Union[Label, Input, Button]] = [  # noqa
     Label(
         "Email:",
         Input(
@@ -129,11 +132,13 @@ email_fields: list[Union[Label, Input, Button]] = [ # noqa
     Button("Continue", type="submit"),
 ]
 
+
 def create_email_form(
     error_message: str | None = None, action: str = "/submit/email-then-password/next"
 ):
     """First page in the two-step flow (email → password)."""
     return render_form(email_fields, action=action, error_message=error_message)
+
 
 def create_otp_form(
     email: str, action: str, *, error_message: str | None = None, multi_inputs: bool = False
@@ -244,6 +249,7 @@ def create_password_form(
         error_message=error_message,
     )
 
+
 def handle_email_validation(
     email: str,
     *,
@@ -283,6 +289,7 @@ def handle_email_validation(
     # Call success callback with the validated email
     return success_callback(email)
 
+
 # Common success callback factories for typical patterns
 def password_form_callback(action: str):
     """Factory function for creating password form callbacks."""
@@ -291,6 +298,7 @@ def password_form_callback(action: str):
         return create_password_form(email, action=action)
 
     return callback
+
 
 def signin_page(action: str = "/error-page"):
     """Simple sign-in page that navigates to error page when submitted."""

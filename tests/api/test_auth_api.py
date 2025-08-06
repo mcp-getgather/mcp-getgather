@@ -72,10 +72,9 @@ def get_test_id(test_case: dict[str, str]):
         parts.append(f"mc_{test_case['mfa_choice']}")
     return "-".join(parts)
 
+
 @pytest.mark.api
-@pytest.mark.parametrize(
-    "test_case", TEST_CASES, ids=[get_test_id(tc) for tc in TEST_CASES]
-)
+@pytest.mark.parametrize("test_case", TEST_CASES, ids=[get_test_id(tc) for tc in TEST_CASES])
 def test_auth_api_flow(test_case: dict[str, str]):
     brand_id = test_case["test"]
     headers: dict[str, str] = {}
@@ -131,9 +130,13 @@ def test_auth_api_flow(test_case: dict[str, str]):
                     inputs[prompt_name] = "true"
                 # Handle specific field types
                 elif prompt_name == "email":
-                    inputs[prompt_name] = os.environ.get("CNN_USERNAME", "") if brand_id == "cnn" else VALID_EMAIL
+                    inputs[prompt_name] = (
+                        os.environ.get("CNN_USERNAME", "") if brand_id == "cnn" else VALID_EMAIL
+                    )
                 elif prompt_name == "password":
-                    inputs[prompt_name] = os.environ.get("CNN_PASSWORD", "") if brand_id == "cnn" else VALID_PASSWORD
+                    inputs[prompt_name] = (
+                        os.environ.get("CNN_PASSWORD", "") if brand_id == "cnn" else VALID_PASSWORD
+                    )
                 elif prompt_name == "lastname":
                     inputs[prompt_name] = VALID_LASTNAME
                 elif prompt_name == "otp":
@@ -169,6 +172,7 @@ def test_auth_api_flow(test_case: dict[str, str]):
         ), (
             f"Expected an error message but didn't get one that matched for {brand_id}. Got {state.get('error')}"
         )
+
 
 if __name__ == "__main__":
     test_auth_api_flow({"test": "acme-email-password-checkbox"})

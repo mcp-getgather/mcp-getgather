@@ -137,7 +137,7 @@ def handle_password(email: str, password: str):
             value="EMAIL",
             class_="YKZZh",
         ),
-        Button("Send Code", type="submit", class_="dls-h9r2id")
+        Button("Send Code", type="submit", class_="dls-h9r2id"),
     ]
 
     return render_form(
@@ -147,9 +147,7 @@ def handle_password(email: str, password: str):
 
 
 @app.post("/submit/email-then-password-then-mfa-choice-phone-email/mfa-choice")
-def handle_mfa_choice(
-    email: str, password: str, delivery_method: str
-):
+def handle_mfa_choice(email: str, password: str, delivery_method: str):
     time.sleep(random.uniform(MIN_TIME_DELAY, MAX_TIME_DELAY))
     mfa_code_fields = [
         Input(type="hidden", name="email", value=email),
@@ -202,11 +200,7 @@ def handle_otp(
     time.sleep(random.uniform(MIN_TIME_DELAY, MAX_TIME_DELAY))
 
     valid_code = "654321" if delivery_method == "EMAIL" else "123456"
-    if (
-        otp == valid_code
-        and email == VALID_EMAIL
-        and password == VALID_PASSWORD
-    ):
+    if otp == valid_code and email == VALID_EMAIL and password == VALID_PASSWORD:
         return welcome_page(email)
 
     mfa_code_fields = [
@@ -221,10 +215,7 @@ def handle_otp(
         Div(
             "We sent a code to:",
             Div(
-                Strong(
-                    "(6**) ***-8093" if delivery_method == "SMS"
-                    else "t*****@getgather.com"
-                ),
+                Strong("(6**) ***-8093" if delivery_method == "SMS" else "t*****@getgather.com"),
             ),
             class_="dls-ihm460",
         ),

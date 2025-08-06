@@ -452,7 +452,7 @@ async def flow_step(*, page: Page, flow_state: FlowState) -> FlowState:
             logger.info(f"📦 {step.bundle} is {len(content)} bytes.")
 
     # before the increment, but after the work is done
-    if flow_state.step_index >= len(flow_state.flow.steps)-1:
+    if flow_state.step_index >= len(flow_state.flow.steps) - 1:
         await flow_state.set_finished(True)
     flow_state.step_index += 1
     flow_state.paused = step.pause
