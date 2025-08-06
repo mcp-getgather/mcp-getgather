@@ -5,13 +5,12 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
 from getgather.api.types import request_info
-from getgather.connectors.spec_loader import BrandIdEnum
-
 from getgather.auth_flow import (
     AuthFlowRequest,
     AuthFlowResponse,
     auth_flow,
 )
+from getgather.connectors.spec_loader import BrandIdEnum
 
 logger = logging.getLogger(__name__)
 

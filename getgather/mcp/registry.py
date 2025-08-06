@@ -1,8 +1,5 @@
-from fastmcp import FastMCP, Context
-
-
+from fastmcp import Context, FastMCP
 from fastmcp.utilities.logging import get_logger
-
 
 logger = get_logger(__name__)
 

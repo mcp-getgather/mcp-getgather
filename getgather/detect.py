@@ -4,7 +4,7 @@ from datetime import datetime
 from operator import attrgetter
 
 from nanoid import generate
-from patchright.async_api import FrameLocator, Page, Locator
+from patchright.async_api import FrameLocator, Locator, Page
 from pydantic import BaseModel
 
 from getgather.config import settings

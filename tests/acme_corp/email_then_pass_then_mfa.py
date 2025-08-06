@@ -1,23 +1,24 @@
 # --------------------------------------------------------------
 # Email -> password -> MFA
 # --------------------------------------------------------------
-import time
 import random
+import time
 
 from fasthtml.common import (
-    Input,
     Button,
+    Input,
     Label,
 )
+
 from tests.acme_corp.acme_corp import app
 from tests.acme_corp.constants import (
-    VALID_EMAIL,
-    VALID_PASSWORD,
-    VALID_OTP,
-    MIN_TIME_DELAY,
     MAX_TIME_DELAY,
+    MIN_TIME_DELAY,
+    VALID_EMAIL,
+    VALID_OTP,
+    VALID_PASSWORD,
 )
-from tests.acme_corp.helpers import render_form, email_fields, welcome_page
+from tests.acme_corp.helpers import email_fields, render_form, welcome_page
 
 
 @app.get("/auth/email-then-password-then-mfa")

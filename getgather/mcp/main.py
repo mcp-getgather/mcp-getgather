@@ -5,12 +5,11 @@ from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools.tool import ToolResult
 from fastmcp.utilities.logging import get_logger
 
-from getgather.mcp.shared import poll_status_hosted_link, auth_hosted_link
-from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.auto_import import auto_import
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.connectors.spec_loader import BrandIdEnum
+from getgather.mcp.auto_import import auto_import
+from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.session_manager import SessionManager
 from getgather.mcp.shared import auth_hosted_link, poll_status_hosted_link
 
