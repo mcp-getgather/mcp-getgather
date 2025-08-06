@@ -157,7 +157,7 @@
         categoriesDiv.innerHTML = "";
 
         const filtered = brands.filter((b) =>
-          b.name.toLowerCase().includes(filter.toLowerCase())
+          b.name.toLowerCase().includes(filter.toLowerCase()),
         );
 
         const grid = document.createElement("div");
@@ -198,10 +198,10 @@
       document.addEventListener("DOMContentLoaded", async () => {
         try {
           const include_test = Boolean(
-            new URL(window.location.href).searchParams.get("test")
+            new URL(window.location.href).searchParams.get("test"),
           );
           const response = await fetch(
-            include_test ? "/brands?test=1" : "/brands"
+            include_test ? "/brands?test=1" : "/brands",
           );
           const brands = await response.json();
           renderBrands(brands);
