@@ -81,8 +81,8 @@
 
       function getBrandIcon(brand) {
         return brand
-          ? `/assets/logos/${brand}.svg`
-          : "/assets/logos/default.svg";
+          ? `/static/assets/logos/${brand}.svg`
+          : "/static/assets/logos/default.svg";
       }
 
       function getBrandName(state) {
@@ -194,7 +194,7 @@
                 <img class="brand-icon"
                      src="${getBrandIcon(state.brand)}"
                      alt="${escapeHtml(state.brand || "")}"
-                     onerror="this.src='/assets/logos/${escapeHtml(state.brand)}.png'; this.onerror=function(){this.src='/assets/logos/default.svg';}">
+                     onerror="this.src='/static/assets/logos/${escapeHtml(state.brand)}.png'; this.onerror=function(){this.src='/static/assets/logos/default.svg';}">
                 <h1 class="auth-title">${escapeHtml(getBrandName(state))}</h1>
               </div>
               <p class="progress" data-testid="progress">${escapeHtml(state.message)}</p>

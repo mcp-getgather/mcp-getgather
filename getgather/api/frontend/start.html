@@ -666,12 +666,12 @@
 
         const icon = document.getElementById("brand-icon");
 
-        icon.src = `/assets/logos/${brand}.svg`;
+        icon.src = `/static/assets/logos/${brand}.svg`;
         icon.alt = brand;
         icon.onerror = function () {
-          this.src = `/assets/logos/${brand}.png`;
+          this.src = `/static/assets/logos/${brand}.png`;
           this.onerror = function () {
-            this.src = "/assets/logos/default.svg";
+            this.src = "/static/assets/logos/default.svg";
           };
         };
         setTimeout(next, 100);
