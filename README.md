@@ -40,7 +40,8 @@ For Claude Desktop:
       "command": "npx",
       "args": [
         "mcp-remote",
-        "http://127.0.0.1:8000/mcp"
+        "http://127.0.0.1:8000/mcp",
+        "--allow-http"
       ]
     }
   }
