@@ -7,7 +7,6 @@ on:
   workflow_dispatch:
 
 jobs:
-
   webui-list-tests:
     runs-on: ubuntu-22.04
     steps:
