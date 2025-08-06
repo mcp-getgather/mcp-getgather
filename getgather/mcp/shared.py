@@ -5,7 +5,6 @@ from typing import Any
 import httpx
 from fastmcp import Context
 from fastmcp.server.dependencies import get_http_headers
-from fastmcp.utilities.logging import get_logger
 
 from getgather.api.routes.link.types import HostedLinkTokenRequest
 from getgather.auth_flow import ExtractResult
@@ -14,9 +13,8 @@ from getgather.browser.session import BrowserSession
 from getgather.config import settings
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.extract_orchestrator import ExtractOrchestrator
+from getgather.logs import logger
 from getgather.mcp.session_manager import SessionManager
-
-logger = get_logger(__name__)
 
 
 async def auth_hosted_link(brand_id: BrandIdEnum, session_id: str | None = None) -> dict[str, Any]:

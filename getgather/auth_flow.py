@@ -1,23 +1,15 @@
-import logging
-
 from fastapi import HTTPException
-
-from getgather.auth_orchestrator import AuthOrchestrator, ProxyError
-from getgather.browser.profile import BrowserProfile
-from getgather.browser.session import BrowserStartupError
-from getgather.connectors.spec_loader import BrandIdEnum
-from getgather.extract_orchestrator import ExtractOrchestrator
-
 from pydantic import BaseModel, Field
-from getgather.auth_orchestrator import AuthStatus
-from getgather.extract_orchestrator import ExtractState
-from getgather.flow_state import FlowState
-from getgather.parse import BundleOutput
+
 from getgather.api.types import RequestInfo
-
+from getgather.auth_orchestrator import AuthOrchestrator, AuthStatus, ProxyError
+from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession, BrowserStartupError
-
-logger = logging.getLogger(__name__)
+from getgather.connectors.spec_loader import BrandIdEnum
+from getgather.extract_orchestrator import ExtractOrchestrator, ExtractState
+from getgather.flow_state import FlowState
+from getgather.logs import logger
+from getgather.parse import BundleOutput
 
 
 class AuthFlowRequest(BaseModel):

@@ -1,9 +1,6 @@
-import logging
 from typing import Any, ClassVar
+
 from pydantic import BaseModel
-
-
-logger = logging.getLogger(__name__)
 
 
 class SessionData(BaseModel):

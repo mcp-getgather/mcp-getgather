@@ -1,4 +1,3 @@
-import logging
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Request, status
@@ -9,8 +8,8 @@ from getgather.api.routes.link.types import (
     TokenLookupResponse,
 )
 from getgather.hosted_link_manager import HostedLinkManager, SessionData, SessionDataUpdate
+from getgather.logs import logger
 
-logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/link", tags=["link"])
 
 

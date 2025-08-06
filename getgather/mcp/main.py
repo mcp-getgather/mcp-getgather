@@ -3,18 +3,15 @@ from typing import Any
 from fastmcp import Context, FastMCP
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools.tool import ToolResult
-from fastmcp.utilities.logging import get_logger
 
-from getgather.mcp.shared import poll_status_hosted_link, auth_hosted_link
-from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.auto_import import auto_import
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.connectors.spec_loader import BrandIdEnum
+from getgather.logs import logger
+from getgather.mcp.auto_import import auto_import
+from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.session_manager import SessionManager
 from getgather.mcp.shared import auth_hosted_link, poll_status_hosted_link
-
-logger = get_logger(__name__)
 
 auto_import("getgather.mcp.brand")
 
@@ -66,7 +63,7 @@ async def poll_auth(
 
 
 for prefix, brand_mcp in BrandMCPBase.registry.items():
-    print(f"Mounting {prefix} with {brand_mcp}")
+    logger.info(f"Mounting {prefix} with {brand_mcp}")
     mcp.mount(server=brand_mcp, prefix=prefix)
 
 mcp_app = mcp.http_app(path="/")

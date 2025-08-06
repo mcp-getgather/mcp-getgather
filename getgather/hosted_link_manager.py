@@ -1,12 +1,11 @@
-import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, ClassVar
 
 from nanoid import generate
 
 from getgather.camel_model import CamelModel
+from getgather.logs import logger
 
-logger = logging.getLogger(__name__)
 FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
 
 

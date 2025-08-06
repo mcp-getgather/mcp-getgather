@@ -1,16 +1,12 @@
-from fastmcp import Context
 from typing import Any
-from getgather.connectors.spec_models import Schema as SpecSchema
-from getgather.parse import parse_html
+
+from fastmcp import Context
 
 from getgather.connectors.spec_loader import BrandIdEnum
-
-from fastmcp.utilities.logging import get_logger
-
-from getgather.mcp.shared import extract, start_browser_session
+from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.mcp.registry import BrandMCPBase
-
-logger = get_logger(__name__)
+from getgather.mcp.shared import extract, start_browser_session
+from getgather.parse import parse_html
 
 ebird_mcp = BrandMCPBase(prefix="ebird", name="Ebird MCP")
 

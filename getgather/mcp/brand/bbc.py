@@ -1,15 +1,10 @@
-from fastmcp import Context
 from typing import Any
 
+from fastmcp import Context
+
 from getgather.connectors.spec_loader import BrandIdEnum
-
-from fastmcp.utilities.logging import get_logger
-
-from getgather.mcp.shared import extract
 from getgather.mcp.registry import BrandMCPBase
-
-logger = get_logger(__name__)
-
+from getgather.mcp.shared import extract
 
 bbc_mcp = BrandMCPBase(prefix="bbc", name="BBC MCP")
 

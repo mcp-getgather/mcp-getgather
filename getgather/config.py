@@ -1,9 +1,9 @@
 from pathlib import Path
+
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing_extensions import Self
 
-from getgather.logs import logger
+from getgather.logs import logger, setup_logging
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 
@@ -64,17 +64,15 @@ class Settings(BaseSettings):
     @field_validator("LOG_LEVEL", mode="after")
     @classmethod
     def set_log_level(cls, v: str) -> str:
-        logger.setLevel(v)
+        setup_logging(v)
         return v
 
-    def validate_sentry_dsn(self) -> Self:
-        if not self.SENTRY_DSN:
-            from getgather.logs import logger
-
+    @field_validator("SENTRY_DSN", mode="after")
+    @classmethod
+    def validate_sentry_dsn(cls, v: str) -> str:
+        if not v:
             logger.warning("SENTRY_DSN is not set, logging will not be captured in Sentry.")
-        return self
+        return v
 
 
 settings = Settings()
-# normal Pydantic validator would cause circular import due to logger
-settings.validate_sentry_dsn()
