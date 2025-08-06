@@ -25,11 +25,7 @@ For VS Code, Cursor, and other MCP clients which support remote MCP servers:
 {
   "mcpServers": {
     "getgather": {
-      "url": "http://127.0.0.1:8000/mcp",
-      "headers": {
-        "GOODREADS_EMAIL": "example@gmail.com",
-        "GOODREADS_PASSWORD": "examplepassword"
-      }
+      "url": "http://127.0.0.1:8000/mcp"
     }
   }
 }
@@ -44,16 +40,8 @@ For Claude Desktop:
       "command": "npx",
       "args": [
         "mcp-remote",
-        "http://127.0.0.1:8000/mcp",
-        "--header",
-        "GOODREADS_EMAIL: ${GOODREADS_EMAIL}",
-        "--header",
-        "GOODREADS_PASSWORD: ${GOODREADS_PASSWORD}"
-      ],
-      "env": {
-        "GOODREADS_EMAIL": "example@email.com",
-        "GOODREADS_PASSWORD": "examplepassword"
-      }
+        "http://127.0.0.1:8000/mcp"
+      ]
     }
   }
 }

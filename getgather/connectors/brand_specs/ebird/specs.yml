@@ -11,7 +11,7 @@ auth:
       prompt: Password
       selector: input#input-password
     - name: submit
-      type: autoclick
+      type: click
       prompt: Submit
       selector: input#form-submit
     - name: message_error

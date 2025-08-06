@@ -1,4 +1,4 @@
-from fastmcp import FastMCP, Context
+from fastmcp import Context
 from typing import Any
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.parse import parse_html
@@ -8,10 +8,11 @@ from getgather.connectors.spec_loader import BrandIdEnum
 from fastmcp.utilities.logging import get_logger
 
 from getgather.mcp.shared import extract, start_browser_session
+from getgather.mcp.registry import BrandMCPBase
 
 logger = get_logger(__name__)
 
-ebird_mcp = FastMCP[Any](name="Ebird MCP")
+ebird_mcp = BrandMCPBase(prefix="ebird", name="Ebird MCP")
 
 
 @ebird_mcp.tool(tags={"private"})
@@ -28,7 +29,8 @@ async def get_explore_species_list(
     ctx: Context,
 ) -> dict[str, Any]:
     """Get species list from ebird to be explored."""
-    page = await start_browser_session(session_id=ctx.session_id)
+    browser_session = await start_browser_session(session_id=ctx.session_id)
+    page = await browser_session.page()
     await page.goto(f"https://ebird.org/explore")
     await page.wait_for_timeout(1000)
     await page.type("input#species", keyword)
@@ -56,7 +58,8 @@ async def explore_species(
     ctx: Context,
 ) -> dict[str, Any]:
     """Explore species on Ebird from get_explore_species_list."""
-    page = await start_browser_session(session_id=ctx.session_id)
+    browser_session = await start_browser_session(session_id=ctx.session_id)
+    page = await browser_session.page()
     await page.locator("span.SciName").get_by_text(sci_name).click()
     await page.wait_for_load_state("domcontentloaded")
     species_description_html = await page.locator("div.Hero-content").inner_html()

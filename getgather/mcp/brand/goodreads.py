@@ -1,4 +1,4 @@
-from fastmcp import FastMCP, Context
+from fastmcp import Context
 from typing import Any
 
 from getgather.connectors.spec_loader import BrandIdEnum
@@ -7,11 +7,11 @@ from getgather.connectors.spec_loader import BrandIdEnum
 from fastmcp.utilities.logging import get_logger
 
 from getgather.mcp.shared import extract
+from getgather.mcp.registry import BrandMCPBase
 
 logger = get_logger(__name__)
 
-
-goodreads_mcp = FastMCP[Any](name="Goodreads MCP")
+goodreads_mcp = BrandMCPBase(prefix="goodreads", name="Goodreads MCP")
 
 
 @goodreads_mcp.tool(tags={"private"})

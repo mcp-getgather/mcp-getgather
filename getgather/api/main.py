@@ -6,7 +6,7 @@ from os import path
 from typing import Final
 
 import httpx
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response, RedirectResponse
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
@@ -14,10 +14,13 @@ from jinja2 import Template
 
 from getgather.api.routes.auth.endpoints import router as auth_router
 from getgather.api.routes.brands.endpoints import router as brands_router
+from getgather.api.routes.link.endpoints import router as link_router
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.startup import startup
 from getgather.mcp.main import mcp_app
+
+from getgather.hosted_link_manager import HostedLinkManager
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -173,6 +176,25 @@ def health():
     return PlainTextResponse(content=f"OK {int(datetime.now().timestamp())}")
 
 
+@app.get("/link/{session_id}", response_class=HTMLResponse)
+async def link_page(session_id: str):
+    """Serve the hosted link frontend page for user authentication."""
+
+    # Look up the brand from the session store
+    session_data = HostedLinkManager.get_session_data(session_id)
+    if not session_data:
+        raise HTTPException(status_code=404, detail=f"Session ID '{session_id}' not found")
+
+    brand = str(session_data.brand_id)
+    redirect_url = session_data.redirect_url
+
+    file_path = path.join(path.dirname(__file__), "frontend", "link.html")
+    with open(file_path) as f:
+        template = Template(f.read())
+    rendered = template.render(brand=brand, session_id=session_id, redirect_url=redirect_url)
+    return HTMLResponse(content=rendered)
+
+
 IP_CHECK_URL: Final[str] = "https://ifconfig.me/ip"
 
 
@@ -194,4 +216,5 @@ async def extended_health():
 
 app.include_router(brands_router)
 app.include_router(auth_router)
+app.include_router(link_router)
 app.mount("/mcp", mcp_app)
