@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import socket
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -21,6 +22,8 @@ from getgather.startup import startup
 from getgather.mcp.main import mcp_app
 
 from getgather.hosted_link_manager import HostedLinkManager
+
+logger = logging.getLogger(__name__)
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -67,13 +70,13 @@ async def proxy_live_files(file_path: str):
     # Proxy noVNC libraries to unpkg.com
     unpkg_url = f"https://unpkg.com/@novnc/novnc@1.3.0/{file_path}"
 
-    print(f"Proxying {file_path} to {unpkg_url}")
+    logger.info(f"Proxying {file_path} to {unpkg_url}")
 
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(unpkg_url)
             content = response.content
-            print(f"Response's length: {len(content)}")
+            logger.debug(f"Response's length: {len(content)}")
 
             # Filter out headers that can cause decoding issues
             headers = dict(response.headers)
@@ -113,7 +116,7 @@ async def vnc_websocket_proxy(websocket: WebSocket):
             except WebSocketDisconnect:
                 websocket_closed.set()
             except Exception as e:
-                print(f"Error forwarding to VNC: {e}")
+                logger.error(f"Error forwarding to VNC: {e}")
                 websocket_closed.set()
 
         async def forward_from_vnc():
@@ -130,7 +133,7 @@ async def vnc_websocket_proxy(websocket: WebSocket):
                     except socket.error:
                         continue
             except Exception as e:
-                print(f"Error forwarding from VNC: {e}")
+                logger.error(f"Error forwarding from VNC: {e}")
             finally:
                 websocket_closed.set()
 
