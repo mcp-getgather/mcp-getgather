@@ -78,7 +78,7 @@ jobs:
       - name: Install Chromium for Playwright tests
         run: uv run playwright install chromium
 
-      - run: uv run pytest -s tests/api/test_webui_auth.py
+      - run: uv run pytest -n 8 -s tests/api/test_webui_auth.py
         env:
           ACME_EMAIL: joe@example.com
           ACME_PASSWORD: trustno1
