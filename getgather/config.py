@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "local"
     APP_NAME: str = "getgather-local"
     LOG_LEVEL: str = "INFO"
+    GIT_REV: str = ""
 
     # Logging
     SENTRY_DSN: str = ""
