@@ -28,6 +28,9 @@ jobs:
       - name: Build the front-end
         run: npm run build
 
+      - name: Install Chromium for MCP tests
+        run: uv run playwright install chromium
+
       - name: Run the API server
         run: uv run -m uvicorn getgather.api.main:app --host 127.0.0.1 --port 8000 &
         env:
