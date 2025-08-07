@@ -11,7 +11,7 @@
 ### 1. Clone Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/mcp-getgather/mcp-getgather.git
 cd mcp-getgather
 ```
 
@@ -20,11 +20,8 @@ cd mcp-getgather
 #### Python Dependencies
 
 ```bash
-# Using uv (recommended)
+# Using uv
 uv sync
-
-# Or using pip
-pip install -e .
 ```
 
 #### Node.js Dependencies
@@ -43,12 +40,7 @@ Run both frontend and backend:
 npm run dev
 ```
 
-Starts:
-
-- Backend: FastAPI server on `http://localhost:8000`
-- Frontend: Vite dev server on `http://localhost:5173`
-
-Frontend proxies API calls to backend.
+**Open in browser: `http://localhost:5173`**
 
 ### Separate Development Servers
 
@@ -60,6 +52,8 @@ npm run dev:backend
 uvicorn getgather.api.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
+**Open in browser: `http://localhost:8000`**
+
 #### Frontend Only
 
 ```bash
@@ -67,6 +61,8 @@ npm run dev:frontend
 # or
 vite
 ```
+
+**Open in browser: `http://localhost:5173`**
 
 ## Building for Production
 
@@ -85,7 +81,9 @@ This compiles TypeScript and builds the React app to `getgather/api/frontend/`.
 uvicorn getgather.api.main:app --host 0.0.0.0 --port 8000
 ```
 
-Frontend will be available at `http://localhost:8000`.
+**Open in browser: `http://localhost:8000`**
+
+In production mode, FastAPI serves both the API and the built frontend.
 
 ## Development Workflow
 
@@ -120,8 +118,8 @@ mcp-getgather/
 
 ### Port Conflicts
 
-- Backend: Change port in `package.json` dev:backend script
-- Frontend: Set `--port` flag: `vite --port 3000`
+- **Backend**: Change port in `package.json` dev:backend script
+- **Frontend**: Vite will automatically try alternative ports (5174, 5175, etc.)
 
 ### Build Issues
 
@@ -131,7 +129,6 @@ rm -rf node_modules package-lock.json
 npm install
 
 # Clear build cache
-rm -rf getgather/api/frontend
 npm run build
 ```
 
