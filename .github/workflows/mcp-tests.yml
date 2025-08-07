@@ -23,7 +23,7 @@ jobs:
         run: uv run patchright install chromium
 
       - name: Run the server
-        run: uv run poe serve > >(tee /dev/stdout) 2> >(tee /dev/stderr >&2) &
+        run: uv run -m uvicorn getgather.api.main:app &
         env:
           DISPLAY: :1
 
