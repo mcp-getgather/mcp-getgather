@@ -10,8 +10,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "check-format": "prettier --check \"**/*.{html,js,jsx,ts,tsx}\"",
-    "format": "prettier --write \"**/*.{html,js,jsx,ts,tsx}\""
+    "check-format": "prettier --check \"**/*.{html,js,jsx,ts,tsx,css,json,md}\"",
+    "format": "prettier --write \"**/*.{html,js,jsx,ts,tsx,css,json,md}\""
   },
   "dependencies": {
     "react": "^19.1.0",
