@@ -60,6 +60,13 @@ class Settings(BaseSettings):
             path.mkdir(parents=True, exist_ok=True)
         return path
 
+    @property
+    def database_path(self) -> Path:
+        """Path to SQLite database file in the main data directory."""
+        data_dir = PROJECT_DIR / "data"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        return data_dir / "getgather.db"
+
     @field_validator("LOG_LEVEL", mode="after")
     @classmethod
     def set_log_level(cls, v: str) -> str:
