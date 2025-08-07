@@ -22,13 +22,19 @@ jobs:
       - name: Install Patchright and Chromium
         run: uv run patchright install chromium
 
-      - name: Run the server
-        run: uv run -m uvicorn getgather.api.main:app &
+      - name: Prepare front-end environment
+        uses: ./.github/actions/prepare-frontend
+
+      - name: Build the front-end
+        run: npm run build
+
+      - name: Run the API server
+        run: uv run -m uvicorn getgather.api.main:app --host 127.0.0.1 --port 8000 &
         env:
           DISPLAY: :1
 
-      - name: Wait for the server to start
-        run: while ! curl -s 'http://localhost:8000' | grep 'GetGather'; do sleep 1; done
+      - name: Wait for the API server to start
+        run: while ! curl -s 'http://localhost:8000/health' | grep 'OK'; do sleep 1; done
         timeout-minutes: 3
 
       - name: Run the tests
