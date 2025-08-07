@@ -59,7 +59,7 @@
   <body>
     <!-- Template data injection -->
     <p id="brand" hidden>{{ brand }}</p>
-    <p id="session-id" hidden>{{ session_id }}</p>
+    <p id="link-id" hidden>{{ link_id }}</p>
     {% if redirect_url %}
     <p id="redirect-url" hidden>{{ redirect_url|tojson }}</p>
     {% endif %}
@@ -73,7 +73,7 @@
 
       const CONFIG = {
         brand: document.querySelector("#brand").textContent,
-        sessionId: document.querySelector("#session-id").textContent,
+        linkId: document.querySelector("#link-id").textContent,
         redirectUrl: document.querySelector("#redirect-url")?.textContent
           ? JSON.parse(document.querySelector("#redirect-url").textContent)
           : null,
@@ -81,8 +81,8 @@
 
       function getBrandIcon(brand) {
         return brand
-          ? `/assets/logos/${brand}.svg`
-          : "/assets/logos/default.svg";
+          ? `/static/assets/logos/${brand}.svg`
+          : "/static/assets/logos/default.svg";
       }
 
       function getBrandName(state) {
@@ -99,7 +99,7 @@
 
       let state = {
         brand: CONFIG.brand,
-        sessionId: CONFIG.sessionId,
+        linkId: CONFIG.linkId,
         redirectUrl: CONFIG.redirectUrl,
         view: "loading", // "loading" | "input" | "success" | "error"
         message: "Connecting...",
@@ -194,7 +194,7 @@
                 <img class="brand-icon"
                      src="${getBrandIcon(state.brand)}"
                      alt="${escapeHtml(state.brand || "")}"
-                     onerror="this.src='/assets/logos/${escapeHtml(state.brand)}.png'; this.onerror=function(){this.src='/assets/logos/default.svg';}">
+                     onerror="this.src='/static/assets/logos/${escapeHtml(state.brand)}.png'; this.onerror=function(){this.src='/static/assets/logos/default.svg';}">
                 <h1 class="auth-title">${escapeHtml(getBrandName(state))}</h1>
               </div>
               <p class="progress" data-testid="progress">${escapeHtml(state.message)}</p>
@@ -266,27 +266,24 @@
         try {
           let profileId = state.action?.profile_id;
           if (!state.action) {
-            const sessionResponse = await fetch(
-              `/link/status/${state.sessionId}`,
-            );
-            if (sessionResponse.ok) {
-              const sessionData = await sessionResponse.json();
-              profileId = sessionData?.profile_id;
+            const linkResponse = await fetch(`/link/status/${state.linkId}`);
+            if (linkResponse.ok) {
+              const linkData = await linkResponse.json();
+              profileId = linkData?.profile_id;
 
-              // Check if session is expired
-              if (sessionData?.status === "expired") {
+              // Check if link is expired
+              if (linkData?.status === "expired") {
                 updateState({
                   view: "error",
                   message:
-                    "This session has expired. Please start a new authentication process.",
+                    "This link has expired. Please start a new authentication process.",
                 });
                 return;
               }
-            } else if (sessionResponse.status === 404) {
+            } else if (linkResponse.status === 404) {
               updateState({
                 view: "error",
-                message:
-                  "Session not found. Please check the URL and try again.",
+                message: "Link not found. Please check the URL and try again.",
               });
               return;
             }
@@ -424,7 +421,7 @@
       function handleSuccess() {
         if (state.redirectUrl) {
           setTimeout(() => {
-            window.location.href = `${state.redirectUrl}?profile_id=${state.sessionId}`;
+            window.location.href = `${state.redirectUrl}?profile_id=${state.profileId}`;
           }, 2000);
         } else {
           setTimeout(() => window.close(), 2000);
@@ -445,21 +442,21 @@
             profileId,
           };
 
-          const response = await fetch(`/link/status/${state.sessionId}`, {
+          const response = await fetch(`/link/status/${state.linkId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(updateData),
           });
 
-          // Handle expired session gracefully
+          // Handle expired link gracefully
           if (response.status === 400) {
             const errorData = await response.json();
             if (errorData.detail && errorData.detail.includes("expired")) {
-              console.warn("Session expired - unable to update status");
+              console.warn("Link expired - unable to update status");
               updateState({
                 view: "error",
                 message:
-                  "This session has expired. Please start a new authentication process.",
+                  "This link has expired. Please start a new authentication process.",
               });
               return;
             }
@@ -480,10 +477,10 @@
       // Always render initial state first
       render();
 
-      if (!state.sessionId || state.sessionId === "link") {
+      if (!state.linkId || state.linkId === "link") {
         updateState({
           view: "error",
-          message: "Invalid session ID. Please check the URL.",
+          message: "Invalid link ID. Please check the URL.",
         });
       } else {
         // Start auth flow immediately since we have all data from server template

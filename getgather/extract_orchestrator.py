@@ -51,9 +51,7 @@ class ExtractOrchestrator:
         self.state = ExtractState.RUNNING
 
         flow_state = FlowState(brand_id=self.brand_id, type="extract", bundle_dir=self.bundle_dir)
-        await flow_state.init(
-            browser_profile_id=self.browser_profile.profile_id, brand_id=self.brand_id
-        )
+        await flow_state.init(browser_profile_id=self.browser_profile.id, brand_id=self.brand_id)
         if flow_state.spec.extract is None:
             logger.warning(f"No extract flow defined for {self.brand_id}!")
             self.state = ExtractState.FINISHED
@@ -67,9 +65,7 @@ class ExtractOrchestrator:
                 page = await session.page()
                 logger.info(
                     f"🔥 Starting extraction for {self.brand_id}",
-                    extra={
-                        "profile_id": self.browser_profile.profile_id,
-                    },
+                    extra={"profile_id": self.browser_profile.id},
                 )
                 while not flow_state.finished:
                     flow_state = await flow_step(page=page, flow_state=flow_state)
@@ -80,9 +76,7 @@ class ExtractOrchestrator:
                         bundle_file_path = self.bundle_dir / flow_state.bundle.name
                         logger.info(
                             (f"📦 Saving {flow_state.bundle.name} to {bundle_file_path}"),
-                            extra={
-                                "profile_id": self.browser_profile.profile_id,
-                            },
+                            extra={"profile_id": self.browser_profile.id},
                         )
                         self.bundles.append(
                             BundleOutput(
@@ -98,9 +92,7 @@ class ExtractOrchestrator:
                                 f.write(flow_state.bundle.content)
                             logger.info(
                                 (f"📦 {flow_state.bundle.name} saved to {bundle_file_path}"),
-                                extra={
-                                    "profile_id": self.browser_profile.profile_id,
-                                },
+                                extra={"profile_id": self.browser_profile.id},
                             )
                         # Prevent re-processing of bundle.
                         flow_state.bundle = None if not flow_state.finished else flow_state.bundle
@@ -108,19 +100,13 @@ class ExtractOrchestrator:
                 # TODO: Some way to return the file names and the raw data to the object and store in `files`
 
                 logger.info(
-                    "✅ Extraction finished.",
-                    extra={
-                        "profile_id": self.browser_profile.profile_id,
-                    },
+                    "✅ Extraction finished.", extra={"profile_id": self.browser_profile.id}
                 )
 
                 if flow_state.spec.parse:
                     try:
                         logger.info(
-                            "🗂️ Parsing bundles ...",
-                            extra={
-                                "profile_id": self.browser_profile.profile_id,
-                            },
+                            "🗂️ Parsing bundles ...", extra={"profile_id": self.browser_profile.id}
                         )
 
                         # Snapshot before iterating to avoid mutation while looping.
@@ -156,7 +142,7 @@ class ExtractOrchestrator:
 
             except Exception as e:
                 self.state = ExtractState.ERROR
-                filename = f"{self.browser_profile.profile_id}_{datetime.now().strftime('%Y%m%d_%H%M')}.png"
+                filename = f"{self.browser_profile.id}_{datetime.now().strftime('%Y%m%d_%H%M')}.png"
                 filepath = settings.screenshots_dir / filename
                 if page:
                     await page.screenshot(path=str(filepath), full_page=True)
@@ -168,7 +154,7 @@ class ExtractOrchestrator:
                             brand_id=self.brand_id,
                             error_type="extract_flow_error",
                             flow_state=flow_state.model_dump(),
-                            browser_profile_id=self.browser_profile.profile_id,
+                            browser_profile_id=self.browser_profile.id,
                             page_content=html,
                             screenshot_path=filepath,
                         )
@@ -182,7 +168,7 @@ class ExtractOrchestrator:
                             brand_id=self.brand_id,
                             error_type="extract_flow_error",
                             flow_state=flow_state.model_dump(),
-                            browser_profile_id=self.browser_profile.profile_id,
+                            browser_profile_id=self.browser_profile.id,
                         )
                         sentry_sdk.capture_exception(e)
                 raise e
@@ -191,7 +177,7 @@ class ExtractOrchestrator:
 
     @property
     def bundle_dir(self) -> Path:
-        dir = settings.bundles_dir / self.browser_profile.profile_id / self.brand_id
+        dir = settings.bundles_dir / self.browser_profile.id / self.brand_id
         if not dir.exists():
             dir.mkdir(parents=True, exist_ok=True)
         return dir

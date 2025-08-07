@@ -25,7 +25,7 @@ class HostedLinkTokenRequest(BaseModel):
 class HostedLinkTokenResponse(BaseModel):
     """Response from creating a hosted link token."""
 
-    session_id: str = Field(description="6-character session identifier")
+    link_id: str = Field(description="6-character link identifier")
     # option to not return profile_id in the response
     profile_id: str | None = Field(description="Browser profile identifier", default=None)
     hosted_link_url: str = Field(description="Complete hosted link URL")
@@ -35,7 +35,7 @@ class HostedLinkTokenResponse(BaseModel):
 class TokenLookupResponse(BaseModel):
     """Response from token lookup."""
 
-    session_id: str = Field(description="6-character session identifier")
+    link_id: str = Field(description="6-character link identifier")
     profile_id: str | None = Field(description="Browser profile identifier", default=None)
     brand_id: str
     redirect_url: str | None

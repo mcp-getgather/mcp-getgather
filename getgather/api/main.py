@@ -49,7 +49,10 @@ app = FastAPI(
 
 
 STATIC_ASSETS_DIR = path.abspath(path.join(path.dirname(__file__), "..", "static", "assets"))
-app.mount("/assets", StaticFiles(directory=STATIC_ASSETS_DIR), name="assets")
+BUILD_ASSETS_DIR = path.abspath(path.join(path.dirname(__file__), "frontend", "assets"))
+
+app.mount("/static/assets", StaticFiles(directory=STATIC_ASSETS_DIR), name="assets")
+app.mount("/assets", StaticFiles(directory=BUILD_ASSETS_DIR), name="assets")
 
 
 @app.get("/live")
@@ -60,7 +63,7 @@ def read_live():
 @app.get("/live/{file_path:path}")
 async def proxy_live_files(file_path: str):
     # noVNC lite's main web UI
-    if file_path == "" or file_path == "index.html":
+    if file_path == "" or file_path == "old-index.html":
         local_file_path = path.join(path.dirname(__file__), "frontend", "live.html")
         with open(local_file_path) as f:
             return HTMLResponse(content=f.read())
@@ -88,7 +91,7 @@ async def proxy_live_files(file_path: str):
 
 @app.get("/", response_class=HTMLResponse)
 def index():
-    file_path = path.join(path.dirname(__file__), "frontend", "index.html")
+    file_path = path.join(path.dirname(__file__), "frontend", "old-index.html")
     with open(file_path) as f:
         return HTMLResponse(content=f.read())
 
@@ -172,6 +175,15 @@ def start(brand: str):
     return HTMLResponse(content=rendered)
 
 
+@app.get("/activities")
+def activities():
+    file_path = path.join(path.dirname(__file__), "frontend", "index.html")
+    with open(file_path) as f:
+        template = Template(f.read())
+    rendered = template.render()
+    return HTMLResponse(content=rendered)
+
+
 @app.get("/health")
 def health():
     return PlainTextResponse(
@@ -179,22 +191,22 @@ def health():
     )
 
 
-@app.get("/link/{session_id}", response_class=HTMLResponse)
-async def link_page(session_id: str):
+@app.get("/link/{link_id}", response_class=HTMLResponse)
+async def link_page(link_id: str):
     """Serve the hosted link frontend page for user authentication."""
 
-    # Look up the brand from the session store
-    session_data = HostedLinkManager.get_session_data(session_id)
-    if not session_data:
-        raise HTTPException(status_code=404, detail=f"Session ID '{session_id}' not found")
+    # Look up the brand from the link store
+    link_data = HostedLinkManager.get_link_data(link_id)
+    if not link_data:
+        raise HTTPException(status_code=404, detail=f"Link ID '{link_id}' not found")
 
-    brand = str(session_data.brand_id)
-    redirect_url = session_data.redirect_url
+    brand = str(link_data.brand_id)
+    redirect_url = link_data.redirect_url
 
     file_path = path.join(path.dirname(__file__), "frontend", "link.html")
     with open(file_path) as f:
         template = Template(f.read())
-    rendered = template.render(brand=brand, session_id=session_id, redirect_url=redirect_url)
+    rendered = template.render(brand=brand, link_id=link_id, redirect_url=redirect_url)
     return HTMLResponse(content=rendered)
 
 
@@ -203,8 +215,7 @@ IP_CHECK_URL: Final[str] = "https://ifconfig.me/ip"
 
 @app.get("/extended-health")
 async def extended_health():
-    browser_profile = BrowserProfile.create()
-    session = await BrowserSession.get(browser_profile)
+    session = await BrowserSession.get(BrowserProfile())
     try:
         await session.start()
         page = await session.page()

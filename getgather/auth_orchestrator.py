@@ -71,7 +71,7 @@ class AuthOrchestrator:
         try:
             browser_session = await BrowserSession.get(self.browser_profile)
             await self.state.init(
-                browser_profile_id=self.browser_profile.profile_id, brand_id=self.brand_id
+                browser_profile_id=self.browser_profile.id, brand_id=self.brand_id
             )
 
             # Attach user context to Sentry as soon as we have it.
@@ -103,28 +103,26 @@ class AuthOrchestrator:
                 if self.state.finished:
                     logger.info(
                         f"✅ Auth flow for {self.brand_id} is complete",
-                        extra={"profile_id": self.browser_profile.profile_id},
+                        extra={"profile_id": self.browser_profile.id},
                     )
                     self.status = AuthStatus.FINISHED
                 # Check if we need user input
                 elif self.state.prompt:
                     logger.info(
                         f"Auth flow for {self.brand_id} needs input",
-                        extra={"profile_id": self.browser_profile.profile_id},
+                        extra={"profile_id": self.browser_profile.id},
                     )
                     self.status = AuthStatus.NEED_INPUT
                 elif self.state.paused:
                     logger.info(
                         f"🕒 Auth flow for {self.brand_id} is paused",
-                        extra={"profile_id": self.browser_profile.profile_id},
+                        extra={"profile_id": self.browser_profile.id},
                     )
                     self.status = AuthStatus.PAUSED
         except Exception as e:
             self.status = AuthStatus.ERROR
             self.state.error = str(e)
-            filename = (
-                f"{browser_session.profile.profile_id}_{datetime.now().strftime('%Y%m%d_%H%M')}.png"
-            )
+            filename = f"{browser_session.profile.id}_{datetime.now().strftime('%Y%m%d_%H%M')}.png"
             filepath = settings.screenshots_dir / filename
             await page.screenshot(path=str(filepath), full_page=True)
             html = await page.content()
@@ -140,7 +138,7 @@ class AuthOrchestrator:
                     brand_id=self.brand_id,
                     error_type="auth_flow_error",
                     flow_state=self.state.model_dump(),
-                    browser_profile_id=browser_session.profile.profile_id,
+                    browser_profile_id=browser_session.profile.id,
                     page_content=html,
                     screenshot_path=filepath,
                 )
@@ -157,7 +155,7 @@ class AuthOrchestrator:
     async def finalize(self) -> None:
         logger.info(
             f"🚩 Finalizing auth for {self.brand_id}",
-            extra={"profile_id": self.browser_profile.profile_id},
+            extra={"profile_id": self.browser_profile.id},
         )
         browser_session = await BrowserSession.get(self.browser_profile)
         await browser_session.stop()

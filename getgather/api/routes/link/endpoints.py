@@ -7,39 +7,36 @@ from getgather.api.routes.link.types import (
     HostedLinkTokenResponse,
     TokenLookupResponse,
 )
-from getgather.hosted_link_manager import HostedLinkManager, SessionData, SessionDataUpdate
+from getgather.connectors.spec_loader import BrandIdEnum
+from getgather.hosted_link_manager import HostedLinkManager, LinkDataUpdate
 from getgather.logs import logger
 
 router = APIRouter(prefix="/link", tags=["link"])
 
 
-def get_session_data(session_id: str) -> SessionData | None:
-    return HostedLinkManager.get_session_data(session_id)
-
-
 @router.post("/create", response_model=HostedLinkTokenResponse)
-async def create_hosted_link_session(
+async def create_hosted_link(
     request: Request,
     hosted_link_request: Annotated[
-        HostedLinkTokenRequest, "Request data for creating a hosted link session."
+        HostedLinkTokenRequest, "Request data for creating a hosted link."
     ],
 ) -> HostedLinkTokenResponse:
-    logger.info(f"Creating hosted link session for brand: {hosted_link_request.brand_id}")
+    logger.info(f"Creating hosted link for brand: {hosted_link_request.brand_id}")
     try:
         redirect_url = hosted_link_request.redirect_url or ""
-        session_data = HostedLinkManager.create_session(
-            brand_id=hosted_link_request.brand_id,
+        link_data = HostedLinkManager.create_link(
+            brand_id=BrandIdEnum(hosted_link_request.brand_id),
             redirect_url=redirect_url,
             url_lifetime_seconds=hosted_link_request.url_lifetime_seconds,
             profile_id=hosted_link_request.profile_id,
         )
-        session_id = session_data["session_id"]
-        expiration = session_data["expiration"]
-        profile_id = session_data["profile_id"]
+        link_id = link_data["link_id"]
+        expiration = link_data["expiration"]
+        profile_id = link_data["profile_id"]
         base_url = str(request.base_url).rstrip("/")
-        hosted_link_url = f"{base_url}/link/{session_id}"
+        hosted_link_url = f"{base_url}/link/{link_id}"
         return HostedLinkTokenResponse(
-            session_id=session_id,
+            link_id=link_id,
             profile_id=profile_id,
             hosted_link_url=hosted_link_url,
             expiration=expiration,
@@ -47,95 +44,93 @@ async def create_hosted_link_session(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating hosted link session: {e}", exc_info=True)
+        logger.error(f"Error creating hosted link: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error while creating hosted link session",
+            detail="Internal server error while creating hosted link",
         )
 
 
-@router.get("/status/{session_id}", response_model=TokenLookupResponse)
-async def get_hosted_link_session(
-    session_id: str,
+@router.get("/status/{link_id}", response_model=TokenLookupResponse)
+async def get_hosted_link(
+    link_id: str,
 ) -> TokenLookupResponse:
-    logger.info(f"Retrieving hosted link session: {session_id}")
+    logger.info(f"Retrieving hosted link: {link_id}")
     try:
-        session_data = HostedLinkManager.get_session_data(session_id)
-        if not session_data:
+        link_data = HostedLinkManager.get_link_data(link_id)
+        if not link_data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Hosted link session '{session_id}' not found",
+                detail=f"Hosted link '{link_id}' not found",
             )
 
         return TokenLookupResponse(
-            session_id=session_id,
-            profile_id=session_data.profile_id,
-            brand_id=str(session_data.brand_id),
-            redirect_url=session_data.redirect_url,
+            link_id=link_id,
+            profile_id=link_data.profile_id,
+            brand_id=str(link_data.brand_id),
+            redirect_url=link_data.redirect_url,
             webhook=None,
-            status=str(session_data.status),
-            created_at=str(session_data.created_at),
-            expires_at=str(session_data.expires_at),
-            extract_result=session_data.extract_result,
-            message=session_data.status_message or "Auth in progress...",
+            status=str(link_data.status),
+            created_at=str(link_data.created_at),
+            expires_at=str(link_data.expires_at),
+            extract_result=link_data.extract_result,
+            message=link_data.status_message or "Auth in progress...",
         )
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error retrieving hosted link session: {e}", exc_info=True)
+        logger.error(f"Error retrieving hosted link: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error while retrieving hosted link session",
+            detail="Internal server error while retrieving hosted link",
         )
 
 
-@router.patch("/status/{session_id}")
-async def update_hosted_link_session_status(
-    session_id: str,
-    update_data: SessionDataUpdate,
+@router.patch("/status/{link_id}")
+async def update_hosted_link(
+    link_id: str,
+    update_data: LinkDataUpdate,
 ) -> TokenLookupResponse:
-    logger.info(f"Updating hosted link session status: {session_id}")
+    logger.info(f"Updating hosted link status: {link_id}")
     try:
-        session_data = HostedLinkManager.get_session_data(session_id)
-        if not session_data:
+        link_data = HostedLinkManager.get_link_data(link_id)
+        if not link_data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Hosted link session '{session_id}' not found",
+                detail=f"Hosted link '{link_id}' not found",
             )
 
-        updated_session = HostedLinkManager.update_session(session_id, update_data)
-        if not updated_session:
-            if HostedLinkManager.is_expired(session_data):
+        updated_link = HostedLinkManager.update_link(link_id, update_data)
+        if not updated_link:
+            if HostedLinkManager.is_expired(link_data):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Hosted link session '{session_id}' has expired",
+                    detail=f"Hosted link '{link_id}' has expired",
                 )
             else:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Hosted link session '{session_id}' not found for update",
+                    detail=f"Hosted link '{link_id}' not found for update",
                 )
 
-        logger.info(
-            f"Updated hosted link session {session_id} with status: {updated_session.status}"
-        )
+        logger.info(f"Updated hosted link {link_id} with status: {updated_link.status}")
         return TokenLookupResponse(
-            session_id=session_id,
-            profile_id=updated_session.profile_id,
-            brand_id=str(updated_session.brand_id),
-            redirect_url=updated_session.redirect_url,
+            link_id=link_id,
+            profile_id=updated_link.profile_id,
+            brand_id=str(updated_link.brand_id),
+            redirect_url=updated_link.redirect_url,
             webhook=None,
-            status=str(updated_session.status),
-            created_at=str(updated_session.created_at),
-            expires_at=str(updated_session.expires_at),
-            extract_result=updated_session.extract_result,
-            message="Session status updated successfully",
+            status=str(updated_link.status),
+            created_at=str(updated_link.created_at),
+            expires_at=str(updated_link.expires_at),
+            extract_result=updated_link.extract_result,
+            message="Link status updated successfully",
         )
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating hosted link session status: {e}", exc_info=True)
+        logger.error(f"Error updating hosted link status: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error while updating hosted link session status",
+            detail="Internal server error while updating hosted link status",
         )

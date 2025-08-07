@@ -62,10 +62,10 @@ async def auth_flow(
     try:
         # Initialize the auth manager
         if auth_request.profile_id:
-            browser_profile = BrowserProfile.get(profile_id=auth_request.profile_id)
+            browser_profile = BrowserProfile(id=auth_request.profile_id)
         else:
-            # TODO: allow web api to pass into browser config
-            browser_profile = BrowserProfile.create()
+            browser_profile = BrowserProfile()
+
         browser_session = await BrowserSession.get(browser_profile)
         await browser_session.start()
         auth_orchestrator = AuthOrchestrator(
@@ -80,7 +80,7 @@ async def auth_flow(
             if state.error:
                 logger.warning(
                     f"❗ Unauthenticated terminal page during auth: {state.error}",
-                    extra={"profile_id": browser_profile.profile_id},
+                    extra={"profile_id": browser_profile.id},
                 )
             elif auth_request.extract:
                 extract_orchestrator = ExtractOrchestrator(
@@ -90,7 +90,7 @@ async def auth_flow(
                 )
                 await extract_orchestrator.extract_flow()
                 extract_result = ExtractResult(
-                    profile_id=browser_profile.profile_id,
+                    profile_id=browser_profile.id,
                     state=extract_orchestrator.state,
                     bundles=extract_orchestrator.bundles,
                 )
@@ -103,7 +103,7 @@ async def auth_flow(
             )
         # Convert response to API format
         return AuthFlowResponse(
-            profile_id=browser_profile.profile_id,
+            profile_id=browser_profile.id,
             state=auth_orchestrator.state,
             status=auth_orchestrator.status,
             extract_result=extract_result,
