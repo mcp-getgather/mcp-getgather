@@ -31,7 +31,7 @@ auth:
   pages:
     - name: Go to Sign in page
       fields: [sign_in]
-    - name: Fill in email 
+    - name: Fill in email
       fields: [email, email_continue]
     - name: Fill in password
       fields: [password, remember_me, sign_in_submit]
