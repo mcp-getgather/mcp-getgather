@@ -18,20 +18,19 @@ class BrowserStartupError(HTTPException):
 
 
 class BrowserSession:
-    _sessions: ClassVar[dict[str, BrowserSession]] = {}
+    _sessions: ClassVar[dict[str, BrowserSession]] = {}  # tracking profile_id -> session
 
-    def __init__(self, profile: BrowserProfile):
-        self.profile: BrowserProfile = profile
+    def __init__(self, profile_id: str):
+        self.profile: BrowserProfile = BrowserProfile(id=profile_id)
         self._playwright: Playwright | None = None
         self._context: BrowserContext | None = None
 
     @classmethod
     async def get(cls, profile: BrowserProfile) -> BrowserSession:
-        await profile.init()
-        if profile.profile_id in cls._sessions:  # retrieve active session
-            return cls._sessions[profile.profile_id]
+        if profile.id in cls._sessions:  # retrieve active session
+            return cls._sessions[profile.id]
         else:  # create new session
-            return BrowserSession(profile)
+            return BrowserSession(profile.id)
 
     @property
     def context(self) -> BrowserContext:
@@ -51,20 +50,20 @@ class BrowserSession:
 
     async def start(self):
         try:
-            if self.profile.profile_id in BrowserSession._sessions:
+            if self.profile.id in BrowserSession._sessions:
                 # Session already started
                 return
 
-            BrowserSession._sessions[self.profile.profile_id] = self
+            BrowserSession._sessions[self.profile.id] = self
 
             logger.info(
-                f"Starting new session with profile {self.profile.profile_id}",
-                extra={"profile_id": self.profile.profile_id},
+                f"Starting new session with profile {self.profile.id}",
+                extra={"profile_id": self.profile.id},
             )
 
             self._playwright = await async_playwright().start()
-            self._context = await self.profile.config.launch(
-                profile_id=self.profile.profile_id, browser_type=self.playwright.chromium
+            self._context = await self.profile.launch(
+                profile_id=self.profile.id, browser_type=self.playwright.chromium
             )
         except Exception as e:
             logger.error(f"Error starting browser: {e}")
@@ -74,7 +73,7 @@ class BrowserSession:
         logger.info(
             "Closing browser",
             extra={
-                "profile_id": self.profile.profile_id,
+                "profile_id": self.profile.id,
             },
         )
         try:
@@ -87,9 +86,9 @@ class BrowserSession:
             await self.playwright.stop()
 
         # clean up local browser profile after playwright is stopped
-        self.profile.config.cleanup(self.profile.profile_id)
+        self.profile.cleanup(self.profile.id)
 
-        del self._sessions[self.profile.profile_id]
+        del self._sessions[self.profile.id]
 
 
 @asynccontextmanager
