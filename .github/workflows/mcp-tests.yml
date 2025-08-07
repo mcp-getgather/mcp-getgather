@@ -1,0 +1,43 @@
+name: MCP Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+
+  mcp-pytest:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup xvfb for screen 0
+        run: Xvfb :1 -screen 0 1920x1080x24 &
+
+      - name: Prepare back-end environment
+        uses: ./.github/actions/prepare-backend
+
+      - name: Install Patchright and Chromium
+        run: uv run patchright install chromium
+
+      - name: Run the server
+        run: uv run poe serve > >(tee /dev/stdout) 2> >(tee /dev/stderr >&2) &
+        env:
+          DISPLAY: :1
+
+      - name: Wait for the server to start
+        run: while ! curl -s 'http://localhost:8000' | grep 'GetGather'; do sleep 1; done
+        timeout-minutes: 3
+
+      - name: Run the tests
+        run: uv run pytest -m "mcp" -s
+        env:
+          DISPLAY: :1
+          HOST: http://localhost:8000
+          BBC_EMAIL: ${{ secrets.BBC_EMAIL }}
+          BBC_PASSWORD: ${{ secrets.BBC_PASSWORD }}
+          CNN_EMAIL: ${{ secrets.CNN_EMAIL }}
+          CNN_PASSWORD: ${{ secrets.CNN_PASSWORD }}
