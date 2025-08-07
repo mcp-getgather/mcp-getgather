@@ -215,8 +215,7 @@ IP_CHECK_URL: Final[str] = "https://ifconfig.me/ip"
 
 @app.get("/extended-health")
 async def extended_health():
-    browser_profile = BrowserProfile.create()
-    session = await BrowserSession.get(browser_profile)
+    session = await BrowserSession.get(BrowserProfile())
     try:
         await session.start()
         page = await session.page()
