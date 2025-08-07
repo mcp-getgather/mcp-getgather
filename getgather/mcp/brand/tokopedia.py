@@ -1,16 +1,15 @@
+import json
 from typing import Any
 from urllib.parse import quote, urlparse
 
 from fastmcp import Context
 from fastmcp.utilities.logging import get_logger
 
-from getgather.connectors.spec_models import Schema as SpecSchema
-from getgather.mcp.shared import start_browser_session
-from urllib.parse import urlparse, quote
 from getgather.actions import handle_graphql_response
-import json
-from getgather.parse import parse_html
+from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.mcp.registry import BrandMCPBase
+from getgather.mcp.shared import start_browser_session
+from getgather.parse import parse_html
 
 logger = get_logger(__name__)
 

@@ -4,8 +4,8 @@ from fastmcp import Context
 from fastmcp.utilities.logging import get_logger
 
 from getgather.connectors.spec_loader import BrandIdEnum
-from getgather.mcp.shared import extract
 from getgather.mcp.registry import BrandMCPBase
+from getgather.mcp.shared import extract
 
 logger = get_logger(__name__)
 
