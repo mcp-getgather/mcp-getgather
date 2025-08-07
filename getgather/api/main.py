@@ -49,7 +49,10 @@ app = FastAPI(
 
 
 STATIC_ASSETS_DIR = path.abspath(path.join(path.dirname(__file__), "..", "static", "assets"))
-app.mount("/assets", StaticFiles(directory=STATIC_ASSETS_DIR), name="assets")
+BUILD_ASSETS_DIR = path.abspath(path.join(path.dirname(__file__), "frontend", "assets"))
+
+app.mount("/static/assets", StaticFiles(directory=STATIC_ASSETS_DIR), name="assets")
+app.mount("/assets", StaticFiles(directory=BUILD_ASSETS_DIR), name="assets")
 
 
 @app.get("/live")
@@ -60,7 +63,7 @@ def read_live():
 @app.get("/live/{file_path:path}")
 async def proxy_live_files(file_path: str):
     # noVNC lite's main web UI
-    if file_path == "" or file_path == "index.html":
+    if file_path == "" or file_path == "old-index.html":
         local_file_path = path.join(path.dirname(__file__), "frontend", "live.html")
         with open(local_file_path) as f:
             return HTMLResponse(content=f.read())
@@ -88,7 +91,7 @@ async def proxy_live_files(file_path: str):
 
 @app.get("/", response_class=HTMLResponse)
 def index():
-    file_path = path.join(path.dirname(__file__), "frontend", "index.html")
+    file_path = path.join(path.dirname(__file__), "frontend", "old-index.html")
     with open(file_path) as f:
         return HTMLResponse(content=f.read())
 
@@ -169,6 +172,15 @@ def start(brand: str):
     with open(file_path) as f:
         template = Template(f.read())
     rendered = template.render(brand=brand)
+    return HTMLResponse(content=rendered)
+
+
+@app.get("/activities")
+def activities():
+    file_path = path.join(path.dirname(__file__), "frontend", "index.html")
+    with open(file_path) as f:
+        template = Template(f.read())
+    rendered = template.render()
     return HTMLResponse(content=rendered)
 
 

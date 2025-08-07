@@ -172,12 +172,12 @@
 
           const icon = document.createElement("img");
           icon.className = "brand-icon";
-          icon.src = `/assets/logos/${brand.id}.svg`;
+          icon.src = `/static/assets/logos/${brand.id}.svg`;
           icon.alt = brand.name;
           icon.onerror = function () {
-            this.src = `/assets/logos/${brand.id}.png`;
+            this.src = `/static/assets/logos/${brand.id}.png`;
             this.onerror = function () {
-              this.src = "/assets/logos/default.svg";
+              this.src = "/static/assets/logos/default.svg";
             };
           };
           card.appendChild(icon);

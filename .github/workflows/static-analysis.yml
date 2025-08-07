@@ -19,6 +19,28 @@ jobs:
 
       - run: uv run ruff format --check .
 
+  frontend-lint:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare front-end environment
+        uses: ./.github/actions/prepare-frontend
+
+      - run: npm run lint
+
+  frontend-format:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare front-end environment
+        uses: ./.github/actions/prepare-frontend
+
+      - run: npm run check-format
+
   python-type-check:
     runs-on: ubuntu-22.04
     steps:
@@ -39,4 +61,4 @@ jobs:
       - name: Prepare back-end environment
         uses: ./.github/actions/prepare-backend
 
-      - run: uv run yamlfix --check $(find . -type f -name '*.yml' -o -name '*.yaml' | grep -v '.venv/')
+      - run: uv run yamlfix --check $(find . -type f -name '*.yml' -o -name '*.yaml' | grep -v -E '\.venv/|node_modules/')

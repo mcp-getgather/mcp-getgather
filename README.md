@@ -12,6 +12,7 @@ To live stream the container desktop, go to `http://localhost:8000/live`.
 
 All additional documentation is located in the [docs](./docs) directory:
 
+- [Local Development Setup](./docs/local-development.md)
 - [Deploying on Dokku](./docs/deploy_dokku.md)
 - [Deploying on Fly.io](./docs/deploy_fly.md)
 - [Deploying on Railway](./docs/deploy_railway.md)
