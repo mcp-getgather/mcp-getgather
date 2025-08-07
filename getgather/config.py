@@ -24,7 +24,8 @@ class Settings(BaseSettings):
     PROFILES_DIR: str = ""
     BUNDLES_DIR: str = ""
     SCREENSHOTS_DIR: str = ""
-    HEADLESS: bool = False
+
+    OPENAI_API_KEY: str = ""
 
     @property
     def brand_spec_dir(self) -> Path:
