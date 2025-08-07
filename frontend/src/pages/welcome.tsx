@@ -1,4 +1,3 @@
-import React from "react";
 import { Zap, Sparkles, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
