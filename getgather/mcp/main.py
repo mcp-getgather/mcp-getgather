@@ -32,7 +32,7 @@ class AuthMiddleware(Middleware):
 
         browser_profile_id = BrandConnectionStore.get_browser_profile_id(brand_id)
         if not browser_profile_id:
-            browser_profile = BrowserProfile.create()
+            browser_profile = BrowserProfile()
             BrandConnectionStore.init_brand_state(brand_id, browser_profile.id)
 
         logger.info(
