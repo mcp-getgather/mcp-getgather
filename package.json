@@ -5,7 +5,7 @@
   "scripts": {
     "predev": "npm run build",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "uvicorn getgather.api.main:app --reload --host 127.0.0.1 --port 8000",
+    "dev:backend": "uv run -m uvicorn getgather.api.main:app --reload --host 127.0.0.1 --port 8000",
     "dev:frontend": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",

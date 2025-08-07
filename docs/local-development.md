@@ -49,7 +49,7 @@ npm run dev
 ```bash
 npm run dev:backend
 # or
-uvicorn getgather.api.main:app --reload --host 127.0.0.1 --port 8000
+uv run -m uvicorn getgather.api.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 **Open in browser: `http://localhost:8000`**
@@ -78,7 +78,7 @@ This compiles TypeScript and builds the React app to `getgather/api/frontend/`.
 
 ```bash
 # Start backend (serves built frontend)
-uvicorn getgather.api.main:app --host 0.0.0.0 --port 8000
+uv run -m uvicorn getgather.api.main:app --host 0.0.0.0 --port 8000
 ```
 
 **Open in browser: `http://localhost:8000`**
