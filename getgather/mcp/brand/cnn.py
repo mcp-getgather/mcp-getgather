@@ -18,4 +18,4 @@ async def get_newsletter(
     ctx: Context,
 ) -> dict[str, Any]:
     """Get bookmarks of cnn."""
-    return await extract(session_id=ctx.session_id, brand_id=BrandIdEnum("cnn"))
+    return await extract(brand_id=BrandIdEnum("cnn"))

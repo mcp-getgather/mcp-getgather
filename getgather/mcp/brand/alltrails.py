@@ -18,4 +18,4 @@ async def get_feed(
     ctx: Context,
 ) -> dict[str, Any]:
     """Get feed of alltrails."""
-    return await extract(session_id=ctx.session_id, brand_id=BrandIdEnum("alltrails"))
+    return await extract(brand_id=BrandIdEnum("alltrails"))

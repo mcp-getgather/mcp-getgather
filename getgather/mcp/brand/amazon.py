@@ -20,7 +20,7 @@ async def get_purchase_history(
     ctx: Context,
 ) -> dict[str, Any]:
     """Get purchase/order history of a amazon."""
-    return await extract(session_id=ctx.session_id, brand_id=BrandIdEnum("amazon"))
+    return await extract(brand_id=BrandIdEnum("amazon"))
 
 
 @amazon_mcp.tool
@@ -29,7 +29,7 @@ async def search_product(
     ctx: Context,
 ) -> dict[str, Any]:
     """Search product on amazon."""
-    browser_session = await start_browser_session(session_id=ctx.session_id)
+    browser_session = await start_browser_session(brand_id=BrandIdEnum("amazon"))
     page = await browser_session.page()
     await page.goto(f"https://www.amazon.com/s?k={keyword}")
     await page.wait_for_selector("div[role='listitem']")
@@ -61,7 +61,7 @@ async def get_product_detail(
     ctx: Context,
 ) -> dict[str, Any]:
     """Get product detail from amazon."""
-    browser_session = await start_browser_session(session_id=ctx.session_id)
+    browser_session = await start_browser_session(brand_id=BrandIdEnum("amazon"))
     page = await browser_session.page()
     if not product_url.startswith("https"):
         product_url = f"https://www.amazon.com/{product_url}"
@@ -78,7 +78,7 @@ async def get_cart_summary(
     ctx: Context,
 ) -> dict[str, Any]:
     """Get cart summary from amazon."""
-    browser_session = await start_browser_session(session_id=ctx.session_id)
+    browser_session = await start_browser_session(brand_id=BrandIdEnum("amazon"))
     page = await browser_session.page()
     await page.goto("https://www.amazon.com/gp/cart/view.html")
     await page.wait_for_selector("div#sc-active-cart")
@@ -92,7 +92,7 @@ async def get_browsing_history(
     ctx: Context,
 ) -> dict[str, Any]:
     """Get browsing history from amazon."""
-    browser_session = await start_browser_session(session_id=ctx.session_id)
+    browser_session = await start_browser_session(brand_id=BrandIdEnum("amazon"))
     page = await browser_session.page()
     await page.goto("https://www.amazon.com/gp/history?ref_=nav_AccountFlyout_browsinghistory")
     await page.wait_for_timeout(1000)

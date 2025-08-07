@@ -3,6 +3,7 @@ from typing import Any
 from fastmcp import Context
 from fastmcp.utilities.logging import get_logger
 
+from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import start_browser_session, stop_browser_session
@@ -20,14 +21,14 @@ async def get_cart(
 ) -> dict[str, Any]:
     """Get cart of amain."""
 
-    browser_session = await start_browser_session(session_id=ctx.session_id)
+    browser_session = await start_browser_session(brand_id=BrandIdEnum("amain"))
     page = await browser_session.page()
 
     await page.goto(f"https://www.amainhobbies.com/shopping-cart")
     await page.wait_for_selector("div.product-list")
     await page.wait_for_timeout(1000)
     html = await page.locator("div.product-list").inner_html()
-    await stop_browser_session(session_id=ctx.session_id)
+    await stop_browser_session(brand_id=BrandIdEnum("amain"))
     spec_schema = SpecSchema.model_validate({
         "bundle": "",
         "format": "html",

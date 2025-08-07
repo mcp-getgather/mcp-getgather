@@ -21,7 +21,7 @@ async def get_purchase_history(
     ctx: Context,
 ) -> dict[str, Any]:
     """Get purchase history of a shopee."""
-    return await extract(session_id=ctx.session_id, brand_id=BrandIdEnum("shopee"))
+    return await extract(brand_id=BrandIdEnum("shopee"))
 
 
 @shopee_mcp.tool
@@ -31,7 +31,7 @@ async def search_product(
     page_number: int = 1,
 ) -> dict[str, Any]:
     """Search product on shopee."""
-    browser_session = await start_browser_session(session_id=ctx.session_id)
+    browser_session = await start_browser_session(brand_id=BrandIdEnum("shopee"))
     page = await browser_session.page()
 
     # URL encode the search keyword

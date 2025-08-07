@@ -18,4 +18,4 @@ async def get_book_list(
     ctx: Context,
 ) -> dict[str, Any]:
     """Get book list from Hardcover.app."""
-    return await extract(session_id=ctx.session_id, brand_id=BrandIdEnum("hardcover"))
+    return await extract(brand_id=BrandIdEnum("hardcover"))

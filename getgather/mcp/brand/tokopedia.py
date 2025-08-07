@@ -6,6 +6,7 @@ from fastmcp import Context
 from fastmcp.utilities.logging import get_logger
 
 from getgather.actions import handle_graphql_response
+from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import start_browser_session
@@ -22,7 +23,7 @@ async def search_product(
     keyword: str,
 ) -> dict[str, Any]:
     """Search product on tokopedia."""
-    browser_session = await start_browser_session(session_id=ctx.session_id)
+    browser_session = await start_browser_session(brand_id=BrandIdEnum("tokopedia"))
     page = await browser_session.page()
 
     # URL encode the search keyword
@@ -56,7 +57,7 @@ async def get_product_details(
     product_url: str,
 ) -> dict[str, Any]:
     """Get product details from tokopedia. Get product_url from search_product tool."""
-    browser_session = await start_browser_session(session_id=ctx.session_id)
+    browser_session = await start_browser_session(brand_id=BrandIdEnum("tokopedia"))
     page = await browser_session.page()
     await page.goto(product_url, wait_until="commit")
     await page.wait_for_selector("h1[data-testid='lblPDPDetailProductName']")
@@ -102,7 +103,7 @@ async def search_shop(
     keyword: str,
 ) -> dict[str, Any]:
     """Search shop on tokopedia."""
-    browser_session = await start_browser_session(session_id=ctx.session_id)
+    browser_session = await start_browser_session(brand_id=BrandIdEnum("tokopedia"))
     page = await browser_session.page()
 
     # URL encode the search keyword
@@ -202,7 +203,7 @@ async def get_shop_details(
     if not target_url:
         return {"error": "Could not determine valid shop URL"}
 
-    browser_session = await start_browser_session(session_id=ctx.session_id)
+    browser_session = await start_browser_session(brand_id=BrandIdEnum("tokopedia"))
     page = await browser_session.page()
     await page.goto(target_url, wait_until="commit")
     await page.wait_for_selector("h1[data-testid='shopNameHeader']")
@@ -230,12 +231,13 @@ async def get_purchase_history(
 ) -> dict[str, Any]:
     """Get purchase history of a tokopedia."""
 
-    browser_session = await start_browser_session(session_id=ctx.session_id)
+    browser_session = await start_browser_session(brand_id=BrandIdEnum("tokopedia"))
     page = await browser_session.page()
     await page.goto(f"https://www.tokopedia.com/order-list?page={page_number}")
     raw_data = await handle_graphql_response(
         page,
         "https://gql.tokopedia.com/graphql/GetOrderHistory",
+        "GetOrderHistory",
     )
     results: list[dict[str, Any]] = []
     if raw_data:
@@ -277,12 +279,13 @@ async def get_cart(
 ) -> dict[str, Any]:
     """Get cart of a tokopedia."""
 
-    browser_session = await start_browser_session(session_id=ctx.session_id)
+    browser_session = await start_browser_session(brand_id=BrandIdEnum("tokopedia"))
     page = await browser_session.page()
     await page.goto(f"https://www.tokopedia.com/cart")
     raw_data = await handle_graphql_response(
         page,
         "https://gql.tokopedia.com/graphql/cart_revamp_v4",
+        "cart_revamp_v4",
     )
     results: list[dict[str, Any]] = []
     if raw_data:
@@ -321,12 +324,13 @@ async def get_wishlist(
 ) -> dict[str, Any]:
     """Get purchase history of a tokopedia."""
 
-    browser_session = await start_browser_session(session_id=ctx.session_id)
+    browser_session = await start_browser_session(brand_id=BrandIdEnum("tokopedia"))
     page = await browser_session.page()
     await page.goto(f"https://www.tokopedia.com/wishlist/all?page={page_number}")
     raw_data = await handle_graphql_response(
         page,
         "https://gql.tokopedia.com/graphql/GetWishlistCollectionItems",
+        "GetWishlistCollectionItems",
     )
     results: list[dict[str, Any]] = []
     if raw_data:
