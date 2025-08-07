@@ -7,7 +7,6 @@ on:
   workflow_dispatch:
 
 jobs:
-
   mcp-pytest:
     runs-on: ubuntu-22.04
     steps:
@@ -39,5 +38,3 @@ jobs:
           HOST: http://localhost:8000
           BBC_EMAIL: ${{ secrets.BBC_EMAIL }}
           BBC_PASSWORD: ${{ secrets.BBC_PASSWORD }}
-          CNN_EMAIL: ${{ secrets.CNN_EMAIL }}
-          CNN_PASSWORD: ${{ secrets.CNN_PASSWORD }}
