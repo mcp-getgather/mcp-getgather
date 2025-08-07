@@ -2,16 +2,12 @@ from typing import Any
 from urllib.parse import quote
 
 from fastmcp import Context
-from fastmcp.utilities.logging import get_logger
 
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract, start_browser_session
 from getgather.parse import parse_html
-
-logger = get_logger(__name__)
-
 
 shopee_mcp = BrandMCPBase(prefix="shopee", name="Shopee MCP")
 

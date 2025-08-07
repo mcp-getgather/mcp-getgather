@@ -1,16 +1,12 @@
 from typing import Any
 
 from fastmcp import Context
-from fastmcp.utilities.logging import get_logger
 
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import start_browser_session, stop_browser_session
 from getgather.parse import parse_html
-
-logger = get_logger(__name__)
-
 
 amain_mcp = BrandMCPBase(prefix="amain", name="Amain MCP")
 
