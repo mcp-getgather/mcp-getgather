@@ -191,22 +191,22 @@ def health():
     )
 
 
-@app.get("/link/{session_id}", response_class=HTMLResponse)
-async def link_page(session_id: str):
+@app.get("/link/{link_id}", response_class=HTMLResponse)
+async def link_page(link_id: str):
     """Serve the hosted link frontend page for user authentication."""
 
-    # Look up the brand from the session store
-    session_data = HostedLinkManager.get_session_data(session_id)
-    if not session_data:
-        raise HTTPException(status_code=404, detail=f"Session ID '{session_id}' not found")
+    # Look up the brand from the link store
+    link_data = HostedLinkManager.get_link_data(link_id)
+    if not link_data:
+        raise HTTPException(status_code=404, detail=f"Link ID '{link_id}' not found")
 
-    brand = str(session_data.brand_id)
-    redirect_url = session_data.redirect_url
+    brand = str(link_data.brand_id)
+    redirect_url = link_data.redirect_url
 
     file_path = path.join(path.dirname(__file__), "frontend", "link.html")
     with open(file_path) as f:
         template = Template(f.read())
-    rendered = template.render(brand=brand, session_id=session_id, redirect_url=redirect_url)
+    rendered = template.render(brand=brand, link_id=link_id, redirect_url=redirect_url)
     return HTMLResponse(content=rendered)
 
 

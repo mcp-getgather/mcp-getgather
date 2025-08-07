@@ -5,45 +5,42 @@ from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools.tool import ToolResult
 
 from getgather.browser.profile import BrowserProfile
-from getgather.browser.session import BrowserSession
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.logs import logger
 from getgather.mcp.auto_import import auto_import
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.session_manager import SessionManager
 from getgather.mcp.shared import auth_hosted_link, poll_status_hosted_link
+from getgather.mcp.store import BrandConnectionStore
 
 auto_import("getgather.mcp.brand")
 
 
 class AuthMiddleware(Middleware):
     async def on_call_tool(self, context: MiddlewareContext[Any], call_next: CallNext[Any, Any]):  # type: ignore
-        if context.fastmcp_context:
-            logger.info("[AuthMiddleware Context]: %s", context.message)
+        if not context.fastmcp_context:
+            return await call_next(context)
 
-            tool = await context.fastmcp_context.fastmcp.get_tool(context.message.name)  # type: ignore
-            session_id = context.fastmcp_context.session_id
-            logger.info("[AuthMiddleware Session ID]: %s", session_id)
-            try:
-                SessionManager.get_browser_profile_id(session_id=session_id)
-            except ValueError:
-                browser_profile = BrowserProfile.create()
-                browser_session = await BrowserSession.get(browser_profile)
-                await browser_session.start()
-                SessionManager.create_session(
-                    browser_profile_id=browser_profile.profile_id, session_id=session_id
-                )
-                await browser_session.stop()
+        logger.info(f"[AuthMiddleware Context]: {context.message}")
 
-            if "private" in tool.tags:
-                brand_id = context.message.name.split("_")[0]
-                if not SessionManager.is_brand_connected(brand_id=brand_id, session_id=session_id):
-                    result = await auth_hosted_link(
-                        session_id=session_id, brand_id=BrandIdEnum(brand_id)
-                    )
-                    return ToolResult(structured_content=result)
+        tool = await context.fastmcp_context.fastmcp.get_tool(context.message.name)  # type: ignore
+        if "private" not in tool.tags:
+            return await call_next(context)
 
-        return await call_next(context)
+        brand_id = BrandIdEnum(context.message.name.split("_")[0])
+        if BrandConnectionStore.is_brand_connected(brand_id):
+            return await call_next(context)
+
+        browser_profile_id = BrandConnectionStore.get_browser_profile_id(brand_id)
+        if not browser_profile_id:
+            browser_profile = BrowserProfile.create()
+            BrandConnectionStore.init_brand_state(brand_id, browser_profile.id)
+
+        logger.info(
+            f"[AuthMiddleware] processing auth for brand {brand_id} with browser profile {browser_profile_id}"
+        )
+
+        result = await auth_hosted_link(brand_id)
+        return ToolResult(structured_content=result)
 
 
 mcp = FastMCP[Context](name="Getgather MCP")
@@ -52,14 +49,9 @@ mcp.add_middleware(AuthMiddleware())
 
 
 @mcp.tool
-async def poll_auth(
-    ctx: Context,
-    session_id: str,
-) -> dict[str, Any]:
+async def poll_auth(ctx: Context, link_id: str) -> dict[str, Any]:
     """Poll auth for a session. Only call this tool if you get the auth link/url."""
-    return await poll_status_hosted_link(
-        context=ctx, hosted_link_session_id=session_id, session_id=ctx.session_id
-    )
+    return await poll_status_hosted_link(context=ctx, hosted_link_id=link_id)
 
 
 for prefix, brand_mcp in BrandMCPBase.registry.items():
