@@ -1,68 +1,46 @@
 from datetime import datetime
-from typing import TypedDict
 
-from getgather.database.connection import execute_insert, execute_query, fetch_all, fetch_one
+from getgather.database.models import DBModel
 
 
-class Activity(TypedDict):
-    """Type definition for activity records."""
+class ActivityRepository(DBModel):
+    """Activity record model."""
 
-    id: int
+    _table_name = "activities"
+
     brand_id: str
     name: str
     start_time: datetime
-    end_time: datetime | None
-    execution_time_ms: int | None
-    created_at: datetime
+    end_time: datetime | None = None
+    execution_time_ms: int | None = None
 
+    @classmethod
+    def create(
+        cls,
+        brand_id: str,
+        name: str,
+        start_time: datetime,
+    ) -> int:
+        """Insert a new activity and return its ID."""
+        activity = cls(
+            brand_id=brand_id,
+            name=name,
+            start_time=start_time,
+        )
+        return cls.add(activity)
 
-def insert(
-    brand_id: str,
-    name: str,
-    start_time: datetime,
-) -> int:
-    """Insert a new activity and return its ID."""
-    query = """
-        INSERT INTO activities (
-            brand_id, name, start_time
-        ) VALUES (?, ?, ?)
-    """
-    params = (
-        brand_id,
-        name,
-        start_time.isoformat(),
-    )
-    return execute_insert(query, params)
+    @classmethod
+    def update_end_time(cls, activity_id: int, end_time: datetime) -> None:
+        """Update the end time of an activity."""
+        activity = cls.get(activity_id)
+        if not activity:
+            raise ValueError(f"Activity {activity_id} not found")
 
-
-def update(activity_id: int, end_time: datetime) -> None:
-    """Update the end time of an activity."""
-    query = """
-        UPDATE activities SET end_time = ?, execution_time_ms = ? WHERE id = ?
-    """
-    activity = get_activity(activity_id)
-    start_time = (
-        datetime.fromisoformat(activity["start_time"])
-        if isinstance(activity["start_time"], str)
-        else activity["start_time"]
-    )
-    execution_time_ms = int((end_time - start_time).total_seconds() * 1000)
-    execute_query(query, (end_time.isoformat(), execution_time_ms, activity_id))
-
-
-def get_activity(activity_id: int) -> Activity:
-    """Get an activity by its ID."""
-    query = """
-        SELECT * FROM activities WHERE id = ?
-    """
-    return fetch_one(query, (activity_id,))  # type: ignore
-
-
-def get_activities(limit: int = 100) -> list[Activity]:
-    """Get recent activities."""
-    query = """
-        SELECT * FROM activities
-        ORDER BY created_at DESC
-        LIMIT ?
-    """
-    return fetch_all(query, (limit,))  # type: ignore
+        execution_time_ms = int((end_time - activity.start_time).total_seconds() * 1000)
+        cls.update(
+            activity_id,
+            {
+                "end_time": end_time,
+                "execution_time_ms": execution_time_ms,
+            },
+        )

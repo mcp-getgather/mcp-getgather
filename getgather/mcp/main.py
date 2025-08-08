@@ -8,12 +8,12 @@ from fastmcp.tools.tool import ToolResult
 
 from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
-from getgather.database.repositories import activity_repository
+from getgather.database.repositories.activity_repository import ActivityRepository
+from getgather.database.repositories.brand_state_repository import BrandStateRepository
 from getgather.logs import logger
 from getgather.mcp.auto_import import auto_import
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import auth_hosted_link, poll_status_hosted_link
-from getgather.mcp.store import BrandConnectionStore
 
 auto_import("getgather.mcp.brand")
 
@@ -21,7 +21,7 @@ auto_import("getgather.mcp.brand")
 @asynccontextmanager
 async def activity(brand_id: str, name: str) -> AsyncGenerator[None, None]:
     """Context manager for tracking activity."""
-    activity_id = activity_repository.insert(
+    activity_id = ActivityRepository.create(
         brand_id=brand_id,
         name=name,
         start_time=datetime.now(UTC),
@@ -29,7 +29,7 @@ async def activity(brand_id: str, name: str) -> AsyncGenerator[None, None]:
     try:
         yield
     finally:
-        activity_repository.update(
+        ActivityRepository.update_end_time(
             activity_id=activity_id,
             end_time=datetime.now(UTC),
         )
@@ -52,17 +52,21 @@ class AuthMiddleware(Middleware):
             ):
                 return await call_next(context)
 
-        if BrandConnectionStore.is_brand_connected(brand_id):
+        if BrandStateRepository.is_brand_connected(brand_id):
             async with activity(
                 brand_id=brand_id,
                 name=context.message.name,
             ):
                 return await call_next(context)
 
-        browser_profile_id = BrandConnectionStore.get_browser_profile_id(brand_id)
+        browser_profile_id = BrandStateRepository.get_browser_profile_id(brand_id)
         if not browser_profile_id:
             browser_profile = BrowserProfile.create()
-            BrandConnectionStore.init_brand_state(brand_id, browser_profile.id)
+            BrandStateRepository.create(
+                brand_id=BrandIdEnum(brand_id),
+                browser_profile_id=browser_profile.id,
+                is_connected=False,
+            )
 
         logger.info(
             f"[AuthMiddleware] processing auth for brand {brand_id} with browser profile {browser_profile_id}"

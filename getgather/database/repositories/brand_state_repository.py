@@ -1,54 +1,55 @@
-from typing import TypedDict, cast
+from typing import Self
 
-from getgather.database.connection import execute_insert, execute_query, fetch_all, fetch_one
+from getgather.connectors.spec_loader import BrandIdEnum
+from getgather.database.connection import execute_query, fetch_one
+from getgather.database.models import DBModel
 
 
-class BrandState(TypedDict):
-    """Type definition for a brand state record."""
+class BrandStateRepository(DBModel):
+    """Brand state record model."""
+
+    _table_name = "brand_states"
 
     brand_id: str
     browser_profile_id: str
     is_connected: bool
-    created_at: str  # SQLite timestamp as string
 
+    @classmethod
+    def create(cls, brand_id: str, browser_profile_id: str, is_connected: bool) -> int:
+        """Create a new brand state."""
+        brand_state = cls(
+            brand_id=brand_id,
+            browser_profile_id=browser_profile_id,
+            is_connected=is_connected,
+        )
+        return cls.add(brand_state)
 
-def create(brand_id: str, browser_profile_id: str, is_connected: bool) -> int:
-    """Create a new brand state."""
-    query = """
-        INSERT INTO brand_states (brand_id, browser_profile_id, is_connected)
-        VALUES (?, ?, ?)
-    """
-    return execute_insert(query, (brand_id, browser_profile_id, is_connected))
+    @classmethod
+    def get_by_brand_id(cls, brand_id: BrandIdEnum) -> Self | None:
+        """Get a brand state by its brand ID."""
+        query = "SELECT * FROM brand_states WHERE brand_id = ?"
+        if row := fetch_one(query, (brand_id,)):
+            return cls.model_validate(row)
+        return None
 
+    @classmethod
+    def update_is_connected(cls, brand_id: BrandIdEnum, is_connected: bool) -> None:
+        """Update the is_connected status for a brand."""
+        query = """
+            UPDATE brand_states 
+            SET is_connected = ?
+            WHERE brand_id = ?
+        """
+        execute_query(query, (is_connected, BrandIdEnum(brand_id)))
 
-def get_by_id(brand_id: str) -> BrandState | None:
-    """Get a session by its ID."""
-    query = "SELECT * FROM brand_states WHERE brand_id = ?"
-    brand_state = fetch_one(query, (brand_id,))
-    if brand_state:
-        return cast(BrandState, brand_state)
-    return None
+    @classmethod
+    def is_brand_connected(cls, brand_id: BrandIdEnum) -> bool:
+        """Check if a brand is connected."""
+        state = cls.get_by_brand_id(BrandIdEnum(brand_id))
+        return state.is_connected if state else False
 
-
-def get_all() -> list[BrandState]:
-    """Get all brand states."""
-    query = "SELECT * FROM brand_states"
-    brand_states = fetch_all(query)
-
-    return [cast(BrandState, brand_state) for brand_state in brand_states]
-
-
-def update_is_connected(brand_id: str, is_connected: bool) -> None:
-    """Update the is_connected for a brand."""
-    query = """
-        UPDATE brand_states 
-        SET is_connected = ?
-        WHERE brand_id = ?
-    """
-    execute_query(query, (is_connected, brand_id))
-
-
-def delete(brand_id: str) -> None:
-    """Delete a brand state."""
-    query = "DELETE FROM brand_states WHERE brand_id = ?"
-    execute_query(query, (brand_id,))
+    @classmethod
+    def get_browser_profile_id(cls, brand_id: BrandIdEnum) -> str | None:
+        """Get the browser profile ID for a brand."""
+        state = cls.get_by_brand_id(BrandIdEnum(brand_id))
+        return state.browser_profile_id if state else None
