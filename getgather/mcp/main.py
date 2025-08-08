@@ -19,7 +19,7 @@ auto_import("getgather.mcp.brand")
 
 
 @asynccontextmanager
-async def activity(brand_id: str, name: str) -> AsyncGenerator[None, None]:
+async def activity(name: str, brand_id: str = "") -> AsyncGenerator[None, None]:
     """Context manager for tracking activity."""
     activity = Activity(
         brand_id=brand_id,
@@ -43,16 +43,15 @@ class AuthMiddleware(Middleware):
         logger.info(f"[AuthMiddleware Context]: {context.message}")
 
         tool = await context.fastmcp_context.fastmcp.get_tool(context.message.name)  # type: ignore
-        brand_id = context.message.name.split("_")[0]
 
-        if "private" not in tool.tags:
+        if "general_tool" in tool.tags:
             async with activity(
-                brand_id=brand_id if brand_id != "poll" else "",
                 name=context.message.name,
             ):
                 return await call_next(context)
 
-        if BrandState.is_brand_connected(brand_id):
+        brand_id = context.message.name.split("_")[0]
+        if "private" not in tool.tags or BrandState.is_brand_connected(brand_id):
             async with activity(
                 brand_id=brand_id,
                 name=context.message.name,
@@ -86,7 +85,7 @@ mcp = FastMCP[Context](name="Getgather MCP")
 mcp.add_middleware(AuthMiddleware())
 
 
-@mcp.tool
+@mcp.tool(tags={"general_tool"})
 async def poll_auth(ctx: Context, link_id: str) -> dict[str, Any]:
     """Poll auth for a session. Only call this tool if you get the auth link/url."""
     return await poll_status_hosted_link(context=ctx, hosted_link_id=link_id)
