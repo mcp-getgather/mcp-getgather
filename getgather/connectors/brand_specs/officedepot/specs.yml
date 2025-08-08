@@ -51,7 +51,7 @@ auth:
       label: label[for="email"]
       expect_nav: false
     - name: send-code-btn
-      type: click
+      type: autoclick
       prompt: Send Code
       selector: button:has-text("Send Code")
     - name: validation-code
@@ -59,7 +59,7 @@ auth:
       prompt: Validation Code
       selector: input[name="validationCode"], input#validation-code-input-element
     - name: validation-btn
-      type: click
+      type: autoclick
       prompt: Validate
       selector: button.validate-code-btn
       expect_nav: true
