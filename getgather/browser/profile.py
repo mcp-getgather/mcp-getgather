@@ -8,7 +8,9 @@ from nanoid import generate
 from patchright.async_api import BrowserType, ViewportSize
 from pydantic import ConfigDict, Field, model_validator
 
+from getgather.api.types import request_info
 from getgather.browser.freezable_model import FreezableModel
+from getgather.browser.proxy import setup_proxy
 from getgather.config import settings
 from getgather.logs import logger
 
@@ -42,7 +44,10 @@ class BrowserProfile(FreezableModel):
             f" file://{self.profile_dir(profile_id)}",
             extra={"profile_id": profile_id},
         )
-        proxy = None
+
+        # Setup proxy if configured
+        proxy = await setup_proxy(profile_id, request_info.get())
+
         # Get viewport configuration from parent class
         viewport_config = self.get_viewport_config()
 
@@ -50,7 +55,7 @@ class BrowserProfile(FreezableModel):
             user_data_dir=str(self.profile_dir(profile_id)),
             headless=settings.HEADLESS,
             viewport=viewport_config,
-            proxy=proxy,
+            proxy=proxy,  # type: ignore[arg-type]
         )
 
     def cleanup(self, profile_id: str):
