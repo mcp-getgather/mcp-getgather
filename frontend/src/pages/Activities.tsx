@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,7 +19,25 @@ import {
 } from "lucide-react";
 
 export default function Activities() {
-  const hasActivities = false; // TODO: get this from the backend
+  // Temporary dummy data for development
+  const dummyActivities = [
+    {
+      id: "activity-001",
+      name: "Web Scraping Session",
+      timestamp: "2024-01-15 14:30:22",
+      status: "completed",
+      duration: "2m 34s"
+    },
+    {
+      id: "activity-002", 
+      name: "Form Automation",
+      timestamp: "2024-01-15 13:15:10",
+      status: "completed",
+      duration: "1m 12s"
+    }
+  ];
+
+  const hasActivities = dummyActivities.length > 0;
 
   if (!hasActivities) {
     return (
@@ -73,9 +92,14 @@ export default function Activities() {
                   <CardDescription>Amazon order history</CardDescription>
                 </div>
               </div>
-              <Badge variant="default" className="bg-green-100 text-green-800">
-                Success
-              </Badge>
+              <div className="flex items-center space-x-3">
+                <Badge variant="default" className="bg-green-100 text-green-800">
+                  Success
+                </Badge>
+                <Link to="/replay?id=activity-001">
+                  <Button variant="outline" size="sm">View Replay</Button>
+                </Link>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
@@ -97,12 +121,17 @@ export default function Activities() {
                   <CardDescription>Netflix account access</CardDescription>
                 </div>
               </div>
-              <Badge
-                variant="secondary"
-                className="bg-orange-100 text-orange-800"
-              >
-                Pending
-              </Badge>
+              <div className="flex items-center space-x-3">
+                <Badge
+                  variant="secondary"
+                  className="bg-orange-100 text-orange-800"
+                >
+                  Pending
+                </Badge>
+                <Link to="/replay?id=activity-002">
+                  <Button variant="outline" size="sm">View Replay</Button>
+                </Link>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
