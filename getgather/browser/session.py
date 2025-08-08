@@ -69,6 +69,37 @@ class BrowserSession:
             logger.error(f"Error starting browser: {e}")
             raise BrowserStartupError(f"Failed to start browser: {e}") from e
 
+    async def start_recording(self) -> None:
+        """Inject rrweb recording script and start capturing events."""
+        page = await self.page()
+        
+        # Inject rrweb recording script
+        await page.add_script_tag(url="https://cdn.jsdelivr.net/npm/rrweb@2/dist/rrweb.min.js")
+        
+        # Start recording
+        await page.evaluate("""
+            window.rrwebEvents = [];
+            window.stopRRWebRecording = rrweb.record({
+                emit(event) {
+                    window.rrwebEvents.push(event);
+                }
+            });
+        """)
+
+    async def stop_recording(self) -> list:
+        """Stop recording and return captured events."""
+        page = await self.page()
+        
+        # Stop recording and get events
+        events = await page.evaluate("""
+            if (window.stopRRWebRecording) {
+                window.stopRRWebRecording();
+            }
+            return window.rrwebEvents || [];
+        """)
+        
+        return events
+
     async def stop(self):
         logger.info(
             "Closing browser",
