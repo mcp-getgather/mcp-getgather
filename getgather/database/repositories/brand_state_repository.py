@@ -5,7 +5,7 @@ from getgather.database.connection import execute_query, fetch_one
 from getgather.database.models import DBModel
 
 
-class BrandStateRepository(DBModel):
+class BrandState(DBModel):
     """Brand state record model."""
 
     brand_id: str
@@ -15,10 +15,6 @@ class BrandStateRepository(DBModel):
     @property
     def table_name(self):
         return "brand_states"
-
-    def create(self) -> int:
-        """Create a new brand state."""
-        return self.add()
 
     @classmethod
     def get_by_brand_id(cls, brand_id: BrandIdEnum) -> Self | None:

@@ -8,8 +8,8 @@ from fastmcp.tools.tool import ToolResult
 
 from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
-from getgather.database.repositories.activity_repository import ActivityRepository
-from getgather.database.repositories.brand_state_repository import BrandStateRepository
+from getgather.database.repositories.activity_repository import Activity
+from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.logs import logger
 from getgather.mcp.auto_import import auto_import
 from getgather.mcp.registry import BrandMCPBase
@@ -21,16 +21,16 @@ auto_import("getgather.mcp.brand")
 @asynccontextmanager
 async def activity(brand_id: str, name: str) -> AsyncGenerator[None, None]:
     """Context manager for tracking activity."""
-    activity_repo = ActivityRepository(
+    activity = Activity(
         brand_id=brand_id,
         name=name,
         start_time=datetime.now(UTC),
     )
-    activity_repo.create()
+    activity.add()
     try:
         yield
     finally:
-        activity_repo.update_end_time(
+        activity.update_end_time(
             end_time=datetime.now(UTC),
         )
 
@@ -52,22 +52,22 @@ class AuthMiddleware(Middleware):
             ):
                 return await call_next(context)
 
-        if BrandStateRepository.is_brand_connected(brand_id):
+        if BrandState.is_brand_connected(brand_id):
             async with activity(
                 brand_id=brand_id,
                 name=context.message.name,
             ):
                 return await call_next(context)
 
-        browser_profile_id = BrandStateRepository.get_browser_profile_id(brand_id)
+        browser_profile_id = BrandState.get_browser_profile_id(brand_id)
         if not browser_profile_id:
             browser_profile = BrowserProfile.create()
-            brand_state = BrandStateRepository(
+            brand_state = BrandState(
                 brand_id=BrandIdEnum(brand_id),
                 browser_profile_id=browser_profile.id,
                 is_connected=False,
             )
-            brand_state.create()
+            brand_state.add()
 
         logger.info(
             f"[AuthMiddleware] processing auth for brand {brand_id} with browser profile {browser_profile_id}"

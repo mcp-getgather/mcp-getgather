@@ -10,7 +10,7 @@ from getgather.auth_flow import ExtractResult
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.connectors.spec_loader import BrandIdEnum
-from getgather.database.repositories.brand_state_repository import BrandStateRepository
+from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.extract_orchestrator import ExtractOrchestrator
 from getgather.logs import logger
 
@@ -18,13 +18,13 @@ from getgather.logs import logger
 async def auth_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
     """Auth with a link."""
 
-    if BrandStateRepository.is_brand_connected(brand_id):
+    if BrandState.is_brand_connected(brand_id):
         return {
             "status": "FINISHED",
             "message": "Brand already connected.",
         }
 
-    profile_id = BrandStateRepository.get_browser_profile_id(brand_id)
+    profile_id = BrandState.get_browser_profile_id(brand_id)
     logger.info(f"Creating link for brand {brand_id} and profile {profile_id}")
 
     request_data = HostedLinkTokenRequest(brand_id=str(brand_id), profile_id=profile_id)
@@ -67,7 +67,7 @@ async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict
             response_json = response.json()
             if response_json["status"] == "completed":
                 processing = False
-                BrandStateRepository.update_is_connected(
+                BrandState.update_is_connected(
                     brand_id=BrandIdEnum(response_json["brand_id"]),
                     is_connected=True,
                 )
@@ -107,7 +107,7 @@ async def extract(brand_id: BrandIdEnum) -> dict[str, Any]:
 
 async def start_browser_session(brand_id: BrandIdEnum) -> BrowserSession:
     """Start a browser session and return the page object."""
-    profile_id = BrandStateRepository.get_browser_profile_id(brand_id)
+    profile_id = BrandState.get_browser_profile_id(brand_id)
     if not profile_id:
         raise ValueError(f"Profile ID not found for brand {brand_id}")
     browser_profile = BrowserProfile(id=profile_id)
@@ -118,7 +118,7 @@ async def start_browser_session(brand_id: BrandIdEnum) -> BrowserSession:
 
 
 async def stop_browser_session(brand_id: BrandIdEnum) -> None:
-    profile_id = BrandStateRepository.get_browser_profile_id(brand_id)
+    profile_id = BrandState.get_browser_profile_id(brand_id)
     if not profile_id:
         raise ValueError(f"Profile ID not found for brand {brand_id}")
     browser_profile = BrowserProfile(id=profile_id)

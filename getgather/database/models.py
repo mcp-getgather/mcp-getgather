@@ -29,9 +29,7 @@ class DBModel(BaseModel):
     def add(self) -> int:
         """Insert a new record and return its ID."""
         # Filter out None values and id field
-        fields = {
-            k: v for k, v in self.model_dump().items() if v is not None and k != "id"
-        }
+        fields = {k: v for k, v in self.model_dump().items() if v is not None and k != "id"}
 
         placeholders = ", ".join("?" * len(fields))
         columns = ", ".join(fields.keys())
@@ -42,11 +40,10 @@ class DBModel(BaseModel):
         """
 
         # Convert datetime objects to ISO format strings
-        params = tuple(
-            v.isoformat() if isinstance(v, datetime) else v for v in fields.values()
-        )
+        params = tuple(v.isoformat() if isinstance(v, datetime) else v for v in fields.values())
 
-        return execute_insert(query, params)
+        self.id = execute_insert(query, params)
+        return self.id
 
     def update(self, id: int, data: dict[str, Any]) -> None:
         """Update a record by its ID with the provided data."""
