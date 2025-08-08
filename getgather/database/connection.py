@@ -14,11 +14,11 @@ def dict_factory(cursor: sqlite3.Cursor, row: Sequence[Any]) -> dict[str, Any]:
 
 
 @contextmanager
-def get_db() -> Generator[sqlite3.Connection, None, None]:
+def db_conn() -> Generator[sqlite3.Connection, None, None]:
     """Get a database connection with automatic cleanup.
 
     Usage:
-        with get_db() as conn:
+        with db_conn() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM sessions")
     """
@@ -38,14 +38,14 @@ def get_db() -> Generator[sqlite3.Connection, None, None]:
 
 def execute_query(query: str, params: tuple[Any, ...] | None = None) -> None:
     """Execute a query without returning results."""
-    with get_db() as conn:
+    with db_conn() as conn:
         cursor = conn.cursor()
         cursor.execute(query, params or ())
 
 
 def execute_insert(query: str, params: tuple[Any, ...] | None = None) -> int:
     """Execute an insert query and return the last inserted row ID."""
-    with get_db() as conn:
+    with db_conn() as conn:
         cursor = conn.cursor()
         cursor.execute(query, params or ())
         if cursor.lastrowid is None:
@@ -55,7 +55,7 @@ def execute_insert(query: str, params: tuple[Any, ...] | None = None) -> int:
 
 def fetch_one(query: str, params: tuple[Any, ...] | None = None) -> dict[str, Any] | None:
     """Execute a query and return one row."""
-    with get_db() as conn:
+    with db_conn() as conn:
         cursor = conn.cursor()
         cursor.execute(query, params or ())
         return cursor.fetchone()
@@ -63,7 +63,7 @@ def fetch_one(query: str, params: tuple[Any, ...] | None = None) -> dict[str, An
 
 def fetch_all(query: str, params: tuple[Any, ...] | None = None) -> list[dict[str, Any]]:
     """Execute a query and return all rows."""
-    with get_db() as conn:
+    with db_conn() as conn:
         cursor = conn.cursor()
         cursor.execute(query, params or ())
         return cursor.fetchall()
