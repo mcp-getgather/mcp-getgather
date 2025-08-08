@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     BUNDLES_DIR: str = ""
     SCREENSHOTS_DIR: str = ""
 
+    BROWSER_USE_MODEL: str = "o4-mini"
     OPENAI_API_KEY: str = ""
 
     @property

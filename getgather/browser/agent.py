@@ -11,11 +11,12 @@ from getgather.config import settings
 
 
 async def run_agent(mcp_context: Context, browser_context: BrowserContext, task: str):
-    if not settings.OPENAI_API_KEY:
-        raise ValueError("OPENAI_API_KEY is not set")
+    # TODO: Add support for non-OpenAI models
+    if not settings.BROWSER_USE_MODEL or not settings.OPENAI_API_KEY:
+        raise ValueError("BROWSER_USE_MODEL or OPENAI_API_KEY is not set")
 
     browser_session = BrowserSession(browser_context=browser_context)
-    llm = ChatOpenAI(model="o4-mini", api_key=settings.OPENAI_API_KEY)
+    llm = ChatOpenAI(model=settings.BROWSER_USE_MODEL, api_key=settings.OPENAI_API_KEY)
 
     async def callback(
         browser_state_summary: BrowserStateSummary, agent_output: AgentOutput, step_number: int

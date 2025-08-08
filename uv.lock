@@ -26,7 +26,7 @@ wheels = [
 
 [[package]]
 name = "anthropic"
-version = "0.61.0"
+version = "0.58.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -37,9 +37,9 @@ dependencies = [
     { name = "sniffio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7a/9a/b384758ef93b8f931a523efc8782f7191b175714b3952ff11002899f638b/anthropic-0.61.0.tar.gz", hash = "sha256:af4b3b8f3bc4626cca6af2d412e301974da1747179341ad9e271bdf5cbd2f008", size = 426606, upload-time = "2025-08-05T16:29:37.958Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/95/b9/ab06c586aa5a5e7499017cee5ebab94ee260e75975c45395f32b8592abdd/anthropic-0.58.2.tar.gz", hash = "sha256:86396cc45530a83acea25ae6bca9f86656af81e3d598b4d22a1300e0e4cf8df8", size = 425125, upload-time = "2025-07-18T13:38:55.94Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6e/07/c7907eee22f5c27a53118dd2576267052ae01f52811dbb06a2848012639e/anthropic-0.61.0-py3-none-any.whl", hash = "sha256:798c8e6cc61e6315143c3f5847d2f220c45f1e69f433436872a237413ca58803", size = 294935, upload-time = "2025-08-05T16:29:36.379Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/f2/68d908ff308c9a65af5749ec31952e01d32f19ea073b0268affc616e6ebc/anthropic-0.58.2-py3-none-any.whl", hash = "sha256:3742181c634c725f337b71096839b6404145e33a8e190c75387c4028b825864d", size = 292896, upload-time = "2025-07-18T13:38:54.782Z" },
 ]
 
 [[package]]
@@ -164,7 +164,7 @@ wheels = [
 
 [[package]]
 name = "browser-use"
-version = "0.5.9"
+version = "0.5.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
@@ -199,9 +199,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "uuid7" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/72/27/e7cfd4d5038cffe4a73445d758fd298bb6aaf8bfcc6c8c61e2d7243a4506/browser_use-0.5.9.tar.gz", hash = "sha256:c4dd60a40f1f54b7054a3f91ac9fe9b187dd6f2e06f0f0cdf3a354c572127269", size = 251216, upload-time = "2025-08-02T15:46:52.92Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bb/bf/6e26013892966d8c4d49fbf69510fd0a98147c9a9655e32bddb45a26a487/browser_use-0.5.10.tar.gz", hash = "sha256:a479fc914a7a09535c32fb0c89483f928534d78ddb2b9a32191c62982f3288c7", size = 251600, upload-time = "2025-08-07T22:09:27.094Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/67/9e/f9d19e02dbae4909f569e5586178b926e6597f64b7a94fa12bd6c3794d85/browser_use-0.5.9-py3-none-any.whl", hash = "sha256:cce11496c034494791aba79001f253b5107ae3f76259b205c4a78e1405d3da51", size = 309506, upload-time = "2025-08-02T15:46:51.054Z" },
+    { url = "https://files.pythonhosted.org/packages/3f/22/29eddf3d72fcb8a75c538650e8edfd7570dfb18cb50b2c6608c3a46d83e8/browser_use-0.5.10-py3-none-any.whl", hash = "sha256:d48918eb4c3b4f79ecc9edf31dde07bcfe773c4e688961ad1734d3ff9ba6c81f", size = 309881, upload-time = "2025-08-07T22:09:25.555Z" },
 ]
 
 [[package]]
@@ -625,7 +625,6 @@ dependencies = [
     { name = "httpx" },
     { name = "jinja2" },
     { name = "nanoid" },
-    { name = "openai" },
     { name = "patchright" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -654,13 +653,12 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiofiles", specifier = ">=24.1.0" },
-    { name = "browser-use", specifier = ">=0.5.9" },
+    { name = "browser-use", specifier = ">=0.5.10" },
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "fastmcp", specifier = ">=2.10.5" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "nanoid", specifier = ">=2.0.0" },
-    { name = "openai", specifier = "==1.99.1" },
     { name = "patchright", specifier = "==1.52.5" },
     { name = "pydantic", specifier = ">=2.11.3" },
     { name = "pydantic-settings", specifier = ">=2.9.1" },
@@ -1220,20 +1218,20 @@ wheels = [
 
 [[package]]
 name = "ollama"
-version = "0.5.2"
+version = "0.5.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/21/31/381d5429fffb088b55c0ace6d4c441dc355cf801620d7288813f77e9193a/ollama-0.5.2.tar.gz", hash = "sha256:7a575a90416a816231f216dbd10c3480b107218a90388c061fdf20d7ab7fe990", size = 43092, upload-time = "2025-08-05T23:02:08.404Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/91/6d/ae96027416dcc2e98c944c050c492789502d7d7c0b95a740f0bb39268632/ollama-0.5.3.tar.gz", hash = "sha256:40b6dff729df3b24e56d4042fd9d37e231cee8e528677e0d085413a1d6692394", size = 43331, upload-time = "2025-08-07T21:44:10.422Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/76/10/d8a4e0468394e1093d32421bacd1e87452aa96b60a55f5f70766af5406f8/ollama-0.5.2-py3-none-any.whl", hash = "sha256:48ee9aed1c8f4cf2e4237b6d4cc36c328f1abc40da4aa6edf52698f757bc4164", size = 13423, upload-time = "2025-08-05T23:02:07.191Z" },
+    { url = "https://files.pythonhosted.org/packages/be/f6/2091e50b8b6c3e6901f6eab283d5efd66fb71c86ddb1b4d68766c3eeba0f/ollama-0.5.3-py3-none-any.whl", hash = "sha256:a8303b413d99a9043dbf77ebf11ced672396b59bec27e6d5db67c88f01b279d2", size = 13490, upload-time = "2025-08-07T21:44:09.353Z" },
 ]
 
 [[package]]
 name = "openai"
-version = "1.99.1"
+version = "1.99.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -1245,9 +1243,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/03/30/f0fb7907a77e733bb801c7bdcde903500b31215141cdb261f04421e6fbec/openai-1.99.1.tar.gz", hash = "sha256:2c9d8e498c298f51bb94bcac724257a3a6cac6139ccdfc1186c6708f7a93120f", size = 497075, upload-time = "2025-08-05T19:42:36.131Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/de/2c/8cd1684364551237a5e6db24ce25c25ff54efcf1805b39110ec713dc2972/openai-1.99.2.tar.gz", hash = "sha256:118075b48109aa237636607b1346cf03b37cb9d74b0414cb11095850a0a22c96", size = 504752, upload-time = "2025-08-07T17:16:14.668Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/54/15/9c85154ffd283abfc43309ff3aaa63c3fd02f7767ee684e73670f6c5ade2/openai-1.99.1-py3-none-any.whl", hash = "sha256:8eeccc69e0ece1357b51ca0d9fb21324afee09b20c3e5b547d02445ca18a4e03", size = 767827, upload-time = "2025-08-05T19:42:34.192Z" },
+    { url = "https://files.pythonhosted.org/packages/b7/06/f3338c1b8685dc1634fa5174dc5ba2d3eecc7887c9fc539bb5da6f75ebb3/openai-1.99.2-py3-none-any.whl", hash = "sha256:110d85b8ed400e1d7b02f8db8e245bd757bcde347cb6923155f42cd66a10aa0b", size = 785594, upload-time = "2025-08-07T17:16:13.083Z" },
 ]
 
 [[package]]
@@ -1332,7 +1330,7 @@ wheels = [
 
 [[package]]
 name = "posthog"
-version = "6.4.1"
+version = "6.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "backoff" },
@@ -1342,9 +1340,9 @@ dependencies = [
     { name = "six" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/97/56/d0f77d6b20d2c5a349fd4eae55389ab8769c95c99c9881c523f9809bdba6/posthog-6.4.1.tar.gz", hash = "sha256:751afaca4007855b3d848b69020c8c8f83a8d5f03a98b464e6a3b74c5a21bd22", size = 99422, upload-time = "2025-08-06T21:18:05.096Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/0e/09189bb5774d61b6b51572ab7cd83b0e090ef0a4b54a1428f56fa474f632/posthog-6.5.0.tar.gz", hash = "sha256:aa5fe322c30384b302c79c49aee59c8dce6fee84a5fa78734103cab177e4e640", size = 99445, upload-time = "2025-08-08T10:45:02.66Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9e/9f/cbeffe61002faf2c4fd935a283401c35b82505c012ba69240f0d09d095f0/posthog-6.4.1-py3-none-any.whl", hash = "sha256:d3b077f8747ce68a0176b4033a8f5a9333d43f7f18079c70deac977f78b23b9d", size = 116586, upload-time = "2025-08-06T21:18:03.366Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/37/73978efcf66d45c1d6999c26a19fbc8ffd63845df6e725d9a3429b840911/posthog-6.5.0-py3-none-any.whl", hash = "sha256:1376f85c5382eae0985dd1ad48f2e6d7db18c6bf52cef3b4d8ff448a955bdb9f", size = 116671, upload-time = "2025-08-08T10:44:59.968Z" },
 ]
 
 [[package]]
