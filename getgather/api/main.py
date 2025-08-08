@@ -1,12 +1,16 @@
 import asyncio
+import os
+import secrets
 import socket
+import subprocess
 from contextlib import asynccontextmanager
 from datetime import datetime
 from os import path
 from typing import Final
+from urllib.parse import quote
 
 import httpx
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
@@ -47,6 +51,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
+
+_inspector_proc: subprocess.Popen[str] | None = None
+_inspector_token: str | None = None
 
 STATIC_ASSETS_DIR = path.abspath(path.join(path.dirname(__file__), "..", "static", "assets"))
 BUILD_ASSETS_DIR = path.abspath(path.join(path.dirname(__file__), "frontend", "assets"))
@@ -165,6 +173,39 @@ async def vnc_websocket_proxy(websocket: WebSocket):
         except:
             pass
 
+def _ensure_inspector_running() -> str:
+    global _inspector_proc, _inspector_token
+    if _inspector_proc is not None and _inspector_proc.poll() is None and _inspector_token is not None:
+        return _inspector_token
+
+    token = secrets.token_hex(32)
+    env = os.environ.copy()
+    env["MCP_AUTO_OPEN_ENABLED"] = "false"
+    env["MCP_PROXY_AUTH_TOKEN"] = token
+    env.setdefault("HOST", "127.0.0.1")
+
+    _inspector_proc = subprocess.Popen(
+        ["npx", "@modelcontextprotocol/inspector"],
+        env=env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        text=True,
+    )
+    _inspector_token = token
+    return token
+
+
+@app.get("/inspector")
+def inspector(request: Request):
+    token = _ensure_inspector_running()
+    base = str(request.base_url).rstrip("/")
+    server_url = f"{base}/mcp"
+    target = (
+        "http://localhost:6274/"
+        f"?MCP_PROXY_AUTH_TOKEN={token}"
+        f"&transport=streamable-http&serverUrl={quote(server_url, safe=':/')}"
+    )
+    return RedirectResponse(url=target, status_code=307)
 
 @app.get("/start/{brand}", response_class=HTMLResponse)
 def start(brand: str):
