@@ -1,0 +1,99 @@
+name: Wayfair
+
+auth:
+  fields:
+    - name: email
+      type: text
+      prompt: Email
+      selector: input[data-test-id=login-email-input]
+    - name: password
+      type: password
+      prompt: Password
+      selector: input[data-test-id=login-password-input]
+    - name: submit
+      type: click
+      prompt: Submit
+      selector: button[data-test-id=SUBMIT_BUTTON]
+      expect_nav: true
+      url: https://www.wayfair.com/a/account/authentication/login
+    - name: otp
+      type: text
+      prompt: One time code
+      selector: input[data-test-id=CODE_INPUT]
+    - name: password_choice
+      type: click
+      prompt: Password
+      selector: button[data-test-id=OTHER_SIGN_IN_METHODS_PASSWORD_LOGIN_BUTTON]
+    - name: sign_in
+      type: click
+      prompt: Sign in
+      selector: button[data-test-id=SIGN_IN_BUTTON]
+      expect_nav: true
+      url: https://www.wayfair.com/a/account/authentication/login
+    - name: invalid-password-message
+      type: wait
+      selector: p[data-test-id=login-password-input-validationText]:has-text("Password is not valid.")
+    - name: invalid-otp-message
+      type: wait
+      selector: p[data-test-id=CODE_INPUT-validationText]:has-text("Code entered doesn't match the one we sent. Check your
+        code and try again.")
+    - name: enter-code-we-texted-you
+      type: wait
+      selector: h1:has-text("Enter the Code We Texted You")  # Need this to beat the score for the normal OTP page
+    - name: create-password
+      type: wait
+      selector: h1:has-text("Create a Password")
+    - name: create-account-button
+      type: wait
+      selector: button[data-test-id=CREATE_ACCOUNT_BUTTON]
+  pages:
+    - name: Sign in
+      # forced redirect to go to the account page
+      url: https://www.wayfair.com/v/account/authentication/login?url=https%3A%2F%2Fwww.wayfair.com%2Fv%2Faccount%2Fwelcome%2Fshow
+      fields: [email, submit]
+
+    - name: OTP Page
+      choices:
+        name: verification_choice
+        prompt: Would you like to use a password or a one-time code?
+        groups:
+          - name: password
+            prompt: Password
+            fields: [password_choice]
+          - name: otp
+            prompt: One-time code
+            fields: [otp]
+
+    - name: Password Page
+      fields: [password, sign_in]
+
+    - name: Incorrect password page
+      fields: [password, sign_in, invalid-password-message]
+      message: ❌ The password you entered is incorrect. Please try again.
+
+    - name: Incorrect OTP page
+      fields: [otp, sign_in, invalid-otp-message, enter-code-we-texted-you]
+      message: ❌ The one-time code you entered is incorrect. Please try again.
+
+    - name: Create Account
+      fields: [create-password, create-account-button]
+      end: true
+      message: You do not have an account with this email, please try again with a different email.
+
+    - name: Login complete
+      url: https://www.wayfair.com/my_account
+      end: true
+
+  start: Sign in
+
+extract:
+  steps:
+    - name: Go to order history page
+      url: https://www.wayfair.com/session/secure/account/order_search.php
+
+    - name: Extract the order history
+      bundle: order.json
+      graphql:
+        endpoint: https://www.wayfair.com/graphql
+        operation: MyOrdersPage
+        function: retrieve_image_url_and_price_for_wayfair
