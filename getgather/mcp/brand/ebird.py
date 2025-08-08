@@ -50,7 +50,18 @@ async def explore_species(
     """Explore species on Ebird from get_explore_species_list."""
     browser_session = await start_browser_session(brand_id=BrandIdEnum("ebird"))
     page = await browser_session.page()
-    await page.locator("span.SciName").get_by_text(sci_name).click()
+    # Navigate to explore and search for the species by scientific name
+    await page.goto("https://ebird.org/explore")
+    await page.wait_for_selector("input#species")
+    await page.fill("input#species", sci_name)
+    await page.keyboard.press("Enter")
+    await page.wait_for_selector("div#Suggest-dropdown-species")
+    await (
+        page.locator("div#Suggest-dropdown-species")
+        .locator("span.Suggestion-text span")
+        .get_by_text(sci_name)
+        .click()
+    )
     await page.wait_for_load_state("domcontentloaded")
     species_description_html = await page.locator("div.Hero-content").inner_html()
     species_identification_html = await page.locator("div.Species-identification").inner_html()
