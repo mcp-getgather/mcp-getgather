@@ -3,6 +3,7 @@ import sqlite3
 from pathlib import Path
 
 from getgather.config import settings
+from getgather.logs import logger
 
 
 def ensure_db_directory_exists():
@@ -13,7 +14,7 @@ def ensure_db_directory_exists():
 
 def run_migration():
     """Run database migrations."""
-    print(f"Running migrations on database: {settings.database_path}")
+    logger.info(f"Running migrations on database: {settings.database_path}")
 
     # Ensure the database directory exists
     ensure_db_directory_exists()
@@ -33,11 +34,11 @@ def run_migration():
         cursor.executescript(schema_sql)
 
         conn.commit()
-        print("Migration completed successfully!")
+        logger.info("Migration completed successfully!")
 
     except Exception as e:
         conn.rollback()
-        print(f"Error during migration: {e}")
+        logger.error(f"Error during migration: {e}")
         raise
     finally:
         conn.close()
