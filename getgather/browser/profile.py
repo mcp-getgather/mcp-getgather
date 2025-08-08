@@ -48,7 +48,7 @@ class BrowserProfile(FreezableModel):
 
         return await browser_type.launch_persistent_context(
             user_data_dir=str(self.profile_dir(profile_id)),
-            headless=False,
+            headless=settings.HEADLESS,
             viewport=viewport_config,
             proxy=proxy,
         )

@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     PROFILES_DIR: str = ""
     BUNDLES_DIR: str = ""
     SCREENSHOTS_DIR: str = ""
+    HEADLESS: bool = False
 
     BROWSER_USE_MODEL: str = "o4-mini"
     OPENAI_API_KEY: str = ""
