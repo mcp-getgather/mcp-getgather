@@ -8,21 +8,17 @@ from getgather.database.models import DBModel
 class BrandStateRepository(DBModel):
     """Brand state record model."""
 
-    _table_name = "brand_states"
-
     brand_id: str
     browser_profile_id: str
     is_connected: bool
 
-    @classmethod
-    def create(cls, brand_id: str, browser_profile_id: str, is_connected: bool) -> int:
+    @property
+    def table_name(self):
+        return "brand_states"
+
+    def create(self) -> int:
         """Create a new brand state."""
-        brand_state = cls(
-            brand_id=brand_id,
-            browser_profile_id=browser_profile_id,
-            is_connected=is_connected,
-        )
-        return cls.add(brand_state)
+        return self.add()
 
     @classmethod
     def get_by_brand_id(cls, brand_id: BrandIdEnum) -> Self | None:
