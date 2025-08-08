@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 export default function Activities() {
-  const hasActivities = false; // This would come from your data
+  const hasActivities = false; // TODO: get this from the backend
 
   if (!hasActivities) {
     return (
