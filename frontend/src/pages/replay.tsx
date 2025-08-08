@@ -11,13 +11,19 @@ export function ReplayPage() {
 
   useEffect(() => {
     const loadEvents = async () => {
+      if (!activityId) {
+        setError("No activity ID provided");
+        setLoading(false);
+        return;
+      }
+
       try {
-        const response = await fetch("/output.json");
+        const response = await fetch(`/api/events?activity_id=${activityId}`);
         if (!response.ok) {
           throw new Error("Failed to load events");
         }
-        const eventsData = await response.json();
-        setEvents(eventsData);
+        const data = await response.json();
+        setEvents(data.events);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -26,7 +32,7 @@ export function ReplayPage() {
     };
 
     loadEvents();
-  }, []);
+  }, [activityId]);
 
   if (loading) {
     return (
