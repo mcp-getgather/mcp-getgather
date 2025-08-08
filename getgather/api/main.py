@@ -52,7 +52,6 @@ app = FastAPI(
 )
 
 
-
 _inspector_proc: subprocess.Popen[str] | None = None
 _inspector_token: str | None = None
 
@@ -173,9 +172,14 @@ async def vnc_websocket_proxy(websocket: WebSocket):
         except:
             pass
 
+
 def _ensure_inspector_running() -> str:
     global _inspector_proc, _inspector_token
-    if _inspector_proc is not None and _inspector_proc.poll() is None and _inspector_token is not None:
+    if (
+        _inspector_proc is not None
+        and _inspector_proc.poll() is None
+        and _inspector_token is not None
+    ):
         return _inspector_token
 
     token = secrets.token_hex(32)
@@ -206,6 +210,7 @@ def inspector(request: Request):
         f"&transport=streamable-http&serverUrl={quote(server_url, safe=':/')}"
     )
     return RedirectResponse(url=target, status_code=307)
+
 
 @app.get("/start/{brand}", response_class=HTMLResponse)
 def start(brand: str):
