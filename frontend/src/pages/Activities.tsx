@@ -22,14 +22,14 @@ export default function Activities() {
   // Temporary dummy data for development
   const dummyActivities = [
     {
-      id: "activity-001",
+      id: "activity-1",
       name: "Web Scraping Session",
       timestamp: "2024-01-15 14:30:22",
       status: "completed",
       duration: "2m 34s"
     },
     {
-      id: "activity-002", 
+      id: "activity-2", 
       name: "Form Automation",
       timestamp: "2024-01-15 13:15:10",
       status: "completed",
@@ -96,7 +96,7 @@ export default function Activities() {
                 <Badge variant="default" className="bg-green-100 text-green-800">
                   Success
                 </Badge>
-                <Link to="/replay?id=activity-001">
+                <Link to="/replay?id=1">
                   <Button variant="outline" size="sm">View Replay</Button>
                 </Link>
               </div>
