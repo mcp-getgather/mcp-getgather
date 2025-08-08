@@ -1,6 +1,8 @@
 # MCP Tools
 
-## A list of MCP tools available through the unified GetGather MCP Server
+## A sample list of MCP tools available through the unified GetGather MCP Server
+
+This list is non-exhaustive and only includes a sampling of the full set of MCP tools available on the server.
 
 ## Brand Specific Tools
 
