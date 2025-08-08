@@ -15,6 +15,13 @@ from getgather.mcp.store import BrandConnectionStore
 auto_import("getgather.mcp.brand")
 
 
+# Ensure calendar MCP is registered by importing its module
+try:
+    from getgather.mcp import calendar_utils  # type: ignore
+except Exception as e:
+    logger.warning(f"Failed to register calendar MCP: {e}")
+
+
 class AuthMiddleware(Middleware):
     async def on_call_tool(self, context: MiddlewareContext[Any], call_next: CallNext[Any, Any]):  # type: ignore
         if not context.fastmcp_context:
