@@ -106,10 +106,16 @@ async def extract(brand_id: BrandIdEnum) -> dict[str, Any]:
 
 async def start_browser_session(brand_id: BrandIdEnum) -> BrowserSession:
     """Start a browser session and return the page object."""
-    profile_id = BrandConnectionStore.get_browser_profile_id(brand_id)
-    if not profile_id:
-        raise ValueError(f"Profile ID not found for brand {brand_id}")
-    browser_profile = BrowserProfile(id=profile_id)
+    profile_id: str | None = None
+    if BrandConnectionStore.is_brand_connected(brand_id):
+        profile_id = BrandConnectionStore.get_browser_profile_id(brand_id)
+
+    if profile_id:
+        browser_profile = BrowserProfile(id=profile_id)
+    else:
+        # For public tools or unauthenticated brands, launch a fresh browser
+        # profile without persisting anything to the store.
+        browser_profile = BrowserProfile()
 
     browser_session = await BrowserSession.get(browser_profile)
     await browser_session.start()
@@ -119,7 +125,8 @@ async def start_browser_session(brand_id: BrandIdEnum) -> BrowserSession:
 async def stop_browser_session(brand_id: BrandIdEnum) -> None:
     profile_id = BrandConnectionStore.get_browser_profile_id(brand_id)
     if not profile_id:
-        raise ValueError(f"Profile ID not found for brand {brand_id}")
+        # Nothing to stop if a stored profile was never created for this brand.
+        return None
     browser_profile = BrowserProfile(id=profile_id)
     browser_session = await BrowserSession.get(browser_profile)
     await browser_session.stop()
