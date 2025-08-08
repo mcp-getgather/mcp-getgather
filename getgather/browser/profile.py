@@ -55,7 +55,7 @@ class BrowserProfile(FreezableModel):
             user_data_dir=str(self.profile_dir(profile_id)),
             headless=settings.HEADLESS,
             viewport=viewport_config,
-            proxy=proxy,
+            proxy=proxy,  # type: ignore[arg-type]
         )
 
     def cleanup(self, profile_id: str):

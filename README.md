@@ -68,6 +68,7 @@ HTTP_PROXY_PASSWORD=your-proxy-password
 ```
 
 The proxy service should use hierarchical location-based routing if location information is provided. The username format sent to the proxy server will be:
+
 - Basic: `profile_id`
 - With location: `profile_id-city_X_state_Y_country_Z`
 
