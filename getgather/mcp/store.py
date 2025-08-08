@@ -2,45 +2,12 @@ from typing import ClassVar
 
 from pydantic import BaseModel
 
-from getgather.api.types import RequestInfo
 from getgather.connectors.spec_loader import BrandIdEnum
 
 
 class BrandState(BaseModel):
     browser_profile_id: str
     is_connected: bool = False
-
-
-class ProfileData(BaseModel):
-    location: RequestInfo | None = None
-
-
-class ProfileStore:
-    """
-    Store profile-level data like location settings.
-    This will soon be replaced by a database.
-    """
-
-    _profile_data: ClassVar[dict[str, ProfileData]] = {}
-
-    @classmethod
-    def set_profile_location(cls, profile_id: str, location: RequestInfo | None):
-        """Set location for a browser profile."""
-        if profile_id not in cls._profile_data:
-            cls._profile_data[profile_id] = ProfileData()
-        cls._profile_data[profile_id].location = location
-
-    @classmethod
-    def get_profile_location(cls, profile_id: str) -> RequestInfo | None:
-        """Get location for a browser profile."""
-        profile_data = cls._profile_data.get(profile_id)
-        return profile_data.location if profile_data else None
-
-    @classmethod
-    def clear_profile_location(cls, profile_id: str):
-        """Clear location for a browser profile."""
-        if profile_id in cls._profile_data:
-            cls._profile_data[profile_id].location = None
 
 
 class BrandConnectionStore:

@@ -6,14 +6,13 @@ from fastmcp import Context
 from fastmcp.server.dependencies import get_http_headers
 
 from getgather.api.routes.link.types import HostedLinkTokenRequest
-from getgather.api.types import RequestInfo
 from getgather.auth_flow import ExtractResult
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.extract_orchestrator import ExtractOrchestrator
 from getgather.logs import logger
-from getgather.mcp.store import BrandConnectionStore, ProfileStore
+from getgather.mcp.store import BrandConnectionStore
 
 
 async def auth_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
@@ -82,9 +81,9 @@ async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict
         }
 
 
-async def extract(brand_id: BrandIdEnum, location: RequestInfo | None = None) -> dict[str, Any]:
+async def extract(brand_id: BrandIdEnum) -> dict[str, Any]:
     """Extract data from a brand."""
-    browser_session = await start_browser_session(brand_id=brand_id, location=location)
+    browser_session = await start_browser_session(brand_id=brand_id)
 
     extract_orchestrator = ExtractOrchestrator(
         brand_id=brand_id,
@@ -105,24 +104,12 @@ async def extract(brand_id: BrandIdEnum, location: RequestInfo | None = None) ->
     }
 
 
-async def start_browser_session(
-    brand_id: BrandIdEnum, location: RequestInfo | None = None
-) -> BrowserSession:
-    """Start a browser session and return the page object.
-    
-    Args:
-        brand_id: Brand identifier
-        location: Optional location for proxy routing (overrides stored location)
-    """
+async def start_browser_session(brand_id: BrandIdEnum) -> BrowserSession:
+    """Start a browser session and return the page object."""
     profile_id = BrandConnectionStore.get_browser_profile_id(brand_id)
     if not profile_id:
         raise ValueError(f"Profile ID not found for brand {brand_id}")
-    
-    # Use provided location or fallback to stored profile location
-    if location is None:
-        location = ProfileStore.get_profile_location(profile_id)
-    
-    browser_profile = BrowserProfile(id=profile_id, location=location)
+    browser_profile = BrowserProfile(id=profile_id)
 
     browser_session = await BrowserSession.get(browser_profile)
     await browser_session.start()

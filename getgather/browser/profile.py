@@ -8,7 +8,7 @@ from nanoid import generate
 from patchright.async_api import BrowserType, ViewportSize
 from pydantic import ConfigDict, Field, model_validator
 
-from getgather.api.types import RequestInfo, request_info
+from getgather.api.types import request_info
 from getgather.browser.freezable_model import FreezableModel
 from getgather.browser.proxy import setup_proxy
 from getgather.config import settings
@@ -21,7 +21,6 @@ FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
 class BrowserProfile(FreezableModel):
     screen_width: int = 1920
     screen_height: int = 1080
-    location: RequestInfo | None = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -46,9 +45,8 @@ class BrowserProfile(FreezableModel):
             extra={"profile_id": profile_id},
         )
 
-        # Setup proxy if configured - use profile's location or fallback to request_info context
-        location = self.location or request_info.get()
-        proxy = await setup_proxy(profile_id, location)
+        # Setup proxy if configured
+        proxy = await setup_proxy(profile_id, request_info.get())
 
         # Get viewport configuration from parent class
         viewport_config = self.get_viewport_config()
