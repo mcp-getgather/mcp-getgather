@@ -1,8 +1,6 @@
 from typing import Any
 from urllib.parse import quote
 
-from fastmcp import Context
-
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.mcp.registry import BrandMCPBase
@@ -13,16 +11,13 @@ shopee_mcp = BrandMCPBase(prefix="shopee", name="Shopee MCP")
 
 
 @shopee_mcp.tool(tags={"private"})
-async def get_purchase_history(
-    ctx: Context,
-) -> dict[str, Any]:
+async def get_purchase_history() -> dict[str, Any]:
     """Get purchase history of a shopee."""
     return await extract(brand_id=BrandIdEnum("shopee"))
 
 
 @shopee_mcp.tool
 async def search_product(
-    ctx: Context,
     keyword: str,
     page_number: int = 1,
 ) -> dict[str, Any]:
