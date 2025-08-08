@@ -1,7 +1,7 @@
 .claude
 
 # public asset
-frontend/public/
+api/frontend/public/
 
 # Browser profiles
 screenshots/
@@ -502,5 +502,6 @@ vite.config.ts.timestamp-*
 # Ignore build output from vite
 getgather/api/frontend/index.html
 getgather/api/frontend/assets
+getgather/api/frontend/output.json
 
 !frontend/src/lib

@@ -18,3 +18,18 @@ CREATE TABLE IF NOT EXISTS activities (
     execution_time_ms INTEGER NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- rrweb recordings table
+CREATE TABLE IF NOT EXISTS rrweb_recordings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    activity_id INTEGER NOT NULL UNIQUE,
+    events_json TEXT NOT NULL,
+    event_count INTEGER NOT NULL,
+    start_timestamp INTEGER NOT NULL,
+    end_timestamp INTEGER NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (activity_id) REFERENCES activities(id)
+);
+
+-- Index for fast retrieval by activity
+CREATE INDEX IF NOT EXISTS idx_rrweb_recordings_activity_id ON rrweb_recordings(activity_id);

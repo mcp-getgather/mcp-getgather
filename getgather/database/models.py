@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from typing import Any, Self
 
@@ -65,3 +66,33 @@ class DBModel(BaseModel):
         ) + (id,)
 
         execute_query(query, params)
+
+
+class RRWebRecording(DBModel):
+    """rrweb recording model for storing browser automation replays."""
+    
+    activity_id: int
+    events_json: str
+    event_count: int
+    start_timestamp: int
+    end_timestamp: int
+    
+    @property
+    def table_name(self) -> str:
+        return "rrweb_recordings"
+    
+    @property
+    def events(self) -> list[dict[str, Any]]:
+        """Parse and return the events as a Python list."""
+        return json.loads(self.events_json)
+    
+    @classmethod
+    def from_events(cls, activity_id: int, events: list[dict[str, Any]]) -> Self:
+        """Create a recording from a list of rrweb events."""
+        return cls(
+            activity_id=activity_id,
+            events_json=json.dumps(events),
+            event_count=len(events),
+            start_timestamp=events[0]["timestamp"] if events else 0,
+            end_timestamp=events[-1]["timestamp"] if events else 0
+        )
