@@ -9,10 +9,13 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
     outDir: path.resolve(__dirname, "getgather", "api", "frontend"),
+    rollupOptions: {
+      external: ["rrweb/dist/style.css"]
+    }
   },
   server: {
     proxy: {
-      "^/(brands|link|parse|start|auth|replay|static|live)|^/$": {
+      "^/(brands|link|parse|start|auth|replay|static|live|api)|^/$": {
         target: "http://127.0.0.1:8000/",
         changeOrigin: true,
       },
