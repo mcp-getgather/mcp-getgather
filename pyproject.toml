@@ -21,6 +21,7 @@ dependencies = [
   "fastmcp>=2.10.5",
   "requests>=2.32.4",
   "httpx>=0.28.1",
+  "browser-use>=0.5.10",
 ]
 
 [dependency-groups]
