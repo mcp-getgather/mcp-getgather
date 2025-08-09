@@ -7,108 +7,180 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import EmptyState from "@/components/EmptyState";
-import PageHeader from "@/components/PageHeader";
-import {
-  Activity,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  RefreshCw,
-} from "lucide-react";
+import { Search, RefreshCw, ExternalLink } from "lucide-react";
 
 export default function Activities() {
-  const hasActivities = false; // TODO: get this from the backend
-
-  if (!hasActivities) {
-    return (
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <PageHeader
-          title="Activity"
-          description="View your recent activity and logs"
-          badge={{
-            text: "Activity Monitor",
-            icon: Activity,
-          }}
-        />
-
-        <EmptyState
-          icon={Clock}
-          title="No Recent Activity"
-          description="Your getgather operations and activity logs will appear here."
-          action={
-            <Button className="bg-indigo-600 hover:bg-indigo-700">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh Activity
-            </Button>
-          }
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
-      <PageHeader
-        title="Activity"
-        description="View your recent activity and logs"
-        badge={{
-          text: "Activity Monitor",
-          icon: Activity,
-        }}
-      />
+    <div className="max-w-6xl mx-auto px-6 py-10">
+      <div className="flex items-start justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Activity</h1>
+          <p className="text-muted-foreground mt-1">
+            Track all agent activities and monitor performance in detail
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button size="sm" variant="outline">
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
+        </div>
+      </div>
 
-      <div className="space-y-4">
-        <Card className="border-0 shadow-lg">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                </div>
+      {/* Toolbar */}
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex-1 flex items-center gap-3 bg-white border-1 p-4 rounded-lg">
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search activities..."
+              className="w-full rounded-md border border-gray-200 bg-white pl-9 pr-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left column: Activity feed */}
+        <div className="lg:col-span-2">
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base">
-                    Data extraction completed
-                  </CardTitle>
-                  <CardDescription>Amazon order history</CardDescription>
+                  <CardTitle>Recent Activities</CardTitle>
+                  <CardDescription>Activity Feed</CardDescription>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-2 text-green-600">
+                    <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+                    Live Updates
+                  </div>
                 </div>
               </div>
-              <Badge variant="default" className="bg-green-100 text-green-800">
-                Success
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <p className="text-sm text-gray-600">2 minutes ago</p>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <ul className="divide-y divide-gray-100">
+                {[
+                  {
+                    title: "bbc_get_bookmarks",
+                    tag: "BBC",
+                    time: "(2s)",
+                    active: true,
+                  },
+                  {
+                    title: "goodreads_get_book_list",
+                    tag: "Goodreads",
+                    time: "1h ago (20s)",
+                  },
+                  {
+                    title: "goodreads_auth",
+                    tag: "Goodreads",
+                    time: "1h ago (20s)",
+                  },
+                  {
+                    title: "amazon_get_orders",
+                    tag: "Amazon",
+                    time: "1h ago (20s)",
+                  },
+                  {
+                    title: "amazon_auth",
+                    tag: "Amazon",
+                    time: "1h ago (20s)",
+                  },
+                  {
+                    title: "tokopedia_search_product",
+                    tag: "Tokopedia",
+                    time: "1h ago (20s)",
+                  },
+                  {
+                    title: "ebird_get_explore_species_list",
+                    tag: "eBird",
+                    time: "1h ago (20s)",
+                  },
+                ].map((item, idx) => (
+                  <li key={idx} className="py-3 first:pt-0 last:pb-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`h-2.5 w-2.5 rounded-full ${
+                            item.active ? "bg-green-500" : "bg-gray-300"
+                          }`}
+                        />
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-900">
+                            {item.title}
+                          </span>
+                          {item.tag ? (
+                            <Badge
+                              variant="secondary"
+                              className="bg-indigo-50 text-indigo-700"
+                            >
+                              {item.tag}
+                            </Badge>
+                          ) : null}
+                          {idx === 0 ? (
+                            <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
+                          ) : null}
+                        </div>
+                      </div>
+                      <span className="text-xs text-gray-500">{item.time}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
 
-        <Card className="border-0 shadow-lg">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <AlertCircle className="w-5 h-5 text-orange-600" />
+        {/* Right column: Summary */}
+        <div className="space-y-6">
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Current Task</CardTitle>
+              <CardDescription>
+                Retrieving recent Amazon orders and checking return expiration
+                dates
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-2 w-full rounded-full bg-gray-100">
+                <div
+                  className="h-2 rounded-full bg-indigo-600"
+                  style={{ width: "65%" }}
+                />
+              </div>
+              <div className="mt-2 text-right text-xs text-gray-500">65%</div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Activity Types</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span>Page Navigation</span>
+                  <span className="text-gray-600">45</span>
                 </div>
-                <div>
-                  <CardTitle className="text-base">
-                    Authentication required
-                  </CardTitle>
-                  <CardDescription>Netflix account access</CardDescription>
+                <div className="flex items-center justify-between">
+                  <span>Form Submission</span>
+                  <span className="text-gray-600">23</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Data Extraction</span>
+                  <span className="text-gray-600">31</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Click Action</span>
+                  <span className="text-gray-600">28</span>
                 </div>
               </div>
-              <Badge
-                variant="secondary"
-                className="bg-orange-100 text-orange-800"
-              >
-                Pending
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <p className="text-sm text-gray-600">5 minutes ago</p>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
