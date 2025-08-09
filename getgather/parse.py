@@ -138,6 +138,10 @@ async def parse_html(
             row: dict[str, str | list[str]] = {}
             for column in schema.columns:
                 elements = lc.locator(column.selector)
+                count = await elements.count()
+                if count == 0:
+                    row[column.name] = [] if column.multiple else ""
+                    continue
                 if column.multiple:
                     values: list[str] = []
                     for element in await elements.all():

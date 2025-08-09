@@ -53,9 +53,17 @@ class AuthMiddleware(Middleware):
                 return await call_next(context)
 
         brand_id = context.message.name.split("_")[0]
+        if "private" not in tool.tags:
+            async with activity(
+                brand_id=brand_id,
+                name=context.message.name,
+            ):
+                return await call_next(context)
+
         brand_state = BrandState.get(brand_id)
         if not brand_state:
-            browser_profile = BrowserProfile.create()
+            # Create and persist a new profile for the auth flow
+            browser_profile = BrowserProfile()
             brand_state = BrandState(
                 id=BrandIdEnum(brand_id),
                 browser_profile_id=browser_profile.id,
@@ -63,7 +71,7 @@ class AuthMiddleware(Middleware):
             )
             BrandState.add(brand_state)
 
-        if "private" not in tool.tags or brand_state.is_connected:
+        if brand_state.is_connected:
             async with activity(
                 brand_id=brand_id,
                 name=context.message.name,

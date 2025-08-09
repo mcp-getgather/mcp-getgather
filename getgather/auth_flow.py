@@ -64,7 +64,7 @@ async def auth_flow(
         if auth_request.profile_id:
             browser_profile = BrowserProfile(id=auth_request.profile_id)
         else:
-            browser_profile = BrowserProfile.create()
+            browser_profile = BrowserProfile()
 
         browser_session = await BrowserSession.get(browser_profile)
         await browser_session.start()

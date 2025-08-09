@@ -17,8 +17,8 @@ FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
 
 
 class BrowserProfile(FreezableModel):
-    screen_width: int = 1280
-    screen_height: int = 720
+    screen_width: int = 1920
+    screen_height: int = 1080
 
     model_config = ConfigDict(extra="forbid")
 
@@ -28,11 +28,6 @@ class BrowserProfile(FreezableModel):
     def setup_sentry(self):
         sentry_sdk.set_tag("profile_id", self.id)
         return self
-
-    @classmethod
-    def create(cls) -> BrowserProfile:
-        """Create a new browser profile."""
-        return cls()
 
     def profile_dir(self, profile_id: str) -> Path:
         return settings.profiles_dir / profile_id
