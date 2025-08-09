@@ -21,16 +21,18 @@ auto_import("getgather.mcp.brand")
 @asynccontextmanager
 async def activity(name: str, brand_id: str = "") -> AsyncGenerator[None, None]:
     """Context manager for tracking activity."""
-    activity = Activity(
-        brand_id=brand_id,
-        name=name,
-        start_time=datetime.now(UTC),
+    activity_id = Activity.add(
+        Activity(
+            brand_id=brand_id,
+            name=name,
+            start_time=datetime.now(UTC),
+        )
     )
-    activity.add()
     try:
         yield
     finally:
-        activity.update_end_time(
+        Activity.update_end_time(
+            id=activity_id,
             end_time=datetime.now(UTC),
         )
 
@@ -51,25 +53,25 @@ class AuthMiddleware(Middleware):
                 return await call_next(context)
 
         brand_id = context.message.name.split("_")[0]
-        if "private" not in tool.tags or BrandState.is_brand_connected(brand_id):
+        brand_state = BrandState.get(brand_id)
+        if not brand_state:
+            browser_profile = BrowserProfile.create()
+            brand_state = BrandState(
+                id=BrandIdEnum(brand_id),
+                browser_profile_id=browser_profile.id,
+                is_connected=False,
+            )
+            BrandState.add(brand_state)
+
+        if "private" not in tool.tags or brand_state.is_connected:
             async with activity(
                 brand_id=brand_id,
                 name=context.message.name,
             ):
                 return await call_next(context)
 
-        browser_profile_id = BrandState.get_browser_profile_id(brand_id)
-        if not browser_profile_id:
-            browser_profile = BrowserProfile.create()
-            brand_state = BrandState(
-                brand_id=BrandIdEnum(brand_id),
-                browser_profile_id=browser_profile.id,
-                is_connected=False,
-            )
-            brand_state.add()
-
         logger.info(
-            f"[AuthMiddleware] processing auth for brand {brand_id} with browser profile {browser_profile_id}"
+            f"[AuthMiddleware] processing auth for brand {brand_id} with browser profile {brand_state.browser_profile_id}"
         )
 
         async with activity(
