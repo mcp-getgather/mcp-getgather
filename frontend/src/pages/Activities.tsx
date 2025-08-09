@@ -7,17 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import PageHeader from "@/components/PageHeader";
-import {
-  Activity,
-  Search,
-  Download,
-  Filter,
-  RefreshCw,
-  ExternalLink,
-  RotateCcw,
-  Save,
-} from "lucide-react";
+import { Search, RefreshCw, ExternalLink } from "lucide-react";
 
 export default function Activities() {
   return (
