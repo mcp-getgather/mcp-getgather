@@ -50,6 +50,7 @@ def execute_insert(query: str, params: tuple[Any, ...] | None = None) -> int:
         cursor.execute(query, params or ())
         if cursor.lastrowid is None:
             raise RuntimeError("Failed to get last inserted row ID")
+        # Currently this will only return primary key of type integer (auto-increment)
         return cursor.lastrowid
 
 
