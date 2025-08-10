@@ -21,69 +21,72 @@ import {
 } from "lucide-react";
 import { Toggle } from "@/components/ui/toggle";
 
+type DataSource = {
+  id: string;
+  name: string;
+  connected: boolean;
+  letter: string;
+  bgClass: string;
+  textClass: string;
+};
+
+const DATA_SOURCES = [
+  {
+    id: "amazon",
+    name: "Amazon",
+    connected: true,
+    letter: "A",
+    bgClass: "bg-orange-500",
+    textClass: "text-white",
+  },
+  {
+    id: "goodreads",
+    name: "Goodreads",
+    connected: true,
+    letter: "G",
+    bgClass: "bg-amber-500",
+    textClass: "text-white",
+  },
+  {
+    id: "doordash",
+    name: "DoorDash",
+    connected: false,
+    letter: "D",
+    bgClass: "bg-purple-500",
+    textClass: "text-white",
+  },
+  {
+    id: "bbc",
+    name: "BBC",
+    connected: true,
+    letter: "B",
+    bgClass: "bg-neutral-700",
+    textClass: "text-white",
+  },
+  {
+    id: "cnn",
+    name: "CNN",
+    connected: false,
+    letter: "C",
+    bgClass: "bg-red-500",
+    textClass: "text-white",
+  },
+  {
+    id: "zillow",
+    name: "Zillow",
+    connected: true,
+    letter: "Z",
+    bgClass: "bg-blue-800",
+    textClass: "text-white",
+  },
+];
+
 export default function Settings() {
   const [isRecordingEnabled, setIsRecordingEnabled] = useState(false);
   const [recordingDelay, setRecordingDelay] = useState(5);
-  type DataSource = {
-    id: string;
-    name: string;
-    connected: boolean;
-    letter: string;
-    bgClass: string;
-    textClass: string;
-  };
 
   // TODO: get this from API
-  const [dataSources, setDataSources] = useState<DataSource[]>([
-    {
-      id: "amazon",
-      name: "Amazon",
-      connected: true,
-      letter: "A",
-      bgClass: "bg-orange-500",
-      textClass: "text-white",
-    },
-    {
-      id: "goodreads",
-      name: "Goodreads",
-      connected: true,
-      letter: "G",
-      bgClass: "bg-amber-500",
-      textClass: "text-white",
-    },
-    {
-      id: "doordash",
-      name: "DoorDash",
-      connected: false,
-      letter: "D",
-      bgClass: "bg-purple-500",
-      textClass: "text-white",
-    },
-    {
-      id: "bbc",
-      name: "BBC",
-      connected: true,
-      letter: "B",
-      bgClass: "bg-neutral-700",
-      textClass: "text-white",
-    },
-    {
-      id: "cnn",
-      name: "CNN",
-      connected: false,
-      letter: "C",
-      bgClass: "bg-red-500",
-      textClass: "text-white",
-    },
-    {
-      id: "zillow",
-      name: "Zillow",
-      connected: true,
-      letter: "Z",
-      bgClass: "bg-blue-800",
-      textClass: "text-white",
-    },
-  ]);
+  const [dataSources, setDataSources] = useState<DataSource[]>(DATA_SOURCES);
 
   function toggleDataSource(id: string) {
     // TODO: integrate to API
