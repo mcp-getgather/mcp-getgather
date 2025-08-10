@@ -1,7 +1,5 @@
 from typing import Any
 
-from fastmcp import Context
-
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.mcp.registry import BrandMCPBase
@@ -12,9 +10,7 @@ amazon_mcp = BrandMCPBase(prefix="amazon", name="Amazon MCP")
 
 
 @amazon_mcp.tool(tags={"private"})
-async def get_purchase_history(
-    ctx: Context,
-) -> dict[str, Any]:
+async def get_purchase_history() -> dict[str, Any]:
     """Get purchase/order history of a amazon."""
     return await extract(brand_id=BrandIdEnum("amazon"))
 
@@ -22,7 +18,6 @@ async def get_purchase_history(
 @amazon_mcp.tool
 async def search_product(
     keyword: str,
-    ctx: Context,
 ) -> dict[str, Any]:
     """Search product on amazon."""
     browser_session = await start_browser_session(brand_id=BrandIdEnum("amazon"))
@@ -54,7 +49,6 @@ async def search_product(
 @amazon_mcp.tool
 async def get_product_detail(
     product_url: str,
-    ctx: Context,
 ) -> dict[str, Any]:
     """Get product detail from amazon."""
     browser_session = await start_browser_session(brand_id=BrandIdEnum("amazon"))
@@ -70,9 +64,7 @@ async def get_product_detail(
 
 
 @amazon_mcp.tool(tags={"private"})
-async def get_cart_summary(
-    ctx: Context,
-) -> dict[str, Any]:
+async def get_cart_summary() -> dict[str, Any]:
     """Get cart summary from amazon."""
     browser_session = await start_browser_session(brand_id=BrandIdEnum("amazon"))
     page = await browser_session.page()
@@ -84,9 +76,7 @@ async def get_cart_summary(
 
 
 @amazon_mcp.tool(tags={"private"})
-async def get_browsing_history(
-    ctx: Context,
-) -> dict[str, Any]:
+async def get_browsing_history() -> dict[str, Any]:
     """Get browsing history from amazon."""
     browser_session = await start_browser_session(brand_id=BrandIdEnum("amazon"))
     page = await browser_session.page()
