@@ -561,13 +561,21 @@ class ColumnYML(YMLModel):
     name: str
     selector: str
     attribute: str | None = None
+    function: str | None = None
     multiple: bool = False
+
+    @model_validator(mode="after")
+    def validate_attribute_or_function(self) -> Self:
+        if self.attribute and self.function:
+            raise ValueError("Cannot specify both attribute and function")
+        return self
 
 
 class Column(SpecModel[ColumnYML]):
     name: str
     selector: str
     attribute: str | None = None
+    function: str | None = None
     multiple: bool = False
 
 
