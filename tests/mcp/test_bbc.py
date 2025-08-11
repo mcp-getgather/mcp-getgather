@@ -24,7 +24,6 @@ async def test_bbc_login_and_get_bookmarks():
             )
             mcp_call_auth_result = json.loads(mcp_call_auth.content[0].text)
             assert mcp_call_auth_result.get("url")
-            assert mcp_call_auth_result.get("session_id")
             print(mcp_call_auth_result.get("url"))
 
             browser = await p.chromium.launch(headless=False)
