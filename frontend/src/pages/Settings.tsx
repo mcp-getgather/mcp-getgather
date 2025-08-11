@@ -6,111 +6,301 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import PageHeader from "@/components/PageHeader";
-import { Settings as SettingsIcon, Database, Shield, Bell } from "lucide-react";
+import { useState } from "react";
+import {
+  Info,
+  Download,
+  Radio,
+  Play,
+  Trash,
+  RotateCcw,
+  Save,
+  Wifi,
+  Monitor,
+  Database,
+} from "lucide-react";
+import { Toggle } from "@/components/ui/toggle";
+
+type DataSource = {
+  id: string;
+  name: string;
+  connected: boolean;
+  letter: string;
+  bgClass: string;
+  textClass: string;
+};
+
+const DATA_SOURCES = [
+  {
+    id: "amazon",
+    name: "Amazon",
+    connected: true,
+    letter: "A",
+    bgClass: "bg-orange-500",
+    textClass: "text-white",
+  },
+  {
+    id: "goodreads",
+    name: "Goodreads",
+    connected: true,
+    letter: "G",
+    bgClass: "bg-amber-500",
+    textClass: "text-white",
+  },
+  {
+    id: "doordash",
+    name: "DoorDash",
+    connected: false,
+    letter: "D",
+    bgClass: "bg-purple-500",
+    textClass: "text-white",
+  },
+  {
+    id: "bbc",
+    name: "BBC",
+    connected: true,
+    letter: "B",
+    bgClass: "bg-neutral-700",
+    textClass: "text-white",
+  },
+  {
+    id: "cnn",
+    name: "CNN",
+    connected: false,
+    letter: "C",
+    bgClass: "bg-red-500",
+    textClass: "text-white",
+  },
+  {
+    id: "zillow",
+    name: "Zillow",
+    connected: true,
+    letter: "Z",
+    bgClass: "bg-blue-800",
+    textClass: "text-white",
+  },
+];
 
 export default function Settings() {
+  const [isRecordingEnabled, setIsRecordingEnabled] = useState(false);
+  const [recordingDelay, setRecordingDelay] = useState(5);
+
+  // TODO: get this from API
+  const [dataSources, setDataSources] = useState<DataSource[]>(DATA_SOURCES);
+
+  function toggleDataSource(id: string) {
+    // TODO: integrate to API
+    setDataSources((prev) =>
+      prev.map((ds) =>
+        ds.id === id ? { ...ds, connected: !ds.connected } : ds,
+      ),
+    );
+  }
+
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
-      <PageHeader
-        title="Settings"
-        description="Configure your GetGather Studio preferences"
-        badge={{
-          text: "Configuration",
-          icon: SettingsIcon,
-        }}
-      />
+    <div className="max-w-6xl mx-auto px-6 py-10">
+      <div className="flex items-start justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
+          <p className="text-muted-foreground mt-1">
+            Configure GetGather Studio to work with your preferred tools and
+            data sources
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button size="sm" variant="outline" className="gap-2">
+            <Download className="h-4 w-4" />
+            Export Settings
+          </Button>
+          <Button size="sm" variant="outline">
+            <RotateCcw className="h-4 w-4" />
+            Reset to Defaults
+          </Button>
+          <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700">
+            <Save className="h-4 w-4" />
+            Save Changes
+          </Button>
+        </div>
+      </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Database className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <CardTitle>Data Sources</CardTitle>
-                <CardDescription>
-                  Manage your connected data sources
-                </CardDescription>
+      <div className="flex flex-col gap-6 max-w-4xl">
+        <Card className="border border-border">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Radio className="h-4 w-4 text-red-500" />
+                  <CardTitle className="text-lg font-semibold">
+                    Recording with rrweb
+                  </CardTitle>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </div>
               </div>
             </div>
+            <CardDescription>
+              Manage screen recording settings and playback options
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Badge variant="outline" className="mb-3">
-              3 Connected
-            </Badge>
-            <Button variant="outline" className="w-full">
-              Manage Sources
-            </Button>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium">Enable Recording</div>
+                <div className="text-sm text-muted-foreground">
+                  Record user interactions and page changes
+                </div>
+              </div>
+              <Toggle
+                checked={isRecordingEnabled}
+                onChange={setIsRecordingEnabled}
+              />
+            </div>
+
+            <div className="pt-2">
+              <div className="font-medium mb-4">Recording Delay</div>
+              <div className="px-1">
+                <input
+                  type="range"
+                  min={0}
+                  max={30}
+                  value={recordingDelay}
+                  onChange={(e) => setRecordingDelay(parseInt(e.target.value))}
+                  className="w-full accent-slate-900"
+                />
+              </div>
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>0s</span>
+                <span>{recordingDelay}s delay</span>
+                <span>30s</span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3 pt-2">
+              <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                <Play className="h-4 w-4" />
+                Replay Recording
+              </Button>
+              <Button variant="outline">
+                <Trash className="h-4 w-4" /> Clear Recordings
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <Shield className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <CardTitle>Security</CardTitle>
-                <CardDescription>
-                  Configure authentication and access
-                </CardDescription>
+        <Card className="border border-border">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Wifi className="h-4 w-4 text-blue-500" />
+                  <CardTitle className="text-lg font-semibold">
+                    Proxy Service
+                  </CardTitle>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </div>
               </div>
             </div>
+            <CardDescription>
+              Enable proxy service for secure data access
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Badge variant="outline" className="mb-3">
-              Secured
-            </Badge>
-            <Button variant="outline" className="w-full">
-              Security Settings
-            </Button>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium">Proxy Service</div>
+                <div className="text-sm text-muted-foreground">
+                  Route requests through secure proxy
+                </div>
+              </div>
+              <Toggle
+                checked={isRecordingEnabled}
+                onChange={setIsRecordingEnabled}
+              />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                <Bell className="w-5 h-5 text-orange-600" />
-              </div>
-              <div>
-                <CardTitle>Notifications</CardTitle>
-                <CardDescription>
-                  Control your notification preferences
-                </CardDescription>
+        <Card className="border border-border">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Monitor className="h-4 w-4 text-green-500" />
+                  <CardTitle className="text-lg font-semibold">
+                    Interactive Live View
+                  </CardTitle>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </div>
               </div>
             </div>
+            <CardDescription>
+              Enable real-time interaction with the live view
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Badge variant="outline" className="mb-3">
-              Enabled
-            </Badge>
-            <Button variant="outline" className="w-full">
-              Notification Settings
-            </Button>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium">Interactive Mode</div>
+                <div className="text-sm text-muted-foreground">
+                  Allow clicking and interaction in live view
+                </div>
+              </div>
+              <Toggle
+                checked={isRecordingEnabled}
+                onChange={setIsRecordingEnabled}
+              />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <SettingsIcon className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <CardTitle>General</CardTitle>
-                <CardDescription>Basic application preferences</CardDescription>
+        <Card className="border border-border">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Database className="h-4 w-4 text-purple-500" />
+                  <CardTitle className="text-lg font-semibold">
+                    Data Link Management
+                  </CardTitle>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </div>
               </div>
             </div>
+            <CardDescription>
+              Manage connected data sources and their access permissions
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full">
-              General Settings
-            </Button>
+          <CardContent className="space-y-3">
+            {dataSources.map((ds) => (
+              <div
+                key={ds.id}
+                className="flex items-center justify-between rounded-xl border bg-white px-4 py-3 shadow-sm"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl ${ds.bgClass}`}
+                  >
+                    <span className={`text-base font-semibold ${ds.textClass}`}>
+                      {ds.letter}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div>
+                      <div className="font-medium leading-tight">{ds.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {ds.connected ? "Connected" : "Disconnected"}
+                      </div>
+                    </div>
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-100">
+                      <Info className="h-3.5 w-3.5 text-gray-500" />
+                    </span>
+                  </div>
+                </div>
+                <Toggle
+                  checked={ds.connected}
+                  onChange={() => toggleDataSource(ds.id)}
+                />
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
