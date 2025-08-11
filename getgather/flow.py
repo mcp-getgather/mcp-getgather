@@ -412,9 +412,10 @@ async def flow_step(*, page: Page, flow_state: FlowState) -> FlowState:
     if step.bundle:
         if step.slurp_selector:
             logger.info(f"📦 Slurping and packaging {step.slurp_selector}...")
-            content = await page.eval_on_selector_all(
-                step.slurp_selector,
-                'elements => elements.map(element => element.innerHTML).join("")',
+            locator = page.locator(step.slurp_selector)
+            await locator.wait_for(state="visible")
+            content = await locator.evaluate_all(
+                'elements => elements.map(element => element.innerHTML).join("")'
             )
             bundle = Bundle(name=step.bundle, content=content)
             logger.info(f"📦 {step.bundle} is {len(content)} bytes.")
