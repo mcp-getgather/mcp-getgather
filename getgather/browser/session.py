@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from fastapi import HTTPException
 from patchright.async_api import BrowserContext, Page, Playwright, async_playwright
 
 from getgather.browser.profile import BrowserProfile
+from getgather.database.repositories.activity_repository import Activity
 from getgather.logs import logger
 
 
@@ -24,6 +25,7 @@ class BrowserSession:
         self.profile: BrowserProfile = BrowserProfile(id=profile_id)
         self._playwright: Playwright | None = None
         self._context: BrowserContext | None = None
+        self._activity: Activity | None = None
 
     @classmethod
     async def get(cls, profile: BrowserProfile) -> BrowserSession:
@@ -48,6 +50,10 @@ class BrowserSession:
             await self.context.new_page()
         return self.context.pages[-1]
 
+    async def save_event(self, event: dict[str, Any]) -> None:
+        print(f"DEBUGPRINT[461]: session.py:57: event={len(event)}")
+        
+
     async def start(self):
         try:
             if self.profile.id in BrowserSession._sessions:
@@ -65,40 +71,21 @@ class BrowserSession:
             self._context = await self.profile.launch(
                 profile_id=self.profile.id, browser_type=self.playwright.chromium
             )
+            await self._context.expose_function("saveEvent", self.save_event)  # type: ignore
         except Exception as e:
             logger.error(f"Error starting browser: {e}")
             raise BrowserStartupError(f"Failed to start browser: {e}") from e
 
-    async def start_recording(self) -> None:
-        """Inject rrweb recording script and start capturing events."""
+    async def start_recording(self):
         page = await self.page()
-        
-        # Inject rrweb recording script
-        await page.add_script_tag(url="https://cdn.jsdelivr.net/npm/rrweb@2/dist/rrweb.min.js")
-        
-        # Start recording
-        await page.evaluate("""
-            window.rrwebEvents = [];
-            window.stopRRWebRecording = rrweb.record({
-                emit(event) {
-                    window.rrwebEvents.push(event);
-                }
-            });
-        """)
+        await page.add_script_tag(
+            url="https://cdn.jsdelivr.net/npm/rrweb@2.0.0-alpha.14/dist/record/rrweb-record.min.js"
+        )
+        await page.evaluate(
+            "() => { rrwebRecord({ emit(event) { window.saveEvent(event); }, maskAllInputs: true }); }",
+            isolated_context=False,
+        )
 
-    async def stop_recording(self) -> list:
-        """Stop recording and return captured events."""
-        page = await self.page()
-        
-        # Stop recording and get events
-        events = await page.evaluate("""
-            if (window.stopRRWebRecording) {
-                window.stopRRWebRecording();
-            }
-            return window.rrwebEvents || [];
-        """)
-        
-        return events
 
     async def stop(self):
         logger.info(

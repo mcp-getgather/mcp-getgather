@@ -120,6 +120,7 @@ async def start_browser_session(brand_id: BrandIdEnum) -> BrowserSession:
 
     browser_session = await BrowserSession.get(browser_profile)
     await browser_session.start()
+    await browser_session.start_recording()
     return browser_session
 
 
