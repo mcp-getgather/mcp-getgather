@@ -1,7 +1,6 @@
 from typing import Any
 
 from getgather.connectors.spec_loader import BrandIdEnum
-from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract
 
