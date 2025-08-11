@@ -47,6 +47,23 @@ async def try_download(page: Page, download_filename: str | None, download_dir: 
 LOCATOR_ALL_TIMEOUT = 100  # ms
 
 
+async def get_first_visible(locator: Locator) -> Locator | None:
+    # First try to use the locator directly, but if that fails, try the first element
+    try:
+        if await locator.is_visible():
+            return locator
+    except Exception:
+        try:
+            if await locator.first.is_visible():
+                return locator.first
+        except Exception:
+            return None
+
+
+async def is_visible(locator: Locator) -> bool:
+    return await get_first_visible(locator) is not None
+
+
 async def handle_click(
     page: Frame | Page,
     selector: str,
@@ -55,14 +72,11 @@ async def handle_click(
     timeout: int = 3000,
 ):
     logger.info(f"📝 Clicking {selector}...")
-    button_locator = page.locator(selector)
     async with try_download(page, download_filename, bundle_dir):  # type: ignore
         try:
-            button = button_locator.first
-            logger.debug(f"🔘 Found {button} button")
-            is_visible = await button.is_visible()
-            logger.debug(f"🔘 Button {button} is visible: {is_visible}")
-            if is_visible:
+            button = await get_first_visible(page.locator(selector))
+            logger.debug(f"🔘 Button {selector} is {'visible' if button else 'not visible'}")
+            if button:
                 logger.debug(f"🔘 Clicking {selector}...")
                 await button.click()
                 logger.debug(f"🔘 Clicked {selector}")

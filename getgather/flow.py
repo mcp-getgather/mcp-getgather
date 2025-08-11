@@ -353,7 +353,8 @@ async def flow_step(*, page: Page, flow_state: FlowState) -> FlowState:
                 continue
 
             # This allows us to ask for a prompt if the field is not already filled without it being another step
-            if not (value := flow_state.inputs.get(field.name, "")):
+            value = flow_state.inputs.get(field.name, "")
+            if field.needs_input and not value:
                 prompt = await handle_field_prompt(page, field)
                 prompts_to_return.append(prompt)
                 has_needed_inputs = False
@@ -371,7 +372,7 @@ async def flow_step(*, page: Page, flow_state: FlowState) -> FlowState:
                     else:
                         logger.warning(f"⚠️ Could not get frame content for {field.iframe_selector}")
 
-            if field.type == "click":
+            if field.type == "click" or field.type == "autoclick":
                 if field.selector:
                     await handle_click(
                         current_page,
@@ -411,9 +412,10 @@ async def flow_step(*, page: Page, flow_state: FlowState) -> FlowState:
     if step.bundle:
         if step.slurp_selector:
             logger.info(f"📦 Slurping and packaging {step.slurp_selector}...")
-            content = await page.eval_on_selector_all(
-                step.slurp_selector,
-                'elements => elements.map(element => element.innerHTML).join("")',
+            locator = page.locator(step.slurp_selector)
+            await locator.wait_for(state="visible")
+            content = await locator.evaluate_all(
+                'elements => elements.map(element => element.innerHTML).join("")'
             )
             bundle = Bundle(name=step.bundle, content=content)
             logger.info(f"📦 {step.bundle} is {len(content)} bytes.")

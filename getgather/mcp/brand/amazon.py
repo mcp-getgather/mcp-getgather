@@ -1,7 +1,10 @@
 from typing import Any
 
+from getgather.browser.profile import BrowserProfile
+from getgather.browser.session import browser_session
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
+from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract, start_browser_session
 from getgather.parse import parse_html
@@ -20,12 +23,18 @@ async def search_product(
     keyword: str,
 ) -> dict[str, Any]:
     """Search product on amazon."""
-    browser_session = await start_browser_session(brand_id=BrandIdEnum("amazon"))
-    page = await browser_session.page()
-    await page.goto(f"https://www.amazon.com/s?k={keyword}")
-    await page.wait_for_selector("div[role='listitem']")
-    await page.wait_for_timeout(1000)
-    html = await page.locator("div.s-search-results").inner_html()
+    if BrandState.is_brand_connected(BrandIdEnum("amazon")):
+        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("amazon"))
+        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
+    else:
+        profile = BrowserProfile()
+
+    async with browser_session(profile) as session:
+        page = await session.page()
+        await page.goto(f"https://www.amazon.com/s?k={keyword}")
+        await page.wait_for_selector("div[role='listitem]")
+        await page.wait_for_timeout(1000)
+        html = await page.locator("div.s-search-results").inner_html()
     spec_schema = SpecSchema.model_validate({
         "bundle": "",
         "format": "html",
@@ -51,15 +60,21 @@ async def get_product_detail(
     product_url: str,
 ) -> dict[str, Any]:
     """Get product detail from amazon."""
-    browser_session = await start_browser_session(brand_id=BrandIdEnum("amazon"))
-    page = await browser_session.page()
-    if not product_url.startswith("https"):
-        product_url = f"https://www.amazon.com/{product_url}"
-    await page.goto(product_url)
+    if BrandState.is_brand_connected(BrandIdEnum("amazon")):
+        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("amazon"))
+        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
+    else:
+        profile = BrowserProfile()
 
-    await page.wait_for_selector("span#productTitle")
-    await page.wait_for_timeout(1000)
-    html = await page.locator("#centerCol").inner_html()
+    async with browser_session(profile) as session:
+        page = await session.page()
+        if not product_url.startswith("https"):
+            product_url = f"https://www.amazon.com/{product_url}"
+        await page.goto(product_url)
+
+        await page.wait_for_selector("span#productTitle")
+        await page.wait_for_timeout(1000)
+        html = await page.locator("#centerCol").inner_html()
     return {"product_detail_html": html}
 
 

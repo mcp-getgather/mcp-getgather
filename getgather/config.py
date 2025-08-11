@@ -25,6 +25,15 @@ class Settings(BaseSettings):
     BUNDLES_DIR: str = ""
     SCREENSHOTS_DIR: str = ""
     HEADLESS: bool = False
+    SHOULD_BLOCK_UNWANTED_RESOURCES: bool = False
+
+    # Browser-use settings
+    BROWSER_USE_MODEL: str = "o4-mini"
+    OPENAI_API_KEY: str = ""
+
+    # Proxy Settings
+    HTTP_PROXY: str = ""
+    HTTP_PROXY_PASSWORD: str = ""
 
     @property
     def brand_spec_dir(self) -> Path:
@@ -59,6 +68,13 @@ class Settings(BaseSettings):
         if not path.exists():
             path.mkdir(parents=True, exist_ok=True)
         return path
+
+    @property
+    def database_path(self) -> Path:
+        """Path to SQLite database file in the main data directory."""
+        data_dir = PROJECT_DIR / "data"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        return data_dir / "getgather.db"
 
     @field_validator("LOG_LEVEL", mode="after")
     @classmethod
