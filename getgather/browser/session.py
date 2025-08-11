@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from contextvars import ContextVar
 from typing import Any, ClassVar
 
 from fastapi import HTTPException
 from patchright.async_api import BrowserContext, Page, Playwright, async_playwright
 
 from getgather.browser.profile import BrowserProfile
+from getgather.context import current_activity
 from getgather.database.repositories.activity_repository import Activity
 from getgather.logs import logger
 
@@ -51,6 +53,14 @@ class BrowserSession:
         return self.context.pages[-1]
 
     async def save_event(self, event: dict[str, Any]) -> None:
+        activity = current_activity.get()
+        if activity:
+            print(f"DEBUGPRINT: Saving event for activity {activity.name} (ID: {activity.id})")
+            # TODO: Store event with activity context in database
+            # For now, just log the association
+        else:
+            print(f"DEBUGPRINT: No activity context found for event")
+        
         print(f"DEBUGPRINT[461]: session.py:57: event={len(event)}")
         
 

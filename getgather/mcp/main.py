@@ -8,6 +8,7 @@ from fastmcp.tools.tool import ToolResult
 
 from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
+from getgather.context import current_activity
 from getgather.database.repositories.activity_repository import Activity
 from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.logs import logger
@@ -27,9 +28,14 @@ async def activity(name: str, brand_id: str = "") -> AsyncGenerator[None, None]:
         start_time=datetime.now(UTC),
     )
     activity.add()
+    
+    # Set the activity in context
+    token = current_activity.set(activity)
     try:
         yield
     finally:
+        # Reset the context and update end time
+        current_activity.reset(token)
         activity.update_end_time(
             end_time=datetime.now(UTC),
         )
