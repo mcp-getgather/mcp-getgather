@@ -1,5 +1,5 @@
 # Stage 1: Frontend Builder
-FROM node:22-alpine AS frontend-builder
+FROM mirror.gcr.io/library/node:22-alpine AS frontend-builder
 
 WORKDIR /app
 
@@ -19,7 +19,7 @@ COPY frontend/ ./frontend/
 RUN npm run build
 
 # Stage 2: Backend Builder
-FROM python:3.13-slim AS backend-builder
+FROM mirror.gcr.io/library/python:3.13-slim AS backend-builder
 
 COPY --from=ghcr.io/astral-sh/uv:0.8.4 /uv /uvx /bin/
 
@@ -62,7 +62,7 @@ COPY entrypoint.sh /app/entrypoint.sh
 RUN uv sync --no-dev
 
 # Stage 2: Final image
-FROM python:3.13-slim
+FROM mirror.gcr.io/library/python:3.13-slim
 
 RUN apt-get update && apt-get install -y \
     xvfb \
