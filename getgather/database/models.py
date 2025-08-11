@@ -23,7 +23,7 @@ class DBModel(BaseModel):
         """Get a record by its ID."""
         query = f"SELECT * FROM {self.table_name} WHERE id = ?"
         if row := fetch_one(query, (id,)):
-            return type(self).model_validate(row)
+            return self.model_validate(row)
         return None
 
     def add(self) -> int:
