@@ -32,6 +32,7 @@ class AuthMiddleware(Middleware):
 
         browser_profile_id = BrandConnectionStore.get_browser_profile_id(brand_id)
         if not browser_profile_id:
+            # Create and persist a new profile for the auth flow
             browser_profile = BrowserProfile()
             BrandConnectionStore.init_brand_state(brand_id, browser_profile.id)
 

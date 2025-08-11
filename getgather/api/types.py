@@ -1,14 +1,6 @@
 from contextvars import ContextVar
-from typing import TypedDict
 
 from pydantic import BaseModel, Field
-
-
-class Location(TypedDict):
-    city: str | None
-    state: str | None
-    country: str | None
-    postal_code: str | None
 
 
 class RequestInfo(BaseModel):

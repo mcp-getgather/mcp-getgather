@@ -1,0 +1,66 @@
+name: Hardcover
+auth:
+  fields:
+    - name: email
+      type: text
+      prompt: Email
+      selector: input[type=email][name=email]
+    - name: password
+      type: password
+      prompt: Password
+      selector: input[type=password][name=password]
+    - name: remember_me
+      type: autoclick
+      prompt: Remember me
+      selector: input[type=checkbox][name=remember_me]
+    - name: submit
+      type: click
+      prompt: Submit
+      selector: button[type=submit]:has-text("Sign In")
+    - name: welcome
+      type: wait
+      prompt: Welcome Back!
+      selector: h1:has-text("Welcome Back!")
+    - name: avatar
+      type: autoclick
+      prompt: Avatar
+      selector: div:has(> img.avatar)
+    - name: books
+      type: autoclick
+      prompt: Books
+      selector: div#navigation a:has-text("Books")
+  pages:
+    - name: Sign in
+      fields: [email, password, remember_me, submit]
+    - name: Wait for confirmation
+      fields: [welcome]
+      end: true
+  start: https://hardcover.app/login
+extract:
+  steps:
+    - name: Go to homepage
+      url: https://hardcover.app
+    - name: Go to Profile
+      fields: [avatar]
+    - name: Go to Books
+      wait_for_url: !regex https://hardcover.app/@.*
+      fields: [books]
+    - name: Extract the list of books
+      wait_for_url: !regex https://hardcover.app/@.*/books
+      bundle: books.html
+      slurp_selector: nav + div
+parse:
+  - bundle: books.html
+    format: html
+    output: books.json
+    row_selector: div div:has(> a:has(img))
+    columns:
+      - name: cover
+        selector: a img
+        attribute: src
+      - name: title
+        selector: a img
+        attribute: alt
+      - name: url
+        selector: a
+        attribute: href
