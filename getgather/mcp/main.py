@@ -60,7 +60,8 @@ class AuthMiddleware(Middleware):
 
         browser_profile_id = BrandState.get_browser_profile_id(brand_id)
         if not browser_profile_id:
-            browser_profile = BrowserProfile.create()
+            # Create and persist a new profile for the auth flow
+            browser_profile = BrowserProfile()
             brand_state = BrandState(
                 brand_id=BrandIdEnum(brand_id),
                 browser_profile_id=browser_profile.id,

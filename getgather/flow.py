@@ -353,7 +353,8 @@ async def flow_step(*, page: Page, flow_state: FlowState) -> FlowState:
                 continue
 
             # This allows us to ask for a prompt if the field is not already filled without it being another step
-            if not (value := flow_state.inputs.get(field.name, "")):
+            value = flow_state.inputs.get(field.name, "")
+            if field.needs_input and not value:
                 prompt = await handle_field_prompt(page, field)
                 prompts_to_return.append(prompt)
                 has_needed_inputs = False
@@ -371,7 +372,7 @@ async def flow_step(*, page: Page, flow_state: FlowState) -> FlowState:
                     else:
                         logger.warning(f"⚠️ Could not get frame content for {field.iframe_selector}")
 
-            if field.type == "click":
+            if field.type == "click" or field.type == "autoclick":
                 if field.selector:
                     await handle_click(
                         current_page,
