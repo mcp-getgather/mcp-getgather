@@ -81,9 +81,9 @@ class AuthOrchestrator:
                 await browser_session.start()
 
             page = await browser_session.page()
-
-            # For now block the images etc
-            await self._block_unwanted_resources(page)
+            if settings.SHOULD_BLOCK_UNWANTED_RESOURCES:
+                # For now block the images etc
+                await self._block_unwanted_resources(page)
         except BrowserStartupError as e:
             sentry_sdk.capture_exception(e)
             raise
