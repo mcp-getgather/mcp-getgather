@@ -51,7 +51,9 @@ async def search_product(
             {"name": "product_summary", "selector": "div[class='c7W9YYbRQuC29+GfsfRTEA==']"},
         ],
     })
-    result = await parse_html(html_content=html, schema=spec_schema)
+    result = await parse_html(
+        brand_id=BrandIdEnum("tokopedia"), html_content=html, schema=spec_schema
+    )
     return {"product_list": result.content}
 
 
@@ -102,7 +104,9 @@ async def get_product_details(
             {"name": "shop_name", "selector": "div[data-testid='llbPDPFooterShopName']"},
         ],
     })
-    result = await parse_html(html_content=html, schema=spec_schema)
+    result = await parse_html(
+        brand_id=BrandIdEnum("tokopedia"), html_content=html, schema=spec_schema
+    )
     return {"product_detail": result.content}
 
 
@@ -161,7 +165,9 @@ async def search_shop(
             },
         ],
     })
-    result = await parse_html(html_content=html, schema=spec_schema)
+    result = await parse_html(
+        brand_id=BrandIdEnum("tokopedia"), html_content=html, schema=spec_schema
+    )
     return {"shop_list": result.content}
 
 
@@ -238,7 +244,9 @@ async def get_shop_details(
             {"name": "shop_rating", "selector": "div[data-testid='shopRatingDetailHeader']"},
         ],
     })
-    result = await parse_html(html_content=html, schema=spec_schema)
+    result = await parse_html(
+        brand_id=BrandIdEnum("tokopedia"), html_content=html, schema=spec_schema
+    )
     return {"shop_detail": result.content}
 
 
