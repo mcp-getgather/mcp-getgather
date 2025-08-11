@@ -24,6 +24,7 @@ async def test_bbc_login_and_get_bookmarks():
             )
             mcp_call_auth_result = json.loads(mcp_call_auth.content[0].text)
             assert mcp_call_auth_result.get("url")
+            assert mcp_call_auth_result.get("link_id")
             print(mcp_call_auth_result.get("url"))
 
             browser = await p.chromium.launch(headless=False)
@@ -45,7 +46,7 @@ async def test_bbc_login_and_get_bookmarks():
             )
 
             mcp_call_poll_auth = await client.call_tool(
-                "poll_auth", {"session_id": mcp_call_auth_result.get("session_id")}
+                "poll_auth", {"link_id": mcp_call_auth_result.get("link_id")}
             )
             assert isinstance(mcp_call_poll_auth.content[0], TextContent), (
                 f"Expected TextContent, got {type(mcp_call_poll_auth.content[0])}"
