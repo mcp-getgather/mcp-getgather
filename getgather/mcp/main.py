@@ -23,25 +23,21 @@ auto_import("getgather.mcp.brand")
 @asynccontextmanager
 async def activity(name: str, brand_id: str = "") -> AsyncGenerator[None, None]:
     """Context manager for tracking activity."""
-    activity_record = Activity(
+    activity = Activity(
         brand_id=brand_id,
         name=name,
         start_time=datetime.now(UTC),
     )
-    activity_id = activity_record.add()
-    
-    # Set context variable so browser sessions can find current activity
-    token = current_activity.set(activity_record)
+    activity.add()
     
     try:
         yield
     finally:
-        # Stop any recordings for this activity
-        await RecordingManager.stop_for_activity(activity_id)
-        current_activity.reset(token)
-        activity_record.update_end_time(
+        activity.update_end_time(
             end_time=datetime.now(UTC),
         )
+
+
 class AuthMiddleware(Middleware):
     async def on_call_tool(self, context: MiddlewareContext[Any], call_next: CallNext[Any, Any]):  # type: ignore
         if not context.fastmcp_context:
@@ -68,7 +64,7 @@ class AuthMiddleware(Middleware):
         browser_profile_id = BrandState.get_browser_profile_id(brand_id)
         if not browser_profile_id:
             # Create and persist a new profile for the auth flow
-            browser_profile = BrowserProfile.create()
+            browser_profile = BrowserProfile()
             brand_state = BrandState(
                 brand_id=BrandIdEnum(brand_id),
                 browser_profile_id=browser_profile.id,

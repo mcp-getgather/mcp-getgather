@@ -11,6 +11,7 @@ import { Search, RefreshCw, ExternalLink } from "lucide-react";
 
 export default function Activities() {
   // Temporary dummy data for development
+  // @ts-ignore
   const dummyActivities = [
     {
       id: "activity-1",
