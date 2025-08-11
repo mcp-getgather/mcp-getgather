@@ -6,7 +6,7 @@ export default function GetStarted() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-8">
       <PageHeader
-        title="Welcome to GetGather Studio"
+        title="Welcome to GetGather Portal"
         description="Bridge the gap between AI agents and real-world data. Get started in 3 simple steps! See getgather operations in Live View and weigh in as needed."
         badge={{
           text: "AI-Powered Data Access",
