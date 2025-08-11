@@ -21,16 +21,18 @@ auto_import("getgather.mcp.brand")
 @asynccontextmanager
 async def activity(name: str, brand_id: str = "") -> AsyncGenerator[None, None]:
     """Context manager for tracking activity."""
-    activity = Activity(
-        brand_id=brand_id,
-        name=name,
-        start_time=datetime.now(UTC),
+    activity_id = Activity.add(
+        Activity(
+            brand_id=brand_id,
+            name=name,
+            start_time=datetime.now(UTC),
+        )
     )
-    activity.add()
     try:
         yield
     finally:
-        activity.update_end_time(
+        Activity.update_end_time(
+            id=activity_id,
             end_time=datetime.now(UTC),
         )
 
@@ -62,12 +64,13 @@ class AuthMiddleware(Middleware):
         if not browser_profile_id:
             # Create and persist a new profile for the auth flow
             browser_profile = BrowserProfile()
-            brand_state = BrandState(
-                brand_id=BrandIdEnum(brand_id),
-                browser_profile_id=browser_profile.id,
-                is_connected=False,
+            BrandState.add(
+                BrandState(
+                    brand_id=BrandIdEnum(brand_id),
+                    browser_profile_id=browser_profile.id,
+                    is_connected=False,
+                )
             )
-            brand_state.add()
 
         logger.info(
             f"[AuthMiddleware] processing auth for brand {brand_id} with browser profile {browser_profile_id}"

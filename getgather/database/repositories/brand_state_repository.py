@@ -12,9 +12,7 @@ class BrandState(DBModel):
     browser_profile_id: str
     is_connected: bool
 
-    @property
-    def table_name(self):
-        return "brand_states"
+    table_name = "brand_states"
 
     @classmethod
     def get_by_brand_id(cls, brand_id: BrandIdEnum) -> Self | None:
