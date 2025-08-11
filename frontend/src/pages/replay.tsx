@@ -18,7 +18,7 @@ export function ReplayPage() {
       }
 
       try {
-        const response = await fetch(`/api/events?activity_id=${activityId}`);
+        const response = await fetch(`/api/activities/recordings?activity_id=${activityId}`);
         if (!response.ok) {
           throw new Error("Failed to load events");
         }

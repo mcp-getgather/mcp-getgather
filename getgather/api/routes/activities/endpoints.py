@@ -2,11 +2,11 @@ from fastapi import APIRouter, HTTPException
 
 from getgather.database.repositories.rrweb_recordings_repository import RRWebRecordingsRepository
 
-router = APIRouter(prefix="/api/events", tags=["events"])
+router = APIRouter(prefix="/api/activities", tags=["activities"])
 
 
-@router.get("")
-async def get_events(activity_id: int):
+@router.get("/recordings")
+async def get_recording(activity_id: int):
     """Get rrweb events for a specific activity."""
     recording = RRWebRecordingsRepository.get_by_activity_id(activity_id)
     if not recording:
