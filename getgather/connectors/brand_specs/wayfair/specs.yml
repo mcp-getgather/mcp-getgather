@@ -31,8 +31,9 @@ auth:
       expect_nav: true
       url: https://www.wayfair.com/a/account/authentication/login
     - name: invalid-password-message
-      type: wait
+      type: message
       selector: p[data-test-id=login-password-input-validationText]:has-text("Password is not valid.")
+      prompt: ❌ The password you entered is incorrect. Please try again.
     - name: invalid-otp-message
       type: wait
       selector: p[data-test-id=CODE_INPUT-validationText]:has-text("Code entered doesn't match the one we sent. Check your
@@ -68,8 +69,9 @@ auth:
       fields: [password, sign_in]
 
     - name: Incorrect password page
-      fields: [password, sign_in, invalid-password-message]
-      message: ❌ The password you entered is incorrect. Please try again.
+      fields:
+        required: [password, sign_in]
+        optional: [invalid-password-message]
 
     - name: Incorrect OTP page
       fields: [otp, sign_in, invalid-otp-message, enter-code-we-texted-you]
