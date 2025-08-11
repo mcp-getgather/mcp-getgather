@@ -3,7 +3,7 @@ name: Gofood
 auth:
   fields:
     - name: login_button
-      type: click
+      type: autoclick
       prompt: Login
       selector: button:has-text("Log in")
 
