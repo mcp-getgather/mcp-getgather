@@ -1,20 +1,19 @@
 from typing import Any
 
-from fastmcp import Context
-
+from getgather.browser.profile import BrowserProfile
+from getgather.browser.session import browser_session
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract, start_browser_session
+from getgather.mcp.store import BrandConnectionStore
 from getgather.parse import parse_html
 
 amazon_mcp = BrandMCPBase(prefix="amazon", name="Amazon MCP")
 
 
 @amazon_mcp.tool(tags={"private"})
-async def get_purchase_history(
-    ctx: Context,
-) -> dict[str, Any]:
+async def get_purchase_history() -> dict[str, Any]:
     """Get purchase/order history of a amazon."""
     return await extract(brand_id=BrandIdEnum("amazon"))
 
@@ -22,15 +21,20 @@ async def get_purchase_history(
 @amazon_mcp.tool
 async def search_product(
     keyword: str,
-    ctx: Context,
 ) -> dict[str, Any]:
     """Search product on amazon."""
-    browser_session = await start_browser_session(brand_id=BrandIdEnum("amazon"))
-    page = await browser_session.page()
-    await page.goto(f"https://www.amazon.com/s?k={keyword}")
-    await page.wait_for_selector("div[role='listitem']")
-    await page.wait_for_timeout(1000)
-    html = await page.locator("div.s-search-results").inner_html()
+    if BrandConnectionStore.is_brand_connected(BrandIdEnum("amazon")):
+        profile_id = BrandConnectionStore.get_browser_profile_id(BrandIdEnum("amazon"))
+        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
+    else:
+        profile = BrowserProfile()
+
+    async with browser_session(profile) as session:
+        page = await session.page()
+        await page.goto(f"https://www.amazon.com/s?k={keyword}")
+        await page.wait_for_selector("div[role='listitem]")
+        await page.wait_for_timeout(1000)
+        html = await page.locator("div.s-search-results").inner_html()
     spec_schema = SpecSchema.model_validate({
         "bundle": "",
         "format": "html",
@@ -54,25 +58,28 @@ async def search_product(
 @amazon_mcp.tool
 async def get_product_detail(
     product_url: str,
-    ctx: Context,
 ) -> dict[str, Any]:
     """Get product detail from amazon."""
-    browser_session = await start_browser_session(brand_id=BrandIdEnum("amazon"))
-    page = await browser_session.page()
-    if not product_url.startswith("https"):
-        product_url = f"https://www.amazon.com/{product_url}"
-    await page.goto(product_url)
+    if BrandConnectionStore.is_brand_connected(BrandIdEnum("amazon")):
+        profile_id = BrandConnectionStore.get_browser_profile_id(BrandIdEnum("amazon"))
+        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
+    else:
+        profile = BrowserProfile()
 
-    await page.wait_for_selector("span#productTitle")
-    await page.wait_for_timeout(1000)
-    html = await page.locator("#centerCol").inner_html()
+    async with browser_session(profile) as session:
+        page = await session.page()
+        if not product_url.startswith("https"):
+            product_url = f"https://www.amazon.com/{product_url}"
+        await page.goto(product_url)
+
+        await page.wait_for_selector("span#productTitle")
+        await page.wait_for_timeout(1000)
+        html = await page.locator("#centerCol").inner_html()
     return {"product_detail_html": html}
 
 
 @amazon_mcp.tool(tags={"private"})
-async def get_cart_summary(
-    ctx: Context,
-) -> dict[str, Any]:
+async def get_cart_summary() -> dict[str, Any]:
     """Get cart summary from amazon."""
     browser_session = await start_browser_session(brand_id=BrandIdEnum("amazon"))
     page = await browser_session.page()
@@ -84,9 +91,7 @@ async def get_cart_summary(
 
 
 @amazon_mcp.tool(tags={"private"})
-async def get_browsing_history(
-    ctx: Context,
-) -> dict[str, Any]:
+async def get_browsing_history() -> dict[str, Any]:
     """Get browsing history from amazon."""
     browser_session = await start_browser_session(brand_id=BrandIdEnum("amazon"))
     page = await browser_session.page()

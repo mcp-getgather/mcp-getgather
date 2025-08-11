@@ -1,0 +1,209 @@
+name: amazonca
+
+auth:
+  fields:
+    - name: signin_click
+      type: autoclick
+      delay_ms: 1000
+      selector: div#nav-link-accountList a[data-nav-ref="nav_ya_signin"]
+      expect_nav: true
+
+    - name: your_account_click
+      type: autoclick
+      selector: a:has-text("Your Account")
+
+    - name: not_signed_in
+      type: wait
+      selector: span:has-text("Hello, sign in")
+
+    - name: signed_in
+      type: wait
+      selector: div#nav-link-accountList a[data-nav-ref="nav_youraccount_btn"]
+
+    - name: captcha_click
+      type: autoclick
+      selector: text="Continue shopping"
+
+    - name: email
+      type: email
+      prompt: Email
+      selector: input[type="email"]
+
+    - name: continue
+      type: click
+      prompt: Continue
+      selector: span[id="continue"]
+
+    - name: password
+      type: password
+      prompt: Password
+      selector: input[type="password"]
+
+    - name: sign_in
+      type: click
+      prompt: Sign in
+      selector: span[id="auth-signin-button"]
+
+    - name: otp
+      type: text
+      prompt: OTP
+      label: h1:has-text("Two-Step Verification") + p
+      selector: input[id="auth-mfa-otpcode"]
+
+    - name: otp_submit
+      type: click
+      prompt: Submit
+      selector: input[id="auth-signin-button"]
+
+    - name: alt_otp_link
+      type: click
+      prompt: Use an alternative method
+      selector: a#auth-get-new-otp-link
+
+    - name: alt_send_otp
+      type: click
+      prompt: Send OTP
+      selector: input[id=auth-send-code]
+
+    - name: challenge_alt_verification_link
+      type: click
+      prompt: Use an alternative method
+      selector: a[href*="/ap/cvf/accountrecovery"]
+
+    - name: verification_code_form
+      type: text
+      prompt: Enter the verification code we sent you
+      selector: input[id="input-box-otp"]
+      label: '#channelDetailsForOtp span.transaction-approval-word-break'
+
+    - name: verification_code_submit
+      type: click
+      prompt: Submit
+      selector: span#cvf-submit-otp-button input[type="submit"]
+
+    - name: incorrect-email
+      type: wait
+      selector: div[id="auth-error-message-box"]
+
+    - name: incorrect-input
+      type: wait
+      selector: div[id="auth-error-message-box"]
+
+    - name: order_click
+      type: autoclick
+      selector: a[id="nav-orders"]
+
+    - name: Your Orders Page
+      type: wait
+      selector: text="Your Orders"
+
+    - name: order
+      type: wait
+      selector: section.your-orders-content-container
+    - name: order-containers
+      type: wait
+      selector: div.your-orders-content-container__content
+
+  pages:
+    - name: Home Page (not signed in)
+      url: https://www.amazon.ca/
+      fields: [not_signed_in, signin_click]
+
+    - name: Login Page
+      fields: [email, continue]
+
+    - name: Input Password Page
+      fields: [password, sign_in]
+
+    - name: Captcha Page
+      fields: [captcha_click]
+
+    - name: Verification Code Page
+      choices:
+        - name: MFA Current Modality Choice
+          prompt: Would you like to use the following OTP method?
+          groups:
+            - name: MFA Current Modality Choice
+              fields: [verification_code_form, verification_code_submit]  # TODO when seen ['div[id="channelDetailsForOtp"]']
+            - name: Alternative MFA Modality Choice
+              fields: [challenge_alt_verification_link]
+
+    - name: 2SV Page
+      choices:
+        - name: OTP Current Modality Choice
+          prompt: Would you like to use the following two-step verification method or use an alternative method?
+          groups:
+            - name: OTP Current Modality Choice
+              fields: [otp, otp_submit]
+            - name: Alternative OTP Modality Choice
+              fields: [alt_otp_link]
+
+    - name: Alternate MFA Method Selection Page
+      url: https://www.amazon.ca/ap/mfa/new-otp
+      choices:
+        - name: OTP Generic Modality Choice
+          prompt: Which of the following OTP methods would you like to use?
+          dynamic:
+            option_items: div[data-a-input-name="otpDeviceContext"]
+            option_label: span.a-radio-label
+          afterwards: [alt_send_otp]
+
+    - name: Incorrect Email
+      fields: [email, continue, incorrect-input]
+      message: ❌ The email you entered are incorrect. Please try again.
+
+    - name: Incorrect Password
+      fields: [password, sign_in, incorrect-input]
+      message: ❌ The password you entered are incorrect. Please try again.
+
+    - name: Incorrect OTP
+      fields: [otp, otp_submit, incorrect-input]
+      message: ❌ The OTP you entered are incorrect. Please try again.
+
+    - name: Home Page (signed in)
+      fields: [signed_in, order_click]
+    - name: Alternate Home Page
+      fields: [your_account_click]
+
+    - name: Orders Page (signed in)
+      fields: [signed_in, Your Orders Page, order]
+      end: true
+
+  start: https://www.amazon.ca/
+
+extract:
+  steps:
+    - name: Go to orders page
+      url: https://www.amazon.ca/your-orders/orders?timeFilter=year-2025
+
+    - name: Wait for the order history page to load
+      wait_for_selector: div.your-orders-content-container__content
+
+    - name: Extract online orders
+      bundle: orders.html
+      slurp_selector: div.your-orders-content-container__content
+
+parse:
+  - bundle: orders.html
+    format: html
+    output: orders.json
+    row_selector: li.order-card__list
+    columns:
+      - name: order_date
+        selector: div.a-box-inner h5 div.a-span3 div:nth-child(2)
+      - name: order_total
+        selector: div.a-box-inner h5 div.a-span2 div:nth-child(2)
+      - name: ship_to
+        selector: div.yohtmlc-recipient div:nth-child(2) div.a-popover-preload
+      - name: order_id
+        selector: div.yohtmlc-order-id span:nth-child(2)
+      - name: product_names
+        selector: div.yohtmlc-product-title
+        multiple: true
+      - name: image_urls
+        selector: div.product-image img
+        multiple: true
+        attribute: src
+      - name: return_window_dates
+        selector: span[class="a-size-small"]
+        multiple: true

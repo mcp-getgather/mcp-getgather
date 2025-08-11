@@ -26,6 +26,14 @@ class Settings(BaseSettings):
     SCREENSHOTS_DIR: str = ""
     HEADLESS: bool = False
 
+    # Browser-use settings
+    BROWSER_USE_MODEL: str = "o4-mini"
+    OPENAI_API_KEY: str = ""
+
+    # Proxy Settings
+    HTTP_PROXY: str = ""
+    HTTP_PROXY_PASSWORD: str = ""
+
     @property
     def brand_spec_dir(self) -> Path:
         return PROJECT_DIR / "getgather" / "connectors" / "brand_specs"

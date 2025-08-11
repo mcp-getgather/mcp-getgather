@@ -1,7 +1,5 @@
 from typing import Any
 
-from fastmcp import Context
-
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.mcp.registry import BrandMCPBase
@@ -12,9 +10,7 @@ amain_mcp = BrandMCPBase(prefix="amain", name="Amain MCP")
 
 
 @amain_mcp.tool(tags={"private"})
-async def get_cart(
-    ctx: Context,
-) -> dict[str, Any]:
+async def get_cart() -> dict[str, Any]:
     """Get cart of amain."""
 
     browser_session = await start_browser_session(brand_id=BrandIdEnum("amain"))
