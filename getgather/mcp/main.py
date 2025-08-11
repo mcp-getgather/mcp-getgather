@@ -14,8 +14,6 @@ from getgather.logs import logger
 from getgather.mcp.auto_import import auto_import
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import auth_hosted_link, poll_status_hosted_link
-from getgather.recording.context import current_activity
-from getgather.recording.manager import RecordingManager
 
 auto_import("getgather.mcp.brand")
 
@@ -29,7 +27,6 @@ async def activity(name: str, brand_id: str = "") -> AsyncGenerator[None, None]:
         start_time=datetime.now(UTC),
     )
     activity.add()
-    
     try:
         yield
     finally:
