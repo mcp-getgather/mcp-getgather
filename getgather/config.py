@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     BUNDLES_DIR: str = ""
     SCREENSHOTS_DIR: str = ""
     HEADLESS: bool = False
+    SHOULD_BLOCK_UNWANTED_RESOURCES: bool = False
 
     # Browser-use settings
     BROWSER_USE_MODEL: str = "o4-mini"
