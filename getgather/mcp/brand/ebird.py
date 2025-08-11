@@ -4,9 +4,9 @@ from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
+from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract
-from getgather.mcp.store import BrandConnectionStore
 from getgather.parse import parse_html
 
 ebird_mcp = BrandMCPBase(prefix="ebird", name="Ebird MCP")
@@ -23,8 +23,8 @@ async def get_explore_species_list(
     keyword: str,
 ) -> dict[str, Any]:
     """Get species list from ebird to be explored."""
-    if BrandConnectionStore.is_brand_connected(BrandIdEnum("ebird")):
-        profile_id = BrandConnectionStore.get_browser_profile_id(BrandIdEnum("ebird"))
+    if BrandState.is_brand_connected(BrandIdEnum("ebird")):
+        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("ebird"))
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -57,8 +57,8 @@ async def explore_species(
     sci_name: str,
 ) -> dict[str, Any]:
     """Explore species on Ebird from get_explore_species_list."""
-    if BrandConnectionStore.is_brand_connected(BrandIdEnum("ebird")):
-        profile_id = BrandConnectionStore.get_browser_profile_id(BrandIdEnum("ebird"))
+    if BrandState.is_brand_connected(BrandIdEnum("ebird")):
+        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("ebird"))
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()

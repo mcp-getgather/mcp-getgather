@@ -7,9 +7,9 @@ from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
+from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import start_browser_session
-from getgather.mcp.store import BrandConnectionStore
 from getgather.parse import parse_html
 
 tokopedia_mcp = BrandMCPBase(prefix="tokopedia", name="Tokopedia MCP")
@@ -20,8 +20,8 @@ async def search_product(
     keyword: str,
 ) -> dict[str, Any]:
     """Search product on tokopedia."""
-    if BrandConnectionStore.is_brand_connected(BrandIdEnum("tokopedia")):
-        profile_id = BrandConnectionStore.get_browser_profile_id(BrandIdEnum("tokopedia"))
+    if BrandState.is_brand_connected(BrandIdEnum("tokopedia")):
+        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("tokopedia"))
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -62,8 +62,8 @@ async def get_product_details(
     product_url: str,
 ) -> dict[str, Any]:
     """Get product details from tokopedia. Get product_url from search_product tool."""
-    if BrandConnectionStore.is_brand_connected(BrandIdEnum("tokopedia")):
-        profile_id = BrandConnectionStore.get_browser_profile_id(BrandIdEnum("tokopedia"))
+    if BrandState.is_brand_connected(BrandIdEnum("tokopedia")):
+        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("tokopedia"))
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -115,8 +115,8 @@ async def search_shop(
     keyword: str,
 ) -> dict[str, Any]:
     """Search shop on tokopedia."""
-    if BrandConnectionStore.is_brand_connected(BrandIdEnum("tokopedia")):
-        profile_id = BrandConnectionStore.get_browser_profile_id(BrandIdEnum("tokopedia"))
+    if BrandState.is_brand_connected(BrandIdEnum("tokopedia")):
+        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("tokopedia"))
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -221,8 +221,8 @@ async def get_shop_details(
     if not target_url:
         return {"error": "Could not determine valid shop URL"}
 
-    if BrandConnectionStore.is_brand_connected(BrandIdEnum("tokopedia")):
-        profile_id = BrandConnectionStore.get_browser_profile_id(BrandIdEnum("tokopedia"))
+    if BrandState.is_brand_connected(BrandIdEnum("tokopedia")):
+        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("tokopedia"))
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()

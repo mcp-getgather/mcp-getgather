@@ -4,9 +4,9 @@ from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
+from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract, start_browser_session
-from getgather.mcp.store import BrandConnectionStore
 from getgather.parse import parse_html
 
 amazon_mcp = BrandMCPBase(prefix="amazon", name="Amazon MCP")
@@ -23,8 +23,8 @@ async def search_product(
     keyword: str,
 ) -> dict[str, Any]:
     """Search product on amazon."""
-    if BrandConnectionStore.is_brand_connected(BrandIdEnum("amazon")):
-        profile_id = BrandConnectionStore.get_browser_profile_id(BrandIdEnum("amazon"))
+    if BrandState.is_brand_connected(BrandIdEnum("amazon")):
+        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("amazon"))
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -60,8 +60,8 @@ async def get_product_detail(
     product_url: str,
 ) -> dict[str, Any]:
     """Get product detail from amazon."""
-    if BrandConnectionStore.is_brand_connected(BrandIdEnum("amazon")):
-        profile_id = BrandConnectionStore.get_browser_profile_id(BrandIdEnum("amazon"))
+    if BrandState.is_brand_connected(BrandIdEnum("amazon")):
+        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("amazon"))
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()

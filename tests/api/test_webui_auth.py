@@ -27,7 +27,6 @@ def test_auth(page: Page, site_url: str, brand_id: str):
 
 
 @pytest.mark.webui
-@pytest.mark.acme
 @pytest.mark.parametrize("brand_id", SPECS_WITH_CHOICE)
 @pytest.mark.parametrize("verification_choice", ["password", "otp"])
 def test_auth_with_choice(page: Page, site_url: str, brand_id: str, verification_choice: str):
@@ -110,7 +109,6 @@ def _run_auth(
 
 
 @pytest.mark.webui
-@pytest.mark.acme
 def test_auth_with_wrong_password(page: Page, site_url: str):
     brand_id = "acme-email-then-password"
     _run_auth(page, site_url, brand_id, passwords=["wrongpassword", VALID_PASSWORD])
