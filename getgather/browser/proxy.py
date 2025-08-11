@@ -17,7 +17,7 @@ async def setup_proxy(
     The proxy service supports hierarchical location targeting by encoding
     location information in the username format:
     - Basic: profile_id
-    - With location: profile_id-city_X_state_Y_country_Z
+    - With location: profile_id-city_X_postal_code_Y_state_Z_country_W
 
     Args:
         profile_id: Profile ID to use as base proxy username
@@ -35,13 +35,25 @@ async def setup_proxy(
     # Use profile ID as base username
     username = profile_id
 
-    if request_info and (request_info.country or request_info.state or request_info.city):
+    if request_info and (
+        request_info.country or request_info.state or request_info.city or request_info.postal_code
+    ):
+        # Log the incoming request_info for debugging
+        logger.info(
+            f"RequestInfo received - city: {request_info.city}, "
+            f"postal_code: {request_info.postal_code}, "
+            f"state: {request_info.state}, country: {request_info.country}"
+        )
         # Build hierarchical location string for proxy service
         location_parts: list[str] = []
 
         # Add city if available
         if request_info.city:
             location_parts.extend(["city", request_info.city.lower().replace(" ", "_")])
+
+        # Add postal code if available
+        if request_info.postal_code:
+            location_parts.extend(["postalcode", request_info.postal_code])
 
         # Add state if available (mainly for US)
         if request_info.state:
@@ -52,7 +64,7 @@ async def setup_proxy(
             location_parts.extend(["country", request_info.country.lower()])
 
         if location_parts:
-            # Format: profile_id-city_losangeles_state_california_country_us
+            # Format: profile_id-city_losangeles_postalcode_90001_state_california_country_us
             location = "_".join(location_parts)
             username = f"{profile_id}-{location}"
             logger.info(
