@@ -2,7 +2,7 @@ from typing import Any
 
 from fastmcp import Context, FastMCP
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
-from fastmcp.tools.tool import ToolResult
+from fastmcp.tools.tool import Tool, ToolResult
 
 from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
@@ -44,8 +44,27 @@ class AuthMiddleware(Middleware):
         return ToolResult(structured_content=result)
 
 
+class FilterDisabledBrandsMiddleware(Middleware):
+    async def on_list_tools(
+        self, context: MiddlewareContext[Any], call_next: CallNext[Any, list[Tool]]
+    ) -> list[Tool]:
+        result = await call_next(context)
+        # TODO: get this list from DB
+        DISABLED_BRANDS = ["amain", "amazon", "bbc"]
+
+        filtered_tools: list[Tool] = []
+        for tool in result:
+            key_parts = tool.key.split("_")
+            if key_parts[0] not in DISABLED_BRANDS:
+                filtered_tools.append(tool)
+
+        return filtered_tools
+
+
 mcp = FastMCP[Context](name="Getgather MCP")
 
+
+mcp.add_middleware(FilterDisabledBrandsMiddleware())
 mcp.add_middleware(AuthMiddleware())
 
 
