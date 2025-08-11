@@ -2,6 +2,10 @@
   "name": "mcp-getgather",
   "version": "0.0.0",
   "type": "module",
+  "volta": {
+    "node": "22.18.0",
+    "npm": "10.8.2"
+  },
   "scripts": {
     "predev": "npm run build",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",

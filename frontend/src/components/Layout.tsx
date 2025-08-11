@@ -13,7 +13,7 @@ export default function Layout() {
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-green-400 rounded-full"></div>
             <span className="text-sm">
-              Come to GetGather Studio to help your agent when it gets stuck
+              Come to GetGather Portal to help your agent when it gets stuck
               with access
             </span>
           </div>
@@ -33,7 +33,7 @@ export default function Layout() {
             GG
           </div>
           <h1 className="text-2xl font-bold text-slate-800">
-            GetGather Studio
+            GetGather Portal
           </h1>
         </div>
       </header>
