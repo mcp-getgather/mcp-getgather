@@ -39,6 +39,7 @@ dev = [
 ]
 
 [tool.ruff]
+src = ["getgather", "tests"]
 exclude = [
   "**/__pycache__",
   "**/.pytest_cache",
