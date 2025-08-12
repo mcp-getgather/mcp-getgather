@@ -1,4 +1,4 @@
-name: amazonca
+name: Amazon CA
 
 auth:
   fields:
@@ -95,7 +95,7 @@ auth:
 
     - name: Your Orders Page
       type: wait
-      selector: text="Your Orders"
+      selector: h1:has-text("Your Orders")
 
     - name: order
       type: wait

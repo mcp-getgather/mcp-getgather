@@ -2,9 +2,13 @@
   "name": "mcp-getgather",
   "version": "0.0.0",
   "type": "module",
+  "volta": {
+    "node": "22.18.0",
+    "npm": "10.8.2"
+  },
   "scripts": {
     "predev": "npm run build",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev": "concurrently --raw \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "uv run -m uvicorn getgather.api.main:app --reload --host 127.0.0.1 --port 8000",
     "dev:frontend": "vite",
     "build": "tsc -b && vite build",

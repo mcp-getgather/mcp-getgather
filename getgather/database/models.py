@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Any, Self
+from typing import Any, ClassVar, Self
 
 from pydantic import BaseModel, ConfigDict
 
@@ -15,38 +15,37 @@ class DBModel(BaseModel):
     id: int | None = None
     created_at: datetime | None = None
 
-    @property
-    def table_name(self) -> str:
-        """Table name for this model. Should be implemented by subclasses."""
-        raise NotImplementedError("Subclasses must implement table_name property")
+    table_name: ClassVar[str]
 
-    def get(self, id: int) -> Self | None:
+    @classmethod
+    def get(cls, id: int) -> Self | None:
         """Get a record by its ID."""
-        query = f"SELECT * FROM {self.table_name} WHERE id = ?"
+        query = f"SELECT * FROM {cls.table_name} WHERE id = ?"
         if row := fetch_one(query, (id,)):
-            return self.model_validate(row)
+            return cls.model_validate(row)
         return None
 
-    def add(self) -> int:
+    @classmethod
+    def add(cls, data: BaseModel) -> int:
         """Insert a new record and return its ID."""
         # Filter out None values and id field
-        fields = {k: v for k, v in self.model_dump().items() if v is not None and k != "id"}
+        fields = {k: v for k, v in data.model_dump().items() if v is not None and k != "id"}
 
         placeholders = ", ".join("?" * len(fields))
         columns = ", ".join(fields.keys())
 
         query = f"""
-            INSERT INTO {self.table_name} ({columns})
+            INSERT INTO {cls.table_name} ({columns})
             VALUES ({placeholders})
         """
 
         # Convert datetime objects to ISO format strings
         params = tuple(v.isoformat() if isinstance(v, datetime) else v for v in fields.values())
 
-        self.id = execute_insert(query, params)
-        return self.id
+        return execute_insert(query, params)
 
-    def update(self, id: int, data: dict[str, Any]) -> None:
+    @classmethod
+    def update(cls, id: int, data: dict[str, Any]) -> None:
         """Update a record by its ID with the provided data."""
         # Filter out None values
         updates = {k: v for k, v in data.items() if v is not None}
@@ -55,7 +54,7 @@ class DBModel(BaseModel):
 
         set_clause = ", ".join(f"{k} = ?" for k in updates.keys())
         query = f"""
-            UPDATE {self.table_name}
+            UPDATE {cls.table_name}
             SET {set_clause}
             WHERE id = ?
         """
@@ -71,15 +70,13 @@ class DBModel(BaseModel):
 class RRWebRecording(DBModel):
     """rrweb recording model for storing browser automation replays."""
     
+    table_name: ClassVar[str] = "rrweb_recordings"
+    
     activity_id: int
     events_json: str
     event_count: int
     start_timestamp: int
     end_timestamp: int
-    
-    @property
-    def table_name(self) -> str:
-        return "rrweb_recordings"
     
     @property
     def events(self) -> list[dict[str, Any]]:

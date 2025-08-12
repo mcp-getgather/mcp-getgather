@@ -3,8 +3,11 @@ from typing import Any
 from urllib.parse import quote, urlparse
 
 from getgather.actions import handle_graphql_response
+from getgather.browser.profile import BrowserProfile
+from getgather.browser.session import browser_session
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
+from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import start_browser_session
 from getgather.parse import parse_html
@@ -17,17 +20,24 @@ async def search_product(
     keyword: str,
 ) -> dict[str, Any]:
     """Search product on tokopedia."""
-    browser_session = await start_browser_session(brand_id=BrandIdEnum("tokopedia"))
-    page = await browser_session.page()
+    if BrandState.is_brand_connected(BrandIdEnum("tokopedia")):
+        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("tokopedia"))
+        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
+    else:
+        profile = BrowserProfile()
 
-    # URL encode the search keyword
-    encoded_keyword = quote(keyword)
-    await page.goto(f"https://www.tokopedia.com/search?q={encoded_keyword}", wait_until="commit")
-    await page.wait_for_selector(
-        "div[data-testid='divSRPContentProducts'] > div:nth-child(1) > div:nth-child(1)"
-    )
-    await page.wait_for_timeout(2000)
-    html = await page.locator("div[data-testid='divSRPContentProducts']").inner_html()
+    async with browser_session(profile) as session:
+        page = await session.page()
+        # URL encode the search keyword
+        encoded_keyword = quote(keyword)
+        await page.goto(
+            f"https://www.tokopedia.com/search?q={encoded_keyword}", wait_until="commit"
+        )
+        await page.wait_for_selector(
+            "div[data-testid='divSRPContentProducts'] > div:nth-child(1) > div:nth-child(1)"
+        )
+        await page.wait_for_timeout(2000)
+        html = await page.locator("div[data-testid='divSRPContentProducts']").inner_html()
     spec_schema = SpecSchema.model_validate({
         "bundle": "",
         "format": "html",
@@ -41,7 +51,9 @@ async def search_product(
             {"name": "product_summary", "selector": "div[class='c7W9YYbRQuC29+GfsfRTEA==']"},
         ],
     })
-    result = await parse_html(html_content=html, schema=spec_schema)
+    result = await parse_html(
+        brand_id=BrandIdEnum("tokopedia"), html_content=html, schema=spec_schema
+    )
     return {"product_list": result.content}
 
 
@@ -50,12 +62,18 @@ async def get_product_details(
     product_url: str,
 ) -> dict[str, Any]:
     """Get product details from tokopedia. Get product_url from search_product tool."""
-    browser_session = await start_browser_session(brand_id=BrandIdEnum("tokopedia"))
-    page = await browser_session.page()
-    await page.goto(product_url, wait_until="commit")
-    await page.wait_for_selector("h1[data-testid='lblPDPDetailProductName']")
-    await page.wait_for_timeout(2000)
-    html = await page.locator("body").inner_html()
+    if BrandState.is_brand_connected(BrandIdEnum("tokopedia")):
+        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("tokopedia"))
+        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
+    else:
+        profile = BrowserProfile()
+
+    async with browser_session(profile) as session:
+        page = await session.page()
+        await page.goto(product_url, wait_until="commit")
+        await page.wait_for_selector("h1[data-testid='lblPDPDetailProductName']")
+        await page.wait_for_timeout(2000)
+        html = await page.locator("body").inner_html()
     spec_schema = SpecSchema.model_validate({
         "bundle": "",
         "format": "html",
@@ -86,7 +104,9 @@ async def get_product_details(
             {"name": "shop_name", "selector": "div[data-testid='llbPDPFooterShopName']"},
         ],
     })
-    result = await parse_html(html_content=html, schema=spec_schema)
+    result = await parse_html(
+        brand_id=BrandIdEnum("tokopedia"), html_content=html, schema=spec_schema
+    )
     return {"product_detail": result.content}
 
 
@@ -95,19 +115,24 @@ async def search_shop(
     keyword: str,
 ) -> dict[str, Any]:
     """Search shop on tokopedia."""
-    browser_session = await start_browser_session(brand_id=BrandIdEnum("tokopedia"))
-    page = await browser_session.page()
+    if BrandState.is_brand_connected(BrandIdEnum("tokopedia")):
+        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("tokopedia"))
+        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
+    else:
+        profile = BrowserProfile()
 
-    # URL encode the search keyword
-    encoded_keyword = quote(keyword)
-    await page.goto(
-        f"https://www.tokopedia.com/search?st=shop&q={encoded_keyword}", wait_until="commit"
-    )
-    await page.wait_for_selector(
-        "div[data-testid='divShopContainer'] > div:nth-child(1) > div:nth-child(1)"
-    )
-    await page.wait_for_timeout(2000)
-    html = await page.locator("div[data-testid='divShopContainer']").inner_html()
+    async with browser_session(profile) as session:
+        page = await session.page()
+        # URL encode the search keyword
+        encoded_keyword = quote(keyword)
+        await page.goto(
+            f"https://www.tokopedia.com/search?st=shop&q={encoded_keyword}", wait_until="commit"
+        )
+        await page.wait_for_selector(
+            "div[data-testid='divShopContainer'] > div:nth-child(1) > div:nth-child(1)"
+        )
+        await page.wait_for_timeout(2000)
+        html = await page.locator("div[data-testid='divShopContainer']").inner_html()
     spec_schema = SpecSchema.model_validate({
         "bundle": "",
         "format": "html",
@@ -140,7 +165,9 @@ async def search_shop(
             },
         ],
     })
-    result = await parse_html(html_content=html, schema=spec_schema)
+    result = await parse_html(
+        brand_id=BrandIdEnum("tokopedia"), html_content=html, schema=spec_schema
+    )
     return {"shop_list": result.content}
 
 
@@ -194,12 +221,18 @@ async def get_shop_details(
     if not target_url:
         return {"error": "Could not determine valid shop URL"}
 
-    browser_session = await start_browser_session(brand_id=BrandIdEnum("tokopedia"))
-    page = await browser_session.page()
-    await page.goto(target_url, wait_until="commit")
-    await page.wait_for_selector("h1[data-testid='shopNameHeader']")
-    await page.wait_for_timeout(2000)
-    html = await page.locator("div#zeus-root").inner_html()
+    if BrandState.is_brand_connected(BrandIdEnum("tokopedia")):
+        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("tokopedia"))
+        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
+    else:
+        profile = BrowserProfile()
+
+    async with browser_session(profile) as session:
+        page = await session.page()
+        await page.goto(target_url, wait_until="commit")
+        await page.wait_for_selector("h1[data-testid='shopNameHeader']")
+        await page.wait_for_timeout(2000)
+        html = await page.locator("div#zeus-root").inner_html()
     spec_schema = SpecSchema.model_validate({
         "bundle": "",
         "format": "html",
@@ -211,7 +244,9 @@ async def get_shop_details(
             {"name": "shop_rating", "selector": "div[data-testid='shopRatingDetailHeader']"},
         ],
     })
-    result = await parse_html(html_content=html, schema=spec_schema)
+    result = await parse_html(
+        brand_id=BrandIdEnum("tokopedia"), html_content=html, schema=spec_schema
+    )
     return {"shop_detail": result.content}
 
 

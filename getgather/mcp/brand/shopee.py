@@ -1,10 +1,13 @@
 from typing import Any
 from urllib.parse import quote
 
+from getgather.browser.profile import BrowserProfile
+from getgather.browser.session import browser_session
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
+from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import extract, start_browser_session
+from getgather.mcp.shared import extract
 from getgather.parse import parse_html
 
 shopee_mcp = BrandMCPBase(prefix="shopee", name="Shopee MCP")
@@ -22,20 +25,26 @@ async def search_product(
     page_number: int = 1,
 ) -> dict[str, Any]:
     """Search product on shopee."""
-    browser_session = await start_browser_session(brand_id=BrandIdEnum("shopee"))
-    page = await browser_session.page()
+    if BrandState.is_brand_connected(BrandIdEnum("shopee")):
+        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("shopee"))
+        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
+    else:
+        profile = BrowserProfile()
 
-    # URL encode the search keyword
-    encoded_keyword = quote(keyword)
-    await page.goto(
-        f"https://shopee.co.id/search?keyword={encoded_keyword}&page={page_number - 1}",
-        wait_until="commit",
-    )
-    await page.wait_for_selector(
-        "ul.shopee-search-item-result__items > li:nth-child(1) > div:nth-child(1)"
-    )
-    await page.wait_for_timeout(1000)
-    html = await page.locator("section.shopee-search-item-result").inner_html()
+    async with browser_session(profile) as session:
+        page = await session.page()
+
+        # URL encode the search keyword
+        encoded_keyword = quote(keyword)
+        await page.goto(
+            f"https://shopee.co.id/search?keyword={encoded_keyword}&page={page_number - 1}",
+            wait_until="commit",
+        )
+        await page.wait_for_selector(
+            "ul.shopee-search-item-result__items > li:nth-child(1) > div:nth-child(1)"
+        )
+        await page.wait_for_timeout(1000)
+        html = await page.locator("section.shopee-search-item-result").inner_html()
     spec_schema = SpecSchema.model_validate({
         "bundle": "",
         "format": "html",
@@ -57,5 +66,5 @@ async def search_product(
             },
         ],
     })
-    result = await parse_html(html_content=html, schema=spec_schema)
+    result = await parse_html(brand_id=BrandIdEnum("shopee"), html_content=html, schema=spec_schema)
     return {"product_list": result.content}

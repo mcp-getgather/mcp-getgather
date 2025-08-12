@@ -1,13 +1,14 @@
+import asyncio
 import base64
 import json
 from pathlib import Path
 from typing import Any
 
-from patchright.async_api import async_playwright
+from patchright.async_api import Locator, async_playwright
 from pydantic import BaseModel
 
-from getgather.connectors.spec_loader import BrandIdEnum, load_brand_spec
-from getgather.connectors.spec_models import Schema
+from getgather.connectors.spec_loader import BrandIdEnum, load_brand_spec, load_custom_functions
+from getgather.connectors.spec_models import Column, Schema
 from getgather.logs import logger
 
 TIMEOUT = 1000
@@ -67,7 +68,9 @@ async def parse(
         b64_bytes = b64_content.encode("ascii")
 
         content = base64.b64decode(b64_bytes).decode("utf-8")
-        parsed_bundle = await _parse_by_format(schema=bundle_config, content=content)
+        parsed_bundle = await _parse_by_format(
+            brand_id=brand_id, schema=bundle_config, content=content
+        )
         if parsed_bundle:
             parsed_bundles.append(parsed_bundle)
     else:
@@ -78,7 +81,9 @@ async def parse(
             if not bundle_path.exists():
                 continue
 
-            parsed_bundle = await _parse_by_format(schema=schema, bundle_dir=bundle_dir)
+            parsed_bundle = await _parse_by_format(
+                brand_id=brand_id, schema=schema, bundle_dir=bundle_dir
+            )
             if parsed_bundle:
                 parsed_bundles.append(parsed_bundle)
     return parsed_bundles
@@ -86,18 +91,32 @@ async def parse(
 
 async def _parse_by_format(
     *,
+    brand_id: BrandIdEnum,
     schema: Schema,
     bundle_dir: Path | None = None,
     content: str | None = None,
 ) -> BundleOutput | None:
     match schema.format.lower():
         case "html":
-            return await parse_html(schema=schema, bundle_dir=bundle_dir, html_content=content)
+            return await parse_html(
+                brand_id=brand_id, schema=schema, bundle_dir=bundle_dir, html_content=content
+            )
         case _:
             raise ValueError(f"Format '{schema.format}' is not supported for parsing")
 
 
+async def _get_value(brand_id: BrandIdEnum, column: Column, element: Locator) -> str | None:
+    if column.attribute is not None:
+        return await element.get_attribute(column.attribute)
+    elif column.function is not None:
+        functions = load_custom_functions(brand_id)
+        return await functions.extract_url(element)
+    else:
+        return await element.inner_text()
+
+
 async def parse_html(
+    brand_id: BrandIdEnum,
     schema: Schema,
     *,
     bundle_dir: Path | None = None,
@@ -143,24 +162,13 @@ async def parse_html(
                     row[column.name] = [] if column.multiple else ""
                     continue
                 if column.multiple:
-                    values: list[str] = []
-                    for element in await elements.all():
-                        if column.attribute is not None:
-                            attr_value = await element.get_attribute(column.attribute)
-                            if attr_value is not None:
-                                values.append(attr_value)
-                        else:
-                            text = await element.inner_text()
-                            if text:
-                                values.append(text)
-                    row[column.name] = values
+                    values = await asyncio.gather(*[
+                        _get_value(brand_id, column, element) for element in await elements.all()
+                    ])
+                    row[column.name] = [v for v in values if v is not None]
                 else:
-                    element = elements.first
-                    if column.attribute is not None:
-                        attr_value = await element.get_attribute(column.attribute)
-                        row[column.name] = attr_value if attr_value is not None else ""
-                    else:
-                        row[column.name] = await element.inner_text()
+                    value = await _get_value(brand_id, column, elements.first)
+                    row[column.name] = value if value is not None else ""
 
             data.append(row)
 
