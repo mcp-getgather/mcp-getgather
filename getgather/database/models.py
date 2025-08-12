@@ -3,7 +3,7 @@ from typing import Any, ClassVar, Self
 
 from pydantic import BaseModel, ConfigDict
 
-from getgather.database.connection import execute_insert, execute_query, fetch_one
+from getgather.database.connection import execute_insert, execute_query, fetch_all, fetch_one
 
 
 class DBModel(BaseModel):
@@ -23,6 +23,12 @@ class DBModel(BaseModel):
         if row := fetch_one(query, (id,)):
             return cls.model_validate(row)
         return None
+
+    @classmethod
+    def get_all(cls) -> list[Self]:
+        """Get all records."""
+        query = f"SELECT * FROM {cls.table_name}"
+        return [cls.model_validate(row) for row in fetch_all(query)]
 
     @classmethod
     def add(cls, data: BaseModel) -> int:

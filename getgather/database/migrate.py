@@ -3,6 +3,7 @@ import sqlite3
 from pathlib import Path
 
 from getgather.config import settings
+from getgather.database.seeder import seed_brand_states
 from getgather.logs import logger
 
 
@@ -35,6 +36,9 @@ def run_migration():
 
         conn.commit()
         logger.info("Migration completed successfully!")
+
+        logger.info("Seeding brand_states table...")
+        seed_brand_states()
 
     except Exception as e:
         conn.rollback()
