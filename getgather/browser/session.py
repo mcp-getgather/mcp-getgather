@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import json
+import os
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
+from datetime import datetime
 from typing import Any, ClassVar
 
 from fastapi import HTTPException
@@ -57,15 +60,32 @@ class BrowserSession:
         activity = current_activity.get()
         logger.info(f"save_event called with event type: {event.get('type', 'unknown')}")
         
+        # Log raw JSON to file for debugging
+        try:
+            log_dir = "rrweb_debug"
+            os.makedirs(log_dir, exist_ok=True)
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+            activity_id = activity.id if activity and activity.id else "no_activity"
+            filename = f"{log_dir}/events_{activity_id}_{timestamp}.json"
+            
+            with open(filename, "w") as f:
+                f.write(json.dumps(event, indent=2))
+            
+            logger.info(f"Raw rrweb event logged to: {filename}")
+        except Exception as e:
+            logger.warning(f"Failed to log raw rrweb event: {e}")
+        
         if activity and activity.id:
             logger.info(f"Saving event to activity {activity.id}: type={event.get('type')}, timestamp={event.get('timestamp')}")
             RRWebRecordingsRepository.add_event_to_activity(activity.id, event)
             logger.info(f"Event successfully saved to activity {activity.id}")
         else:
             if not activity:
-                logger.warning("save_event called but no current activity context found")
+                logger.error("save_event called but no current activity context found")
+                raise HTTPException(status_code=400, detail="No current activity context found for recording")
             else:
-                logger.warning(f"save_event called but activity has no ID: {activity}")
+                logger.error(f"save_event called but activity has no ID: {activity}")
+                raise HTTPException(status_code=400, detail="Current activity has no ID for recording")
         
 
     async def start(self):
@@ -86,13 +106,55 @@ class BrowserSession:
                 profile_id=self.profile.id, browser_type=self.playwright.chromium
             )
             await self._context.expose_function("saveEvent", self.save_event)  # type: ignore
+            
+            # Add page listener to track page creation
+            self._context.on('page', lambda page: logger.info(f"NEW PAGE CREATED: URL={page.url}"))
+            
+            # Add rrweb script loading to every page
+            await self._context.add_init_script("""
+                // Load rrweb script dynamically
+                const rrwebScript = document.createElement('script');
+                rrwebScript.src = 'https://cdn.jsdelivr.net/npm/rrweb@2.0.0-alpha.14/dist/record/rrweb-record.min.js';
+                rrwebScript.onload = function() {
+                    console.log('RRWeb script loaded on:', window.location.href);
+                    startRRWebRecording();
+                };
+                document.head.appendChild(rrwebScript);
+                
+                // Wait for rrweb to be available, then start recording
+                function startRRWebRecording() {
+                    if (typeof rrwebRecord !== 'undefined' && window.saveEvent) {
+                        console.log('Starting rrweb recording on:', window.location.href);
+                        rrwebRecord({ 
+                            emit(event) { 
+                                console.log('RRWeb event captured:', event.type, window.location.href);
+                                window.saveEvent(event); 
+                            }, 
+                            maskAllInputs: true 
+                        });
+                    } else {
+                        // Retry after a short delay
+                        setTimeout(startRRWebRecording, 100);
+                    }
+                }
+            """)
         except Exception as e:
             logger.error(f"Error starting browser: {e}")
             raise BrowserStartupError(f"Failed to start browser: {e}") from e
 
     async def start_recording(self):
         logger.info(f"start_recording called for profile {self.profile.id}")
+        
+        # Log page information before getting page
+        logger.info(f"Total pages in context: {len(self.context.pages)}")
+        for i, p in enumerate(self.context.pages):
+            logger.info(f"Page {i}: URL={p.url}")
+        
         page = await self.page()
+        
+        # Log page information after getting page
+        logger.info(f"Total pages after self.page(): {len(self.context.pages)}")
+        logger.info(f"Selected page URL: {page.url}")
         
         logger.info("Adding rrweb script to page")
         await page.add_script_tag(
