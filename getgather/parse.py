@@ -3,14 +3,14 @@ import json
 from pathlib import Path
 from typing import Any
 
-from patchright.async_api import async_playwright
+from patchright.async_api import Page, async_playwright
 from pydantic import BaseModel
 
 from getgather.connectors.spec_loader import BrandIdEnum, load_brand_spec
 from getgather.connectors.spec_models import Schema
 from getgather.logs import logger
 
-TIMEOUT = 1000
+TIMEOUT = 30000
 
 
 class BundleOutput(BaseModel):
@@ -102,6 +102,8 @@ async def parse_html(
     *,
     bundle_dir: Path | None = None,
     html_content: str | None = None,
+    page: Page | None = None,
+    dump_html_path: Path | None = None,
 ) -> BundleOutput:
     """
     Use headless Playwright to parse HTML content into a tabular format stored as
@@ -111,60 +113,119 @@ async def parse_html(
     columns within a row.
     """
     logger.info(
-        f"Parsing HTML content: {html_content[:200] if html_content else 'None'}",
+        (
+            f"Parsing HTML with provided page: {page is not None} "
+            f"and inline content set: {html_content is not None}"
+        ),
         extra={"schema": schema},
     )
-    if not (bundle_dir is None) ^ (html_content is None):
-        raise ValueError("Exactly one of bundle_dir or html_content must be provided")
+
+    # Exactly one of bundle_dir, html_content, page must be provided
+    provided = [bundle_dir is not None, html_content is not None, page is not None]
+    if sum(1 for p in provided if p) != 1:
+        raise ValueError("Exactly one of bundle_dir, html_content, or page must be provided")
 
     data: list[dict[str, str | list[str]]] = []
-    async with async_playwright() as pw:
-        browser = await pw.chromium.launch()
-        context = await browser.new_context()
-        context.set_default_timeout(TIMEOUT)
-        context.set_default_navigation_timeout(TIMEOUT)
-        page = await context.new_page()
 
-        if html_content:
-            await page.set_content(html_content)
-        else:
-            assert bundle_dir is not None
-            input_path = bundle_dir / schema.bundle
-            logger.info(f"Parsing {input_path} ...")
-            await page.goto(Path(input_path).absolute().as_uri())
-
-        lc_rows = page.locator(schema.row_selector)
+    async def _extract_from_page(active_page: Page) -> None:
+        lc_rows = active_page.locator(schema.row_selector)
+        logger.info(f"Found {await lc_rows.count()} rows")
         for lc in await lc_rows.all():
+            logger.info(f"Processing row {lc} of {await lc_rows.count()} rows")
             row: dict[str, str | list[str]] = {}
-            for column in schema.columns:
-                elements = lc.locator(column.selector)
-                count = await elements.count()
-                if count == 0:
-                    row[column.name] = [] if column.multiple else ""
-                    continue
-                if column.multiple:
-                    values: list[str] = []
-                    for element in await elements.all():
-                        if column.attribute is not None:
-                            attr_value = await element.get_attribute(column.attribute)
-                            if attr_value is not None:
-                                values.append(attr_value)
+            try:
+                for column in schema.columns:
+                    try:
+                        elements = lc.locator(column.selector)
+                        count = await elements.count()
+                        if count == 0:
+                            row[column.name] = [] if column.multiple else ""
+                            continue
+                        if column.multiple:
+                            values: list[str] = []
+                            for element in await elements.all():
+                                try:
+                                    if column.attribute is not None:
+                                        attr_value = await element.get_attribute(column.attribute)
+                                        if attr_value is not None:
+                                            values.append(attr_value)
+                                    else:
+                                        text = await element.inner_text()
+                                        if text:
+                                            values.append(text)
+                                except Exception as e:
+                                    logger.warning(
+                                        f"Error extracting multi element for column '{column.name}': {e}"
+                                    )
+                                    continue
+                            row[column.name] = values
                         else:
-                            text = await element.inner_text()
-                            if text:
-                                values.append(text)
-                    row[column.name] = values
-                else:
-                    element = elements.first
-                    if column.attribute is not None:
-                        attr_value = await element.get_attribute(column.attribute)
-                        row[column.name] = attr_value if attr_value is not None else ""
-                    else:
-                        row[column.name] = await element.inner_text()
+                            element = elements.first
+                            try:
+                                if column.attribute is not None:
+                                    attr_value = await element.get_attribute(column.attribute)
+                                    row[column.name] = attr_value if attr_value is not None else ""
+                                else:
+                                    row[column.name] = await element.inner_text()
+                            except Exception as e:
+                                logger.warning(
+                                    f"Error extracting element for column '{column.name}': {e}"
+                                )
+                                row[column.name] = "" if not column.multiple else []
+                    except Exception as e:
+                        logger.warning(
+                            f"Error locating selector for column '{getattr(column, 'name', '?')}': {e}"
+                        )
+                        row[getattr(column, "name", "unknown")] = (
+                            "" if not getattr(column, "multiple", False) else []
+                        )
+                data.append(row)
+            except Exception as e:
+                logger.warning(f"Failed processing a row: {e}")
+                continue
 
-            data.append(row)
+    # Use provided page directly
+    if page is not None:
+        # Optional HTML dump for debugging
+        if dump_html_path is not None:
+            try:
+                dump_html_path.parent.mkdir(parents=True, exist_ok=True)
+                html_dump = await page.content()
+                dump_html_path.write_text(html_dump, encoding="utf-8")
+                logger.info(f"Wrote HTML dump to {dump_html_path}")
+            except Exception as e:
+                logger.warning(f"Failed to write HTML dump: {e}")
+        await _extract_from_page(page)
+    else:
+        # Create a temporary Playwright context for parsing standalone content
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch()
+            context = await browser.new_context()
+            context.set_default_timeout(TIMEOUT)
+            context.set_default_navigation_timeout(TIMEOUT)
+            new_page = await context.new_page()
 
-        await browser.close()
+            if html_content is not None:
+                await new_page.set_content(html_content)
+            else:
+                assert bundle_dir is not None
+                input_path = bundle_dir / schema.bundle
+                logger.info(f"Parsing {input_path} ...")
+                await new_page.goto(Path(input_path).absolute().as_uri())
+
+            # Optional dump when using temporary page
+            if dump_html_path is not None:
+                try:
+                    dump_html_path.parent.mkdir(parents=True, exist_ok=True)
+                    html_dump = await new_page.content()
+                    dump_html_path.write_text(html_dump, encoding="utf-8")
+                    logger.info(f"Wrote HTML dump to {dump_html_path}")
+                except Exception as e:
+                    logger.warning(f"Failed to write HTML dump: {e}")
+
+            await _extract_from_page(new_page)
+
+            await browser.close()
 
     if bundle_dir:
         output_path = bundle_dir / schema.output

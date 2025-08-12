@@ -1,4 +1,8 @@
+from pathlib import Path
 from typing import Any
+from urllib.parse import quote_plus
+
+from patchright.async_api import async_playwright
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
@@ -23,35 +27,70 @@ async def search_product(
     keyword: str,
 ) -> dict[str, Any]:
     """Search product on amazon."""
-    if BrandState.is_brand_connected(BrandIdEnum("amazon")):
-        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("amazon"))
-        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
-    else:
-        profile = BrowserProfile()
+    q = quote_plus(keyword)
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(headless=False)
+        context = await browser.new_context()
+        page = await context.new_page()
+        await page.goto(f"https://www.amazon.com/s?k={q}")
+        # Let the page settle a bit to reduce DOM mutations
+        await page.wait_for_load_state("domcontentloaded")
+        # Wait for any recognizable result container
+        await page.wait_for_selector(
+            "div.s-main-slot, #search, [data-component-type='s-search-result']"
+        )
+        # Snapshot container with fallbacks
+        if await page.locator("div.s-main-slot").count() > 0:
+            container_html = await page.locator("div.s-main-slot").inner_html()
+        elif await page.locator("#search").count() > 0:
+            container_html = await page.locator("#search").inner_html()
+        else:
+            container_html = await page.content()
 
-    async with browser_session(profile) as session:
-        page = await session.page()
-        await page.goto(f"https://www.amazon.com/s?k={keyword}")
-        await page.wait_for_selector("div[role='listitem]")
-        await page.wait_for_timeout(1000)
-        html = await page.locator("div.s-search-results").inner_html()
-    spec_schema = SpecSchema.model_validate({
-        "bundle": "",
-        "format": "html",
-        "output": "",
-        "row_selector": "div[role='listitem']",
-        "columns": [
-            {"name": "product_name", "selector": "div[data-cy='title-recipe'] > a"},
-            {
-                "name": "product_url",
-                "selector": "div[data-cy='title-recipe'] > a",
-                "attribute": "href",
-            },
-            {"name": "price", "selector": "div[data-cy='price-recipe']"},
-            {"name": "reviews", "selector": "div[data-cy='reviews-block']"},
-        ],
-    })
-    result = await parse_html(html_content=html, schema=spec_schema)
+        spec_schema = SpecSchema.model_validate({
+            "bundle": "",
+            "format": "html",
+            "output": "",
+            # Only real products with non-empty data-asin (union of common patterns)
+            "row_selector": "[data-asin]:not([data-asin='']), .sg-col[data-asin]:not([data-asin='']), li[data-asin]:not([data-asin=''])",
+            "columns": [
+                # Product title text
+                {
+                    "name": "product_name",
+                    "selector": "h2 a.a-link-normal[href] span, span.a-size-medium.a-color-base.a-text-normal",
+                },
+                # Product link (may be /dp/ or ad click wrapper)
+                {
+                    "name": "product_url",
+                    "selector": "h2 a.a-link-normal[href*='/dp/'], h2 a.a-link-normal[href]",
+                    "attribute": "href",
+                },
+                # Price text (visible formatted price)
+                {"name": "price", "selector": ".a-price .a-offscreen, span.a-price-whole"},
+                # Rating label or reviews text
+                {
+                    "name": "reviews",
+                    "selector": "[aria-label*='out of 5 stars'], .a-size-base.s-underline-text",
+                },
+            ],
+        })
+
+        # Parse from the snapshot; also dump full HTML for debugging
+        result = await parse_html(
+            schema=spec_schema,
+            html_content=container_html,
+            dump_html_path=Path("data/debug/amazon_search.html"),
+        )
+        # Normalize URLs to absolute
+        # Type-safe normalization of URLs
+        from typing import Any, cast
+
+        rows_typed = cast(list[dict[str, Any]], result.content)
+        for row in rows_typed:
+            url_val = row.get("product_url")
+            if isinstance(url_val, str) and url_val.startswith("/"):
+                row["product_url"] = f"https://www.amazon.com{url_val}"
+        await browser.close()
     return {"product_list": result.content}
 
 
