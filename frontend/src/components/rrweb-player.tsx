@@ -61,8 +61,10 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
             width: playerWidth,
             height: playerHeight,
             maxScale: 0, // Allow unlimited scaling for responsiveness
-            autoPlay: true,
+            autoPlay: false, // Don't auto-play, let user control
+            speed: 0.5, // Start at half speed for better viewing
             showController: true,
+            speedOption: [0.25, 0.5, 1, 2, 4, 8], // Add slower speed options
           },
         });
 
