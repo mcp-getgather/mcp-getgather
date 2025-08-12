@@ -7,8 +7,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, RefreshCw, ExternalLink } from "lucide-react";
+import { Search, RefreshCw, ExternalLink, Play } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Link } from "react-router";
 import { ApiService, type Activity } from "@/lib/api";
 
 export default function Activities() {
@@ -165,6 +166,15 @@ export default function Activities() {
                             )}
                             {!activity.end_time && (
                               <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
+                            )}
+                            {activity.end_time && (
+                              <Link 
+                                to={`/replay?id=${activity.id}`}
+                                className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 transition-colors"
+                              >
+                                <Play className="h-3 w-3" />
+                                Replay
+                              </Link>
                             )}
                           </div>
                         </div>
