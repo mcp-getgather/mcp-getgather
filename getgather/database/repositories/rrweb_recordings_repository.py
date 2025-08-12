@@ -1,6 +1,7 @@
+import json
 from typing import Any
 
-from getgather.database.connection import fetch_one
+from getgather.database.connection import execute_insert, fetch_one
 from getgather.database.models import RRWebRecording
 
 
@@ -28,3 +29,41 @@ class RRWebRecordingsRepository:
         if recording := RRWebRecordingsRepository.get_by_activity_id(activity_id):
             return recording.events
         return None
+
+    @staticmethod
+    def add_event_to_activity(activity_id: int, event: dict[str, Any]) -> None:
+        """Add a single event to an activity's recording."""
+        # Check if recording exists
+        recording = RRWebRecordingsRepository.get_by_activity_id(activity_id)
+        
+        if recording:
+            # Append event to existing recording
+            events = recording.events
+            events.append(event)
+            
+            # Update the recording
+            query = """
+                UPDATE rrweb_recordings 
+                SET events_json = ?, event_count = ?, end_timestamp = ?
+                WHERE activity_id = ?
+            """
+            execute_insert(query, (
+                json.dumps(events),
+                len(events),
+                event.get("timestamp", 0),
+                activity_id
+            ))
+        else:
+            # Create new recording with first event
+            events = [event]
+            query = """
+                INSERT INTO rrweb_recordings (activity_id, events_json, event_count, start_timestamp, end_timestamp)
+                VALUES (?, ?, ?, ?, ?)
+            """
+            execute_insert(query, (
+                activity_id,
+                json.dumps(events),
+                1,
+                event.get("timestamp", 0),
+                event.get("timestamp", 0)
+            ))

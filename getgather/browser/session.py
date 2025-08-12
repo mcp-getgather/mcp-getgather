@@ -10,6 +10,7 @@ from patchright.async_api import BrowserContext, Page, Playwright, async_playwri
 from getgather.browser.profile import BrowserProfile
 from getgather.context import current_activity
 from getgather.database.repositories.activity_repository import Activity
+from getgather.database.repositories.rrweb_recordings_repository import RRWebRecordingsRepository
 from getgather.logs import logger
 
 
@@ -54,14 +55,8 @@ class BrowserSession:
 
     async def save_event(self, event: dict[str, Any]) -> None:
         activity = current_activity.get()
-        if activity:
-            print(f"DEBUGPRINT: Saving event for activity {activity.name} (ID: {activity.id})")
-            # TODO: Store event with activity context in database
-            # For now, just log the association
-        else:
-            print(f"DEBUGPRINT: No activity context found for event")
-        
-        print(f"DEBUGPRINT[461]: session.py:57: event={len(event)}")
+        if activity and activity.id:
+            RRWebRecordingsRepository.add_event_to_activity(activity.id, event)
         
 
     async def start(self):
