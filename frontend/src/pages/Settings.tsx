@@ -103,7 +103,7 @@ export default function Settings() {
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
           <p className="text-muted-foreground mt-1">
-            Configure GetGather Portal to work with your preferred tools and
+            Configure GetGather Station to work with your preferred tools and
             data sources
           </p>
         </div>
