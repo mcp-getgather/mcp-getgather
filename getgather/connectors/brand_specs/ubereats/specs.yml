@@ -75,17 +75,17 @@ auth:
         optional: [password_error_message]
 
     - name: Email OTP Page
-      fields: 
+      fields:
         required: [email_otp, continue]
         optional: [email_otp_error_message]
 
     - name: SMS OTP Page
-      fields: 
+      fields:
         required: [sms_otp, continue]
         optional: [sms_otp_error_message]
 
     - name: Voice OTP Page
-      fields: 
+      fields:
         required: [voice_otp, continue]
         optional: [voice_otp_error_message]
 
