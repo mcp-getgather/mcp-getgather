@@ -35,6 +35,7 @@ async def activity(name: str, brand_id: str = "") -> AsyncGenerator[None, None]:
             end_time=datetime.now(UTC),
         )
 
+
 # Ensure calendar MCP is registered by importing its module
 try:
     from getgather.mcp import calendar_utils  # type: ignore
