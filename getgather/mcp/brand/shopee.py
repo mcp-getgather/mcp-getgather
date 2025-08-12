@@ -66,5 +66,5 @@ async def search_product(
             },
         ],
     })
-    result = await parse_html(html_content=html, schema=spec_schema)
+    result = await parse_html(brand_id=BrandIdEnum("shopee"), html_content=html, schema=spec_schema)
     return {"product_list": result.content}

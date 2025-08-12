@@ -43,3 +43,6 @@ parse:
         selector: div[id^=content-title-]
       - name: author
         selector: div[id^=content-author-]
+      - name: url
+        selector: div[id^=content-title-]
+        function: extract_url

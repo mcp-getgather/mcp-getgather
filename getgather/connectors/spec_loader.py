@@ -3,7 +3,9 @@ from __future__ import annotations
 import asyncio
 from enum import StrEnum
 from functools import cache
+from importlib import import_module
 from pathlib import Path
+from types import ModuleType
 from typing import TYPE_CHECKING, Literal
 
 import aiofiles
@@ -112,6 +114,14 @@ async def list_brand_specs(*, include: Literal["all", "test", "prod"] = "prod") 
     # Sort configs by connector id
     configs.sort(key=lambda x: x.id)
     return configs
+
+
+def load_custom_functions(brand_id: BrandIdEnum) -> ModuleType:
+    module = f"getgather.connectors.brand_specs.{brand_id}.functions"
+    try:
+        return import_module(module)
+    except:
+        raise ImportError(f"No custom functions found for {brand_id}")
 
 
 if TYPE_CHECKING:
