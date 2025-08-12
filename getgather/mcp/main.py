@@ -1,7 +1,5 @@
 import importlib
-from contextlib import asynccontextmanager
-from datetime import UTC, datetime
-from typing import Any, AsyncGenerator
+from typing import Any
 
 from fastmcp import Context, FastMCP
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
@@ -9,39 +7,12 @@ from fastmcp.tools.tool import ToolResult
 
 from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
-from getgather.context import current_activity
-from getgather.database.repositories.activity_repository import Activity
+from getgather.context import activity
 from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.logs import logger
 from getgather.mcp.auto_import import auto_import
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import auth_hosted_link, poll_status_hosted_link
-
-
-@asynccontextmanager
-async def activity(name: str, brand_id: str = "") -> AsyncGenerator[None, None]:
-    """Context manager for tracking activity."""
-    activity_obj = Activity(
-        brand_id=brand_id,
-        name=name,
-        start_time=datetime.now(UTC),
-    )
-    activity_id = Activity.add(activity_obj)
-    
-    # Update the activity object with the assigned ID
-    activity_obj.id = activity_id
-    
-    # Set the activity in context
-    token = current_activity.set(activity_obj)
-    try:
-        yield
-    finally:
-        # Reset the context and update end time
-        current_activity.reset(token)
-        Activity.update_end_time(
-            id=activity_id,
-            end_time=datetime.now(UTC),
-        )
 
 
 class AuthMiddleware(Middleware):
