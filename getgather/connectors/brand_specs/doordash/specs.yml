@@ -1,0 +1,54 @@
+name: Doordash
+auth:
+  fields:
+    - name: email
+      type: text
+      prompt: Email
+      selector: input[data-anchor-id="IdentityLoginPageEmailField"]
+    - name: email_continue
+      type: click
+      prompt: Continue
+      selector: button#guided-submit-button
+    - name: password
+      type: password
+      prompt: Password
+      selector: input[data-anchor-id="IdentityLoginPagePasswordField"]
+    - name: password_submit
+      type: click
+      prompt: Sign In
+      selector: button#login-submit-button
+    - name: otp
+      type: text
+      prompt: 6-digit one time code
+      selectors: input[type="number"]
+  pages:
+    - name: Email page
+      fields: [email, email_continue]
+    - name: Password page
+      fields: [password, password_submit]
+    - name: OTP page
+      fields: [otp]
+    - name: Orders page
+      url: https://www.doordash.com/orders
+      end: true
+  start: https://www.doordash.com/orders
+extract:
+  steps:
+    - name: Go to orders page
+      url: https://www.doordash.com/orders
+    - name: Extract the orders
+      bundle: orders.html
+      slurp_selector: div[data-testid="OrdersV2"]
+parse:
+  - bundle: orders.html
+    format: html
+    output: orders.json
+    row_selector: div[data-testid="OrdersCompletedSection"]
+    columns:
+      - name: restaurant
+        selector: a[href^="/store/"]
+      - name: restaurant_url
+        selector: a[href^="/store/"]
+        attribute: href
+      - name: description
+        selector: div.order-detail-body-wrapper div div div
