@@ -74,19 +74,26 @@ class RRWebRecording(DBModel):
 
 ### 2. API Layer
 
-#### Events Endpoint
+#### Activities API Endpoints
 
 ```python
-# File: getgather/api/routes/events/endpoints.py
+# File: getgather/api/routes/activities/endpoints.py
 from fastapi import APIRouter, HTTPException
-from getgather.database.repositories.rrweb_recordings_repository import RrwebRecordingsRepository
+from getgather.database.repositories.activity_repository import Activity
+from getgather.database.repositories.rrweb_recordings_repository import RRWebRecordingsRepository
 
-router = APIRouter(prefix="/api/events", tags=["events"])
+router = APIRouter(prefix="/api/activities", tags=["activities"])
 
-@router.get("")
-async def get_events(activity_id: str):
+@router.get("/")
+async def get_activities():
+    """Get all activities ordered by start_time descending"""
+    activities = Activity.get_all()
+    return {"activities": activities}
+
+@router.get("/recordings")
+async def get_recording(activity_id: int):
     """Get rrweb events for a specific activity"""
-    recording = RrwebRecordingsRepository.get_by_activity_id(activity_id)
+    recording = RRWebRecordingsRepository.get_by_activity_id(activity_id)
     if not recording:
         raise HTTPException(
             status_code=404, 
@@ -96,11 +103,140 @@ async def get_events(activity_id: str):
     return {"events": recording.events}
 ```
 
+#### Activity Repository Implementation
+
+```python
+# File: getgather/database/repositories/activity_repository.py
+from datetime import datetime
+from typing import Self
+from getgather.database.models import DBModel
+from getgather.database.connection import fetch_all
+
+class Activity(DBModel):
+    """Activity record model."""
+    
+    brand_id: str
+    name: str
+    start_time: datetime
+    end_time: datetime | None = None
+    execution_time_ms: int | None = None
+
+    table_name = "activities"
+
+    @classmethod
+    def get_all(cls) -> list[Self]:
+        """Get all activities ordered by start_time descending."""
+        query = f"SELECT * FROM {cls.table_name} ORDER BY start_time DESC"
+        rows = fetch_all(query)
+        return [cls.model_validate(row) for row in rows]
+
+    @classmethod
+    def update_end_time(cls, id: int, end_time: datetime) -> None:
+        """Update the end time of an activity."""
+        activity = cls.get(id)
+        if not activity:
+            raise ValueError(f"Activity {id} not found")
+
+        execution_time_ms = int((end_time - activity.start_time).total_seconds() * 1000)
+        cls.update(
+            id,
+            {
+                "end_time": end_time,
+                "execution_time_ms": execution_time_ms,
+            },
+        )
+```
+
 #### Frontend Integration
+
+##### API Service Layer
+
+```typescript
+// File: frontend/src/lib/api.ts
+export interface Activity {
+  id: number;
+  created_at: string;
+  brand_id: string;
+  name: string;
+  start_time: string;
+  end_time: string | null;
+  execution_time_ms: number | null;
+}
+
+export interface ActivitiesResponse {
+  activities: Activity[];
+}
+
+export class ApiService {
+  private static baseUrl = '/api';
+
+  static async getActivities(): Promise<Activity[]> {
+    const response = await fetch(`${this.baseUrl}/activities/`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch activities: ${response.statusText}`);
+    }
+    
+    const data: ActivitiesResponse = await response.json();
+    return data.activities;
+  }
+
+  static async getRecording(activityId: number) {
+    const response = await fetch(`${this.baseUrl}/activities/recordings?activity_id=${activityId}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch recording: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  }
+}
+```
+
+##### React Component Implementation
+
+```typescript
+// File: frontend/src/pages/Activities.tsx
+import { useState, useEffect } from "react";
+import { ApiService, type Activity } from "@/lib/api";
+
+export default function Activities() {
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const loadActivities = async () => {
+    try {
+      setLoading(true);
+      const activitiesData = await ApiService.getActivities();
+      setActivities(activitiesData);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load activities');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadActivities();
+  }, []);
+
+  const filteredActivities = activities.filter(activity =>
+    activity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    activity.brand_id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Component renders activity list with search, filtering, and statistics
+}
+```
+
+##### Updated Replay Component
 
 ```typescript
 // Updated replay.tsx
-const response = await fetch(`/api/events?activity_id=${activityId}`);
+const response = await fetch(`/api/activities/recordings?activity_id=${activityId}`);
 const data = await response.json();
 setEvents(data.events);
 ```
@@ -252,9 +388,10 @@ getgather/
 ├── database/
 │   ├── models.py                     # DBModel, RRWebRecording
 │   ├── schema.sql                    # Database tables
-│   ├── repositories/
-│   │   ├── activity_repository.py    # Activity CRUD
-│   │   └── rrweb_recordings_repository.py  # Recording CRUD
+│   ├── connection.py                 # Database connection utilities
+│   └── repositories/
+│       ├── activity_repository.py    # Activity CRUD with get_all() method
+│       └── rrweb_recordings_repository.py  # Recording CRUD
 ├── recording/
 │   ├── context.py                    # current_activity context variable
 │   └── manager.py                    # RecordingManager class
@@ -263,10 +400,18 @@ getgather/
 ├── mcp/
 │   ├── main.py                       # Enhanced activity context manager
 │   └── shared.py                     # Auto-recording browser session
-└── api/
-    ├── main.py                       # Include events router
-    └── routes/events/
-        └── endpoints.py              # /api/events endpoint
+├── api/
+│   ├── main.py                       # Include activities router
+│   └── routes/activities/
+│       └── endpoints.py              # /api/activities endpoint
+└── frontend/src/
+    ├── lib/
+    │   └── api.ts                    # TypeScript API service layer
+    ├── pages/
+    │   ├── Activities.tsx            # Activities dashboard component
+    │   └── replay.tsx                # RRWeb player component
+    └── components/
+        └── rrweb-player.tsx          # RRWeb player wrapper
 ```
 
 ## Key Benefits

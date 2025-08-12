@@ -1,6 +1,8 @@
 from datetime import datetime
+from typing import Self
 
 from getgather.database.models import DBModel
+from getgather.database.connection import fetch_all
 
 
 class Activity(DBModel):
@@ -13,6 +15,13 @@ class Activity(DBModel):
     execution_time_ms: int | None = None
 
     table_name = "activities"
+
+    @classmethod
+    def get_all(cls) -> list[Self]:
+        """Get all activities ordered by start_time descending."""
+        query = f"SELECT * FROM {cls.table_name} ORDER BY start_time DESC"
+        rows = fetch_all(query)
+        return [cls.model_validate(row) for row in rows]
 
     @classmethod
     def update_end_time(cls, id: int, end_time: datetime) -> None:
