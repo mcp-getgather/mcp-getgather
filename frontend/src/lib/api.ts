@@ -7,6 +7,7 @@ export interface Activity {
   start_time: string;
   end_time: string | null;
   execution_time_ms: number | null;
+  recording_count: number;
 }
 
 export interface ActivitiesResponse {

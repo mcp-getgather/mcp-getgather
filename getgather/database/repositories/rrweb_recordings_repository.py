@@ -32,6 +32,14 @@ class RRWebRecordingsRepository:
         return None
 
     @staticmethod
+    def get_recording_counts() -> dict[int, int]:
+        """Get recording event counts for all activities."""
+        from getgather.database.connection import fetch_all
+        query = "SELECT activity_id, event_count FROM rrweb_recordings"
+        rows = fetch_all(query)
+        return {row['activity_id']: row['event_count'] for row in rows}
+
+    @staticmethod
     def add_event_to_activity(activity_id: int, event: dict[str, Any]) -> None:
         """Add a single event to an activity's recording."""
         logger.info(f"add_event_to_activity called for activity {activity_id}, event type: {event.get('type')}")

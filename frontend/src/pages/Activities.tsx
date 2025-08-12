@@ -167,13 +167,13 @@ export default function Activities() {
                             {!activity.end_time && (
                               <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
                             )}
-                            {activity.end_time && (
+                            {activity.end_time && activity.recording_count > 0 && (
                               <Link 
                                 to={`/replay?id=${activity.id}`}
                                 className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 transition-colors"
                               >
                                 <Play className="h-3 w-3" />
-                                Replay
+                                Replay ({activity.recording_count} events)
                               </Link>
                             )}
                           </div>
