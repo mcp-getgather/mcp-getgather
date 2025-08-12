@@ -3,6 +3,7 @@ from typing import Any
 
 from getgather.database.connection import execute_insert, fetch_one
 from getgather.database.models import RRWebRecording
+from getgather.logs import logger
 
 
 class RRWebRecordingsRepository:
@@ -33,10 +34,13 @@ class RRWebRecordingsRepository:
     @staticmethod
     def add_event_to_activity(activity_id: int, event: dict[str, Any]) -> None:
         """Add a single event to an activity's recording."""
+        logger.info(f"add_event_to_activity called for activity {activity_id}, event type: {event.get('type')}")
+        
         # Check if recording exists
         recording = RRWebRecordingsRepository.get_by_activity_id(activity_id)
         
         if recording:
+            logger.info(f"Found existing recording for activity {activity_id} with {len(recording.events)} events")
             # Append event to existing recording
             events = recording.events
             events.append(event)
@@ -53,7 +57,9 @@ class RRWebRecordingsRepository:
                 event.get("timestamp", 0),
                 activity_id
             ))
+            logger.info(f"Updated recording for activity {activity_id}, now has {len(events)} events")
         else:
+            logger.info(f"Creating new recording for activity {activity_id}")
             # Create new recording with first event
             events = [event]
             query = """
@@ -67,3 +73,4 @@ class RRWebRecordingsRepository:
                 event.get("timestamp", 0),
                 event.get("timestamp", 0)
             ))
+            logger.info(f"Created new recording for activity {activity_id} with first event")

@@ -28,6 +28,9 @@ async def activity(name: str, brand_id: str = "") -> AsyncGenerator[None, None]:
     )
     activity_id = Activity.add(activity_obj)
     
+    # Update the activity object with the assigned ID
+    activity_obj.id = activity_id
+    
     # Set the activity in context
     token = current_activity.set(activity_obj)
     try:

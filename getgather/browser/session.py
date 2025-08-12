@@ -55,8 +55,17 @@ class BrowserSession:
 
     async def save_event(self, event: dict[str, Any]) -> None:
         activity = current_activity.get()
+        logger.info(f"save_event called with event type: {event.get('type', 'unknown')}")
+        
         if activity and activity.id:
+            logger.info(f"Saving event to activity {activity.id}: type={event.get('type')}, timestamp={event.get('timestamp')}")
             RRWebRecordingsRepository.add_event_to_activity(activity.id, event)
+            logger.info(f"Event successfully saved to activity {activity.id}")
+        else:
+            if not activity:
+                logger.warning("save_event called but no current activity context found")
+            else:
+                logger.warning(f"save_event called but activity has no ID: {activity}")
         
 
     async def start(self):
@@ -82,14 +91,20 @@ class BrowserSession:
             raise BrowserStartupError(f"Failed to start browser: {e}") from e
 
     async def start_recording(self):
+        logger.info(f"start_recording called for profile {self.profile.id}")
         page = await self.page()
+        
+        logger.info("Adding rrweb script to page")
         await page.add_script_tag(
             url="https://cdn.jsdelivr.net/npm/rrweb@2.0.0-alpha.14/dist/record/rrweb-record.min.js"
         )
+        
+        logger.info("Starting rrweb recording with saveEvent callback")
         await page.evaluate(
             "() => { rrwebRecord({ emit(event) { window.saveEvent(event); }, maskAllInputs: true }); }",
             isolated_context=False,
         )
+        logger.info("rrweb recording started successfully")
 
 
     async def stop(self):
