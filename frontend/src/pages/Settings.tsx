@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Info,
   Download,
@@ -20,7 +20,7 @@ import {
   Database,
 } from "lucide-react";
 import { Toggle } from "@/components/ui/toggle";
-import apiService, { type BrandState } from "@/lib/api-service";
+import { useBrands } from "@/hooks/useBrands";
 
 function BrandIcon({ brandId, size = 40 }: { brandId: string; size?: number }) {
   const [src, setSrc] = useState(`/static/assets/logos/${brandId}.svg`);
@@ -52,37 +52,7 @@ export default function Settings() {
   const [isRecordingEnabled, setIsRecordingEnabled] = useState(false);
   const [recordingDelay, setRecordingDelay] = useState(5);
 
-  const [brands, setBrands] = useState<BrandState[]>([]);
-
-  function toggleBrandEnabled(brand_id: string) {
-    const brand = brands.find((b) => b.brand_id === brand_id);
-    if (!brand) {
-      return;
-    }
-
-    setBrands(
-      brands.map((b) =>
-        b.brand_id === brand_id ? { ...b, enabled: !b.enabled } : b,
-      ),
-    );
-    apiService
-      .updateBrandEnabled(brand_id, !brand.enabled)
-      .then(() => {})
-      .catch((error) => {
-        console.error(error);
-        setBrands(
-          brands.map((b) =>
-            b.brand_id === brand_id ? { ...b, enabled: !b.enabled } : b,
-          ),
-        );
-      });
-  }
-
-  useEffect(() => {
-    apiService.fetchBrands().then((result) => {
-      setBrands(result);
-    });
-  }, []);
+  const { brands, updateBrandEnabled } = useBrands();
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-10">
@@ -280,7 +250,7 @@ export default function Settings() {
                 </div>
                 <Toggle
                   checked={brand.enabled}
-                  onChange={() => toggleBrandEnabled(brand.brand_id)}
+                  onChange={() => updateBrandEnabled(brand.brand_id)}
                 />
               </div>
             ))}
