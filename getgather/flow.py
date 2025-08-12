@@ -5,7 +5,6 @@ from typing import Any
 from patchright.async_api import Frame, Page
 
 from getgather.actions import (
-    get_brand_function,
     get_label_text,
     handle_click,
     handle_fill_multi,
@@ -16,6 +15,7 @@ from getgather.actions import (
     handle_select_option,
     wait_for_selector,
 )
+from getgather.connectors.spec_loader import BrandIdEnum, load_custom_functions
 from getgather.connectors.spec_models import Choice, Field
 from getgather.detect import PageSpecDetector
 from getgather.flow_state import Bundle, FlowState, InputPrompt, PageSpec, PromptGroup, StatePrompt
@@ -442,12 +442,14 @@ async def flow_step(*, page: Page, flow_state: FlowState) -> FlowState:
             content = json.dumps(orders)  # Makes content a string
             if orders:  # check the original response is not empty
                 if step.graphql.function:
-                    brand_specific_function = await get_brand_function(
-                        flow_state.brand_name.lower(), step.graphql.function
+                    brand_specific_function = load_custom_functions(
+                        brand_id=BrandIdEnum(flow_state.brand_name.lower())
                     )
-                    content = await brand_specific_function(
-                        page,
-                        content,
+                    content = (
+                        await brand_specific_function.retrieve_image_url_and_price_for_wayfair(
+                            page,
+                            content,
+                        )
                     )
                     content = json.dumps(content)
             bundle = Bundle(name=step.bundle, content=content)
