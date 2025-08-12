@@ -48,7 +48,7 @@ async def get_explore_species_list(
             {"name": "sci_name", "selector": "span.Suggestion-text span"},
         ],
     })
-    result = await parse_html(html_content=html, schema=spec_schema)
+    result = await parse_html(brand_id=BrandIdEnum("ebird"), html_content=html, schema=spec_schema)
     return {"species_list": result.content}
 
 

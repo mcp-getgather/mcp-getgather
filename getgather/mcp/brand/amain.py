@@ -32,5 +32,5 @@ async def get_cart() -> dict[str, Any]:
             {"name": "total_price", "selector": "div.total"},
         ],
     })
-    result = await parse_html(html_content=html, schema=spec_schema)
+    result = await parse_html(brand_id=BrandIdEnum("amain"), html_content=html, schema=spec_schema)
     return {"cart_data": result.content}
