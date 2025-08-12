@@ -1,4 +1,4 @@
-from typing import ClassVar, Self
+from typing import Self
 
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.database.connection import execute_query, fetch_one
@@ -12,7 +12,7 @@ class BrandState(DBModel):
     browser_profile_id: str
     is_connected: bool
 
-    table_name: ClassVar[str] = "brand_states"
+    table_name = "brand_states"
 
     @classmethod
     def get_by_brand_id(cls, brand_id: BrandIdEnum) -> Self | None:

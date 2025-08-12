@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import ClassVar
 
 from getgather.database.models import DBModel
 
@@ -13,7 +12,7 @@ class Activity(DBModel):
     end_time: datetime | None = None
     execution_time_ms: int | None = None
 
-    table_name: ClassVar[str] = "activities"
+    table_name = "activities"
 
     @classmethod
     def update_end_time(cls, id: int, end_time: datetime) -> None:
