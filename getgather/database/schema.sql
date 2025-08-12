@@ -3,8 +3,10 @@
 -- Brand states table
 CREATE TABLE IF NOT EXISTS brand_states (
     brand_id TEXT PRIMARY KEY,
-    browser_profile_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    browser_profile_id TEXT,
     is_connected BOOLEAN NOT NULL DEFAULT FALSE,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

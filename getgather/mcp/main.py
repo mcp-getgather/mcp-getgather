@@ -63,12 +63,9 @@ class AuthMiddleware(Middleware):
         if not browser_profile_id:
             # Create and persist a new profile for the auth flow
             browser_profile = BrowserProfile()
-            BrandState.add(
-                BrandState(
-                    brand_id=BrandIdEnum(brand_id),
-                    browser_profile_id=browser_profile.id,
-                    is_connected=False,
-                )
+            BrandState.update_browser_profile_id(
+                brand_id=BrandIdEnum(brand_id),
+                browser_profile_id=browser_profile.id,
             )
 
         logger.info(
@@ -101,7 +98,8 @@ def create_mcp_app():
     mcp.add_middleware(AuthMiddleware())
 
     @mcp.tool(tags={"general_tool"})
-    async def poll_auth(ctx: Context, link_id: str) -> dict[str, Any]:  # pyright: ignore[reportUnusedFunction]
+    # pyright: ignore[reportUnusedFunction]
+    async def poll_auth(ctx: Context, link_id: str) -> dict[str, Any]:
         """Poll auth for a session. Only call this tool if you get the auth link/url."""
         return await poll_status_hosted_link(context=ctx, hosted_link_id=link_id)
 

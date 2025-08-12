@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Info,
   Download,
@@ -20,82 +20,69 @@ import {
   Database,
 } from "lucide-react";
 import { Toggle } from "@/components/ui/toggle";
+import apiService, { type BrandState } from "@/lib/api-service";
 
-type DataSource = {
-  id: string;
-  name: string;
-  connected: boolean;
-  letter: string;
-  bgClass: string;
-  textClass: string;
-};
+function BrandIcon({ brandId, size = 40 }: { brandId: string; size?: number }) {
+  const [src, setSrc] = useState(`/static/assets/logos/${brandId}.svg`);
 
-const DATA_SOURCES = [
-  {
-    id: "amazon",
-    name: "Amazon",
-    connected: true,
-    letter: "A",
-    bgClass: "bg-orange-500",
-    textClass: "text-white",
-  },
-  {
-    id: "goodreads",
-    name: "Goodreads",
-    connected: true,
-    letter: "G",
-    bgClass: "bg-amber-500",
-    textClass: "text-white",
-  },
-  {
-    id: "doordash",
-    name: "DoorDash",
-    connected: false,
-    letter: "D",
-    bgClass: "bg-purple-500",
-    textClass: "text-white",
-  },
-  {
-    id: "bbc",
-    name: "BBC",
-    connected: true,
-    letter: "B",
-    bgClass: "bg-neutral-700",
-    textClass: "text-white",
-  },
-  {
-    id: "cnn",
-    name: "CNN",
-    connected: false,
-    letter: "C",
-    bgClass: "bg-red-500",
-    textClass: "text-white",
-  },
-  {
-    id: "zillow",
-    name: "Zillow",
-    connected: true,
-    letter: "Z",
-    bgClass: "bg-blue-800",
-    textClass: "text-white",
-  },
-];
+  function handleError() {
+    if (src.endsWith(".svg")) {
+      setSrc(`/static/assets/logos/${brandId}.png`);
+      return;
+    }
+    if (src.endsWith(".png")) {
+      setSrc("/static/assets/logos/default.svg");
+    }
+  }
+
+  return (
+    <img
+      src={src}
+      alt={brandId}
+      width={size}
+      height={size}
+      loading="lazy"
+      onError={handleError}
+      className="h-10 w-10 rounded-xl bg-gray-50 object-contain p-1"
+    />
+  );
+}
 
 export default function Settings() {
   const [isRecordingEnabled, setIsRecordingEnabled] = useState(false);
   const [recordingDelay, setRecordingDelay] = useState(5);
 
-  // TODO: get this from API
-  const [dataSources, setDataSources] = useState<DataSource[]>(DATA_SOURCES);
+  const [brands, setBrands] = useState<BrandState[]>([]);
 
-  function toggleDataSource(id: string) {
-    // TODO: integrate to API
-    setDataSources((prev) =>
-      prev.map((ds) =>
-        ds.id === id ? { ...ds, connected: !ds.connected } : ds,
+  function toggleBrandEnabled(brand_id: string) {
+    const brand = brands.find((b) => b.brand_id === brand_id);
+    if (!brand) {
+      return;
+    }
+
+    setBrands(
+      brands.map((b) =>
+        b.brand_id === brand_id ? { ...b, enabled: !b.enabled } : b,
       ),
     );
+    apiService
+      .updateBrandEnabled(brand_id, !brand.enabled)
+      .then(() => {})
+      .catch((error) => {
+        console.error(error);
+        setBrands(
+          brands.map((b) =>
+            b.brand_id === brand_id ? { ...b, enabled: !b.enabled } : b,
+          ),
+        );
+      });
   }
+
+  useEffect(() => {
+    apiService.fetchBrands().then((result) => {
+      setBrands(result);
+    });
+  }, []);
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-10">
@@ -270,24 +257,20 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {dataSources.map((ds) => (
+            {brands.map((brand) => (
               <div
-                key={ds.id}
+                key={brand.brand_id}
                 className="flex items-center justify-between rounded-xl border bg-white px-4 py-3 shadow-sm"
               >
                 <div className="flex items-center gap-3">
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl ${ds.bgClass}`}
-                  >
-                    <span className={`text-base font-semibold ${ds.textClass}`}>
-                      {ds.letter}
-                    </span>
-                  </div>
+                  <BrandIcon brandId={brand.brand_id} />
                   <div className="flex items-center gap-2">
                     <div>
-                      <div className="font-medium leading-tight">{ds.name}</div>
+                      <div className="font-medium leading-tight">
+                        {brand.name}
+                      </div>
                       <div className="text-sm text-muted-foreground">
-                        {ds.connected ? "Connected" : "Disconnected"}
+                        {brand.is_connected ? "Connected" : "Disconnected"}
                       </div>
                     </div>
                     <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-100">
@@ -296,8 +279,8 @@ export default function Settings() {
                   </div>
                 </div>
                 <Toggle
-                  checked={ds.connected}
-                  onChange={() => toggleDataSource(ds.id)}
+                  checked={brand.enabled}
+                  onChange={() => toggleBrandEnabled(brand.brand_id)}
                 />
               </div>
             ))}

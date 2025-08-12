@@ -9,9 +9,10 @@ class BrandState(DBModel):
     """Brand state record model."""
 
     brand_id: str
-    browser_profile_id: str
-    is_connected: bool
-
+    name: str
+    browser_profile_id: str | None
+    is_connected: bool = False
+    enabled: bool = True
     table_name = "brand_states"
 
     @classmethod
@@ -43,3 +44,23 @@ class BrandState(DBModel):
         """Get the browser profile ID for a brand."""
         state = cls.get_by_brand_id(BrandIdEnum(brand_id))
         return state.browser_profile_id if state else None
+
+    @classmethod
+    def update_enabled(cls, brand_id: BrandIdEnum, enabled: bool) -> None:
+        """Update the status for a brand."""
+        query = """
+            UPDATE brand_states 
+            SET enabled = ?
+            WHERE brand_id = ?
+        """
+        execute_query(query, (enabled, BrandIdEnum(brand_id)))
+
+    @classmethod
+    def update_browser_profile_id(cls, brand_id: BrandIdEnum, browser_profile_id: str) -> None:
+        """Update the browser profile ID for a brand."""
+        query = """
+            UPDATE brand_states 
+            SET browser_profile_id = ?
+            WHERE brand_id = ?
+        """
+        execute_query(query, (browser_profile_id, BrandIdEnum(brand_id)))
