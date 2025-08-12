@@ -383,6 +383,8 @@ async def flow_step(*, page: Page, flow_state: FlowState) -> FlowState:
                     )
                 else:
                     raise ValueError(f"⚠️ No selector provided for {field.name}")
+            elif field.type == "wait" and field.selector:
+                await wait_for_selector(current_page, field.selector, timeout=timeout)
             elif field.selectors:
                 await handle_fill_multi(current_page, field, value)
             elif field.selector:

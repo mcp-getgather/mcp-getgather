@@ -181,3 +181,17 @@ class ExtractOrchestrator:
         if not dir.exists():
             dir.mkdir(parents=True, exist_ok=True)
         return dir
+
+
+# test with:
+# python getgather/extract_orchestrator.py [brand] [profile_id]
+if __name__ == "__main__":
+    import asyncio
+    import sys
+
+    brand_id = BrandIdEnum(sys.argv[1])
+    profile_id = sys.argv[2]
+    extract_orchestrator = ExtractOrchestrator(
+        brand_id=brand_id, browser_profile=BrowserProfile(id=profile_id)
+    )
+    asyncio.run(extract_orchestrator.extract_flow())

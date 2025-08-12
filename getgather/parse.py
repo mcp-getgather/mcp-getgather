@@ -196,3 +196,17 @@ async def parse_html(
             parse_schema=schema,
             content=data,
         )
+
+
+# test with:
+# python getgather/parse.py [brand] data/bundles/[profile_id]/[brand]
+if __name__ == "__main__":
+    import asyncio
+    import sys
+
+    from rich import print
+
+    brand_id = BrandIdEnum(sys.argv[1])
+    bundle_dir = Path(sys.argv[2])
+    parsed_bundles = asyncio.run(parse(brand_id, bundle_dir=bundle_dir))
+    print(parsed_bundles)

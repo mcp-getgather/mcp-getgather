@@ -14,11 +14,11 @@ from getgather.logs import logger
 PAGE_TIMEOUT = 30_000
 
 
-async def wait_for_selector(page: Page, selector: str, timeout: int = 3000) -> None:
+async def wait_for_selector(page: Page | Frame, selector: str, timeout: int = 3000) -> None:
     try:
-        element = page.locator(selector)
+        locator = page.locator(selector)
         timestamp = time.time()
-        await element.wait_for(state="visible", timeout=timeout)
+        await wait_for_first_visible(locator, timeout=timeout)
         duration = math.floor((time.time() - timestamp) * 1000)
         logger.debug(f"✅ Selector {selector} appears after {duration} ms")
     except Exception as e:
@@ -47,16 +47,36 @@ async def try_download(page: Page, download_filename: str | None, download_dir: 
 LOCATOR_ALL_TIMEOUT = 100  # ms
 
 
+async def wait_for_first_visible(locator: Locator, timeout: int = 3000):
+    # First try to use the locator directly, but if that fails, try the first element
+    try:
+        await locator.wait_for(state="visible", timeout=timeout)
+    except TimeoutError:
+        raise
+    except Exception:
+        logger.debug(f"🔍 Locator {locator} has multiple matches, trying the first one")
+        try:
+            await locator.first.wait_for(state="visible", timeout=timeout)
+        except Exception:
+            logger.debug(
+                f"🔍 Locator {locator} has multiple matches, but the first one is not visible"
+            )
+
+
 async def get_first_visible(locator: Locator) -> Locator | None:
     # First try to use the locator directly, but if that fails, try the first element
     try:
         if await locator.is_visible():
             return locator
     except Exception:
+        logger.debug(f"🔍 Locator {locator} has multiple matches, trying the first one")
         try:
             if await locator.first.is_visible():
                 return locator.first
         except Exception:
+            logger.debug(
+                f"🔍 Locator {locator} has multiple matches, but the first one is not visible"
+            )
             return None
 
 
