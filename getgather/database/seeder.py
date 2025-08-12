@@ -24,7 +24,7 @@ def seed_brand_states() -> None:
     existing_brand_ids = {row["brand_id"] for row in existing_brands}
 
     # Filter out brands that already exist
-    brands_to_seed = [brand for brand in brands if brand not in existing_brand_ids]
+    brands_to_seed = [brand for brand in brands if brand[0] not in existing_brand_ids]
 
     if not brands_to_seed:
         logger.info("All brands already seeded, nothing to do")
