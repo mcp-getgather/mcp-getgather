@@ -18,15 +18,15 @@ COPY frontend/ ./frontend/
 # Build frontend
 RUN npm run build
 
-# Stage 2: Backend Builder  
-FROM python:3.13-bookworm AS backend-builder
+# Stage 2: Backend Builder
+FROM mirror.gcr.io/library/python:3.13-slim-bookworm AS backend-builder
+
+COPY --from=ghcr.io/astral-sh/uv:0.8.4 /uv /uvx /bin/
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
-
-COPY --from=ghcr.io/astral-sh/uv:0.8.4 /uv /uvx /bin/
 
 
 ENV PATH="/root/.local/bin:$PATH"
@@ -48,7 +48,8 @@ COPY pyproject.toml uv.lock* ./
 # Install dependencies without workspace members
 RUN uv sync --no-dev --no-install-workspace
 
-# Install Playwright browsers with dependencies (Ubuntu supports this properly)
+# Install Playwright browsers only for full deployment
+# so it can be copied to the final stage easily.
 ENV PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 RUN $VENV_PATH/bin/patchright install --with-deps chromium
@@ -62,7 +63,7 @@ COPY entrypoint.sh /app/entrypoint.sh
 RUN uv sync --no-dev
 
 # Stage 2: Final image
-FROM python:3.13-slim-bookworm
+FROM mirror.gcr.io/library/python:3.13-slim-bookworm
 
 RUN apt-get update && apt-get install -y \
     xvfb \
