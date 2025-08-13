@@ -5,14 +5,13 @@ from patchright.async_api import Locator, Page
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
-from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract
 from getgather.parse import parse_html
 
-astro_mcp = BrandMCPBase(prefix="astro", name="Astro MCP")
+astro_mcp = BrandMCPBase(brand_id="astro", name="Astro MCP")
 
 
 async def _adjust_quantity_with_detection(
@@ -166,7 +165,7 @@ def _format_quantity_result(
 @astro_mcp.tool(tags={"private"})
 async def get_purchase_history() -> dict[str, Any]:
     """Get astro purchase history."""
-    return await extract(brand_id=BrandIdEnum("astro"))
+    return await extract(brand_id=astro_mcp.brand_id)
 
 
 @astro_mcp.tool
@@ -174,8 +173,8 @@ async def search_product(
     keyword: str,
 ) -> dict[str, Any]:
     """Search product on astro."""
-    if BrandState.is_brand_connected(BrandIdEnum("astro")):
-        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("astro"))
+    if BrandState.is_brand_connected(astro_mcp.brand_id):
+        profile_id = BrandState.get_browser_profile_id(astro_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -217,7 +216,7 @@ async def search_product(
             {"name": "stock_status", "selector": "span.MuiTypography-caption-tiny.css-1lb2yr7"},
         ],
     })
-    result = await parse_html(brand_id=BrandIdEnum("astro"), html_content=html, schema=spec_schema)
+    result = await parse_html(brand_id=astro_mcp.brand_id, html_content=html, schema=spec_schema)
     return {"product_list": result.content}
 
 
@@ -226,8 +225,8 @@ async def get_product_details(
     product_url: str,
 ) -> dict[str, Any]:
     """Get product detail from astro. Get product_url from search_product tool."""
-    if BrandState.is_brand_connected(BrandIdEnum("astro")):
-        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("astro"))
+    if BrandState.is_brand_connected(astro_mcp.brand_id):
+        profile_id = BrandState.get_browser_profile_id(astro_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -266,7 +265,7 @@ async def get_product_details(
             {"name": "add_to_cart_available", "selector": "button[data-testid='pdp-atc-btn']"},
         ],
     })
-    result = await parse_html(brand_id=BrandIdEnum("astro"), html_content=html, schema=spec_schema)
+    result = await parse_html(brand_id=astro_mcp.brand_id, html_content=html, schema=spec_schema)
 
     product_details: dict[str, Any] = (
         result.content[0] if result.content and len(result.content) > 0 else {}
@@ -281,7 +280,7 @@ async def add_item_to_cart(
     quantity: int = 1,
 ) -> dict[str, Any]:
     """Add item to cart on astro (add new item or update existing quantity). Get product_url from search_product tool."""
-    profile_id = BrandState.get_browser_profile_id(BrandIdEnum("astro"))
+    profile_id = BrandState.get_browser_profile_id(astro_mcp.brand_id)
     profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
     # Ensure the product URL is a full URL
@@ -354,7 +353,7 @@ async def update_cart_quantity(
     quantity: int,
 ) -> dict[str, Any]:
     """Update cart item quantity on astro (set quantity to 0 to remove item). Use product name from cart summary."""
-    profile_id = BrandState.get_browser_profile_id(BrandIdEnum("astro"))
+    profile_id = BrandState.get_browser_profile_id(astro_mcp.brand_id)
     profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
     async with browser_session(profile) as session:
@@ -409,7 +408,7 @@ async def update_cart_quantity(
 @astro_mcp.tool(tags={"private"})
 async def get_cart_summary() -> dict[str, Any]:
     """Get cart summary from astro."""
-    profile_id = BrandState.get_browser_profile_id(BrandIdEnum("astro"))
+    profile_id = BrandState.get_browser_profile_id(astro_mcp.brand_id)
     profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
     async with browser_session(profile) as session:
@@ -451,7 +450,7 @@ async def get_cart_summary() -> dict[str, Any]:
     })
 
     available_items_result = await parse_html(
-        brand_id=BrandIdEnum("astro"), html_content=html, schema=available_items_schema
+        brand_id=astro_mcp.brand_id, html_content=html, schema=available_items_schema
     )
 
     # Extract unavailable items
@@ -474,7 +473,7 @@ async def get_cart_summary() -> dict[str, Any]:
     })
 
     unavailable_items_result = await parse_html(
-        brand_id=BrandIdEnum("astro"), html_content=html, schema=unavailable_items_schema
+        brand_id=astro_mcp.brand_id, html_content=html, schema=unavailable_items_schema
     )
 
     # Extract totals
@@ -500,7 +499,7 @@ async def get_cart_summary() -> dict[str, Any]:
     })
 
     summary_result = await parse_html(
-        brand_id=BrandIdEnum("astro"), html_content=html, schema=summary_schema
+        brand_id=astro_mcp.brand_id, html_content=html, schema=summary_schema
     )
 
     # Extract final total
@@ -519,7 +518,7 @@ async def get_cart_summary() -> dict[str, Any]:
     })
 
     total_result = await parse_html(
-        brand_id=BrandIdEnum("astro"), html_content=html, schema=total_schema
+        brand_id=astro_mcp.brand_id, html_content=html, schema=total_schema
     )
 
     # Process available items

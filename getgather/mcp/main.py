@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from typing import Any, AsyncGenerator
 
 from fastmcp import Context, FastMCP
+from fastmcp.server.http import StarletteWithLifespan
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools.tool import ToolResult
 
@@ -90,11 +91,14 @@ class AuthMiddleware(Middleware):
             return ToolResult(structured_content=result)
 
 
-def create_mcp_app():
-    """Create and return the MCP ASGI app.
+CATEGORY_BUNDLES: dict[str, list[str]] = {
+    "food": ["doordash", "ubereats"],
+    "books": ["audible", "goodreads", "kindle", "hardcover"],
+    "shopping": ["amazon", "shopee", "tokopedia"],
+}
 
-    This performs plugin discovery/registration and mounts brand MCPs.
-    """
+
+def create_mcp_apps() -> dict[str, StarletteWithLifespan]:
     # Discover and import all brand MCP modules (registers into BrandMCPBase.registry)
     auto_import("getgather.mcp.brand")
 
@@ -104,7 +108,28 @@ def create_mcp_app():
     except Exception as e:
         logger.warning(f"Failed to register calendar MCP: {e}")
 
-    mcp = FastMCP[Context](name="Getgather MCP")
+    # "all" MCP has all brands and tools
+    bundles: dict[str, list[BrandIdEnum]] = {"all": list(BrandMCPBase.registry.keys())}
+    # [brand] MCP has tools for a single brand
+    bundles.update({brand_id.value: [brand_id] for brand_id in BrandMCPBase.registry.keys()})
+    # [category] MCP has tools for a category of brands
+    bundles.update({
+        bundle_name: [BrandIdEnum(brand_id) for brand_id in brand_ids]
+        for bundle_name, brand_ids in CATEGORY_BUNDLES.items()
+    })
+    apps = {
+        bundle_name: _create_mcp_app(bundle_name, brand_ids)
+        for bundle_name, brand_ids in bundles.items()
+    }
+    return apps
+
+
+def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
+    """Create and return the MCP ASGI app.
+
+    This performs plugin discovery/registration and mounts brand MCPs.
+    """
+    mcp = FastMCP[Context](name=f"Getgather {bundle_name} MCP")
     mcp.add_middleware(AuthMiddleware())
 
     @mcp.tool(tags={"general_tool"})
@@ -112,8 +137,15 @@ def create_mcp_app():
         """Poll auth for a session. Only call this tool if you get the auth link/url."""
         return await poll_status_hosted_link(context=ctx, hosted_link_id=link_id)
 
-    for prefix, brand_mcp in BrandMCPBase.registry.items():
-        logger.info(f"Mounting {prefix} with {brand_mcp}")
-        mcp.mount(server=brand_mcp, prefix=prefix)
+    for brand_id in brand_ids:
+        brand_mcp = BrandMCPBase.registry[brand_id]
+        logger.info(f"Mounting {brand_mcp.name} to MCP bundle {bundle_name}")
+        mcp.mount(server=brand_mcp, prefix=brand_mcp.brand_id)
+
+    # Handle special case for some bundles
+    if bundle_name in ["all", "books", "shopping"]:
+        from getgather.mcp.calendar_utils import calendar_mcp
+
+        mcp.mount(server=calendar_mcp, prefix="calendar")
 
     return mcp.http_app(path="/")

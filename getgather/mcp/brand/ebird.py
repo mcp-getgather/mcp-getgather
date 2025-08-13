@@ -2,20 +2,19 @@ from typing import Any
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
-from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract
 from getgather.parse import parse_html
 
-ebird_mcp = BrandMCPBase(prefix="ebird", name="Ebird MCP")
+ebird_mcp = BrandMCPBase(brand_id="ebird", name="Ebird MCP")
 
 
 @ebird_mcp.tool(tags={"private"})
 async def get_life_list() -> dict[str, Any]:
     """Get life list of a ebird."""
-    return await extract(brand_id=BrandIdEnum("ebird"))
+    return await extract(brand_id=ebird_mcp.brand_id)
 
 
 @ebird_mcp.tool
@@ -23,8 +22,8 @@ async def get_explore_species_list(
     keyword: str,
 ) -> dict[str, Any]:
     """Get species list from ebird to be explored."""
-    if BrandState.is_brand_connected(BrandIdEnum("ebird")):
-        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("ebird"))
+    if BrandState.is_brand_connected(ebird_mcp.brand_id):
+        profile_id = BrandState.get_browser_profile_id(ebird_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -48,7 +47,7 @@ async def get_explore_species_list(
             {"name": "sci_name", "selector": "span.Suggestion-text span"},
         ],
     })
-    result = await parse_html(brand_id=BrandIdEnum("ebird"), html_content=html, schema=spec_schema)
+    result = await parse_html(brand_id=ebird_mcp.brand_id, html_content=html, schema=spec_schema)
     return {"species_list": result.content}
 
 
@@ -57,8 +56,8 @@ async def explore_species(
     sci_name: str,
 ) -> dict[str, Any]:
     """Explore species on Ebird from get_explore_species_list."""
-    if BrandState.is_brand_connected(BrandIdEnum("ebird")):
-        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("ebird"))
+    if BrandState.is_brand_connected(ebird_mcp.brand_id):
+        profile_id = BrandState.get_browser_profile_id(ebird_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
