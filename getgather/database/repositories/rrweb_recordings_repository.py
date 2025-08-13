@@ -1,5 +1,5 @@
 import json
-from typing import Any, ClassVar, Self
+from typing import Any, Self
 
 from getgather.database.connection import execute_insert, fetch_all, fetch_one
 from getgather.database.models import DBModel
@@ -9,7 +9,7 @@ from getgather.logs import logger
 class RRWebRecording(DBModel):
     """rrweb recording model for storing browser automation replays."""
 
-    table_name: ClassVar[str] = "rrweb_recordings"
+    table_name = "rrweb_recordings"
 
     activity_id: int
     events_json: str
