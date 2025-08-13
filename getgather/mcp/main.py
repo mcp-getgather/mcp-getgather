@@ -7,6 +7,8 @@ from fastmcp import Context, FastMCP
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools.tool import ToolResult
 
+from getgather.auth_flow import AuthFlowRequest, auth_flow
+from getgather.auth_orchestrator import AuthStatus
 from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.database.repositories.activity_repository import Activity
@@ -64,6 +66,25 @@ class AuthMiddleware(Middleware):
                 brand_id=brand_id,
                 name=context.message.name,
             ):
+                if "private" in tool.tags:
+                    auth_result = await auth_flow(
+                        brand_id,
+                        AuthFlowRequest(
+                            profile_id=BrandState.get_browser_profile_id(brand_id), extract=False
+                        ),
+                    )
+                    if auth_result.status != AuthStatus.FINISHED:
+                        BrandState.update_is_connected(
+                            brand_id=BrandIdEnum(brand_id),
+                            is_connected=False,
+                        )
+                        return ToolResult(
+                            structured_content={
+                                "message": "You've been logged out. You need to login again.",
+                                "system_message": "Call this tool again to login again",
+                            }
+                        )
+
                 return await call_next(context)
 
         browser_profile_id = BrandState.get_browser_profile_id(brand_id)
