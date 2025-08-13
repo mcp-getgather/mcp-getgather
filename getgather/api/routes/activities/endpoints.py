@@ -1,5 +1,5 @@
-from typing import Any, List
 from datetime import datetime
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -22,12 +22,12 @@ class ActivityWithCount(BaseModel):
 
 class ActivitiesResponse(BaseModel):
     """Response for activities endpoint."""
-    activities: List[ActivityWithCount]
+    activities: list[ActivityWithCount]
 
 
 class RecordingResponse(BaseModel):
     """Response for recording endpoint."""
-    events: List[dict[str, Any]]
+    events: list[dict[str, Any]]
 
 router = APIRouter(prefix="/api/activities", tags=["activities"])
 
@@ -39,7 +39,7 @@ async def get_activities() -> ActivitiesResponse:
     recording_counts = RRWebRecording.get_recording_counts()
     
     # Add recording count to each activity
-    activities_with_counts = []
+    activities_with_counts: list[ActivityWithCount] = []
     for activity in activities:
         activity_data = activity.model_dump()
         activity_data['recording_count'] = recording_counts.get(activity.id or 0, 0)
