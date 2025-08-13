@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import 'rrweb-player/dist/style.css';
 
 interface RRWebPlayerProps {
@@ -10,11 +10,13 @@ interface RRWebPlayerProps {
 export function RRWebPlayer({ events }: RRWebPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current || !events.length) return;
 
     let isDestroyed = false;
+    setHasError(false);
 
     // Dynamically import rrweb-player since it's not built for SSR
     const initializePlayer = async () => {
@@ -81,17 +83,8 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
 
       } catch (error) {
         console.error('Error initializing rrweb player:', error);
-        // Show error placeholder only if component is still mounted
-        if (!isDestroyed && containerRef.current) {
-          containerRef.current.innerHTML = `
-            <div style="width: 100%; min-height: 400px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; border: 1px solid #ddd; border-radius: 8px;">
-              <div style="text-align: center; color: #666;">
-                <h3>RRWeb Player Error</h3>
-                <p>Failed to initialize replay</p>
-                <p>Events: ${events.length}</p>
-              </div>
-            </div>
-          `;
+        if (!isDestroyed) {
+          setHasError(true);
         }
       }
     };
@@ -156,6 +149,28 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
           <div style={{ textAlign: 'center', color: '#666' }}>
             <h3>No Events</h3>
             <p>No recording events to replay</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <div className="rrweb-player" style={{ width: '100%', minHeight: '400px' }}>
+        <div style={{ 
+          width: '100%', 
+          height: '400px', 
+          background: '#f5f5f5', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          border: '1px solid #ddd', 
+          borderRadius: '8px' 
+        }}>
+          <div style={{ textAlign: 'center', color: '#666' }}>
+            <h3>Unable to Load Replay</h3>
+            <p>Failed to initialize the replay player</p>
           </div>
         </div>
       </div>
