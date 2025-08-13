@@ -48,7 +48,7 @@ async def _adjust_quantity_with_detection(
     steps_needed = abs(quantity_diff)
     button = plus_button if quantity_diff > 0 else minus_button
 
-    for step in range(steps_needed):
+    for _ in range(steps_needed):
         prev_qty_text = await current_quantity_element.text_content()
         prev_qty = int(prev_qty_text or str(current_quantity))
 
@@ -56,7 +56,7 @@ async def _adjust_quantity_with_detection(
 
         # Wait for quantity change with timeout
         change_detected = False
-        for attempt in range(10):  # Max 5 seconds
+        for _ in range(10):  # Max 5 seconds
             await page.wait_for_timeout(500)
 
             # Handle edge case: quantity 0 might make element disappear
