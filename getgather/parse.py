@@ -1,11 +1,13 @@
 import asyncio
 import base64
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
 from patchright.async_api import Locator, async_playwright
 from pydantic import BaseModel
+from rich import print
 
 from getgather.connectors.spec_loader import BrandIdEnum, load_brand_spec, load_custom_functions
 from getgather.connectors.spec_models import Column, Schema
@@ -201,11 +203,6 @@ async def parse_html(
 # test with:
 # python getgather/parse.py [brand] data/bundles/[profile_id]/[brand]
 if __name__ == "__main__":
-    import asyncio
-    import sys
-
-    from rich import print
-
     brand_id = BrandIdEnum(sys.argv[1])
     bundle_dir = Path(sys.argv[2])
     parsed_bundles = asyncio.run(parse(brand_id, bundle_dir=bundle_dir))

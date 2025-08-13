@@ -1,4 +1,6 @@
+import asyncio
 import base64
+import sys
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
@@ -186,9 +188,6 @@ class ExtractOrchestrator:
 # test with:
 # python getgather/extract_orchestrator.py [brand] [profile_id]
 if __name__ == "__main__":
-    import asyncio
-    import sys
-
     brand_id = BrandIdEnum(sys.argv[1])
     profile_id = sys.argv[2]
     extract_orchestrator = ExtractOrchestrator(
