@@ -1,0 +1,5 @@
+#!/bin/bash
+# Test file for CI testing
+echo "Running CI test..."
+echo "Test completed successfully"
+exit 0
