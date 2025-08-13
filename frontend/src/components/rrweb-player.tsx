@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import 'rrweb-player/dist/style.css';
 
 interface RRWebPlayerProps {
   events: any[];
