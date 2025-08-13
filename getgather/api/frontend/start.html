@@ -519,6 +519,7 @@
                 let form = document.createElement("form");
                 form.setAttribute("data-testid", `form-${choice.name}`);
 
+                console.log(choice);
                 if (choice.name) {
                   const groupLabel = document.createElement("label");
                   groupLabel.textContent = choice.prompt || choice.name;
@@ -532,7 +533,7 @@
                 }
 
                 // render input fields
-                choice.prompts
+                choice.groups
                   .filter((prompt) => prompt.type !== "click")
                   .forEach((prompt) => {
                     // For selection prompts with a single implied choice (no options array),
@@ -596,7 +597,7 @@
 
                 let hasSubmit = false;
                 // render submit button
-                choice.prompts
+                choice.groups
                   .filter((prompt) => prompt.type === "click")
                   .forEach((prompt) => {
                     hasSubmit = true;

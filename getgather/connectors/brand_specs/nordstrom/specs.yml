@@ -20,6 +20,7 @@ auth:
       prompt: Sign In
       selector: button[alt="sign in button"]
       expect_nav: true
+      url: https://www.nordstrom.com/
     - name: stay_signed_in
       type: click
       prompt: Keep me signed in
@@ -56,21 +57,9 @@ auth:
       prompt: Verify and Sign in
       selector: button:has-text("Verify and Sign in")
       expect_nav: true
-    - name: loading-button
-      type: wait
-      selector: button:has-text("Loading...")
-    - name: loading-spinner
-      type: wait
-      selector: div[data-testid="loading-spinner"]
-    - name: forgot-password-button
-      type: wait
-      selector: button:has-text("Forgot password?")
     - name: wrong-user-credentials-error
-      type: wait
-      selector: '[data-cy="wrong-user-credentials-error"]'
-    - name: wrong-user-credentials-error-message
-      type: wait
-      selector: span:has-text("Your email or password wasn't recognized")
+      type: message
+      selector: span[data-cy="wrong-user-credentials-error"]
     - name: create-account-title
       type: wait
       selector: h1:has-text("Create Account")
@@ -79,28 +68,32 @@ auth:
       selector: span[data-qm-block=true]
 
   pages:
-    - name: Sign in page
-      url: https://www.nordstrom.com/signin
+    - name: Username page
       fields: [email, submit]
-    - name: Password page
+
+    - name: Password only page
+      timeout: 5
+      fields: 
+        required: [password, sign_in]
+        optional: [wrong-user-credentials-error]
+
+    - name: Password with OTP page
+      timeout: 5
       choices:
         name: verification_choice
         prompt: Would you like to use a password or a one-time code?
         groups:
           - name: password
             prompt: Password
-            fields: [password, sign_in]
+            fields: 
+              required: [password, sign_in]
+              optional: [wrong-user-credentials-error]
           - name: otp
             prompt: One-time code
             fields: [otp_choice_button]
-    - name: Waiting submit password
-      fields: [loading-button, loading-spinner, forgot-password-button]
-    - name: Incorrect password page
-      fields: [password, sign_in, wrong-user-credentials-error, wrong-user-credentials-error-message]
-      message: ❌ The password you entered is incorrect. Please try again.
 
     - name: OTP form
-      fields: [otp, otp_choice_button, sign_in, stay_signed_in]
+      fields: [otp]
 
     - name: MFA choice form
       choices:
@@ -126,7 +119,7 @@ auth:
       fields: [signed-in-homepage]
       end: true
 
-  start: Sign in page
+  start: https://www.nordstrom.com/signin
 
 extract:
   steps:
