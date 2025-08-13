@@ -47,7 +47,13 @@ COPY pyproject.toml uv.lock* ./
 # Install dependencies without workspace members
 RUN uv sync --no-dev --no-install-workspace
 
-# Install Playwright browsers only for full deployment
+# Pre-install fonts - playwright --with-deps tries to install deprecated packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    fonts-unifont \
+    fonts-liberation \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Playwright browsers only for full deployment  
 # so it can be copied to the final stage easily.
 ENV PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
