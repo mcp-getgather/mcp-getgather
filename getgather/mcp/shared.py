@@ -120,7 +120,6 @@ async def start_browser_session(brand_id: BrandIdEnum) -> BrowserSession:
 
     browser_session = await BrowserSession.get(browser_profile)
     await browser_session.start()
-    # Don't start recording here - will be started just before extraction
     return browser_session
 
 

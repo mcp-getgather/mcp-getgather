@@ -49,12 +49,13 @@ class AuthMiddleware(Middleware):
         if not browser_profile_id:
             # Create and persist a new profile for the auth flow
             browser_profile = BrowserProfile()
-            brand_state = BrandState(
-                brand_id=BrandIdEnum(brand_id),
-                browser_profile_id=browser_profile.id,
-                is_connected=False,
+            BrandState.add(
+                BrandState(
+                    brand_id=BrandIdEnum(brand_id),
+                    browser_profile_id=browser_profile.id,
+                    is_connected=False,
+                )
             )
-            BrandState.add(brand_state)
 
         logger.info(
             f"[AuthMiddleware] processing auth for brand {brand_id} with browser profile {browser_profile_id}"

@@ -9,7 +9,6 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
     outDir: path.resolve(__dirname, "getgather", "api", "frontend"),
-    rollupOptions: {}
   },
   server: {
     proxy: {
