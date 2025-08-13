@@ -160,23 +160,9 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
 
   if (!events.length) {
     return (
-      <div
-        className="rrweb-player"
-        style={{ width: "100%", minHeight: "400px" }}
-      >
-        <div
-          style={{
-            width: "100%",
-            height: "400px",
-            background: "#f5f5f5",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            border: "1px solid #ddd",
-            borderRadius: "8px",
-          }}
-        >
-          <div style={{ textAlign: "center", color: "#666" }}>
+      <div className="rrweb-player w-full min-h-[400px]">
+        <div className="w-full h-[400px] bg-gray-100 flex items-center justify-center border border-gray-300 rounded-lg">
+          <div className="text-center text-gray-600">
             <h3>No Events</h3>
             <p>No recording events to replay</p>
           </div>
@@ -187,23 +173,9 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
 
   if (hasError) {
     return (
-      <div
-        className="rrweb-player"
-        style={{ width: "100%", minHeight: "400px" }}
-      >
-        <div
-          style={{
-            width: "100%",
-            height: "400px",
-            background: "#f5f5f5",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            border: "1px solid #ddd",
-            borderRadius: "8px",
-          }}
-        >
-          <div style={{ textAlign: "center", color: "#666" }}>
+      <div className="rrweb-player w-full min-h-[400px]">
+        <div className="w-full h-[400px] bg-gray-100 flex items-center justify-center border border-gray-300 rounded-lg">
+          <div className="text-center text-gray-600">
             <h3>Unable to Load Replay</h3>
             <p>Failed to initialize the replay player</p>
           </div>
@@ -215,14 +187,7 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
   return (
     <div
       ref={containerRef}
-      className="rrweb-player"
-      style={{
-        width: "100%",
-        minHeight: "400px",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
+      className="rrweb-player w-full min-h-[400px] flex justify-center items-center"
     />
   );
 }
