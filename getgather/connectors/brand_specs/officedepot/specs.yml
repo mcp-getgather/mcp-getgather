@@ -3,7 +3,7 @@ name: Office Depot
 auth:
   fields:
     - name: dismiss_cookies
-      type: click
+      type: autoclick
       prompt: Accept cookies
       selector: '#onetrust-accept-btn-handler'
       expect_nav: false
@@ -71,6 +71,8 @@ auth:
     - name: welcome-text
       type: wait
       selector: div.od-container:has-text("Welcome")
+    - name: sleep
+      type: wait
 
   pages:
     - name: Log in
@@ -90,13 +92,13 @@ auth:
         groups:
           - name: text
             prompt: Text Message (SMS)
-            fields: [text-radio-btn, send-code-btn]
+            fields: [text-radio-btn, send-code-btn, sleep]
           - name: voice
             prompt: Voice
-            fields: [voice-radio-btn, send-code-btn]
+            fields: [voice-radio-btn, send-code-btn, sleep]
           - name: email
             prompt: Email
-            fields: [email-radio-btn, send-code-btn]
+            fields: [email-radio-btn, send-code-btn, sleep]
     - name: 2FA code page
       fields: [validation-code, validation-btn]
     - name: Home page

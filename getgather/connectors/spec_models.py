@@ -189,12 +189,12 @@ class FieldYML(YMLModel):
             assert self.url is not None, "URL is required for navigate field"
             assert self.expect_nav is not False, "expect_nav must be True for navigate field"
             return self
-        elif self.type != "selection":
+        elif self.type not in ["selection", "wait"]:
             # For normal interactive fields exactly one of selector/selectors is required.
             # Dynamic "selection" fields derive their target via ``option_items`` at runtime,
             # so they are exempt.
             assert bool(self.selector) ^ bool(self.selectors), (
-                "One and only one of selector and selectors must be provided for non-navigate fields"
+                "One and only one of selector and selectors must be provided for non-navigate and non-wait fields"
             )
         return self
 
