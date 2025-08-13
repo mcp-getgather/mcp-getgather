@@ -120,7 +120,6 @@ class BrowserSession:
             logger.error(f"Error starting browser: {e}")
             raise BrowserStartupError(f"Failed to start browser: {e}") from e
 
-
     async def stop(self):
         logger.info(
             "Closing browser",

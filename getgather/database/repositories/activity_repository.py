@@ -26,6 +26,9 @@ class Activity(DBModel):
     @classmethod
     def update_end_time(cls, id: int, end_time: datetime) -> None:
         """Update the end time of an activity."""
+        if not cls.id:
+            raise ValueError(f"Activity {cls.id} not found")
+
         activity = cls.get(id)
         if not activity:
             raise ValueError(f"Activity {id} not found")

@@ -14,18 +14,18 @@ current_activity: ContextVar[Activity | None] = ContextVar('current_activity', d
 @asynccontextmanager
 async def activity(name: str, brand_id: str = "") -> AsyncGenerator[None, None]:
     """Context manager for tracking activity."""
-    activity_obj = Activity(
+    activity = Activity(
         brand_id=brand_id,
         name=name,
         start_time=datetime.now(UTC),
     )
-    activity_id = Activity.add(activity_obj)
+    activity_id = Activity.add(activity)
     
     # Update the activity object with the assigned ID
-    activity_obj.id = activity_id
+    activity.id = activity_id
     
     # Set the activity in context
-    token = current_activity.set(activity_obj)
+    token = current_activity.set(activity)
     try:
         yield
     finally:

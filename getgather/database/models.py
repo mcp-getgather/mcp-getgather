@@ -40,8 +40,8 @@ class DBModel(BaseModel):
 
         # Convert datetime objects to ISO format strings
         params = tuple(v.isoformat() if isinstance(v, datetime) else v for v in fields.values())
-
-        return execute_insert(query, params)
+        cls.id = execute_insert(query, params)
+        return cls.id
 
     @classmethod
     def update(cls, id: int, data: dict[str, Any]) -> None:
