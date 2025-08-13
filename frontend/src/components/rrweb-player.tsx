@@ -5,11 +5,9 @@ interface RRWebPlayerProps {
   events: any[];
   width?: number;
   height?: number;
-  autoPlay?: boolean;
-  loop?: boolean;
 }
 
-export function RRWebPlayer({ events, autoPlay = true, loop = true }: RRWebPlayerProps) {
+export function RRWebPlayer({ events }: RRWebPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
 
@@ -64,7 +62,7 @@ export function RRWebPlayer({ events, autoPlay = true, loop = true }: RRWebPlaye
             width: playerWidth,
             height: playerHeight,
             maxScale: 0, // Allow unlimited scaling for responsiveness
-            autoPlay: autoPlay,
+            autoPlay: true,
             speed: 1,
             showController: true,
             speedOption: [1, 0.25, 0.5, 2, 4, 8], // Default to 1x speed first
@@ -72,8 +70,8 @@ export function RRWebPlayer({ events, autoPlay = true, loop = true }: RRWebPlaye
           },
         });
 
-        // Add loop functionality if enabled
-        if (loop && playerRef.current) {
+        // Add loop functionality (always enabled)
+        if (playerRef.current) {
           playerRef.current.addEventListener('finish', () => {
             console.log('Replay finished, restarting loop...');
             // Restart the replay from beginning
@@ -140,7 +138,7 @@ export function RRWebPlayer({ events, autoPlay = true, loop = true }: RRWebPlaye
         containerRef.current.innerHTML = '';
       }
     };
-  }, [events, autoPlay, loop]);
+  }, [events]);
 
   if (!events.length) {
     return (
