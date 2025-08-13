@@ -65,10 +65,7 @@ auth:
             prompt: One-time code
             fields: [otp]
 
-    - name: Password Page
-      fields: [password, sign_in]
-
-    - name: Incorrect password page
+    - name: Password page
       fields:
         required: [password, sign_in]
         optional: [invalid-password-message]
