@@ -4,9 +4,11 @@ interface RRWebPlayerProps {
   events: any[];
   width?: number;
   height?: number;
+  autoPlay?: boolean;
+  loop?: boolean;
 }
 
-export function RRWebPlayer({ events }: RRWebPlayerProps) {
+export function RRWebPlayer({ events, autoPlay = true, loop = true }: RRWebPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
 
@@ -61,12 +63,22 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
             width: playerWidth,
             height: playerHeight,
             maxScale: 0, // Allow unlimited scaling for responsiveness
-            autoPlay: false, // Don't auto-play, let user control
-            speed: 0.5, // Start at half speed for better viewing
+            autoPlay: autoPlay,
+            speed: 1,
             showController: true,
             speedOption: [0.25, 0.5, 1, 2, 4, 8], // Add slower speed options
+            skipInactive: true, // Skip blank/inactive periods automatically
           },
         });
+
+        // Add loop functionality if enabled
+        if (loop && playerRef.current) {
+          playerRef.current.addEventListener('finish', () => {
+            console.log('Replay finished, restarting loop...');
+            // Restart the replay from beginning
+            playerRef.current.goto(0, true); // Go to start and auto-play
+          });
+        }
 
       } catch (error) {
         console.error('Error initializing rrweb player:', error);
@@ -127,7 +139,7 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
         containerRef.current.innerHTML = '';
       }
     };
-  }, [events]);
+  }, [events, autoPlay, loop]);
 
   if (!events.length) {
     return (

@@ -8,6 +8,8 @@ export function ReplayPage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [autoPlay, setAutoPlay] = useState(true);
+  const [loop, setLoop] = useState(true);
 
   useEffect(() => {
     const loadEvents = async () => {
@@ -65,8 +67,30 @@ export function ReplayPage() {
         </p>
       </div>
       
+      {/* Playback Controls */}
+      <div className="flex justify-center space-x-4 text-sm">
+        <label className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            checked={autoPlay}
+            onChange={(e) => setAutoPlay(e.target.checked)}
+            className="rounded"
+          />
+          <span>Auto Play</span>
+        </label>
+        <label className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            checked={loop}
+            onChange={(e) => setLoop(e.target.checked)}
+            className="rounded"
+          />
+          <span>Loop</span>
+        </label>
+      </div>
+      
       <div className="w-full max-w-7xl mx-auto">
-        <RRWebPlayer events={events} />
+        <RRWebPlayer events={events} autoPlay={autoPlay} loop={loop} />
       </div>
     </div>
   );
