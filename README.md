@@ -1,7 +1,9 @@
 # Get Gather
+
 GetGather is a containerized service that allows MCP clients to interact with your data and act on your behalf.
 
 ## Quickstart
+
 First, run the container with Docker or Podman:
 
 ```bash
@@ -54,6 +56,7 @@ Choose one of the following options if you'd like the MCP clients to automatical
 2. In Claude Desktop, enable "Control Chrome" in "Settings" -> "Extensions".
 
 ## Build and run locally
+
 After cloning the repo:
 
 ```bash
