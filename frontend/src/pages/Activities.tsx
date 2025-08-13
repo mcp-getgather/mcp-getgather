@@ -25,7 +25,9 @@ export default function Activities() {
       setActivities(activitiesData);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load activities');
+      setError(
+        err instanceof Error ? err.message : "Failed to load activities",
+      );
     } finally {
       setLoading(false);
     }
@@ -35,9 +37,10 @@ export default function Activities() {
     loadActivities();
   }, []);
 
-  const filteredActivities = activities.filter(activity =>
-    activity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    activity.brand_id.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredActivities = activities.filter(
+    (activity) =>
+      activity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      activity.brand_id.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const formatDuration = (executionTimeMs: number | null): string => {
@@ -45,7 +48,7 @@ export default function Activities() {
     const seconds = Math.floor(executionTimeMs / 1000);
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    
+
     if (minutes > 0) {
       return `${minutes}m ${remainingSeconds}s`;
     }
@@ -58,7 +61,7 @@ export default function Activities() {
     const diffMs = now.getTime() - date.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    
+
     if (diffHours > 24) {
       return date.toLocaleDateString();
     } else if (diffHours > 0) {
@@ -66,7 +69,7 @@ export default function Activities() {
     } else if (diffMinutes > 0) {
       return `${diffMinutes}m ago`;
     } else {
-      return 'Just now';
+      return "Just now";
     }
   };
 
@@ -80,8 +83,13 @@ export default function Activities() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button size="sm" variant="outline" onClick={loadActivities} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={loadActivities}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         </div>
@@ -126,19 +134,27 @@ export default function Activities() {
               {loading ? (
                 <div className="flex items-center justify-center py-8">
                   <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
-                  <span className="ml-2 text-gray-500">Loading activities...</span>
+                  <span className="ml-2 text-gray-500">
+                    Loading activities...
+                  </span>
                 </div>
               ) : error ? (
                 <div className="text-center py-8">
                   <p className="text-red-600">{error}</p>
-                  <Button onClick={loadActivities} variant="outline" className="mt-2">
+                  <Button
+                    onClick={loadActivities}
+                    variant="outline"
+                    className="mt-2"
+                  >
                     Retry
                   </Button>
                 </div>
               ) : filteredActivities.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500">
-                    {searchTerm ? 'No activities match your search' : 'No activities found'}
+                    {searchTerm
+                      ? "No activities match your search"
+                      : "No activities found"}
                   </p>
                 </div>
               ) : (
@@ -167,19 +183,21 @@ export default function Activities() {
                             {!activity.end_time && (
                               <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
                             )}
-                            {activity.end_time && activity.recording_count > 0 && (
-                              <Link 
-                                to={`/replay?id=${activity.id}`}
-                                className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 transition-colors"
-                              >
-                                <Play className="h-3 w-3" />
-                                Replay ({activity.recording_count} events)
-                              </Link>
-                            )}
+                            {activity.end_time &&
+                              activity.recording_count > 0 && (
+                                <Link
+                                  to={`/replay?id=${activity.id}`}
+                                  className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 transition-colors"
+                                >
+                                  <Play className="h-3 w-3" />
+                                  Replay ({activity.recording_count} events)
+                                </Link>
+                              )}
                           </div>
                         </div>
                         <span className="text-xs text-gray-500">
-                          {formatTimestamp(activity.start_time)} ({formatDuration(activity.execution_time_ms)})
+                          {formatTimestamp(activity.start_time)} (
+                          {formatDuration(activity.execution_time_ms)})
                         </span>
                       </div>
                     </li>
@@ -203,27 +221,35 @@ export default function Activities() {
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
                   <span>Total Activities</span>
-                  <span className="text-gray-900 font-medium">{activities.length}</span>
+                  <span className="text-gray-900 font-medium">
+                    {activities.length}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Completed</span>
                   <span className="text-green-600 font-medium">
-                    {activities.filter(a => a.end_time).length}
+                    {activities.filter((a) => a.end_time).length}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>In Progress</span>
                   <span className="text-yellow-600 font-medium">
-                    {activities.filter(a => !a.end_time).length}
+                    {activities.filter((a) => !a.end_time).length}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Average Duration</span>
                   <span className="text-gray-600">
                     {(() => {
-                      const completedActivities = activities.filter(a => a.execution_time_ms);
-                      if (completedActivities.length === 0) return 'N/A';
-                      const avgMs = completedActivities.reduce((sum, a) => sum + a.execution_time_ms!, 0) / completedActivities.length;
+                      const completedActivities = activities.filter(
+                        (a) => a.execution_time_ms,
+                      );
+                      if (completedActivities.length === 0) return "N/A";
+                      const avgMs =
+                        completedActivities.reduce(
+                          (sum, a) => sum + a.execution_time_ms!,
+                          0,
+                        ) / completedActivities.length;
                       return formatDuration(avgMs);
                     })()}
                   </span>
@@ -239,17 +265,23 @@ export default function Activities() {
             <CardContent>
               <div className="space-y-3 text-sm">
                 {(() => {
-                  const brandCounts = activities.reduce((acc, activity) => {
-                    const brand = activity.brand_id || 'Unknown';
-                    acc[brand] = (acc[brand] || 0) + 1;
-                    return acc;
-                  }, {} as Record<string, number>);
-                  
+                  const brandCounts = activities.reduce(
+                    (acc, activity) => {
+                      const brand = activity.brand_id || "Unknown";
+                      acc[brand] = (acc[brand] || 0) + 1;
+                      return acc;
+                    },
+                    {} as Record<string, number>,
+                  );
+
                   return Object.entries(brandCounts)
-                    .sort(([,a], [,b]) => b - a)
+                    .sort(([, a], [, b]) => b - a)
                     .slice(0, 5)
                     .map(([brand, count]) => (
-                      <div key={brand} className="flex items-center justify-between">
+                      <div
+                        key={brand}
+                        className="flex items-center justify-between"
+                      >
                         <span className="capitalize">{brand}</span>
                         <span className="text-gray-600">{count}</span>
                       </div>

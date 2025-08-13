@@ -12,9 +12,9 @@ from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Template
 
+from getgather.api.routes.activities.endpoints import router as activities_router
 from getgather.api.routes.auth.endpoints import router as auth_router
 from getgather.api.routes.brands.endpoints import router as brands_router
-from getgather.api.routes.activities.endpoints import router as activities_router
 from getgather.api.routes.link.endpoints import router as link_router
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession

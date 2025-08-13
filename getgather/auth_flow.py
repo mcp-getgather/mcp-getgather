@@ -6,10 +6,10 @@ from getgather.auth_orchestrator import AuthOrchestrator, AuthStatus, ProxyError
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession, BrowserStartupError
 from getgather.connectors.spec_loader import BrandIdEnum
+from getgather.context import activity
 from getgather.extract_orchestrator import ExtractOrchestrator, ExtractState
 from getgather.flow_state import FlowState
 from getgather.logs import logger
-from getgather.context import activity
 from getgather.parse import BundleOutput
 
 

@@ -1,8 +1,8 @@
 import json
 from typing import Any, ClassVar, Self
 
-from getgather.database.models import DBModel
 from getgather.database.connection import execute_insert, fetch_all, fetch_one
+from getgather.database.models import DBModel
 from getgather.logs import logger
 
 
@@ -78,11 +78,12 @@ class RRWebRecording(DBModel):
             events.append(event)
             
             # Update the recording
-            cls.update(recording.id, {
-                "events_json": json.dumps(events),
-                "event_count": len(events),
-                "end_timestamp": event.get("timestamp", 0)
-            })
+            if recording.id is not None:
+                cls.update(recording.id, {
+                    "events_json": json.dumps(events),
+                    "event_count": len(events),
+                    "end_timestamp": event.get("timestamp", 0)
+                })
             logger.info(f"Updated recording for activity {activity_id}, now has {len(events)} events")
         else:
             logger.info(f"Creating new recording for activity {activity_id}")

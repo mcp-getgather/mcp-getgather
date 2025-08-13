@@ -1,8 +1,8 @@
 from datetime import datetime
 from typing import Self
 
-from getgather.database.models import DBModel
 from getgather.database.connection import fetch_all
+from getgather.database.models import DBModel
 
 
 class Activity(DBModel):

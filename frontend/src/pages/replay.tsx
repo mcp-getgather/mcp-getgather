@@ -18,14 +18,16 @@ export function ReplayPage() {
       }
 
       try {
-        const response = await fetch(`/api/activities/recordings?activity_id=${activityId}`);
+        const response = await fetch(
+          `/api/activities/recordings?activity_id=${activityId}`,
+        );
         if (!response.ok) {
           throw new Error("Failed to load events");
         }
         const data = await response.json();
         setEvents(data.events);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
         setLoading(false);
       }
@@ -64,8 +66,7 @@ export function ReplayPage() {
           Replaying activity {activityId || "unknown"} ({events.length} events)
         </p>
       </div>
-      
-      
+
       <div className="w-full max-w-7xl mx-auto">
         <RRWebPlayer events={events} />
       </div>

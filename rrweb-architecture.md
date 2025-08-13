@@ -54,12 +54,12 @@ class RRWebRecording(DBModel):
     event_count: int
     start_timestamp: int
     end_timestamp: int
-    
+
     @property
     def events(self) -> list[dict[str, Any]]:
         """Parse and return events as Python list"""
         return json.loads(self.events_json)
-    
+
     @classmethod
     def from_events(cls, activity_id: int, events: list[dict[str, Any]]) -> Self:
         """Create recording from rrweb events list"""
@@ -96,10 +96,10 @@ async def get_recording(activity_id: int):
     recording = RRWebRecordingsRepository.get_by_activity_id(activity_id)
     if not recording:
         raise HTTPException(
-            status_code=404, 
+            status_code=404,
             detail=f"No recording found for activity {activity_id}"
         )
-    
+
     return {"events": recording.events}
 ```
 
@@ -114,7 +114,7 @@ from getgather.database.connection import fetch_all
 
 class Activity(DBModel):
     """Activity record model."""
-    
+
     brand_id: str
     name: str
     start_time: datetime
@@ -168,26 +168,28 @@ export interface ActivitiesResponse {
 }
 
 export class ApiService {
-  private static baseUrl = '/api';
+  private static baseUrl = "/api";
 
   static async getActivities(): Promise<Activity[]> {
     const response = await fetch(`${this.baseUrl}/activities/`);
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch activities: ${response.statusText}`);
     }
-    
+
     const data: ActivitiesResponse = await response.json();
     return data.activities;
   }
 
   static async getRecording(activityId: number) {
-    const response = await fetch(`${this.baseUrl}/activities/recordings?activity_id=${activityId}`);
-    
+    const response = await fetch(
+      `${this.baseUrl}/activities/recordings?activity_id=${activityId}`,
+    );
+
     if (!response.ok) {
       throw new Error(`Failed to fetch recording: ${response.statusText}`);
     }
-    
+
     return await response.json();
   }
 }
@@ -213,7 +215,9 @@ export default function Activities() {
       setActivities(activitiesData);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load activities');
+      setError(
+        err instanceof Error ? err.message : "Failed to load activities",
+      );
     } finally {
       setLoading(false);
     }
@@ -223,9 +227,10 @@ export default function Activities() {
     loadActivities();
   }, []);
 
-  const filteredActivities = activities.filter(activity =>
-    activity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    activity.brand_id.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredActivities = activities.filter(
+    (activity) =>
+      activity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      activity.brand_id.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   // Component renders activity list with search, filtering, and statistics
@@ -236,7 +241,9 @@ export default function Activities() {
 
 ```typescript
 // Updated replay.tsx
-const response = await fetch(`/api/activities/recordings?activity_id=${activityId}`);
+const response = await fetch(
+  `/api/activities/recordings?activity_id=${activityId}`,
+);
 const data = await response.json();
 setEvents(data.events);
 ```
@@ -258,17 +265,17 @@ current_activity: ContextVar[Activity | None] = ContextVar('current_activity', d
 ```python
 class RecordingManager:
     """Manages browser recording lifecycle across activity contexts"""
-    
+
     _instance = None
     _active_recordings: dict[int, BrowserSession] = {}
-    
-    @classmethod 
+
+    @classmethod
     async def start_if_activity_exists(cls, session: BrowserSession):
         """Start recording if there's a current activity context"""
         if activity := current_activity.get():
             await session.start_recording()
             cls._instance._active_recordings[activity.id] = session
-    
+
     @classmethod
     async def stop_for_activity(cls, activity_id: int):
         """Stop recording and save events for an activity"""
@@ -291,10 +298,10 @@ async def activity(name: str, brand_id: str = "") -> AsyncGenerator[None, None]:
         start_time=datetime.now(UTC),
     )
     activity_id = activity_record.add()
-    
+
     # Set context variable for browser sessions to discover
     token = current_activity.set(activity_record)
-    
+
     try:
         yield
     finally:
@@ -311,10 +318,10 @@ class BrowserSession:
     async def start_recording(self):
         """Inject rrweb recording script and start capturing events"""
         page = await self.page()
-        
+
         # Inject rrweb recording script
         await page.add_script_tag(url="https://cdn.jsdelivr.net/npm/rrweb@2/dist/rrweb.min.js")
-        
+
         # Start recording
         await page.evaluate("""
             window.rrwebEvents = [];
@@ -328,24 +335,24 @@ class BrowserSession:
     async def stop_recording(self) -> list:
         """Stop recording and return captured events"""
         page = await self.page()
-        
+
         events = await page.evaluate("""
             if (window.stopRRWebRecording) {
                 window.stopRRWebRecording();
             }
             return window.rrwebEvents || [];
         """)
-        
+
         return events
 
 # Auto-start recording in browser sessions
 async def start_browser_session(brand_id: BrandIdEnum) -> BrowserSession:
     browser_session = await BrowserSession.get(browser_profile)
     await browser_session.start()
-    
+
     # Auto-start recording if we're in an activity context
     await RecordingManager.start_if_activity_exists(browser_session)
-    
+
     return browser_session
 ```
 
