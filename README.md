@@ -1,5 +1,9 @@
 # Get Gather
 
+GetGather is a containerized service that allows MCP clients to interact with your data and act on your behalf.
+
+## Quickstart
+
 First, run the container with Docker or Podman:
 
 ```bash
@@ -17,7 +21,7 @@ All additional documentation is located in the [docs](./docs) directory:
 - [Deploying on Fly.io](./docs/deploy_fly.md)
 - [Deploying on Railway](./docs/deploy_railway.md)
 
-## MCP configuration
+### MCP configuration
 
 For VS Code, Cursor, and other MCP clients which support remote MCP servers:
 
@@ -53,12 +57,14 @@ Choose one of the following options if you'd like the MCP clients to automatical
 
 ## Build and run locally
 
+After cloning the repo:
+
 ```bash
 docker build -t mcp-getgather .
 docker run -p 8000:8000 mcp-getgather
 ```
 
-## Proxy Configuration
+### Proxy Configuration
 
 Get Gather supports using an external proxy service for browser sessions. To enable proxy support, set the following environment variables:
 
@@ -72,6 +78,6 @@ The proxy service should use hierarchical location-based routing if location inf
 - Basic: `profile_id`
 - With location: `profile_id-city_X_state_Y_country_Z`
 
-## Repo file structure
+### Repo file structure
 
 [Diagram](./diagram.md) (generated at [GitDiagram](https://gitdiagram.com/getgather-hub/getgather))
