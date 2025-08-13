@@ -23,11 +23,13 @@ class ActivityWithCount(BaseModel):
 
 class ActivitiesResponse(BaseModel):
     """Response for activities endpoint."""
+
     activities: list[ActivityWithCount]
 
 
 class RecordingResponse(BaseModel):
     """Response for recording endpoint."""
+
     events: list[dict[str, Any]]
 
 
