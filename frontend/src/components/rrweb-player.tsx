@@ -67,7 +67,7 @@ export function RRWebPlayer({ events, autoPlay = true, loop = true }: RRWebPlaye
             autoPlay: autoPlay,
             speed: 1,
             showController: true,
-            speedOption: [0.25, 0.5, 1, 2, 4, 8], // Add slower speed options
+            speedOption: [1, 0.25, 0.5, 2, 4, 8], // Default to 1x speed first
             skipInactive: true, // Skip blank/inactive periods automatically
           },
         });
