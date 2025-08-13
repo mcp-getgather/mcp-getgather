@@ -7,7 +7,7 @@ from fastmcp.tools.tool import ToolResult
 
 from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
-from getgather.context import activity
+from getgather.activity import track_activity
 from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.logs import logger
 from getgather.mcp.auto_import import auto_import
@@ -31,14 +31,14 @@ class AuthMiddleware(Middleware):
         tool = await context.fastmcp_context.fastmcp.get_tool(context.message.name)  # type: ignore
 
         if "general_tool" in tool.tags:
-            async with activity(
+            async with track_activity(
                 name=context.message.name,
             ):
                 return await call_next(context)
 
         brand_id = context.message.name.split("_")[0]
         if "private" not in tool.tags or BrandState.is_brand_connected(brand_id):
-            async with activity(
+            async with track_activity(
                 brand_id=brand_id,
                 name=context.message.name,
             ):
@@ -60,7 +60,7 @@ class AuthMiddleware(Middleware):
             f"[AuthMiddleware] processing auth for brand {brand_id} with browser profile {browser_profile_id}"
         )
 
-        async with activity(
+        async with track_activity(
             brand_id=brand_id,
             name="auth",
         ):

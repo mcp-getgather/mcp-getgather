@@ -7,13 +7,13 @@ from typing import AsyncGenerator
 
 from getgather.database.repositories.activity_repository import Activity
 
-# Context variable to track the current activity across async calls
-current_activity: ContextVar[Activity | None] = ContextVar("current_activity", default=None)
+# Context variable to track the active activity across async calls
+active_activity_ctx: ContextVar[Activity | None] = ContextVar("active_activity", default=None)
 
 
 @asynccontextmanager
-async def activity(name: str, brand_id: str = "") -> AsyncGenerator[None, None]:
-    """Context manager for tracking activity."""
+async def track_activity(name: str, brand_id: str = "") -> AsyncGenerator[None, None]:
+    """Context manager for tracking and recording activity execution."""
     activity = Activity(
         brand_id=brand_id,
         name=name,
@@ -25,12 +25,12 @@ async def activity(name: str, brand_id: str = "") -> AsyncGenerator[None, None]:
     activity.id = activity_id
 
     # Set the activity in context
-    token = current_activity.set(activity)
+    token = active_activity_ctx.set(activity)
     try:
         yield
     finally:
         # Reset the context and update end time
-        current_activity.reset(token)
+        active_activity_ctx.reset(token)
         Activity.update_end_time(
             id=activity_id,
             end_time=datetime.now(UTC),

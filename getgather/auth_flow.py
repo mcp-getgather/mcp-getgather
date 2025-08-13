@@ -6,7 +6,7 @@ from getgather.auth_orchestrator import AuthOrchestrator, AuthStatus, ProxyError
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession, BrowserStartupError
 from getgather.connectors.spec_loader import BrandIdEnum
-from getgather.context import activity
+from getgather.activity import track_activity
 from getgather.extract_orchestrator import ExtractOrchestrator, ExtractState
 from getgather.flow_state import FlowState
 from getgather.logs import logger
@@ -60,7 +60,7 @@ async def auth_flow(
 ) -> AuthFlowResponse:
     """Start or continue an authentication flow for a connector."""
     # Use activity context manager for hosted link auth recording
-    async with activity(name="hosted_link", brand_id=str(brand_id)):
+    async with track_activity(name="hosted_link", brand_id=str(brand_id)):
         try:
             # Initialize the auth manager
             if auth_request.profile_id:

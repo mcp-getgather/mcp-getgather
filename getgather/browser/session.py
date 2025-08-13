@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from patchright.async_api import BrowserContext, Page, Playwright, async_playwright
 
 from getgather.browser.profile import BrowserProfile
-from getgather.context import current_activity
+from getgather.activity import active_activity_ctx
 from getgather.database.repositories.activity_repository import Activity
 from getgather.database.repositories.rrweb_recordings_repository import RRWebRecording
 from getgather.logs import logger
@@ -53,7 +53,7 @@ class BrowserSession:
         return self.context.pages[-1]
 
     async def save_event(self, event: dict[str, Any]) -> None:
-        activity = current_activity.get()
+        activity = active_activity_ctx.get()
         logger.info(f"save_event called with event type: {event.get('type', 'unknown')}")
 
         if not activity or not activity.id:
