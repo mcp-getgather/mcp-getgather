@@ -6,11 +6,22 @@ auth:
       type: text
       prompt: Email or Phone Number
       selector: input#PHONE_NUMBER_or_EMAIL_ADDRESS
-    - name: otp
+    - name: password
+      type: password
+      prompt: Password
+      selector: input#PASSWORD
+    - name: email_otp
       type: text
-      prompt: OTP
+      prompt: OTP sent to email
       selectors: input[id^="EMAIL_OTP_CODE-"]
-      label: p#subtitle
+    - name: sms_otp
+      type: text
+      prompt: OTP sent to SMS
+      selectors: input[id^="PHONE_SMS_OTP-"]
+    - name: voice_otp
+      type: text
+      prompt: OTP sent to Voice
+      selectors: input[id^="PHONE_VOICE_OTP-"]
     - name: continue
       type: click
       prompt: Continue
@@ -20,45 +31,92 @@ auth:
       prompt: Login Error
       selector: p#field-error
       label: p#field-error
-    - name: otp_error_message
+    - name: password_error_message
       type: message
-      prompt: OTP Error
+      prompt: Password Error
+      selector: p#PASSWORD-error
+      label: p#PASSWORD-error
+    - name: email_otp_error_message
+      type: message
+      prompt: Email OTP Error
       selector: p#EMAIL_OTP_CODE-error
       label: p#EMAIL_OTP_CODE-error
+    - name: sms_otp_error_message
+      type: message
+      prompt: SMS OTP Error
+      selector: p#PHONE_SMS_OTP-error
+      label: p#PHONE_SMS_OTP-error
+    - name: voice_otp_error_message
+      type: message
+      prompt: Voice OTP Error
+      selector: p#PHONE_VOICE_OTP-error
+      label: p#PHONE_VOICE_OTP-error
     - name: dialog_error
       type: message
       prompt: Error
       selector: div[role="dialog"]
       label: div[role="dialog"] h1, div[role="dialog"] p:nth-of-type(1)
+    - name: activity_label
+      type: wait
+      selector: div:has-text("Activity")
+    - name: past_orders_title
+      type: wait
+      selector: div:has-text("Past Orders")
 
   pages:
-    - name: Go to Uber login page
-      url: https://auth.uber.com/v2/?next_url=https%3A%2F%2Fwww.ubereats.com%2Flogin-redirect%2F%3Fredirect%3D%252Forders
-
-    - name: Login Page
+    - name: Username page
       fields:
         required: [username, continue]
         optional: [login_error_message]
 
-    - name: OTP Page
+    - name: Password page
       fields:
-        required: [otp, continue]
-        optional: [otp_error_message]
+        required: [password, continue]
+        optional: [password_error_message]
 
-    - name: Orders Page
-      url: https://www.ubereats.com/
+    - name: Email OTP Page
+      fields:
+        required: [email_otp, continue]
+        optional: [email_otp_error_message]
+
+    - name: SMS OTP Page
+      fields:
+        required: [sms_otp, continue]
+        optional: [sms_otp_error_message]
+
+    - name: Voice OTP Page
+      fields:
+        required: [voice_otp, continue]
+        optional: [voice_otp_error_message]
+
+    - name: Confirm login
+      url: https://m.uber.com/go/home?effect=
+      fields: [activity_label]
       end: true
 
-  start: Go to Uber login page
+  start: https://auth.uber.com/v2/
 
 extract:
   steps:
     - name: Go to orders page
       url: https://www.ubereats.com/orders
 
-    - name: Wait for content to load
-      wait_for_selector: main
-
     - name: Extract orders
+      fields: [past_orders_title]
+      timeout: 20
       bundle: orders.html
-      slurp_selector: main
+      slurp_selector: main#main-content
+
+parse:
+  - bundle: orders.html
+    format: html
+    output: orders.json
+    row_selector: div:has(> a > figure)
+    columns:
+      - name: restaurant
+        selector: a[data-baseweb="link"]
+      - name: restaurant_url
+        selector: a[data-baseweb="link"]
+        attribute: href
+      - name: items
+        selector: ul
