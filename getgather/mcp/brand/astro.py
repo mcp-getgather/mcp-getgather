@@ -1,15 +1,15 @@
-import json
-from typing import Any
+from typing import Any, cast
 from urllib.parse import quote
 
-from getgather.actions import handle_graphql_response, handle_network_extraction
+from patchright.async_api import Locator
+
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import extract, start_browser_session
+from getgather.mcp.shared import extract
 from getgather.parse import parse_html
 
 astro_mcp = BrandMCPBase(prefix="astro", name="Astro MCP")
@@ -120,22 +120,21 @@ async def get_product_details(
     })
     result = await parse_html(brand_id=BrandIdEnum("astro"), html_content=html, schema=spec_schema)
 
-    product_details = result.content[0] if result.content and len(result.content) > 0 else {}
+    product_details: dict[str, Any] = (
+        result.content[0] if result.content and len(result.content) > 0 else {}
+    )
 
     return {"product_details": product_details}
 
 
-@astro_mcp.tool
+@astro_mcp.tool(tags={"private"})
 async def update_cart_item(
     product_url: str,
     quantity: int = 1,
 ) -> dict[str, Any]:
     """Update cart item quantity on astro (add new item or update existing quantity). Get product_url from search_product tool."""
-    if BrandState.is_brand_connected(BrandIdEnum("astro")):
-        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("astro"))
-        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
-    else:
-        profile = BrowserProfile()
+    profile_id = BrandState.get_browser_profile_id(BrandIdEnum("astro"))
+    profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
     # Ensure the product URL is a full URL
     if product_url.startswith("/p/"):
@@ -203,7 +202,9 @@ async def update_cart_item(
             await quantity_controls.wait_for(state="visible", timeout=5000)
 
             if quantity > 1:
-                plus_button = quantity_controls.locator("div.MuiBox-root.css-70qvj9").last()
+                plus_button: Locator = quantity_controls.locator("div.MuiBox-root.css-70qvj9").nth(
+                    1
+                )
                 for _ in range(quantity - 1):
                     await plus_button.click()
                     await page.wait_for_timeout(500)
@@ -223,17 +224,14 @@ async def update_cart_item(
             }
 
 
-@astro_mcp.tool
+@astro_mcp.tool(tags={"private"})
 async def update_cart_quantity(
     product_name: str,
     quantity: int,
 ) -> dict[str, Any]:
     """Update cart item quantity on astro (set quantity to 0 to remove item). Use product name from cart summary."""
-    if BrandState.is_brand_connected(BrandIdEnum("astro")):
-        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("astro"))
-        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
-    else:
-        profile = BrowserProfile()
+    profile_id = BrandState.get_browser_profile_id(BrandIdEnum("astro"))
+    profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
     async with browser_session(profile) as session:
         page = await session.page()
@@ -313,20 +311,17 @@ async def update_cart_quantity(
         }
 
 
-@astro_mcp.tool
+@astro_mcp.tool(tags={"private"})
 async def get_cart_summary() -> dict[str, Any]:
     """Get cart summary from astro."""
-    if BrandState.is_brand_connected(BrandIdEnum("astro")):
-        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("astro"))
-        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
-    else:
-        profile = BrowserProfile()
+    profile_id = BrandState.get_browser_profile_id(BrandIdEnum("astro"))
+    profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
     async with browser_session(profile) as session:
         page = await session.page()
         await page.goto("https://www.astronauts.id/cart", wait_until="commit")
         await page.wait_for_selector("main.MuiBox-root")
-        await page.wait_for_timeout(2000)
+        await page.wait_for_timeout(5000)
         html = await page.locator("body").inner_html()
 
     # Extract available items using selector-based parsing
@@ -433,34 +428,42 @@ async def get_cart_summary() -> dict[str, Any]:
     )
 
     # Process available items
-    available_items = []
-    for item in available_items_result.content or []:
+    available_items: list[dict[str, Any]] = []
+    available_content: list[Any] = available_items_result.content or []
+    for item in available_content:
+        if not isinstance(item, dict):
+            continue
+        item_dict: dict[str, Any] = cast(dict[str, Any], item)
         available_items.append({
-            "name": item.get("name", ""),
-            "quantity": int(item.get("quantity", "1")),
-            "price": item.get("current_price", ""),
-            "original_price": item.get("original_price"),
-            "image_url": item.get("image_url", ""),
+            "name": item_dict.get("name", ""),
+            "quantity": int(item_dict.get("quantity", "1")),
+            "price": item_dict.get("current_price", ""),
+            "original_price": item_dict.get("original_price"),
+            "image_url": item_dict.get("image_url", ""),
             "status": "available",
-            "discount_percentage": item.get("discount_percentage", "0%"),
+            "discount_percentage": item_dict.get("discount_percentage", "0%"),
         })
 
     # Process unavailable items
-    unavailable_items = []
-    for item in unavailable_items_result.content or []:
+    unavailable_items: list[dict[str, Any]] = []
+    unavailable_content: list[Any] = unavailable_items_result.content or []
+    for item in unavailable_content:
+        if not isinstance(item, dict):
+            continue
+        unavail_item_dict: dict[str, Any] = cast(dict[str, Any], item)
         unavailable_items.append({
-            "name": item.get("name", ""),
-            "quantity": int(item.get("quantity", "1")),
-            "image_url": item.get("image_url", ""),
+            "name": unavail_item_dict.get("name", ""),
+            "quantity": int(unavail_item_dict.get("quantity", "1")),
+            "image_url": unavail_item_dict.get("image_url", ""),
             "status": "unavailable",
             "reason": "Cannot be processed",
         })
 
     # Build summary
-    summary_data = summary_result.content[0] if summary_result.content else {}
-    total_data = total_result.content[0] if total_result.content else {}
+    summary_data: dict[str, Any] = summary_result.content[0] if summary_result.content else {}
+    total_data: dict[str, Any] = total_result.content[0] if total_result.content else {}
 
-    summary = {
+    summary: dict[str, Any] = {
         "total_items": len(available_items) + len(unavailable_items),
         "available_items": len(available_items),
         "unavailable_items": len(unavailable_items),
