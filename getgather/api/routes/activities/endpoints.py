@@ -10,6 +10,7 @@ from getgather.database.repositories.rrweb_recordings_repository import RRWebRec
 
 class ActivityWithCount(BaseModel):
     """Activity with recording count."""
+
     id: int | None
     brand_id: str
     name: str
@@ -22,12 +23,15 @@ class ActivityWithCount(BaseModel):
 
 class ActivitiesResponse(BaseModel):
     """Response for activities endpoint."""
+
     activities: list[ActivityWithCount]
 
 
 class RecordingResponse(BaseModel):
     """Response for recording endpoint."""
+
     events: list[dict[str, Any]]
+
 
 router = APIRouter(prefix="/api/activities", tags=["activities"])
 
@@ -37,14 +41,14 @@ async def get_activities() -> ActivitiesResponse:
     """Get all activities with recording counts."""
     activities = Activity.get_all()
     recording_counts = RRWebRecording.get_recording_counts()
-    
+
     # Add recording count to each activity
     activities_with_counts: list[ActivityWithCount] = []
     for activity in activities:
         activity_data = activity.model_dump()
-        activity_data['recording_count'] = recording_counts.get(activity.id or 0, 0)
+        activity_data["recording_count"] = recording_counts.get(activity.id or 0, 0)
         activities_with_counts.append(ActivityWithCount(**activity_data))
-    
+
     return ActivitiesResponse(activities=activities_with_counts)
 
 
@@ -54,8 +58,7 @@ async def get_recording(activity_id: int) -> RecordingResponse:
     recording = RRWebRecording.get_by_activity_id(activity_id)
     if not recording:
         raise HTTPException(
-            status_code=404, 
-            detail=f"No recording found for activity {activity_id}"
+            status_code=404, detail=f"No recording found for activity {activity_id}"
         )
-    
+
     return RecordingResponse(events=recording.events)

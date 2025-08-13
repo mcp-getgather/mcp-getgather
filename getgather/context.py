@@ -8,7 +8,7 @@ from typing import AsyncGenerator
 from getgather.database.repositories.activity_repository import Activity
 
 # Context variable to track the current activity across async calls
-current_activity: ContextVar[Activity | None] = ContextVar('current_activity', default=None)
+current_activity: ContextVar[Activity | None] = ContextVar("current_activity", default=None)
 
 
 @asynccontextmanager
@@ -20,10 +20,10 @@ async def activity(name: str, brand_id: str = "") -> AsyncGenerator[None, None]:
         start_time=datetime.now(UTC),
     )
     activity_id = Activity.add(activity)
-    
+
     # Update the activity object with the assigned ID
     activity.id = activity_id
-    
+
     # Set the activity in context
     token = current_activity.set(activity)
     try:
