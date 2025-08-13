@@ -59,18 +59,11 @@ class BrowserSession:
     async def save_event(self, event: dict[str, Any]) -> None:
         activity = current_activity.get()
         logger.info(f"save_event called with event type: {event.get('type', 'unknown')}")
+
+        if not activity or not activity.id:
+            return
         
-        if activity and activity.id:
-            logger.info(f"Saving event to activity {activity.id}: type={event.get('type')}, timestamp={event.get('timestamp')}")
-            RRWebRecording.add_event_to_activity(activity.id, event)
-            logger.info(f"Event successfully saved to activity {activity.id}")
-        else:
-            if not activity:
-                logger.error("save_event called but no current activity context found")
-                raise HTTPException(status_code=400, detail="No current activity context found for recording")
-            else:
-                logger.error(f"save_event called but activity has no ID: {activity}")
-                raise HTTPException(status_code=400, detail="Current activity has no ID for recording")
+        RRWebRecording.add_event_to_activity(activity.id, event)
         
 
     async def start(self):
