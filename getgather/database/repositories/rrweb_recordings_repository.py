@@ -66,17 +66,10 @@ class RRWebRecording(DBModel):
     @classmethod
     def add_event_to_activity(cls, activity_id: int, event: dict[str, Any]) -> None:
         """Add a single event to an activity's recording."""
-        logger.info(
-            f"add_event_to_activity called for activity {activity_id}, event type: {event.get('type')}"
-        )
-
         # Check if recording exists
         recording = cls.get_by_activity_id(activity_id)
 
         if recording:
-            logger.info(
-                f"Found existing recording for activity {activity_id} with {len(recording.events)} events"
-            )
             # Append event to existing recording
             events = recording.events
             events.append(event)
@@ -91,11 +84,7 @@ class RRWebRecording(DBModel):
                         "end_timestamp": event.get("timestamp", 0),
                     },
                 )
-            logger.info(
-                f"Updated recording for activity {activity_id}, now has {len(events)} events"
-            )
         else:
-            logger.info(f"Creating new recording for activity {activity_id}")
             # Create new recording with first event
             events = [event]
             query = f"""
@@ -112,4 +101,3 @@ class RRWebRecording(DBModel):
                     event.get("timestamp", 0),
                 ),
             )
-            logger.info(f"Created new recording for activity {activity_id} with first event")

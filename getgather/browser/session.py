@@ -54,8 +54,6 @@ class BrowserSession:
 
     async def save_event(self, event: dict[str, Any]) -> None:
         activity = active_activity_ctx.get()
-        logger.info(f"save_event called with event type: {event.get('type', 'unknown')}")
-
         if not activity or not activity.id:
             return
 
@@ -79,9 +77,6 @@ class BrowserSession:
                 profile_id=self.profile.id, browser_type=self.playwright.chromium
             )
             await self._context.expose_function("saveEvent", self.save_event)  # type: ignore
-
-            # Add page listener to track page creation
-            self._context.on("page", lambda page: logger.info(f"NEW PAGE CREATED: URL={page.url}"))
 
             # Add rrweb script loading to every page
             await self._context.add_init_script("""
