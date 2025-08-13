@@ -58,8 +58,9 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
         const rrwebPlayer = (await import("rrweb-player")).default;
 
         // Prevent initialization if component was unmounted or no events to replay
-        if (isDestroyed || !containerRef.current || !events || !events.length) return;
-        
+        if (isDestroyed || !containerRef.current || !events || !events.length)
+          return;
+
         // Get original dimensions from first event
         const originalWidth = Number(events[0]?.data?.width) || 1920;
         const originalHeight = Number(events[0]?.data?.height) || 1080;
@@ -113,8 +114,14 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
 
     // Handle window resize
     const handleResize = () => {
-      if (!playerRef.current || !containerRef.current || !events || !events.length) return;
-      
+      if (
+        !playerRef.current ||
+        !containerRef.current ||
+        !events ||
+        !events.length
+      )
+        return;
+
       // Recalculate dimensions on resize
       const originalWidth = Number(events[0]?.data?.width) || 1920;
       const originalHeight = Number(events[0]?.data?.height) || 1080;

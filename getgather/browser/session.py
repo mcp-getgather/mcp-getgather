@@ -6,8 +6,8 @@ from typing import Any, ClassVar
 from fastapi import HTTPException
 from patchright.async_api import BrowserContext, Page, Playwright, async_playwright
 
-from getgather.browser.profile import BrowserProfile
 from getgather.activity import active_activity_ctx
+from getgather.browser.profile import BrowserProfile
 from getgather.database.repositories.activity_repository import Activity
 from getgather.database.repositories.rrweb_recordings_repository import RRWebRecording
 from getgather.logs import logger
