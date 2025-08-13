@@ -47,7 +47,7 @@ COPY pyproject.toml uv.lock* ./
 # Install dependencies without workspace members
 RUN uv sync --no-dev --no-install-workspace
 
-# Pre-install fonts - playwright --with-deps tries to install deprecated packages
+# Pre-install fonts - playwright --with-deps tries to install deprecated packages.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-unifont \
     fonts-liberation \
