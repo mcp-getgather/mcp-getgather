@@ -120,32 +120,6 @@ class BrowserSession:
             logger.error(f"Error starting browser: {e}")
             raise BrowserStartupError(f"Failed to start browser: {e}") from e
 
-    async def start_recording(self):
-        logger.info(f"start_recording called for profile {self.profile.id}")
-        
-        # Log page information before getting page
-        logger.info(f"Total pages in context: {len(self.context.pages)}")
-        for i, p in enumerate(self.context.pages):
-            logger.info(f"Page {i}: URL={p.url}")
-        
-        page = await self.page()
-        
-        # Log page information after getting page
-        logger.info(f"Total pages after self.page(): {len(self.context.pages)}")
-        logger.info(f"Selected page URL: {page.url}")
-        
-        logger.info("Adding rrweb script to page")
-        await page.add_script_tag(
-            url="https://cdn.jsdelivr.net/npm/rrweb@2.0.0-alpha.14/dist/record/rrweb-record.min.js"
-        )
-        
-        logger.info("Starting rrweb recording with saveEvent callback")
-        await page.evaluate(
-            "() => { rrwebRecord({ emit(event) { window.saveEvent(event); }, maskAllInputs: true }); }",
-            isolated_context=False,
-        )
-        logger.info("rrweb recording started successfully")
-
 
     async def stop(self):
         logger.info(
