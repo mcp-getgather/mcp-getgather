@@ -16,6 +16,7 @@ interface RRWebPlayerInstance {
   triggerResize(): void;
   goto(time: number, autoPlay?: boolean): void;
   addEventListener(event: string, handler: () => void): void;
+  [key: string]: unknown; // Allow additional properties
 }
 
 interface RRWebPlayerProps {
@@ -60,8 +61,8 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
         if (isDestroyed || !containerRef.current) return;
 
         // Get original dimensions from first event
-        const originalWidth = events[0]?.data?.width || 1920;
-        const originalHeight = events[0]?.data?.height || 1080;
+        const originalWidth = Number(events[0]?.data?.width) || 1920;
+        const originalHeight = Number(events[0]?.data?.height) || 1080;
 
         // Calculate responsive dimensions
         const containerWidth = containerRef.current.clientWidth;
@@ -90,14 +91,14 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
             speedOption: [1, 0.25, 0.5, 2, 4, 8], // Default to 1x speed first
             skipInactive: true, // Skip blank/inactive periods automatically
           },
-        });
+        }) as unknown as RRWebPlayerInstance;
 
         // Add loop functionality (always enabled)
         if (playerRef.current) {
           playerRef.current.addEventListener("finish", () => {
             console.log("Replay finished, restarting loop...");
             // Restart the replay from beginning
-            playerRef.current.goto(0, true); // Go to start and auto-play
+            playerRef.current?.goto(0, true); // Go to start and auto-play
           });
         }
       } catch (error) {
@@ -114,8 +115,8 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
     const handleResize = () => {
       if (playerRef.current && containerRef.current) {
         // Recalculate dimensions on resize
-        const originalWidth = events[0]?.data?.width || 1920;
-        const originalHeight = events[0]?.data?.height || 1080;
+        const originalWidth = Number(events[0]?.data?.width) || 1920;
+        const originalHeight = Number(events[0]?.data?.height) || 1080;
         const containerWidth = containerRef.current.clientWidth;
         const maxWidth = containerWidth - 40;
         const maxHeight = window.innerHeight * 0.7;
