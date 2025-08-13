@@ -1,7 +1,7 @@
 from typing import Any, cast
 from urllib.parse import quote
 
-from patchright.async_api import Locator
+from patchright.async_api import Locator, Page
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
@@ -13,6 +13,154 @@ from getgather.mcp.shared import extract
 from getgather.parse import parse_html
 
 astro_mcp = BrandMCPBase(prefix="astro", name="Astro MCP")
+
+
+async def _adjust_quantity_with_detection(
+    quantity_controls: Locator,
+    target_quantity: int,
+    current_quantity: int,
+    page: Page,
+    context: str = "product",  # "product" or "cart"
+) -> tuple[int, bool]:
+    """Shared quantity adjustment logic with change detection and edge case handling.
+
+    Args:
+        quantity_controls: The quantity control container
+        target_quantity: Desired quantity (0 = remove)
+        current_quantity: Current quantity
+        page: Page object
+        context: "product" or "cart" for different edge case handling
+
+    Returns:
+        tuple[final_quantity, adjustment_succeeded]
+    """
+    quantity_diff = target_quantity - current_quantity
+
+    if quantity_diff == 0:
+        return current_quantity, True
+
+    # Get buttons
+    plus_button = quantity_controls.locator("div.MuiBox-root.css-70qvj9").nth(1)
+    minus_button = quantity_controls.locator("div.MuiBox-root.css-70qvj9").nth(0)
+    current_quantity_element = quantity_controls.locator("span.MuiTypography-body-small")
+
+    # Adjust quantity step by step with detection
+    steps_needed = abs(quantity_diff)
+    button = plus_button if quantity_diff > 0 else minus_button
+
+    for step in range(steps_needed):
+        prev_qty_text = await current_quantity_element.text_content()
+        prev_qty = int(prev_qty_text or str(current_quantity))
+
+        await button.click()
+
+        # Wait for quantity change with timeout
+        change_detected = False
+        for attempt in range(10):  # Max 5 seconds
+            await page.wait_for_timeout(500)
+
+            # Handle edge case: quantity 0 might make element disappear
+            try:
+                new_qty_text = await current_quantity_element.text_content()
+                new_qty = int(new_qty_text or "0")
+
+                # Check if change occurred in expected direction
+                if (quantity_diff > 0 and new_qty > prev_qty) or (
+                    quantity_diff < 0 and new_qty < prev_qty
+                ):
+                    change_detected = True
+                    current_quantity = new_qty
+                    break
+
+            except Exception:
+                # Element might have disappeared (quantity → 0 in cart)
+                if target_quantity == 0 and context == "cart":
+                    return 0, True  # Success: item removed from cart
+                # For product page, check if "Keranjang" button appeared
+                elif target_quantity == 0 and context == "product":
+                    try:
+                        keranjang_btn = page.locator("button[data-testid='pdp-atc-btn']")
+                        if await keranjang_btn.is_visible():
+                            return 0, True  # Success: reverted to add-to-cart state
+                    except:
+                        pass
+                break
+
+        if not change_detected:
+            # Hit a limit (stock or minimum), return current state
+            try:
+                final_qty_text = await current_quantity_element.text_content()
+                return int(final_qty_text or str(current_quantity)), False
+            except:
+                # Element disappeared but target wasn't 0
+                return 0, target_quantity == 0
+
+    # Get final quantity
+    try:
+        final_qty_text = await current_quantity_element.text_content()
+        final_quantity = int(final_qty_text or "0")
+    except:
+        # Element disappeared
+        final_quantity = 0
+
+    return final_quantity, True
+
+
+def _format_quantity_result(
+    target_quantity: int,
+    current_quantity: int,
+    final_quantity: int,
+    adjustment_succeeded: bool,
+    product_url: str = "",
+    product_name: str = "",
+    context: str = "product",
+) -> dict[str, Any]:
+    """Format the result of quantity adjustment with stock limit detection."""
+    quantity_changed = final_quantity - current_quantity
+
+    # Check if target was reached (stock limit detection)
+    if target_quantity > 0 and final_quantity < target_quantity:
+        return {
+            "success": False,
+            "message": f"Stock limit reached: only {final_quantity} available (requested {target_quantity})",
+            "previous_quantity": current_quantity,
+            "final_quantity": final_quantity,
+            "quantity_changed": quantity_changed,
+            **({"product_url": product_url} if product_url else {}),
+            **({"product_name": product_name} if product_name else {}),
+            "action": "stock_limit_reached",
+            "available_stock": final_quantity,
+            "requested_quantity": target_quantity,
+        }
+
+    # Success cases
+    if context == "product":
+        if current_quantity == 0:
+            action = "added_to_cart"
+            message = f"Successfully added {final_quantity} item(s) to cart"
+        else:
+            action = "quantity_updated"
+            message = f"Updated quantity from {current_quantity} to {final_quantity} item(s)"
+    else:  # cart context
+        if target_quantity == 0:
+            action = "removed_from_cart"
+            message = f"Removed '{product_name}' from cart"
+        else:
+            action = "quantity_updated"
+            message = (
+                f"Updated '{product_name}' quantity from {current_quantity} to {final_quantity}"
+            )
+
+    return {
+        "success": True,
+        "message": message,
+        "previous_quantity": current_quantity,
+        "final_quantity": final_quantity,
+        "quantity_changed": quantity_changed,
+        **({"product_url": product_url} if product_url else {}),
+        **({"product_name": product_name} if product_name else {}),
+        "action": action,
+    }
 
 
 @astro_mcp.tool(tags={"private"})
@@ -40,7 +188,7 @@ async def search_product(
             f"https://www.astronauts.id/search?q={encoded_keyword}", wait_until="commit"
         )
         await page.wait_for_selector("div[data-testid='srp-main']")
-        await page.wait_for_timeout(2000)
+        await page.wait_for_timeout(1000)
         html = await page.locator("div[data-testid='srp-main']").inner_html()
 
     spec_schema = SpecSchema.model_validate({
@@ -128,11 +276,11 @@ async def get_product_details(
 
 
 @astro_mcp.tool(tags={"private"})
-async def update_cart_item(
+async def add_item_to_cart(
     product_url: str,
     quantity: int = 1,
 ) -> dict[str, Any]:
-    """Update cart item quantity on astro (add new item or update existing quantity). Get product_url from search_product tool."""
+    """Add item to cart on astro (add new item or update existing quantity). Get product_url from search_product tool."""
     profile_id = BrandState.get_browser_profile_id(BrandIdEnum("astro"))
     profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
@@ -148,8 +296,9 @@ async def update_cart_item(
         await page.wait_for_selector("main.MuiBox-root")
         await page.wait_for_timeout(1000)
 
-        # Check if quantity controls already exist (item already in cart)
-        quantity_controls = page.locator("div.MuiBox-root.css-1aek3i0")
+        # Check if quantity controls already exist (item already in cart) - only in main product section
+        main_product_section = page.locator("div.MuiBox-root.css-19midj6")
+        quantity_controls = main_product_section.locator("div.MuiBox-root.css-1aek3i0")
         is_already_in_cart = await quantity_controls.is_visible()
 
         if is_already_in_cart:
@@ -157,38 +306,25 @@ async def update_cart_item(
             current_quantity_text = await current_quantity_element.text_content()
             current_quantity = int(current_quantity_text or "0")
 
-            quantity_diff = quantity - current_quantity
+            final_quantity, adjustment_succeeded = await _adjust_quantity_with_detection(
+                quantity_controls, quantity, current_quantity, page, "product"
+            )
 
-            if quantity_diff > 0:
-                plus_button = quantity_controls.locator("div.MuiBox-root.css-70qvj9").nth(
-                    1
-                )  # Second button (plus)
-                for _ in range(quantity_diff):
-                    await plus_button.click()
-                    await page.wait_for_timeout(300)
-            elif quantity_diff < 0:
-                minus_button = quantity_controls.locator("div.MuiBox-root.css-70qvj9").nth(
-                    0
-                )  # First button (minus)
-                for _ in range(abs(quantity_diff)):
-                    await minus_button.click()
-                    await page.wait_for_timeout(300)
+            # Wait for backend API call to complete before closing browser
+            await page.wait_for_timeout(1000)
 
-            final_quantity_text = await current_quantity_element.text_content()
-            final_quantity = int(final_quantity_text or "0")
-
-            return {
-                "success": True,
-                "message": f"Updated quantity from {current_quantity} to {final_quantity} item(s)",
-                "previous_quantity": current_quantity,
-                "final_quantity": final_quantity,
-                "quantity_changed": quantity_diff,
-                "product_url": full_url,
-                "action": "quantity_updated",
-            }
+            return _format_quantity_result(
+                quantity,
+                current_quantity,
+                final_quantity,
+                adjustment_succeeded,
+                full_url,
+                "",
+                "product",
+            )
         else:
-            # Item not in cart, check if add to cart button exists
-            add_to_cart_button = page.locator("button[data-testid='pdp-atc-btn']")
+            # Item not in cart, check if add to cart button exists - only in main product section
+            add_to_cart_button = main_product_section.locator("button[data-testid='pdp-atc-btn']")
             if not await add_to_cart_button.is_visible():
                 return {
                     "success": False,
@@ -196,32 +332,20 @@ async def update_cart_item(
                 }
 
             await add_to_cart_button.click()
-            await page.wait_for_timeout(1000)
+            await page.wait_for_timeout(300)
 
-            # Wait for quantity controls to appear
             await quantity_controls.wait_for(state="visible", timeout=5000)
 
-            if quantity > 1:
-                plus_button: Locator = quantity_controls.locator("div.MuiBox-root.css-70qvj9").nth(
-                    1
-                )
-                for _ in range(quantity - 1):
-                    await plus_button.click()
-                    await page.wait_for_timeout(500)
+            final_quantity, adjustment_succeeded = await _adjust_quantity_with_detection(
+                quantity_controls, quantity, 1, page, "product"
+            )
 
-            current_quantity_element = quantity_controls.locator("span.MuiTypography-body-small")
-            final_quantity_text = await current_quantity_element.text_content()
-            final_quantity = int(final_quantity_text or "0")
+            # Wait for backend API call to complete before closing browser
+            await page.wait_for_timeout(1000)
 
-            return {
-                "success": True,
-                "message": f"Successfully added {final_quantity} item(s) to cart",
-                "previous_quantity": 0,
-                "final_quantity": final_quantity,
-                "quantity_changed": final_quantity,
-                "product_url": full_url,
-                "action": "added_to_cart",
-            }
+            return _format_quantity_result(
+                quantity, 0, final_quantity, adjustment_succeeded, full_url, "", "product"
+            )
 
 
 @astro_mcp.tool(tags={"private"})
@@ -237,7 +361,7 @@ async def update_cart_quantity(
         page = await session.page()
         await page.goto("https://www.astronauts.id/cart", wait_until="commit")
         await page.wait_for_selector("main.MuiBox-root")
-        await page.wait_for_timeout(2000)
+        await page.wait_for_timeout(1000)
 
         # Find the cart item by product name
         cart_item_selector = f"//span[contains(@class, 'MuiTypography-body-default') and contains(text(), '{product_name}')]/ancestor::div[contains(@class, 'css-bnftmf')]"
@@ -260,55 +384,26 @@ async def update_cart_quantity(
                 "action": "update_failed",
             }
 
-        # Get current quantity
         current_quantity_element = quantity_controls.locator("span.MuiTypography-body-small")
         current_quantity_text = await current_quantity_element.text_content()
         current_quantity = int(current_quantity_text or "0")
 
-        quantity_diff = quantity - current_quantity
-
-        if quantity_diff > 0:
-            plus_button = quantity_controls.locator("div.MuiBox-root.css-70qvj9").nth(
-                1
-            )  # Second button (plus)
-            for _ in range(quantity_diff):
-                await plus_button.click()
-                await page.wait_for_timeout(500)
-        elif quantity_diff < 0:
-            minus_button = quantity_controls.locator("div.MuiBox-root.css-70qvj9").nth(
-                0
-            )  # First button (minus)
-            for _ in range(abs(quantity_diff)):
-                await minus_button.click()
-                await page.wait_for_timeout(500)
+        final_quantity, adjustment_succeeded = await _adjust_quantity_with_detection(
+            quantity_controls, quantity, current_quantity, page, "cart"
+        )
 
         # Wait for update to complete
         await page.wait_for_timeout(1000)
 
-        final_quantity = 0
-        if quantity > 0:
-            try:
-                final_quantity_text = await current_quantity_element.text_content()
-                final_quantity = int(final_quantity_text or "0")
-            except:
-                final_quantity = 0
-
-        action = "removed_from_cart" if quantity == 0 else "quantity_updated"
-        message = (
-            f"Removed '{product_name}' from cart"
-            if quantity == 0
-            else f"Updated '{product_name}' quantity from {current_quantity} to {final_quantity}"
+        return _format_quantity_result(
+            quantity,
+            current_quantity,
+            final_quantity,
+            adjustment_succeeded,
+            "",
+            product_name,
+            "cart",
         )
-
-        return {
-            "success": True,
-            "message": message,
-            "previous_quantity": current_quantity,
-            "final_quantity": final_quantity,
-            "quantity_changed": quantity_diff,
-            "product_name": product_name,
-            "action": action,
-        }
 
 
 @astro_mcp.tool(tags={"private"})
@@ -321,10 +416,10 @@ async def get_cart_summary() -> dict[str, Any]:
         page = await session.page()
         await page.goto("https://www.astronauts.id/cart", wait_until="commit")
         await page.wait_for_selector("main.MuiBox-root")
-        await page.wait_for_timeout(5000)
+        await page.wait_for_timeout(1000)
         html = await page.locator("body").inner_html()
 
-    # Extract available items using selector-based parsing
+    # Extract available items
     available_items_schema = SpecSchema.model_validate({
         "bundle": "",
         "format": "html",
@@ -359,7 +454,7 @@ async def get_cart_summary() -> dict[str, Any]:
         brand_id=BrandIdEnum("astro"), html_content=html, schema=available_items_schema
     )
 
-    # Extract unavailable items using selector-based parsing
+    # Extract unavailable items
     unavailable_items_schema = SpecSchema.model_validate({
         "bundle": "",
         "format": "html",
@@ -382,7 +477,7 @@ async def get_cart_summary() -> dict[str, Any]:
         brand_id=BrandIdEnum("astro"), html_content=html, schema=unavailable_items_schema
     )
 
-    # Extract totals using selector-based parsing
+    # Extract totals
     summary_schema = SpecSchema.model_validate({
         "bundle": "",
         "format": "html",
