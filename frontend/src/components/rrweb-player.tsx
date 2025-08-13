@@ -150,16 +150,16 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
     return () => {
       isDestroyed = true;
       window.removeEventListener("resize", handleResize);
-      
+
       // Copy refs to variables to avoid React hooks warning about stale refs
       const player = playerRef.current;
       const container = containerRef.current;
-      
+
       if (player && typeof player.$destroy === "function") {
         player.$destroy();
         playerRef.current = null;
       }
-      
+
       if (container) {
         container.innerHTML = "";
       }

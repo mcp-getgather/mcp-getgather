@@ -3,7 +3,6 @@ from typing import Any, Self
 
 from getgather.database.connection import execute_insert, fetch_all, fetch_one
 from getgather.database.models import DBModel
-from getgather.logs import logger
 
 
 class RRWebRecording(DBModel):
