@@ -60,21 +60,6 @@ class BrowserSession:
         activity = current_activity.get()
         logger.info(f"save_event called with event type: {event.get('type', 'unknown')}")
         
-        # Log raw JSON to file for debugging
-        try:
-            log_dir = "rrweb_debug"
-            os.makedirs(log_dir, exist_ok=True)
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
-            activity_id = activity.id if activity and activity.id else "no_activity"
-            filename = f"{log_dir}/events_{activity_id}_{timestamp}.json"
-            
-            with open(filename, "w") as f:
-                f.write(json.dumps(event, indent=2))
-            
-            logger.info(f"Raw rrweb event logged to: {filename}")
-        except Exception as e:
-            logger.warning(f"Failed to log raw rrweb event: {e}")
-        
         if activity and activity.id:
             logger.info(f"Saving event to activity {activity.id}: type={event.get('type')}, timestamp={event.get('timestamp')}")
             RRWebRecording.add_event_to_activity(activity.id, event)
