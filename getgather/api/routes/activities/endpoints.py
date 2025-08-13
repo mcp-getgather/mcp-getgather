@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from getgather.database.repositories.activity_repository import Activity
-from getgather.database.repositories.rrweb_recordings_repository import RRWebRecordingsRepository
+from getgather.database.repositories.rrweb_recordings_repository import RRWebRecording
 
 router = APIRouter(prefix="/api/activities", tags=["activities"])
 
@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/activities", tags=["activities"])
 async def get_activities():
     """Get all activities with recording counts."""
     activities = Activity.get_all()
-    recording_counts = RRWebRecordingsRepository.get_recording_counts()
+    recording_counts = RRWebRecording.get_recording_counts()
     
     # Add recording count to each activity
     activities_with_counts = []
@@ -25,7 +25,7 @@ async def get_activities():
 @router.get("/recordings")
 async def get_recording(activity_id: int):
     """Get rrweb events for a specific activity."""
-    recording = RRWebRecordingsRepository.get_by_activity_id(activity_id)
+    recording = RRWebRecording.get_by_activity_id(activity_id)
     if not recording:
         raise HTTPException(
             status_code=404, 

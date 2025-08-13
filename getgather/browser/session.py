@@ -13,7 +13,7 @@ from patchright.async_api import BrowserContext, Page, Playwright, async_playwri
 from getgather.browser.profile import BrowserProfile
 from getgather.context import current_activity
 from getgather.database.repositories.activity_repository import Activity
-from getgather.database.repositories.rrweb_recordings_repository import RRWebRecordingsRepository
+from getgather.database.repositories.rrweb_recordings_repository import RRWebRecording
 from getgather.logs import logger
 
 
@@ -77,7 +77,7 @@ class BrowserSession:
         
         if activity and activity.id:
             logger.info(f"Saving event to activity {activity.id}: type={event.get('type')}, timestamp={event.get('timestamp')}")
-            RRWebRecordingsRepository.add_event_to_activity(activity.id, event)
+            RRWebRecording.add_event_to_activity(activity.id, event)
             logger.info(f"Event successfully saved to activity {activity.id}")
         else:
             if not activity:
