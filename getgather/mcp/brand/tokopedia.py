@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import Any
 from urllib.parse import quote, urlparse
@@ -8,6 +9,7 @@ from getgather.browser.session import browser_session
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.database.repositories.brand_state_repository import BrandState
+from getgather.logs import logger
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import start_browser_session
 from getgather.parse import parse_html
@@ -17,44 +19,62 @@ tokopedia_mcp = BrandMCPBase(prefix="tokopedia", name="Tokopedia MCP")
 
 @tokopedia_mcp.tool
 async def search_product(
-    keyword: str,
+    keyword: str | list[str],
 ) -> dict[str, Any]:
-    """Search product on tokopedia."""
-    if BrandState.is_brand_connected(BrandIdEnum("tokopedia")):
-        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("tokopedia"))
-        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
-    else:
-        profile = BrowserProfile()
+    """Search products on Tokopedia."""
+
+    # Always use a fresh browser profile, because authenticated browser profile have different selectors
+    profile = BrowserProfile()
+
+    keywords = [keyword] if isinstance(keyword, str) else keyword
 
     async with browser_session(profile) as session:
-        page = await session.page()
-        # URL encode the search keyword
-        encoded_keyword = quote(keyword)
-        await page.goto(
-            f"https://www.tokopedia.com/search?q={encoded_keyword}", wait_until="commit"
-        )
-        await page.wait_for_selector(
-            "div[data-testid='divSRPContentProducts'] > div:nth-child(1) > div:nth-child(1)"
-        )
-        await page.wait_for_timeout(2000)
-        html = await page.locator("div[data-testid='divSRPContentProducts']").inner_html()
-    spec_schema = SpecSchema.model_validate({
-        "bundle": "",
-        "format": "html",
-        "output": "",
-        "row_selector": "div[class='css-5wh65g']",
-        "columns": [
-            {"name": "product_name", "selector": "a > div > div:nth-child(2) > div:nth-child(1)"},
-            {"name": "product_url", "selector": "a", "attribute": "href"},
-            {"name": "price_discount", "selector": "div[class='rJTRB7icxB2aB4uO48TY0Q==']"},
-            {"name": "price", "selector": "div[class*='urMOIDHH7I0Iy1Dv2oFaNw==']"},
-            {"name": "product_summary", "selector": "div[class='c7W9YYbRQuC29+GfsfRTEA==']"},
-        ],
-    })
-    result = await parse_html(
-        brand_id=BrandIdEnum("tokopedia"), html_content=html, schema=spec_schema
-    )
-    return {"product_list": result.content}
+        context = session.context
+
+        async def search_single_product(kw: str):
+            page = await context.new_page()
+            encoded_keyword = quote(kw)
+            await page.goto(
+                f"https://www.tokopedia.com/search?q={encoded_keyword}", wait_until="commit"
+            )
+            await page.wait_for_selector(
+                "div[data-testid='divSRPContentProducts'] > div:nth-child(1) > div:nth-child(1)"
+            )
+            await page.wait_for_timeout(2000)
+            html = await page.locator("div[data-testid='divSRPContentProducts']").inner_html()
+
+            spec_schema = SpecSchema.model_validate({
+                "bundle": "",
+                "format": "html",
+                "output": "",
+                "row_selector": "div[class='css-5wh65g']",
+                "columns": [
+                    {
+                        "name": "product_name",
+                        "selector": "a > div > div:nth-child(2) > div:nth-child(1)",
+                    },
+                    {"name": "product_url", "selector": "a", "attribute": "href"},
+                    {"name": "price_discount", "selector": "div[class='rJTRB7icxB2aB4uO48TY0Q==']"},
+                    {"name": "price", "selector": "div[class*='urMOIDHH7I0Iy1Dv2oFaNw==']"},
+                    {
+                        "name": "product_summary",
+                        "selector": "div[class='c7W9YYbRQuC29+GfsfRTEA==']",
+                    },
+                ],
+            })
+            result = await parse_html(
+                brand_id=BrandIdEnum("tokopedia"), html_content=html, schema=spec_schema
+            )
+            await page.close()
+            return {kw: result.content}
+
+        results_list = await asyncio.gather(*[search_single_product(kw) for kw in keywords])
+
+    merged_results: dict[str, Any] = {}
+    for r in results_list:
+        merged_results.update(r)
+
+    return {"product_list": merged_results}
 
 
 @tokopedia_mcp.tool
@@ -372,3 +392,51 @@ async def get_wishlist(
             results.append(result)
 
     return {"wishlist": results}
+
+
+@tokopedia_mcp.tool(tags={"private"})
+async def add_to_cart(
+    product_url: str | list[str],
+) -> dict[str, Any]:
+    """Add a product to cart of a tokopedia."""
+
+    logger.info(f"Adding product to cart: {product_url}")
+    profile_id = BrandState.get_browser_profile_id(BrandIdEnum("tokopedia"))
+    profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
+
+    product_urls = [product_url] if isinstance(product_url, str) else product_url
+
+    async with browser_session(profile) as session:
+        context = session.context
+
+        async def search_single_product(product_url: str):
+            page = await context.new_page()
+            await page.goto(product_url, wait_until="commit")
+            await page.wait_for_selector("h1[data-testid='lblPDPDetailProductName']")
+            await page.wait_for_timeout(2000)
+            await page.click("button[data-testid='pdpBtnNormalPrimary']")
+
+            locator_success = page.locator("span[data-testid='lblSuccessATC']")
+            locator_too_far = page.locator("h5:has-text('Jarak pengiriman terlalu jauh')")
+
+            res = None
+            for _ in range(30):  # retry up to 3 seconds
+                if await locator_success.is_visible():
+                    res = {"message": "Product added to cart", "status": "success"}
+                    break
+                elif await locator_too_far.is_visible():
+                    res = {"message": "Jarak pengiriman terlalu jauh", "status": "failed"}
+                    break
+                await page.wait_for_timeout(100)
+            await page.close()
+            return {product_url: res}
+
+        results_list = await asyncio.gather(*[
+            search_single_product(product_url) for product_url in product_urls
+        ])
+
+    merged_results: dict[str, Any] = {}
+    for r in results_list:
+        merged_results.update(r)
+
+    return {"results": merged_results}
