@@ -57,9 +57,9 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
         // Dynamically import rrweb-player
         const rrwebPlayer = (await import("rrweb-player")).default;
 
-        // Prevent initialization if component was unmounted during import
-        if (isDestroyed || !containerRef.current) return;
-
+        // Prevent initialization if component was unmounted or no events to replay
+        if (isDestroyed || !containerRef.current || !events || !events.length) return;
+        
         // Get original dimensions from first event
         const originalWidth = Number(events[0]?.data?.width) || 1920;
         const originalHeight = Number(events[0]?.data?.height) || 1080;
@@ -113,28 +113,28 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
 
     // Handle window resize
     const handleResize = () => {
-      if (playerRef.current && containerRef.current) {
-        // Recalculate dimensions on resize
-        const originalWidth = Number(events[0]?.data?.width) || 1920;
-        const originalHeight = Number(events[0]?.data?.height) || 1080;
-        const containerWidth = containerRef.current.clientWidth;
-        const maxWidth = containerWidth - 40;
-        const maxHeight = window.innerHeight * 0.7;
+      if (!playerRef.current || !containerRef.current || !events || !events.length) return;
+      
+      // Recalculate dimensions on resize
+      const originalWidth = Number(events[0]?.data?.width) || 1920;
+      const originalHeight = Number(events[0]?.data?.height) || 1080;
+      const containerWidth = containerRef.current.clientWidth;
+      const maxWidth = containerWidth - 40;
+      const maxHeight = window.innerHeight * 0.7;
 
-        const scaleX = maxWidth / originalWidth;
-        const scaleY = maxHeight / originalHeight;
-        const scale = Math.min(scaleX, scaleY, 1);
+      const scaleX = maxWidth / originalWidth;
+      const scaleY = maxHeight / originalHeight;
+      const scale = Math.min(scaleX, scaleY, 1);
 
-        const newWidth = originalWidth * scale;
-        const newHeight = originalHeight * scale;
+      const newWidth = originalWidth * scale;
+      const newHeight = originalHeight * scale;
 
-        // Update player dimensions
-        playerRef.current.$set({
-          width: newWidth,
-          height: newHeight,
-        });
-        playerRef.current.triggerResize();
-      }
+      // Update player dimensions
+      playerRef.current.$set({
+        width: newWidth,
+        height: newHeight,
+      });
+      playerRef.current.triggerResize();
     };
 
     window.addEventListener("resize", handleResize);
