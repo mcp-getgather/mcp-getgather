@@ -1,47 +1,31 @@
-import os
-import sqlite3
 from pathlib import Path
+
+from alembic import command
+from alembic.config import Config
 
 from getgather.config import settings
 from getgather.logs import logger
 
 
-def ensure_db_directory_exists():
-    """Ensure the directory for the database file exists."""
-    db_dir = os.path.dirname(settings.database_path)
-    Path(db_dir).mkdir(parents=True, exist_ok=True)
-
-
 def run_migration():
-    """Run database migrations."""
+    """Run database migrations using Alembic."""
     logger.info(f"Running migrations on database: {settings.database_path}")
 
-    # Ensure the database directory exists
-    ensure_db_directory_exists()
-
-    # Connect to database (creates it if it doesn't exist)
-    conn = sqlite3.connect(settings.database_path)
-    conn.execute("PRAGMA foreign_keys = ON")
-
     try:
-        # Read and execute schema file
-        schema_path = os.path.join(os.path.dirname(__file__), "schema.sql")
-        with open(schema_path, "r") as f:
-            schema_sql = f.read()
+        migrations_dir = Path(__file__).parent / "migrations"
+        alembic_cfg = Config(str(migrations_dir / "alembic.ini"))
 
-        # Execute the entire schema as a script
-        cursor = conn.cursor()
-        cursor.executescript(schema_sql)
+        logger.info(f"Migrations directory: {migrations_dir}")
+        logger.info(f"Alembic configuration: {alembic_cfg}")
 
-        conn.commit()
+        # Run the migration
+        command.upgrade(alembic_cfg, "head")
+
         logger.info("Migration completed successfully!")
 
     except Exception as e:
-        conn.rollback()
         logger.error(f"Error during migration: {e}")
         raise
-    finally:
-        conn.close()
 
 
 if __name__ == "__main__":
