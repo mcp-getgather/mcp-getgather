@@ -25,7 +25,7 @@ auth:
       selector: text="Continue shopping"
 
     - name: email
-      type: email
+      type: text
       prompt: Email
       selector: input[type="email"]
 

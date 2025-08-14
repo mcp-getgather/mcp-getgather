@@ -3,7 +3,7 @@ name: SeatGeek
 auth:
   fields:
     - name: email
-      type: email
+      type: text
       prompt: Email address
       selector: div[role="dialog"] input[type=email]
     - name: login_with_email_button
@@ -16,9 +16,9 @@ auth:
       selector: div[role="dialog"] button[type=button] span:has-text("Use password instead")
 
     - name: otp
-      type: text
+      type: text_multi
       prompt: 6-digit code sent to email
-      selectors: div[role="dialog"] input[aria-label^="6-digit code digit"]
+      selector: div[role="dialog"] input[aria-label^="6-digit code digit"]
     - name: otp_submit_button
       type: click
       prompt: Confirm

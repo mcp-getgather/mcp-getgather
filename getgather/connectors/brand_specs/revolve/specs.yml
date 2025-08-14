@@ -14,7 +14,7 @@ auth:
       prompt: Close dialog with No thanks button
       selector: '#ntf_just_let_shop'
     - name: email
-      type: email
+      type: text
       prompt: Email address
       selector: input#emailCustomer
     - name: password

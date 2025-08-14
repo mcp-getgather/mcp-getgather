@@ -3,7 +3,7 @@ name: Lenspure
 auth:
   fields:
     - name: email
-      type: email
+      type: text
       prompt: Email address
       selector: input[id="username"]
 
