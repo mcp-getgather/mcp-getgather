@@ -27,7 +27,6 @@ class BrowserSession:
         self.profile: BrowserProfile = BrowserProfile(id=profile_id)
         self._playwright: Playwright | None = None
         self._context: BrowserContext | None = None
-        self._activity: Activity | None = None
 
     @classmethod
     async def get(cls, profile: BrowserProfile) -> BrowserSession:

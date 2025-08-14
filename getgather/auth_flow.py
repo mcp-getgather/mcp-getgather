@@ -64,7 +64,6 @@ async def auth_flow(
         return await _auth_flow(brand_id, auth_request)
 
 
-
 async def _auth_flow(brand_id: BrandIdEnum, auth_request: AuthFlowRequest):
     try:
         # Initialize the auth manager
