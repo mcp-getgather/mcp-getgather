@@ -45,6 +45,37 @@ except Exception as e:
     logger.warning(f"Failed to register calendar MCP: {e}")
 
 
+async def _check_connection(
+    brand_id: BrandIdEnum, check_browser_profile: bool = False
+) -> tuple[bool, bool]:
+    """Check if brand is connected and verify auth status.
+
+    Args:
+        brand_id: The brand ID to check
+        check_browser_profile: Check auth status in browser profile
+
+    Returns:
+        tuple[bool, bool]: (is_connected, need_relogin)
+        - is_connected: True if brand is connected and auth is valid
+        - need_relogin: True if auth check failed, False if successful
+    """
+    is_connected = BrandState.is_brand_connected(brand_id)
+
+    if is_connected and check_browser_profile:
+        auth_result = await auth_flow(
+            brand_id,
+            AuthFlowRequest(profile_id=BrandState.get_browser_profile_id(brand_id), extract=False),
+        )
+        if auth_result.status != AuthStatus.FINISHED:
+            BrandState.update_is_connected(
+                brand_id=brand_id,
+                is_connected=False,
+            )
+            return False, True
+
+    return is_connected, False
+
+
 class AuthMiddleware(Middleware):
     async def on_call_tool(self, context: MiddlewareContext[Any], call_next: CallNext[Any, Any]):  # type: ignore
         if not context.fastmcp_context:
@@ -61,30 +92,19 @@ class AuthMiddleware(Middleware):
                 return await call_next(context)
 
         brand_id = context.message.name.split("_")[0]
-        if "private" not in tool.tags or BrandState.is_brand_connected(brand_id):
-            async with activity(
-                brand_id=brand_id,
-                name=context.message.name,
-            ):
-                if "private" in tool.tags:
-                    auth_result = await auth_flow(
-                        brand_id,
-                        AuthFlowRequest(
-                            profile_id=BrandState.get_browser_profile_id(brand_id), extract=False
-                        ),
-                    )
-                    if auth_result.status != AuthStatus.FINISHED:
-                        BrandState.update_is_connected(
-                            brand_id=BrandIdEnum(brand_id),
-                            is_connected=False,
-                        )
-                        return ToolResult(
-                            structured_content={
-                                "message": "You've been logged out. You need to login again.",
-                                "system_message": "Call this tool again to login again",
-                            }
-                        )
+        is_private = "private" in tool.tags
 
+        is_connected, need_relogin = await _check_connection(brand_id, is_private)
+        if need_relogin:
+            return ToolResult(
+                structured_content={
+                    "message": "You've been logged out. You need to login again.",
+                    "system_message": "Call this tool again to login again",
+                }
+            )
+
+        if is_connected or not is_private:
+            async with activity(brand_id=brand_id, name=context.message.name):
                 return await call_next(context)
 
         browser_profile_id = BrandState.get_browser_profile_id(brand_id)
