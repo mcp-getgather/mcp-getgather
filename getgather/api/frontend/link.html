@@ -171,7 +171,7 @@
           ? `<div class="error-message" data-testid="error-message">${escapeHtml(state.action.state.error)}</div>`
           : "";
 
-        const inputs = choice.prompts.map(renderFormInput).join("");
+        const inputs = choice.groups.map(renderFormInput).join("");
 
         return `
           <form data-testid="form-${choice.name}">

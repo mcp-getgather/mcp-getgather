@@ -121,7 +121,7 @@ def test_auth_api_flow(test_case: dict[str, str]):
             if choice.get("name") and choice.get("name") in test_case:
                 inputs[choice["name"]] = test_case[choice["name"]]
             # Only send fields present in the current prompt group
-            for p in choice.get("prompts", []):
+            for p in choice.get("groups", []):
                 prompt_name = p.get("name")
                 if not prompt_name:
                     continue
