@@ -74,7 +74,7 @@ auth:
 
     - name: Password only page
       timeout: 5
-      fields: 
+      fields:
         required: [password, sign_in]
         optional: [wrong-user-credentials-error]
 
@@ -86,7 +86,7 @@ auth:
         groups:
           - name: password
             prompt: Password
-            fields: 
+            fields:
               required: [password, sign_in]
               optional: [wrong-user-credentials-error]
           - name: otp
