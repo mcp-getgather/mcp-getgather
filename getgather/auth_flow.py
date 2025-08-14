@@ -61,63 +61,68 @@ async def auth_flow(
     """Start or continue an authentication flow for a connector."""
     # Use activity context manager for hosted link auth recording
     async with track_activity(name="hosted_link", brand_id=str(brand_id)):
-        try:
-            # Initialize the auth manager
-            if auth_request.profile_id:
-                browser_profile = BrowserProfile(id=auth_request.profile_id)
-            else:
-                browser_profile = BrowserProfile()
+        return await _auth_flow(brand_id, auth_request)
 
-            browser_session = await BrowserSession.get(browser_profile)
-            await browser_session.start()
 
-            auth_orchestrator = AuthOrchestrator(
-                brand_id=brand_id,
-                browser_profile=browser_profile,
-                state=auth_request.state,
-            )
-            state = await auth_orchestrator.advance()
 
-            extract_result = None
-            if state.finished:
-                if state.error:
-                    logger.warning(
-                        f"❗ Unauthenticated terminal page during auth: {state.error}",
-                        extra={"profile_id": browser_profile.id},
-                    )
-                elif auth_request.extract:
-                    extract_orchestrator = ExtractOrchestrator(
-                        brand_id=brand_id,
-                        browser_profile=browser_profile,
-                        nested_browser_session=True,
-                    )
-                    await extract_orchestrator.extract_flow()
-                    extract_result = ExtractResult(
-                        profile_id=browser_profile.id,
-                        state=extract_orchestrator.state,
-                        bundles=extract_orchestrator.bundles,
-                    )
-                await auth_orchestrator.finalize()
+async def _auth_flow(brand_id: BrandIdEnum, auth_request: AuthFlowRequest):
+    try:
+        # Initialize the auth manager
+        if auth_request.profile_id:
+            browser_profile = BrowserProfile(id=auth_request.profile_id)
+        else:
+            browser_profile = BrowserProfile()
 
-            if extract_result:
-                logger.info(
-                    f"Extracted Data sample: {extract_result.bundles[0].content[:200] if extract_result.bundles else 'None'}",
-                    extra={"brand_id": brand_id},
+        browser_session = await BrowserSession.get(browser_profile)
+        await browser_session.start()
+
+        auth_orchestrator = AuthOrchestrator(
+            brand_id=brand_id,
+            browser_profile=browser_profile,
+            state=auth_request.state,
+        )
+        state = await auth_orchestrator.advance()
+
+        extract_result = None
+        if state.finished:
+            if state.error:
+                logger.warning(
+                    f"❗ Unauthenticated terminal page during auth: {state.error}",
+                    extra={"profile_id": browser_profile.id},
                 )
-            # Convert response to API format
-            return AuthFlowResponse(
-                profile_id=browser_profile.id,
-                state=auth_orchestrator.state,
-                status=auth_orchestrator.status,
-                extract_result=extract_result,
-            )
+            elif auth_request.extract:
+                extract_orchestrator = ExtractOrchestrator(
+                    brand_id=brand_id,
+                    browser_profile=browser_profile,
+                    nested_browser_session=True,
+                )
+                await extract_orchestrator.extract_flow()
+                extract_result = ExtractResult(
+                    profile_id=browser_profile.id,
+                    state=extract_orchestrator.state,
+                    bundles=extract_orchestrator.bundles,
+                )
+            await auth_orchestrator.finalize()
 
-        except BrowserStartupError as e:
-            logger.error(f"Browser startup error in auth flow: {e}", exc_info=True)
-            raise e
-        except ProxyError as e:
-            logger.error(f"Proxy error in auth flow: {e}", exc_info=True)
-            raise e
-        except Exception as e:
-            logger.error(f"Error in auth flow: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=str(e))
+        if extract_result:
+            logger.info(
+                f"Extracted Data sample: {extract_result.bundles[0].content[:200] if extract_result.bundles else 'None'}",
+                extra={"brand_id": brand_id},
+            )
+        # Convert response to API format
+        return AuthFlowResponse(
+            profile_id=browser_profile.id,
+            state=auth_orchestrator.state,
+            status=auth_orchestrator.status,
+            extract_result=extract_result,
+        )
+
+    except BrowserStartupError as e:
+        logger.error(f"Browser startup error in auth flow: {e}", exc_info=True)
+        raise e
+    except ProxyError as e:
+        logger.error(f"Proxy error in auth flow: {e}", exc_info=True)
+        raise e
+    except Exception as e:
+        logger.error(f"Error in auth flow: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
