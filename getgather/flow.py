@@ -2,7 +2,7 @@ import asyncio
 import json
 from typing import Any
 
-from patchright.async_api import Frame, Page
+from patchright.async_api import Frame, Page, TimeoutError
 
 from getgather.actions import (
     get_label_text,
@@ -18,7 +18,7 @@ from getgather.actions import (
 from getgather.connectors.spec_loader import BrandIdEnum, load_custom_functions
 from getgather.connectors.spec_models import Choice, Field
 from getgather.detect import PageSpecDetector
-from getgather.flow_state import Bundle, FlowState, InputPrompt, PageSpec, PromptGroup, StatePrompt
+from getgather.flow_state import Bundle, ChoicePrompt, FlowState, InputPrompt, PageSpec, StatePrompt
 from getgather.logs import logger
 
 
@@ -130,7 +130,7 @@ async def _collect_needed_inputs(flow_state: FlowState, page: Page) -> StateProm
 
     prompt_text: str = choices.prompt
 
-    groups: list[PromptGroup] = []
+    groups: list[ChoicePrompt] = []
     for choice in choices.groups:
         # Resolve group-specific label substitution.
         group_name = choice.name
@@ -138,8 +138,10 @@ async def _collect_needed_inputs(flow_state: FlowState, page: Page) -> StateProm
         for fld in choice.fields_accept_input:
             prompts_list.append(await handle_field_prompt(page=page, field=fld))
         groups.append(
-            PromptGroup(
+            ChoicePrompt(
                 name=group_name,
+                prompt=choice.prompt,
+                groups=prompts_list,
                 prompts=prompts_list,
                 message=await _get_choice_message(
                     page,
@@ -233,20 +235,20 @@ async def _execute_page_fields(page: Page, flow_state: FlowState) -> None:
 
             await _handle_fields(field, current_frame, flow_state)
 
-            if field.expect_nav and field.type != "navigate":
-                if field.url:
-                    logger.debug(f"🌐 Expecting navigation to {field.url}...")
+            if field.expect_nav and field.type != "navigate" and field.url:
+                logger.debug(f"🌐 Expecting navigation to {field.url}...")
 
-                    # TODO: enforce field.url if expect_nav is true
-                    # wait for the response to the url to ensure page is loaded
-                    try:
-                        async with page.expect_response(field.url) as response_info:
-                            await asyncio.wait_for(response_info.value, timeout=30)
-                    except asyncio.TimeoutError:
-                        logger.warning(
-                            f"⚠️ Timeout waiting for navigation to {field.url}. Possible incorrect credentials or navigation failure."
-                        )
-                        # Continue execution to allow handling of error states
+                # TODO: enforce field.url if expect_nav is true
+                # wait for the response to the url to ensure page is loaded
+                try:
+                    timeout = current_page.timeout * 1000 if current_page.timeout else 10000
+                    async with page.expect_response(field.url, timeout=timeout) as response_info:
+                        await asyncio.wait_for(response_info.value, timeout=timeout)
+                except (TimeoutError, asyncio.TimeoutError):
+                    logger.warning(
+                        f"⚠️ Timeout waiting for navigation to {field.url}. Possible incorrect credentials or navigation failure."
+                    )
+                    # Continue execution to allow handling of error states
 
             if field.delay_ms:
                 logger.info(f"💤 Waiting for {field.delay_ms} ms...")

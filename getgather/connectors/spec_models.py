@@ -198,12 +198,6 @@ class FieldYML(YMLModel):
             )
         return self
 
-    @model_validator(mode="after")
-    def validate_prompt(self) -> Self:
-        if self.type not in ["wait", "navigate", "autoclick", "selection"]:
-            assert self.prompt is not None, "prompt is required for fields that need input"
-        return self
-
 
 class Field(SpecModel[FieldYML]):
     name: str
@@ -247,6 +241,16 @@ class Field(SpecModel[FieldYML]):
             "navigate",
             "selection",
         ]
+
+    @model_validator(mode="after")
+    def validate_prompt(self) -> Self:
+        if self.needs_input:
+            assert self.prompt is not None, "prompt is required for fields that need input"
+        if self.type == "message":
+            assert self.label is not None or self.prompt is not None, (
+                "label or prompt is required for message fields"
+            )
+        return self
 
 
 class GraphQLListenerYML(YMLModel):
