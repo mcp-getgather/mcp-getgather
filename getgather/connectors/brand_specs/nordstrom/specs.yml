@@ -60,6 +60,7 @@ auth:
     - name: wrong-user-credentials-error
       type: message
       selector: span[data-cy="wrong-user-credentials-error"]
+      label: span[data-cy="wrong-user-credentials-error"]
     - name: create-account-title
       type: wait
       selector: h1:has-text("Create Account")

@@ -246,6 +246,10 @@ class Field(SpecModel[FieldYML]):
     def validate_prompt(self) -> Self:
         if self.needs_input:
             assert self.prompt is not None, "prompt is required for fields that need input"
+        if self.type == "message":
+            assert self.label is not None or self.prompt is not None, (
+                "label or prompt is required for message fields"
+            )
         return self
 
 
