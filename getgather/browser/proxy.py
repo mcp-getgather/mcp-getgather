@@ -29,7 +29,9 @@ async def setup_proxy(
     """
     # Check if proxy service is configured
     if not settings.BROWSER_HTTP_PROXY or not settings.BROWSER_HTTP_PROXY_PASSWORD:
-        logger.info("No proxy configured (BROWSER_HTTP_PROXY and BROWSER_HTTP_PROXY_PASSWORD not set)")
+        logger.info(
+            "No proxy configured (BROWSER_HTTP_PROXY and BROWSER_HTTP_PROXY_PASSWORD not set)"
+        )
         return None
 
     # Use profile ID as base username
