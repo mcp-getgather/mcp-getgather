@@ -49,13 +49,6 @@ class RRWebRecording(DBModel):
         return recording
 
     @classmethod
-    def get_events_for_activity(cls, activity_id: int) -> list[dict[str, Any]] | None:
-        """Get the parsed events for an activity."""
-        if recording := cls.get_by_activity_id(activity_id):
-            return recording.events
-        return None
-
-    @classmethod
     def get_recording_counts(cls) -> dict[int, int]:
         """Get recording event counts for all activities."""
         query = f"SELECT activity_id, event_count FROM {cls.table_name}"
