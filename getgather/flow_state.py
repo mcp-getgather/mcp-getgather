@@ -35,7 +35,6 @@ class ChoicePrompt(BaseModel):
     name: str
     prompt: str | None = None
     groups: list[InputPrompt]
-    prompts: list[InputPrompt]  # TODO: replaced by groups by keeping it until clients are updated
     message: str | None = None
 
 
@@ -47,9 +46,7 @@ class StatePrompt(BaseModel):
     @classmethod
     def from_legacy_prompts(cls, prompts: list[InputPrompt]) -> Self:
         """Backwards compatibility for legacy step prompts."""
-        return cls(
-            name="", prompt="", choices=[ChoicePrompt(name="", groups=prompts, prompts=prompts)]
-        )
+        return cls(name="", prompt="", choices=[ChoicePrompt(name="", groups=prompts)])
 
     @cached_property
     def choices_map(self) -> dict[str, ChoicePrompt]:

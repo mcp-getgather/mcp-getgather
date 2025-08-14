@@ -142,7 +142,6 @@ async def _collect_needed_inputs(flow_state: FlowState, page: Page) -> StateProm
                 name=group_name,
                 prompt=choice.prompt,
                 groups=prompts_list,
-                prompts=prompts_list,
                 message=await _get_choice_message(
                     page,
                     choice,
