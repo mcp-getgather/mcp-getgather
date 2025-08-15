@@ -164,6 +164,7 @@ FIELD_TYPES = Literal[
     "text",  # single input field
     "text_multi",  # multiple input fields in a sequence
     "text_multi_auto",  # multiple input fields in a sequence, auto-advancing
+    "email",  # single email input field
     "password",  # single input field with masking
     "autoclick",
     "click",
@@ -219,6 +220,7 @@ class Field(SpecModel[FieldYML]):
             "text",
             "text_multi",
             "text_multi_auto",
+            "email",
             "password",
             "click",
             "press",
@@ -226,18 +228,16 @@ class Field(SpecModel[FieldYML]):
         ]
 
     @property
+    def needs_single_fill(self) -> bool:
+        return self.type in ["text", "email", "password"]
+
+    @property
+    def needs_multi_fill(self) -> bool:
+        return self.type in ["text_multi", "text_multi_auto"]
+
+    @property
     def needs_action(self) -> bool:
-        return self.type in [
-            "autoclick",
-            "click",
-            "press",
-            "text",
-            "text_multi",
-            "text_multi_auto",
-            "password",
-            "navigate",
-            "selection",
-        ]
+        return self.needs_input or self.type in ["autoclick", "navigate"]
 
     @model_validator(mode="after")
     def validate_prompt(self) -> Self:

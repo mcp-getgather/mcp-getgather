@@ -3,7 +3,7 @@ name: Petsmart
 auth:
   fields:
     - name: email_account
-      type: text
+      type: email
       prompt: Email
       selector: form#signInForm input[name=username]
     - name: password_account
@@ -15,7 +15,7 @@ auth:
       prompt: Login
       selector: form#signInForm button#login
     - name: email
-      type: text
+      type: email
       prompt: Email
       selector: div[data-testid=sign-in-form-container] input[name=email]
     - name: password

@@ -3,7 +3,7 @@ name: Container Store
 auth:
   fields:
     - name: email
-      type: text
+      type: email
       prompt: Email
       selector: input#signInName
     - name: password

@@ -3,7 +3,7 @@ name: Adidas
 auth:
   fields:
     - name: email
-      type: text
+      type: email
       prompt: Email address
       selector: input#email
     - name: email_button

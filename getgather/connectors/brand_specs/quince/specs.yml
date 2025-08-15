@@ -3,7 +3,7 @@ name: Quince
 auth:
   fields:
     - name: email
-      type: text
+      type: email
       prompt: Email address
       selector: input[type="email"]
     - name: password

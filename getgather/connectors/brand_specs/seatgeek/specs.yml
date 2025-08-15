@@ -3,7 +3,7 @@ name: SeatGeek
 auth:
   fields:
     - name: email
-      type: text
+      type: email
       prompt: Email address
       selector: div[role="dialog"] input[type=email]
     - name: login_with_email_button

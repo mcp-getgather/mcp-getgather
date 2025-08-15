@@ -3,7 +3,7 @@ name: Chewy
 auth:
   fields:
     - name: email
-      type: text
+      type: email
       prompt: Email
       selector: input#username
     - name: continue

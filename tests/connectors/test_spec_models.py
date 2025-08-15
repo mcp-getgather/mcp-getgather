@@ -17,7 +17,7 @@ def test_field():
     txt = """
     fields:
       - name: field_with_selector
-        type: text
+        type: email
         prompt: Enter your email
         selector: input[name="email"]
       - name: navigate_field

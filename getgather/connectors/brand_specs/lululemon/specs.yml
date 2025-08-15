@@ -3,7 +3,7 @@ name: Lululemon
 auth:
   fields:
     - name: email
-      type: text
+      type: email
       prompt: Email
       selector: input[name="identifier"]
 

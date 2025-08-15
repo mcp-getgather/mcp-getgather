@@ -189,9 +189,9 @@ async def _handle_fields(fld: Field, current_frame: Frame | Page, flow_state: Fl
         if not fld.selector:
             raise ValueError(f"⚠️ No selector provided for click field '{fld.name}'")
         await handle_click(current_frame, fld.selector, None, flow_state.bundle_dir)
-    elif fld.type == "text_multi" or fld.type == "text_multi_auto":
+    elif fld.needs_multi_fill:
         await handle_fill_multi(current_frame, fld, value)
-    elif fld.type == "text" or fld.type == "password":
+    elif fld.needs_single_fill:
         await handle_fill_single(current_frame, fld, value)
     elif fld.type == "navigate":
         if not fld.url:
@@ -387,9 +387,9 @@ async def flow_step(*, page: Page, flow_state: FlowState) -> FlowState:
                     raise ValueError(f"⚠️ No selector provided for {field.name}")
             elif field.type == "wait" and field.selector:
                 await wait_for_selector(current_page, field.selector, timeout=timeout)
-            elif field.type == "text_multi" or field.type == "text_multi_auto":
+            elif field.needs_multi_fill:
                 await handle_fill_multi(current_page, field, value)
-            elif field.type == "text" or field.type == "password":
+            elif field.needs_single_fill:
                 await handle_fill_single(current_page, field, value)
 
         flow_state.prompt = (
