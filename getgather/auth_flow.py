@@ -1,7 +1,6 @@
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
 
-from getgather.activity import track_activity
 from getgather.api.types import RequestInfo
 from getgather.auth_orchestrator import AuthOrchestrator, AuthStatus, ProxyError
 from getgather.browser.profile import BrowserProfile
