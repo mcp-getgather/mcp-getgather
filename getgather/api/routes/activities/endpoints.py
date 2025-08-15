@@ -8,6 +8,7 @@ from getgather.activity import activity_manager
 
 class ActivityResponse(BaseModel):
     """Activity response model for API."""
+
     id: int
     brand_id: str
     name: str
@@ -24,7 +25,7 @@ router = APIRouter(prefix="/api/activities", tags=["activities"])
 async def get_activities():
     """Get all activities ordered by start_time descending."""
     activities = await activity_manager.get_all_activities()
-    
+
     return [
         ActivityResponse(
             id=activity.id,
@@ -43,10 +44,10 @@ async def get_activities():
 async def get_activity(activity_id: int):
     """Get a specific activity by ID."""
     activity = await activity_manager.get_activity(activity_id)
-    
+
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
-    
+
     return ActivityResponse(
         id=activity.id,
         brand_id=activity.brand_id,

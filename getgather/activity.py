@@ -26,17 +26,13 @@ class ActivityManager:
         self._next_id = 1
         self._lock = asyncio.Lock()
 
-    async def create_activity(
-        self, brand_id: str, name: str, start_time: datetime
-    ) -> int:
+    async def create_activity(self, brand_id: str, name: str, start_time: datetime) -> int:
         """Create a new activity and return its ID."""
         async with self._lock:
             activity_id = self._next_id
             self._next_id += 1
 
-            activity = Activity(
-                id=activity_id, brand_id=brand_id, name=name, start_time=start_time
-            )
+            activity = Activity(id=activity_id, brand_id=brand_id, name=name, start_time=start_time)
 
             self._activities[activity_id] = activity
             return activity_id
@@ -61,9 +57,7 @@ class ActivityManager:
     async def get_all_activities(self) -> list[Activity]:
         """Get all activities ordered by start_time descending."""
         async with self._lock:
-            return sorted(
-                self._activities.values(), key=lambda a: a.start_time, reverse=True
-            )
+            return sorted(self._activities.values(), key=lambda a: a.start_time, reverse=True)
 
 
 # Global instance
