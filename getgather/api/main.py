@@ -28,7 +28,9 @@ from getgather.mcp.main import create_mcp_app
 mcp_app = create_mcp_app()
 from getgather.startup import startup
 
+# Run database migrationsn
 run_migration()
+
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     tag = route.tags[0] if route.tags else "no-tag"
