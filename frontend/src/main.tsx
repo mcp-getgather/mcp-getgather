@@ -6,6 +6,7 @@ import GetStarted from "./pages/GetStarted";
 import Activities from "./pages/Activities";
 import LiveView from "./pages/LiveView";
 import Settings from "./pages/Settings";
+import { ReplayPage } from "./pages/replay";
 import "./index.css";
 
 createRoot(document.getElementById("root")!).render(
@@ -17,6 +18,7 @@ createRoot(document.getElementById("root")!).render(
           <Route path="live-view" element={<LiveView />} />
           <Route path="activities" element={<Activities />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="replay" element={<ReplayPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
