@@ -57,7 +57,7 @@ async def search_product(
         })
 
         bundle_result = await parse_html(
-            brand_id=BrandIdEnum("amazon"), schema=spec_schema, page=page
+            brand_id=amazon_mcp.brand_id, schema=spec_schema, page=page
         )
 
         return {"product_list": bundle_result.content or []}
@@ -153,16 +153,7 @@ async def get_product_detail(
 @amazon_mcp.tool(tags={"private"})
 async def get_cart_summary() -> dict[str, Any]:
     """Get cart summary from amazon."""
-<<<<<<< HEAD
-    browser_session = await start_browser_session(brand_id=amazon_mcp.brand_id)
-    page = await browser_session.page()
-    await page.goto("https://www.amazon.com/gp/cart/view.html")
-    await page.wait_for_selector("div#sc-active-cart")
-    await page.wait_for_timeout(1000)
-    html = await page.locator("div#sc-active-cart").inner_html()
-    return {"cart_summary_html": html}
-=======
-    profile_id = BrandState.get_browser_profile_id(BrandIdEnum("amazon"))
+    profile_id = BrandState.get_browser_profile_id(amazon_mcp.brand_id)
     profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
     async with browser_session(profile) as session:
@@ -276,22 +267,12 @@ async def get_cart_summary() -> dict[str, Any]:
             cart_summary["regular_cart"] = regular_cart_data
 
         return cart_summary
->>>>>>> 7044303 (Fix amazon tools)
 
 
 @amazon_mcp.tool(tags={"private"})
 async def get_browsing_history() -> dict[str, Any]:
     """Get browsing history from amazon."""
-<<<<<<< HEAD
-    browser_session = await start_browser_session(brand_id=amazon_mcp.brand_id)
-    page = await browser_session.page()
-    await page.goto("https://www.amazon.com/gp/history?ref_=nav_AccountFlyout_browsinghistory")
-    await page.wait_for_timeout(1000)
-    await page.wait_for_selector("div[class*='desktop-grid']")
-    html = await page.locator("div[class*='desktop-grid']").inner_html()
-    return {"browsing_history_html": html}
-=======
-    profile_id = BrandState.get_browser_profile_id(BrandIdEnum("amazon"))
+    profile_id = BrandState.get_browser_profile_id(amazon_mcp.brand_id)
     profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
     async with browser_session(profile) as session:
@@ -301,4 +282,46 @@ async def get_browsing_history() -> dict[str, Any]:
         await page.wait_for_selector("div[class*='desktop-grid']")
         html = await page.locator("div[class*='desktop-grid']").inner_html()
         return {"browsing_history_html": html}
->>>>>>> 7044303 (Fix amazon tools)
+
+
+@amazon_mcp.tool(tags={"private"})
+async def search_purchase_history(
+    keyword: str,
+) -> dict[str, Any]:
+    """Search purchase history of a amazon."""
+    profile_id = BrandState.get_browser_profile_id(amazon_mcp.brand_id)
+    profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
+
+    async with browser_session(profile) as session:
+        page = await session.page()
+        await page.goto(
+            f"https://www.amazon.com/your-orders/search/ref=ppx_yo2ov_dt_b_search?opt=ab&search={keyword}"
+        )
+        await page.wait_for_selector("div.a-section.a-spacing-none.a-padding-small")
+        await page.wait_for_timeout(1000)
+
+        spec_schema = SpecSchema.model_validate({
+            "bundle": "",
+            "format": "html",
+            "output": "",
+            "row_selector": "div.a-section.a-spacing-large.a-spacing-top-large",
+            "columns": [
+                {
+                    "name": "product_name",
+                    "selector": "a.a-link-normal p",
+                },
+                {
+                    "name": "product_url",
+                    "selector": "a.a-link-normal[href*='/dp/']",
+                    "attribute": "href",
+                },
+                {"name": "product_image", "selector": "img", "attribute": "src"},
+                {
+                    "name": "order_date",
+                    "selector": "div.a-row.a-spacing-small > span",
+                },
+            ],
+        })
+
+        result = await parse_html(brand_id=amazon_mcp.brand_id, schema=spec_schema, page=page)
+        return {"order_history": result.content}
