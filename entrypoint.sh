@@ -38,4 +38,4 @@ dbus-daemon --system --fork
 echo "D-BUS daemon started with pid: $(cat /run/dbus/pid)"
 
 # Start FastAPI server
-    /opt/venv/bin/python -m uvicorn getgather.api.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*'
+/opt/venv/bin/python -m uvicorn getgather.api.main:app --host 0.0.0.0 --port 8000
