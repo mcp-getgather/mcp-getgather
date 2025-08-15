@@ -60,8 +60,8 @@ async def auth_flow(
 ) -> AuthFlowResponse:
     """Start or continue an authentication flow for a connector."""
     # Use activity context manager for hosted link auth recording
-    async with track_activity(name="hosted_link", brand_id=str(brand_id)):
-        return await _auth_flow(brand_id, auth_request)
+    # TODO: record activity auth
+    return await _auth_flow(brand_id, auth_request)
 
 
 async def _auth_flow(brand_id: BrandIdEnum, auth_request: AuthFlowRequest):
