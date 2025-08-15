@@ -1,5 +1,6 @@
 import asyncio
 from contextlib import asynccontextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import AsyncGenerator
@@ -63,18 +64,28 @@ class ActivityManager:
 # Global instance
 activity_manager = ActivityManager()
 
+# Context variable for active activity tracking
+active_activity_ctx: ContextVar[Activity | None] = ContextVar("active_activity", default=None)
+
 
 @asynccontextmanager
-async def activity(name: str, brand_id: str = "") -> AsyncGenerator[None, None]:
+async def activity(name: str, brand_id: str = "") -> AsyncGenerator[int, None]:
     """Context manager for tracking activity."""
     activity_id = await activity_manager.create_activity(
         brand_id=brand_id,
         name=name,
         start_time=datetime.now(UTC),
     )
+    
+    # Get the activity object and set it in the context variable
+    activity_obj = await activity_manager.get_activity(activity_id)
+    token = active_activity_ctx.set(activity_obj)
+    
     try:
-        yield
+        yield activity_id
     finally:
+        # Reset the context variable
+        active_activity_ctx.reset(token)
         await activity_manager.update_end_time(
             activity_id=activity_id,
             end_time=datetime.now(UTC),
