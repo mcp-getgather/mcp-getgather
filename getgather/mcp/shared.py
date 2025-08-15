@@ -15,6 +15,18 @@ from getgather.extract_orchestrator import ExtractOrchestrator
 from getgather.logs import logger
 
 
+def _sanitize_headers(headers: dict[str, str]) -> dict[str, str]:
+    allowed = {
+        "host",
+        "x-forwarded-proto",
+        "x-forwarded-host",
+        "x-forwarded-port",
+        "x-original-host",
+        "x-scheme",
+    }
+    return {k: v for k, v in headers.items() if k.lower() in allowed}
+
+
 async def auth_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
     """Auth with a link."""
 
@@ -29,17 +41,36 @@ async def auth_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
 
     request_data = HostedLinkTokenRequest(brand_id=str(brand_id), profile_id=profile_id)
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(follow_redirects=True) as client:
         headers = get_http_headers(include_all=True)
+        sanitized = _sanitize_headers(headers)
         host = headers.get("host")
+        scheme = headers.get("x-forwarded-proto", "http")
+        base_url = f"{scheme}://{host}" if host else None
+        logger.info(
+            f"[auth_hosted_link] headers={sanitized} scheme={scheme} host={host} base_url={base_url}"
+        )
+        if not base_url:
+            logger.warning(
+                "[auth_hosted_link] Missing Host header; defaulting to http://localhost:8000"
+            )
+            base_url = "http://localhost:8000"
+
+        url = f"{base_url}/link/create"
+        logger.info(f"[auth_hosted_link] POST {url}")
         response = await client.post(
-            f"http://{host}/link/create",
+            url,
             headers={"Content-Type": "application/json"},
             json=request_data.model_dump(),
         )
+        logger.info(
+            f"[auth_hosted_link] Response status={response.status_code} url={response.request.url}"
+        )
 
-        logger.info(f"Response: {response.text}")
         response_json = response.json()
+        logger.info(
+            f"[auth_hosted_link] Hosted link created link_id={response_json.get('link_id')} url={response_json.get('hosted_link_url')}"
+        )
 
     return {
         "url": response_json["hosted_link_url"],
@@ -57,19 +88,43 @@ async def auth_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
 async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict[str, Any]:
     """Poll auth for a hosted link."""
     progress_count = 0
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(follow_redirects=True) as client:
         processing = True
         while processing:
             headers = get_http_headers(include_all=True)
+            sanitized = _sanitize_headers(headers)
             host = headers.get("host")
-            response = await client.get(f"http://{host}/link/status/{hosted_link_id}")
-            logger.info(f"Response: {response.text}")
+            scheme = headers.get("x-forwarded-proto", "http")
+            base_url = f"{scheme}://{host}" if host else None
+            logger.info(
+                f"[poll_status_hosted_link] headers={sanitized} scheme={scheme} host={host} base_url={base_url}"
+            )
+            if not base_url:
+                logger.warning(
+                    "[poll_status_hosted_link] Missing Host header; defaulting to http://localhost:8000"
+                )
+                base_url = "http://localhost:8000"
+
+            url = f"{base_url}/link/status/{hosted_link_id}"
+            logger.info(f"[poll_status_hosted_link] GET {url}")
+            response = await client.get(url)
+            logger.info(
+                f"[poll_status_hosted_link] Response status={response.status_code} url={response.request.url}"
+            )
+
             response_json = response.json()
+            logger.info(
+                f"[poll_status_hosted_link] status={response_json.get('status')} message={response_json.get('message')}"
+            )
+
             if response_json["status"] == "completed":
                 processing = False
                 BrandState.update_is_connected(
                     brand_id=BrandIdEnum(response_json["brand_id"]),
                     is_connected=True,
+                )
+                logger.info(
+                    f"[poll_status_hosted_link] Marked brand {response_json.get('brand_id')} as connected"
                 )
 
             progress_count += 1
