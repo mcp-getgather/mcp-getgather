@@ -3,18 +3,17 @@ from typing import Any
 from fastmcp import Context
 
 from getgather.browser.agent import run_agent
-from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.logs import logger
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract, start_browser_session
 
-doordash_mcp = BrandMCPBase(prefix="doordash", name="Doordash MCP")
+doordash_mcp = BrandMCPBase(brand_id="doordash", name="Doordash MCP")
 
 
 @doordash_mcp.tool(tags={"private"})
 async def get_orders() -> dict[str, Any]:
     """Get orders from Doordash.com."""
-    return await extract(BrandIdEnum("doordash"))
+    return await extract(brand_id=doordash_mcp.brand_id)
 
 
 @doordash_mcp.tool(tags={"private"})
@@ -22,7 +21,7 @@ async def reorder_last_order(ctx: Context) -> dict[str, Any]:
     """Reorder the last order on Doordash.com."""
     browser_session = None
     try:
-        browser_session = await start_browser_session(BrandIdEnum("doordash"))
+        browser_session = await start_browser_session(doordash_mcp.brand_id)
         task = (
             f"Following the instructions below to reorder the last order on Doordash:"
             " 1. go to Orders page at https://www.doordash.com/orders."
