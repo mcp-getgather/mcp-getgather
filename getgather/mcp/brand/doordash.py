@@ -24,11 +24,13 @@ async def reorder_last_order(ctx: Context) -> dict[str, Any]:
         browser_session = await start_browser_session(doordash_mcp.brand_id)
         task = (
             f"Following the instructions below to reorder the last order on Doordash:"
-            " 1. go to Orders page at https://www.doordash.com/orders."
-            " 2. find the top order on the page and click the 'Reorder' button,"
+            " 1. Go to Orders page at https://www.doordash.com/orders."
+            " 2. Find the top order on the page and click the 'Reorder' button,"
             "   then you will be redirected to the page of the restaurant."
-            " 3. click the red cart button on the top right corner of the page to open the cart."
-            " 4. Continue the process and place the order at the end."
+            " 3. Click the red cart button on the top right corner of the page to open the cart."
+            " 4. Continue the process and place the order at the end. "
+            "   Make sure choose delivery option and not pickup,"
+            "   and the delivery address is the same as the last order."
         )
         logger.info(f"Running agent with task: {task}")
         await run_agent(ctx, browser_session.context, task)
