@@ -2,10 +2,9 @@ import asyncio
 import json
 from typing import Any
 
-from patchright.async_api import Frame, Page
+from patchright.async_api import Frame, Page, TimeoutError
 
 from getgather.actions import (
-    get_brand_function,
     get_label_text,
     handle_click,
     handle_fill_multi,
@@ -16,9 +15,10 @@ from getgather.actions import (
     handle_select_option,
     wait_for_selector,
 )
+from getgather.connectors.spec_loader import BrandIdEnum, load_custom_functions
 from getgather.connectors.spec_models import Choice, Field
 from getgather.detect import PageSpecDetector
-from getgather.flow_state import Bundle, FlowState, InputPrompt, PageSpec, PromptGroup, StatePrompt
+from getgather.flow_state import Bundle, ChoicePrompt, FlowState, InputPrompt, PageSpec, StatePrompt
 from getgather.logs import logger
 
 
@@ -130,7 +130,7 @@ async def _collect_needed_inputs(flow_state: FlowState, page: Page) -> StateProm
 
     prompt_text: str = choices.prompt
 
-    groups: list[PromptGroup] = []
+    groups: list[ChoicePrompt] = []
     for choice in choices.groups:
         # Resolve group-specific label substitution.
         group_name = choice.name
@@ -138,9 +138,10 @@ async def _collect_needed_inputs(flow_state: FlowState, page: Page) -> StateProm
         for fld in choice.fields_accept_input:
             prompts_list.append(await handle_field_prompt(page=page, field=fld))
         groups.append(
-            PromptGroup(
+            ChoicePrompt(
                 name=group_name,
-                prompts=prompts_list,
+                prompt=choice.prompt,
+                groups=prompts_list,
                 message=await _get_choice_message(
                     page,
                     choice,
@@ -233,20 +234,20 @@ async def _execute_page_fields(page: Page, flow_state: FlowState) -> None:
 
             await _handle_fields(field, current_frame, flow_state)
 
-            if field.expect_nav and field.type != "navigate":
-                if field.url:
-                    logger.debug(f"🌐 Expecting navigation to {field.url}...")
+            if field.expect_nav and field.type != "navigate" and field.url:
+                logger.debug(f"🌐 Expecting navigation to {field.url}...")
 
-                    # TODO: enforce field.url if expect_nav is true
-                    # wait for the response to the url to ensure page is loaded
-                    try:
-                        async with page.expect_response(field.url) as response_info:
-                            await asyncio.wait_for(response_info.value, timeout=30)
-                    except asyncio.TimeoutError:
-                        logger.warning(
-                            f"⚠️ Timeout waiting for navigation to {field.url}. Possible incorrect credentials or navigation failure."
-                        )
-                        # Continue execution to allow handling of error states
+                # TODO: enforce field.url if expect_nav is true
+                # wait for the response to the url to ensure page is loaded
+                try:
+                    timeout = current_page.timeout * 1000 if current_page.timeout else 10000
+                    async with page.expect_response(field.url, timeout=timeout) as response_info:
+                        await asyncio.wait_for(response_info.value, timeout=timeout)
+                except (TimeoutError, asyncio.TimeoutError):
+                    logger.warning(
+                        f"⚠️ Timeout waiting for navigation to {field.url}. Possible incorrect credentials or navigation failure."
+                    )
+                    # Continue execution to allow handling of error states
 
             if field.delay_ms:
                 logger.info(f"💤 Waiting for {field.delay_ms} ms...")
@@ -383,6 +384,8 @@ async def flow_step(*, page: Page, flow_state: FlowState) -> FlowState:
                     )
                 else:
                     raise ValueError(f"⚠️ No selector provided for {field.name}")
+            elif field.type == "wait" and field.selector:
+                await wait_for_selector(current_page, field.selector, timeout=timeout)
             elif field.selectors:
                 await handle_fill_multi(current_page, field, value)
             elif field.selector:
@@ -442,12 +445,14 @@ async def flow_step(*, page: Page, flow_state: FlowState) -> FlowState:
             content = json.dumps(orders)  # Makes content a string
             if orders:  # check the original response is not empty
                 if step.graphql.function:
-                    brand_specific_function = await get_brand_function(
-                        flow_state.brand_name.lower(), step.graphql.function
+                    brand_specific_function = load_custom_functions(
+                        brand_id=BrandIdEnum(flow_state.brand_name.lower())
                     )
-                    content = await brand_specific_function(
-                        page,
-                        content,
+                    content = (
+                        await brand_specific_function.retrieve_image_url_and_price_for_wayfair(
+                            page,
+                            content,
+                        )
                     )
                     content = json.dumps(content)
             bundle = Bundle(name=step.bundle, content=content)
