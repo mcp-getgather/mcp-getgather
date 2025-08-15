@@ -1,4 +1,4 @@
-# Get Gather
+# <img src=".assets/getgather_logo.png" alt="GetGather Logo" height="40" style="vertical-align:middle; margin-right:10px;"> Get Gather
 
 GetGather is a containerized service that allows MCP clients to interact with your data and act on your behalf.
 
