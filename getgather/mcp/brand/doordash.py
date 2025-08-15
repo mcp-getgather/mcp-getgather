@@ -17,15 +17,16 @@ async def get_orders() -> dict[str, Any]:
 
 
 @doordash_mcp.tool(tags={"private"})
-async def reorder_last_order(ctx: Context) -> dict[str, Any]:
-    """Reorder the last order on Doordash.com."""
+async def reorder_previous_order(ctx: Context, restaurant_name: str) -> dict[str, Any]:
+    """Reorder the previous order on Doordash.com from the given restaurant."""
     browser_session = None
     try:
         browser_session = await start_browser_session(doordash_mcp.brand_id)
         task = (
-            f"Following the instructions below to reorder the last order on Doordash:"
+            "Following the instructions below to reorder the last order on Doordash:"
             " 1. Go to Orders page at https://www.doordash.com/orders."
-            " 2. Find the top order on the page and click the 'Reorder' button,"
+            f" 2. Find the most recent order from {restaurant_name} on the page,"
+            "   and click the 'Reorder' button, "
             "   then you will be redirected to the page of the restaurant."
             " 3. Click the red cart button on the top right corner of the page to open the cart."
             " 4. Continue the process and place the order at the end. "
