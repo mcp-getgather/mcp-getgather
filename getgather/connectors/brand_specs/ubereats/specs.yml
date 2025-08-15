@@ -11,17 +11,17 @@ auth:
       prompt: Password
       selector: input#PASSWORD
     - name: email_otp
-      type: text
+      type: text_multi
       prompt: OTP sent to email
-      selectors: input[id^="EMAIL_OTP_CODE-"]
+      selector: input[id^="EMAIL_OTP_CODE-"]
     - name: sms_otp
-      type: text
+      type: text_multi
       prompt: OTP sent to SMS
-      selectors: input[id^="PHONE_SMS_OTP-"]
+      selector: input[id^="PHONE_SMS_OTP-"]
     - name: voice_otp
-      type: text
+      type: text_multi
       prompt: OTP sent to Voice
-      selectors: input[id^="PHONE_VOICE_OTP-"]
+      selector: input[id^="PHONE_VOICE_OTP-"]
     - name: continue
       type: click
       prompt: Continue

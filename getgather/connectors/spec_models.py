@@ -160,64 +160,53 @@ class SpecModel(BaseModel, Generic[TYML]):
         )
 
 
+FIELD_TYPES = Literal[
+    "text",  # single input field
+    "text_multi",  # multiple input fields in a sequence
+    "text_multi_auto",  # multiple input fields in a sequence, auto-advancing
+    "email",  # single email input field
+    "password",  # single input field with masking
+    "autoclick",
+    "click",
+    "press",
+    "navigate",
+    "wait",
+    "message",
+    "selection",
+]
+
+
 class FieldYML(YMLModel):
     name: str
-    type: Literal[
-        "text",
-        "email",
-        "password",
-        "autoclick",
-        "click",
-        "press",
-        "navigate",
-        "wait",
-        "message",
-        "selection",
-    ]
+    score: int = 1  # used to score matching page for detection
+    type: FIELD_TYPES
     prompt: str | None = None
     label: str | None = None
     iframe_selector: str | None = None
     selector: str | None = None
-    selectors: str | None = None
     url: str | None = None
     expect_nav: bool = False
     delay_ms: int | None = None
 
     @model_validator(mode="after")
-    def validate_selectors(self) -> Self:
+    def validate_selector(self) -> Self:
         if self.type == "navigate":
             assert self.url is not None, "URL is required for navigate field"
             assert self.expect_nav is not False, "expect_nav must be True for navigate field"
             return self
         elif self.type != "selection":
-            # For normal interactive fields exactly one of selector/selectors is required.
-            # Dynamic "selection" fields derive their target via ``option_items`` at runtime,
-            # so they are exempt.
-            assert bool(self.selector) ^ bool(self.selectors), (
-                "One and only one of selector and selectors must be provided for non-navigate fields"
-            )
+            assert self.selector is not None, "selector is required for non-selection fields"
         return self
 
 
 class Field(SpecModel[FieldYML]):
     name: str
-    type: Literal[
-        "text",
-        "email",
-        "password",
-        "autoclick",
-        "click",
-        "press",
-        "navigate",
-        "wait",
-        "message",
-        "selection",
-    ]
+    score: int = 1  # used to score matching page for detection
+    type: FIELD_TYPES
     prompt: str | None = None
     label: str | None = None
     iframe_selector: str | None = None
     selector: str | None = None
-    selectors: str | None = None
     # Dynamic selection helpers (only used when type == 'selection')
     option_items: str | None = None
     option_label: str | None = None
@@ -227,20 +216,28 @@ class Field(SpecModel[FieldYML]):
 
     @property
     def needs_input(self) -> bool:
-        return self.type in ["text", "email", "password", "click", "press", "selection"]
+        return self.type in [
+            "text",
+            "text_multi",
+            "text_multi_auto",
+            "email",
+            "password",
+            "click",
+            "press",
+            "selection",
+        ]
+
+    @property
+    def needs_single_fill(self) -> bool:
+        return self.type in ["text", "email", "password"]
+
+    @property
+    def needs_multi_fill(self) -> bool:
+        return self.type in ["text_multi", "text_multi_auto"]
 
     @property
     def needs_action(self) -> bool:
-        return self.type in [
-            "autoclick",
-            "click",
-            "press",
-            "text",
-            "email",
-            "password",
-            "navigate",
-            "selection",
-        ]
+        return self.needs_input or self.type in ["autoclick", "navigate"]
 
     @model_validator(mode="after")
     def validate_prompt(self) -> Self:
