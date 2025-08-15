@@ -117,7 +117,6 @@ async def _get_value(brand_id: BrandIdEnum, column: Column, element: Locator) ->
         return await element.inner_text()
 
 
-
 async def _extract_data_from_page(
     brand_id: BrandIdEnum,
     schema: Schema,
@@ -125,7 +124,7 @@ async def _extract_data_from_page(
 ) -> list[dict[str, str | list[str]]]:
     """Extract data from a page using schema selectors."""
     data: list[dict[str, str | list[str]]] = []
-    
+
     lc_rows = page.locator(schema.row_selector)
     for lc in await lc_rows.all():
         row: dict[str, str | list[str]] = {}
@@ -145,7 +144,7 @@ async def _extract_data_from_page(
                 row[column.name] = value if value is not None else ""
 
         data.append(row)
-    
+
     return data
 
 
@@ -158,24 +157,24 @@ async def parse_html(
     page: Page | None = None,
 ) -> BundleOutput:
     """
-    Parse HTML content using CSS selectors into a tabular format. 
-    
+    Parse HTML content using CSS selectors into a tabular format.
+
     This function supports two modes:
-    1. Headless browser mode: Creates a new Playwright browser instance to parse 
+    1. Headless browser mode: Creates a new Playwright browser instance to parse
        HTML from files or content strings, optionally saving results to JSON
-    2. Live page mode: Uses an existing live browser page for parsing without 
+    2. Live page mode: Uses an existing live browser page for parsing without
        creating a new browser instance (more efficient for real-time data extraction)
-    
+
     Args:
         brand_id: Brand identifier for custom parsing functions
         schema: Schema definition with CSS selectors for data extraction
         bundle_dir: Directory containing HTML files to parse (headless mode)
-        html_content: HTML content string to parse (headless mode)  
+        html_content: HTML content string to parse (headless mode)
         page: Live Playwright page object to parse from (live mode)
-        
+
     Returns:
         BundleOutput containing parsed data and metadata
-        
+
     Note: When using headless mode, exactly one of bundle_dir or html_content must be provided.
           When using live mode, only the page parameter is needed.
     """
@@ -183,7 +182,7 @@ async def parse_html(
         f"Parsing HTML content: {html_content[:200] if html_content else 'None'} with page: {page is not None}",
         extra={"schema": schema},
     )
-    
+
     # If page is provided, use it directly (live page parsing)
     if page is not None:
         data = await _extract_data_from_page(brand_id, schema, page)
