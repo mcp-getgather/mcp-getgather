@@ -28,7 +28,7 @@ from getgather.mcp.main import create_mcp_app
 mcp_app = create_mcp_app()
 from getgather.startup import startup
 
-# Run database migrationsn
+# Run database migrations
 run_migration()
 
 

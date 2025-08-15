@@ -3,14 +3,16 @@ from typing import Any
 
 from fastmcp import Context, FastMCP
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
+from fastmcp.server.server import ToolResult
 
 from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.activity import activity
+from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.logs import logger
 from getgather.mcp.auto_import import auto_import
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import poll_status_hosted_link
+from getgather.mcp.shared import auth_hosted_link, poll_status_hosted_link
 
 
 
@@ -59,7 +61,7 @@ class AuthMiddleware(Middleware):
         logger.info(
             f"[AuthMiddleware] processing auth for brand {brand_id} with browser profile {browser_profile_id}"
         )
-        
+
         async with activity(
             name="auth",
             brand_id=brand_id,
