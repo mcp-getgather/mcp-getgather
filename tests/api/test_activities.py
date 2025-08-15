@@ -29,4 +29,3 @@ class TestActivityAPI:
         assert response.status_code == 200
         activities = response.json()
         assert isinstance(activities, list)
-        
