@@ -3,18 +3,16 @@ from typing import Any
 
 from fastmcp import Context, FastMCP
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
-from fastmcp.server.server import ToolResult
+from fastmcp.tools.tool import ToolResult
 
+from getgather.activity import activity
 from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
-from getgather.activity import activity
 from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.logs import logger
 from getgather.mcp.auto_import import auto_import
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import auth_hosted_link, poll_status_hosted_link
-
-
 
 # Ensure calendar MCP is registered by importing its module
 try:

@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import List, Optional
-from pydantic import BaseModel
+
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from getgather.activity import activity_manager
 
@@ -12,15 +12,15 @@ class ActivityResponse(BaseModel):
     brand_id: str
     name: str
     start_time: datetime
-    end_time: Optional[datetime] = None
-    execution_time_ms: Optional[int] = None
+    end_time: datetime | None = None
+    execution_time_ms: int | None = None
     created_at: datetime
 
 
 router = APIRouter(prefix="/api/activities", tags=["activities"])
 
 
-@router.get("/", response_model=List[ActivityResponse])
+@router.get("/", response_model=list[ActivityResponse])
 async def get_activities():
     """Get all activities ordered by start_time descending."""
     activities = await activity_manager.get_all_activities()

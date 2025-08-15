@@ -1,8 +1,8 @@
-from datetime import datetime, UTC
-from dataclasses import dataclass, field
-from typing import Optional, AsyncGenerator
-from contextlib import asynccontextmanager
 import asyncio
+from contextlib import asynccontextmanager
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from typing import AsyncGenerator
 
 
 @dataclass
@@ -13,8 +13,8 @@ class Activity:
     brand_id: str
     name: str
     start_time: datetime
-    end_time: Optional[datetime] = None
-    execution_time_ms: Optional[int] = None
+    end_time: datetime | None = None
+    execution_time_ms: int | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now())
 
 
@@ -53,7 +53,7 @@ class ActivityManager:
                 (end_time - activity.start_time).total_seconds() * 1000
             )
 
-    async def get_activity(self, activity_id: int) -> Optional[Activity]:
+    async def get_activity(self, activity_id: int) -> Activity | None:
         """Get an activity by ID."""
         async with self._lock:
             return self._activities.get(activity_id)
