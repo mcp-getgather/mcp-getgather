@@ -12,13 +12,13 @@ from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Template
 
+from getgather.api.routes.activities.endpoints import router as activities_router
 from getgather.api.routes.auth.endpoints import router as auth_router
 from getgather.api.routes.brands.endpoints import router as brands_router
 from getgather.api.routes.link.endpoints import router as link_router
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.config import settings
-from getgather.database.migrate import run_migration
 from getgather.hosted_link_manager import HostedLinkManager
 from getgather.logs import logger
 from getgather.mcp.main import create_mcp_app
@@ -27,8 +27,6 @@ from getgather.mcp.main import create_mcp_app
 mcp_app = create_mcp_app()
 from getgather.startup import startup
 
-# Run database migrations
-run_migration()
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -235,6 +233,7 @@ async def extended_health():
     return PlainTextResponse(content=f"OK IP: {ip_text}")
 
 
+app.include_router(activities_router)
 app.include_router(brands_router)
 app.include_router(auth_router)
 app.include_router(link_router)
