@@ -1,6 +1,7 @@
 import asyncio
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, UTC
 
 from getgather.activity import ActivityManager, activity
 
@@ -9,12 +10,12 @@ class TestActivityManager:
     """Test cases for ActivityManager class."""
 
     @pytest.fixture
-    def manager(self):
+    def manager(self) -> ActivityManager:
         """Create a fresh ActivityManager for each test."""
         return ActivityManager()
 
     @pytest.mark.asyncio
-    async def test_create_activity(self, manager):
+    async def test_create_activity(self, manager: ActivityManager) -> None:
         """Test creating a new activity."""
         brand_id = "test-brand"
         name = "test-activity"
@@ -32,7 +33,7 @@ class TestActivityManager:
         assert activity_obj.execution_time_ms is None
 
     @pytest.mark.asyncio
-    async def test_multiple_activities_get_unique_ids(self, manager):
+    async def test_multiple_activities_get_unique_ids(self, manager: ActivityManager) -> None:
         """Test that multiple activities get unique incrementing IDs."""
         start_time = datetime.now(UTC)
         
@@ -45,7 +46,7 @@ class TestActivityManager:
         assert id3 == 3
 
     @pytest.mark.asyncio
-    async def test_update_end_time(self, manager):
+    async def test_update_end_time(self, manager: ActivityManager) -> None:
         """Test updating activity end time and execution time calculation."""
         start_time = datetime.now(UTC)
         activity_id = await manager.create_activity("brand1", "test", start_time)
@@ -56,6 +57,7 @@ class TestActivityManager:
         await manager.update_end_time(activity_id, end_time)
         
         activity_obj = await manager.get_activity(activity_id)
+        assert activity_obj is not None
         assert activity_obj.end_time == end_time
         assert activity_obj.execution_time_ms is not None
         assert activity_obj.execution_time_ms >= 0
@@ -63,25 +65,25 @@ class TestActivityManager:
         assert activity_obj.execution_time_ms >= 10
 
     @pytest.mark.asyncio
-    async def test_update_nonexistent_activity(self, manager):
+    async def test_update_nonexistent_activity(self, manager: ActivityManager) -> None:
         """Test updating a nonexistent activity raises error."""
         with pytest.raises(ValueError, match="Activity 999 not found"):
             await manager.update_end_time(999, datetime.now(UTC))
 
     @pytest.mark.asyncio
-    async def test_get_nonexistent_activity(self, manager):
+    async def test_get_nonexistent_activity(self, manager: ActivityManager) -> None:
         """Test getting a nonexistent activity returns None."""
         activity_obj = await manager.get_activity(999)
         assert activity_obj is None
 
     @pytest.mark.asyncio
-    async def test_get_all_activities_empty(self, manager):
+    async def test_get_all_activities_empty(self, manager: ActivityManager) -> None:
         """Test getting all activities when none exist."""
         activities = await manager.get_all_activities()
         assert activities == []
 
     @pytest.mark.asyncio
-    async def test_get_all_activities_ordered(self, manager):
+    async def test_get_all_activities_ordered(self, manager: ActivityManager) -> None:
         """Test getting all activities in correct order (start_time descending)."""
         start_time1 = datetime.now(UTC)
         await asyncio.sleep(0.001)  # Ensure different timestamps
@@ -102,14 +104,14 @@ class TestActivityManager:
         assert activities[2].id == id1  # first (oldest)
 
     @pytest.mark.asyncio
-    async def test_activity_thread_safety(self, manager):
+    async def test_activity_thread_safety(self, manager: ActivityManager) -> None:
         """Test that ActivityManager is thread-safe with concurrent operations."""
         start_time = datetime.now(UTC)
         
         # Create multiple activities concurrently
-        tasks = []
+        tasks: list[asyncio.Task[int]] = []
         for i in range(10):
-            task = manager.create_activity(f"brand{i}", f"activity{i}", start_time)
+            task = asyncio.create_task(manager.create_activity(f"brand{i}", f"activity{i}", start_time))
             tasks.append(task)
         
         activity_ids = await asyncio.gather(*tasks)
@@ -122,12 +124,12 @@ class TestActivityManager:
 class TestActivityContextManager:
     """Test cases for activity context manager."""
 
-    def create_fresh_manager(self):
+    def create_fresh_manager(self) -> ActivityManager:
         """Create a fresh ActivityManager instance for testing."""
         return ActivityManager()
 
     @pytest.mark.asyncio
-    async def test_activity_context_manager_basic(self):
+    async def test_activity_context_manager_basic(self) -> None:
         """Test activity context manager creates and updates activity."""
         # Create a fresh manager for this test
         test_manager = self.create_fresh_manager()
@@ -163,7 +165,7 @@ class TestActivityContextManager:
             getgather.activity.activity_manager = original_manager
 
     @pytest.mark.asyncio
-    async def test_activity_context_manager_with_exception(self):
+    async def test_activity_context_manager_with_exception(self) -> None:
         """Test activity context manager handles exceptions properly."""
         # Create a fresh manager for this test
         test_manager = self.create_fresh_manager()
@@ -197,7 +199,7 @@ class TestActivityContextManager:
             getgather.activity.activity_manager = original_manager
 
     @pytest.mark.asyncio
-    async def test_activity_context_manager_execution_time(self):
+    async def test_activity_context_manager_execution_time(self) -> None:
         """Test activity context manager measures execution time correctly."""
         # Create a fresh manager for this test
         test_manager = self.create_fresh_manager()
@@ -215,6 +217,7 @@ class TestActivityContextManager:
             activity_obj = activities[0]
             
             # Should have measured at least 50ms execution time
+            assert activity_obj.execution_time_ms is not None
             assert activity_obj.execution_time_ms >= 50
             # But shouldn't be too much more (allowing for some overhead)
             assert activity_obj.execution_time_ms < 200
@@ -224,7 +227,7 @@ class TestActivityContextManager:
             getgather.activity.activity_manager = original_manager
 
     @pytest.mark.asyncio
-    async def test_nested_activity_context_managers(self):
+    async def test_nested_activity_context_managers(self) -> None:
         """Test that nested activity context managers work correctly."""
         # Create a fresh manager for this test
         test_manager = self.create_fresh_manager()
