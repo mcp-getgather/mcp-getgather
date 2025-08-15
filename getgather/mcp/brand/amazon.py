@@ -2,20 +2,19 @@ from typing import Any
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
-from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract, start_browser_session
 from getgather.parse import parse_html
 
-amazon_mcp = BrandMCPBase(prefix="amazon", name="Amazon MCP")
+amazon_mcp = BrandMCPBase(brand_id="amazon", name="Amazon MCP")
 
 
 @amazon_mcp.tool(tags={"private"})
 async def get_purchase_history() -> dict[str, Any]:
     """Get purchase/order history of a amazon."""
-    return await extract(brand_id=BrandIdEnum("amazon"))
+    return await extract(brand_id=amazon_mcp.brand_id)
 
 
 @amazon_mcp.tool
@@ -23,8 +22,8 @@ async def search_product(
     keyword: str,
 ) -> dict[str, Any]:
     """Search product on amazon."""
-    if BrandState.is_brand_connected(BrandIdEnum("amazon")):
-        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("amazon"))
+    if BrandState.is_brand_connected(amazon_mcp.brand_id):
+        profile_id = BrandState.get_browser_profile_id(amazon_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -51,7 +50,7 @@ async def search_product(
             {"name": "reviews", "selector": "div[data-cy='reviews-block']"},
         ],
     })
-    result = await parse_html(brand_id=BrandIdEnum("amazon"), html_content=html, schema=spec_schema)
+    result = await parse_html(brand_id=amazon_mcp.brand_id, html_content=html, schema=spec_schema)
     return {"product_list": result.content}
 
 
@@ -60,8 +59,8 @@ async def get_product_detail(
     product_url: str,
 ) -> dict[str, Any]:
     """Get product detail from amazon."""
-    if BrandState.is_brand_connected(BrandIdEnum("amazon")):
-        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("amazon"))
+    if BrandState.is_brand_connected(amazon_mcp.brand_id):
+        profile_id = BrandState.get_browser_profile_id(amazon_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -81,7 +80,7 @@ async def get_product_detail(
 @amazon_mcp.tool(tags={"private"})
 async def get_cart_summary() -> dict[str, Any]:
     """Get cart summary from amazon."""
-    browser_session = await start_browser_session(brand_id=BrandIdEnum("amazon"))
+    browser_session = await start_browser_session(brand_id=amazon_mcp.brand_id)
     page = await browser_session.page()
     await page.goto("https://www.amazon.com/gp/cart/view.html")
     await page.wait_for_selector("div#sc-active-cart")
@@ -93,7 +92,7 @@ async def get_cart_summary() -> dict[str, Any]:
 @amazon_mcp.tool(tags={"private"})
 async def get_browsing_history() -> dict[str, Any]:
     """Get browsing history from amazon."""
-    browser_session = await start_browser_session(brand_id=BrandIdEnum("amazon"))
+    browser_session = await start_browser_session(brand_id=amazon_mcp.brand_id)
     page = await browser_session.page()
     await page.goto("https://www.amazon.com/gp/history?ref_=nav_AccountFlyout_browsinghistory")
     await page.wait_for_timeout(1000)

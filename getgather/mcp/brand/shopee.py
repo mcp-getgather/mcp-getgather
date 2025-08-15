@@ -3,20 +3,19 @@ from urllib.parse import quote
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
-from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract
 from getgather.parse import parse_html
 
-shopee_mcp = BrandMCPBase(prefix="shopee", name="Shopee MCP")
+shopee_mcp = BrandMCPBase(brand_id="shopee", name="Shopee MCP")
 
 
 @shopee_mcp.tool(tags={"private"})
 async def get_purchase_history() -> dict[str, Any]:
     """Get purchase history of a shopee."""
-    return await extract(brand_id=BrandIdEnum("shopee"))
+    return await extract(brand_id=shopee_mcp.brand_id)
 
 
 @shopee_mcp.tool
@@ -25,8 +24,8 @@ async def search_product(
     page_number: int = 1,
 ) -> dict[str, Any]:
     """Search product on shopee."""
-    if BrandState.is_brand_connected(BrandIdEnum("shopee")):
-        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("shopee"))
+    if BrandState.is_brand_connected(shopee_mcp.brand_id):
+        profile_id = BrandState.get_browser_profile_id(shopee_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -66,5 +65,5 @@ async def search_product(
             },
         ],
     })
-    result = await parse_html(brand_id=BrandIdEnum("shopee"), html_content=html, schema=spec_schema)
+    result = await parse_html(brand_id=shopee_mcp.brand_id, html_content=html, schema=spec_schema)
     return {"product_list": result.content}
