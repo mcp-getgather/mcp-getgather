@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import quote, urlparse
 
 from getgather.actions import handle_graphql_response
@@ -19,6 +19,7 @@ tokopedia_mcp = BrandMCPBase(brand_id="tokopedia", name="Tokopedia MCP")
 @tokopedia_mcp.tool
 async def search_product(
     keyword: str | list[str],
+    page_number: int = 1,
 ) -> dict[str, Any]:
     """Search products on Tokopedia."""
 
@@ -34,7 +35,8 @@ async def search_product(
             page = await context.new_page()
             encoded_keyword = quote(kw)
             await page.goto(
-                f"https://www.tokopedia.com/search?q={encoded_keyword}", wait_until="commit"
+                f"https://www.tokopedia.com/search?q={encoded_keyword}&page={page_number}",
+                wait_until="commit",
             )
             await page.wait_for_selector(
                 "div[data-testid='divSRPContentProducts'] > div:nth-child(1) > div:nth-child(1)"
@@ -345,10 +347,14 @@ async def get_cart() -> dict[str, Any]:
                 for shop_cart_detail in shop_cart.get("cart_details", []):
                     for product in shop_cart_detail.get("products", []):
                         products.append({
+                            "product_id": product.get("product_id", ""),
                             "product_name": product.get("product_name", ""),
                             "product_price": product.get("product_price", ""),
+                            "product_original_price": product.get("product_original_price", ""),
                             "product_url": product.get("product_url", ""),
                             "product_quantity": product.get("product_quantity", ""),
+                            "discount_percentage": product.get("slash_price_label", ""),
+                            "checked": product.get("checkbox_state", ""),
                         })
             result = {
                 "shop_name": cart.get("group_information", {}).get("name", ""),
@@ -356,7 +362,8 @@ async def get_cart() -> dict[str, Any]:
             }
             results.append(result)
 
-    return {"cart": results}
+    total_price = await page.locator("div[data-testid='cartSummaryTotalPrice']").inner_html()
+    return {"cart": results, "total_price": total_price}
 
 
 @tokopedia_mcp.tool(tags={"private"})
@@ -439,3 +446,43 @@ async def add_to_cart(
         merged_results.update(r)
 
     return {"results": merged_results}
+
+
+@tokopedia_mcp.tool(tags={"private"})
+async def action_product_in_cart(
+    product_id: str | list[str],
+    action: Literal["toggle_checklist", "remove_from_cart"],
+) -> dict[str, Any]:
+    """Action a product in cart of a tokopedia. Receive product_id from get_cart tool. After this tool, you need to call get_cart tool to get the updated cart.
+    Action can be toggle_checklist or remove_from_cart."""
+
+    logger.info(f"Actioning product in cart: {product_id} with action: {action}")
+    profile_id = BrandState.get_browser_profile_id(tokopedia_mcp.brand_id)
+    profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
+
+    product_ids = [product_id] if isinstance(product_id, str) else product_id
+
+    async with browser_session(profile) as session:
+        context = session.context
+
+        async def toggle_single_product(product_id: str):
+            if action == "toggle_checklist":
+                selector = f"div[data-testid='productInfoAvailable-{product_id}'] span[data-testid='CartListShopProductBox']"
+            else:
+                selector = f"div[data-testid='productInfoAvailable-{product_id}'] svg[data-testid='CartcartBtnDeleteListShopProductBox']"
+
+            page = await context.new_page()
+            await page.goto(f"https://www.tokopedia.com/cart")
+            await page.wait_for_timeout(1000)
+            await page.wait_for_selector(selector)
+            await page.locator(selector).scroll_into_view_if_needed()
+            await page.click(selector)
+            await page.wait_for_timeout(1000)
+            await page.close()
+            return {"message": f"Product {action}ed in cart", "product_id": product_id}
+
+        results_list = await asyncio.gather(*[
+            toggle_single_product(product_id) for product_id in product_ids
+        ])
+
+    return {"results": results_list}

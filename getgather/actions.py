@@ -264,7 +264,7 @@ async def handle_graphql_response(
 
 async def get_brand_function(brand_name: str, function_name: str) -> Any:
     """Get a brand function by name."""
-    module_path = f"getgather.connectors.brand_specs.custom_functions.{brand_name}"
+    module_path = f"getgather.connectors.brand_specs.{brand_name}.functions"
     module = importlib.import_module(module_path)
     return getattr(module, function_name)
 
