@@ -2,7 +2,7 @@ from typing import Any
 
 from fastmcp import Context
 
-from getgather.browser.agent import run_agent_for_brand
+from getgather.mcp.agent import run_agent_for_brand
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract
 
@@ -12,7 +12,7 @@ goodreads_mcp = BrandMCPBase(brand_id="goodreads", name="Goodreads MCP")
 @goodreads_mcp.tool(tags={"private"})
 async def get_book_list() -> dict[str, Any]:
     """Get the book list from a user's Goodreads account."""
-    return await extract(brand_id=goodreads_mcp.brand_id)
+    return await extract()
 
 
 @goodreads_mcp.tool(tags={"private"})
@@ -21,11 +21,11 @@ async def add_book_to_want_to_read(ctx: Context, book_name: str) -> dict[str, An
     task = (
         f"You are already logged in Goodreads. Find {book_name} and add it to 'Want to Read' list."
     )
-    return await run_agent_for_brand(brand_id=goodreads_mcp.brand_id, task=task, mcp_ctx=ctx)
+    return await run_agent_for_brand(task)
 
 
 @goodreads_mcp.tool(tags={"private"})
 async def get_recommendation(ctx: Context) -> dict[str, Any]:
     """Get recommendation of a goodreads."""
     task = "Get recommendation of a goodreads"
-    return await run_agent_for_brand(brand_id=goodreads_mcp.brand_id, task=task, mcp_ctx=ctx)
+    return await run_agent_for_brand(task)

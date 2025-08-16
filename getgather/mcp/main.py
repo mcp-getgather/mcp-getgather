@@ -60,6 +60,8 @@ class AuthMiddleware(Middleware):
                 return await call_next(context)
 
         brand_id = context.message.name.split("_")[0]
+        context.fastmcp_context.set_state("brand_id", brand_id)
+
         if "private" not in tool.tags or BrandState.is_brand_connected(brand_id):
             async with activity(
                 brand_id=brand_id,

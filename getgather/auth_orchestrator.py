@@ -69,7 +69,7 @@ class AuthOrchestrator:
             f"🔥 Starting authentication for {self.brand_id}",
         )
         try:
-            browser_session = await BrowserSession.get(self.browser_profile)
+            browser_session = BrowserSession.get(self.browser_profile)
             await self.state.init(
                 browser_profile_id=self.browser_profile.id, brand_id=self.brand_id
             )
@@ -157,7 +157,7 @@ class AuthOrchestrator:
             f"🚩 Finalizing auth for {self.brand_id}",
             extra={"profile_id": self.browser_profile.id},
         )
-        browser_session = await BrowserSession.get(self.browser_profile)
+        browser_session = BrowserSession.get(self.browser_profile)
         await browser_session.stop()
 
     async def _block_unwanted_resources(self, page: Page) -> None:

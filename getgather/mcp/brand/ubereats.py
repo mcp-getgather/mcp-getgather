@@ -9,4 +9,4 @@ ubereats_mcp = BrandMCPBase(brand_id="ubereats", name="UberEats MCP")
 @ubereats_mcp.tool(tags={"private"})
 async def get_orders() -> dict[str, Any]:
     """Get orders from UberEats.com."""
-    return await extract(brand_id=ubereats_mcp.brand_id)
+    return await extract()

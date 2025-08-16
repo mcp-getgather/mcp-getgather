@@ -26,7 +26,7 @@ class BrowserSession:
         self._context: BrowserContext | None = None
 
     @classmethod
-    async def get(cls, profile: BrowserProfile) -> BrowserSession:
+    def get(cls, profile: BrowserProfile) -> BrowserSession:
         if profile.id in cls._sessions:  # retrieve active session
             return cls._sessions[profile.id]
         else:  # create new session
@@ -93,7 +93,7 @@ class BrowserSession:
 
 @asynccontextmanager
 async def browser_session(profile: BrowserProfile, *, nested: bool = False):
-    session = await BrowserSession.get(profile)
+    session = BrowserSession.get(profile)
     if not nested:
         await session.start()
     try:
