@@ -586,6 +586,7 @@ class SchemaYML(YMLModel):
     output: str
     row_selector: str
     columns: list[ColumnYML]
+    use_evaluate_extraction: bool = False
 
 
 class Schema(SpecModel[SchemaYML]):
@@ -594,6 +595,7 @@ class Schema(SpecModel[SchemaYML]):
     output: str
     row_selector: str
     columns: list[Column]
+    use_evaluate_extraction: bool = False
 
 
 class BrandSpecYML(YMLModel):
