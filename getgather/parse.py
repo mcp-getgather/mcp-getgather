@@ -270,7 +270,7 @@ async def _extract_data_from_page(
 
     # Determine which method to use (default to locator)
     use_evaluate = False
-    
+
     if not has_custom_functions:
         if force_method == "evaluate":
             use_evaluate = True
