@@ -15,7 +15,7 @@ class TestActivityManager:
     @pytest.fixture
     def temp_json_file(self) -> Generator[Path, None, None]:
         """Create a temporary JSON file for testing."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             temp_path = Path(f.name)
         yield temp_path
         # Clean up
@@ -123,13 +123,13 @@ class TestActivityManager:
     async def test_json_persistence(self, manager: ActivityManager) -> None:
         """Test that activities persist across manager instances."""
         start_time = datetime.now(UTC)
-        
+
         # Create activity with first manager instance
         activity_id = await manager.create_activity("test-brand", "test-activity", start_time)
-        
+
         # Create new manager instance with same file
         new_manager = ActivityManager(json_file_path=manager.json_file_path)
-        
+
         # Should be able to retrieve the activity
         activity = await new_manager.get_activity(activity_id)
         assert activity is not None
@@ -142,13 +142,13 @@ class TestActivityManager:
         # Write invalid JSON to file
         with open(temp_json_file, "w") as f:
             f.write("invalid json content")
-        
+
         manager = ActivityManager(json_file_path=temp_json_file)
-        
+
         # Should handle corruption gracefully and start fresh
         activities = await manager.get_all_activities()
         assert activities == []
-        
+
         # Should be able to create new activities
         start_time = datetime.now(UTC)
         activity_id = await manager.create_activity("test-brand", "test-activity", start_time)
@@ -161,7 +161,7 @@ class TestActivityContextManager:
     @pytest.fixture
     def temp_json_file(self) -> Generator[Path, None, None]:
         """Create a temporary JSON file for testing."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             temp_path = Path(f.name)
         yield temp_path
         # Clean up
@@ -371,7 +371,7 @@ class TestActivityContextManager:
                 current_activity = active_activity_ctx.get()
                 assert current_activity is not None
                 assert current_activity.name == "exception-context"
-                
+
                 # Raise an exception
                 raise ValueError("Test exception")
         except ValueError:
