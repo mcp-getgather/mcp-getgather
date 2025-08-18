@@ -10,6 +10,12 @@ First, run the container with Docker or Podman:
 docker run -p 9999:8000 ghcr.io/mcp-getgather/mcp-getgather
 ```
 
+Optionally, with `--env-file` if you have an env file for OPENAI_API_KEY, etc.
+
+```bash
+docker run --env-file ~/getgather.env -p 9999:8000 ghcr.io/mcp-getgather/mcp-getgather
+```
+
 and then navigate to `http://localhost:9999/docs` to see the API docs.
 
 To live stream the container desktop, go to `http://localhost:9999/live`.
