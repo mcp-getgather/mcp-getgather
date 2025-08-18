@@ -31,34 +31,22 @@ class ActivityManager:
 
     def _load_activities(self) -> list[Activity]:
         """Load activities from JSON file."""
-        if not self.json_file_path.exists():
-            return []
-        
-        try:
-            with open(self.json_file_path, "r") as f:
-                content = f.read().strip()
-                if not content:
-                    return []
-                data = json.loads(content)
+        with open(self.json_file_path, "r") as f:
+            content = f.read().strip()
+            if not content:
+                return []
+            data = json.loads(content)
 
-            return [Activity.model_validate(activity_data) for activity_data in data]
-        except (json.JSONDecodeError, ValueError) as e:
-            print(f"Warning: Failed to load activities from {self.json_file_path}: {e}")
-            return []
+        return [Activity.model_validate(activity_data) for activity_data in data]
 
     def _save_activities(self, activities: list[Activity]) -> None:
         """Save activities to JSON file."""
-        try:
-            # Ensure parent directory exists
-            self.json_file_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            data = [activity.model_dump() for activity in activities]
-            with open(self.json_file_path, "w") as f:
-                json.dump(data, f, indent=2, default=str)
-        except (OSError, IOError) as e:
-            # Log error but don't raise - allows app to continue working
-            # In a real app, you might want to use proper logging here
-            print(f"Warning: Failed to save activities to {self.json_file_path}: {e}")
+        # Ensure parent directory exists
+        self.json_file_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        data = [activity.model_dump() for activity in activities]
+        with open(self.json_file_path, "w") as f:
+            json.dump(data, f, indent=2, default=str)
 
     async def create_activity(self, brand_id: str, name: str, start_time: datetime) -> str:
         """Create a new activity and return its ID."""
