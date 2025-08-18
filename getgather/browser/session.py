@@ -79,31 +79,31 @@ class BrowserSession:
             )
             
             # Expose save_event function to browser
-            await self._context.expose_function("saveEvent", self.save_event)
-            
-            # Inject RRWeb recording script
-            await self._context.add_init_script("""
-                // RRWeb recording script injection
-                const rrwebScript = document.createElement('script');
-                rrwebScript.src = 'https://cdn.jsdelivr.net/npm/rrweb@2.0.0-alpha.14/dist/record/rrweb-record.min.js';
-                rrwebScript.onload = function() {
-                    console.log('RRWeb script loaded');
-                    startRRWebRecording();
-                };
-                document.head.appendChild(rrwebScript);
-                
-                function startRRWebRecording() {
-                    if (typeof rrwebRecord !== 'undefined' && window.saveEvent) {
-                        rrwebRecord({ 
-                            emit(event) { 
-                                window.saveEvent(event); 
-                            }, 
-                            maskAllInputs: true 
-                        });
-                        console.log('RRWeb recording started');
-                    }
-                }
-            """)
+            # await self._context.expose_function("saveEvent", self.save_event)
+            #
+            # # Inject RRWeb recording script
+            # await self._context.add_init_script("""
+            #     // RRWeb recording script injection
+            #     const rrwebScript = document.createElement('script');
+            #     rrwebScript.src = 'https://cdn.jsdelivr.net/npm/rrweb@2.0.0-alpha.14/dist/record/rrweb-record.min.js';
+            #     rrwebScript.onload = function() {
+            #         console.log('RRWeb script loaded');
+            #         startRRWebRecording();
+            #     };
+            #     document.head.appendChild(rrwebScript);
+            #
+            #     function startRRWebRecording() {
+            #         if (typeof rrwebRecord !== 'undefined' && window.saveEvent) {
+            #             rrwebRecord({ 
+            #                 emit(event) { 
+            #                     window.saveEvent(event); 
+            #                 }, 
+            #                 maskAllInputs: true 
+            #             });
+            #             console.log('RRWeb recording started');
+            #         }
+            #     }
+            # """)
         except Exception as e:
             logger.error(f"Error starting browser: {e}")
             raise BrowserStartupError(f"Failed to start browser: {e}") from e
