@@ -15,7 +15,7 @@ shopee_mcp = BrandMCPBase(brand_id="shopee", name="Shopee MCP")
 @shopee_mcp.tool(tags={"private"})
 async def get_purchase_history() -> dict[str, Any]:
     """Get purchase history of a shopee."""
-    return await extract(brand_id=shopee_mcp.brand_id)
+    return await extract()
 
 
 @shopee_mcp.tool
