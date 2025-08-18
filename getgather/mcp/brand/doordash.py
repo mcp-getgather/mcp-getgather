@@ -2,7 +2,7 @@ from typing import Any
 
 from fastmcp import Context
 
-from getgather.browser.agent import run_agent_for_brand
+from getgather.mcp.agent import run_agent_for_brand
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract
 
@@ -12,7 +12,7 @@ doordash_mcp = BrandMCPBase(brand_id="doordash", name="Doordash MCP")
 @doordash_mcp.tool(tags={"private"})
 async def get_orders() -> dict[str, Any]:
     """Get orders from Doordash.com."""
-    return await extract(brand_id=doordash_mcp.brand_id)
+    return await extract()
 
 
 @doordash_mcp.tool(tags={"private"})
@@ -30,7 +30,7 @@ async def reorder_previous_order(ctx: Context, restaurant_name: str) -> dict[str
         "   and the delivery address is the same as the last order."
         " 5. At the end, confirm the order is placed successfully."
     )
-    return await run_agent_for_brand(brand_id=doordash_mcp.brand_id, task=task, mcp_ctx=ctx)
+    return await run_agent_for_brand(task)
 
 
 @doordash_mcp.tool(tags={"private"})
@@ -43,4 +43,4 @@ async def check_order_status(ctx: Context) -> dict[str, Any]:
         " 2. Find the most recent in progress order on the top of the page,"
         " 3. Extract the order status and return the result."
     )
-    return await run_agent_for_brand(brand_id=doordash_mcp.brand_id, task=task, mcp_ctx=ctx)
+    return await run_agent_for_brand(task)

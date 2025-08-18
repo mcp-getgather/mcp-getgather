@@ -66,7 +66,7 @@ async def auth_flow(
         else:
             browser_profile = BrowserProfile()
 
-        browser_session = await BrowserSession.get(browser_profile)
+        browser_session = BrowserSession.get(browser_profile)
         await browser_session.start()
         auth_orchestrator = AuthOrchestrator(
             brand_id=brand_id,

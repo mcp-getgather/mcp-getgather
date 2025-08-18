@@ -9,4 +9,4 @@ gofood_mcp = BrandMCPBase(brand_id="gofood", name="Gofood MCP")
 @gofood_mcp.tool(tags={"private"})
 async def get_purchase_history() -> dict[str, Any]:
     """Get gofood purchase history."""
-    return await extract(brand_id=gofood_mcp.brand_id)
+    return await extract()
