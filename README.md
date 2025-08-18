@@ -7,12 +7,12 @@ GetGather is a containerized service that allows MCP clients to interact with yo
 First, run the container with Docker or Podman:
 
 ```bash
-docker run -p 8000:8000 ghcr.io/mcp-getgather/mcp-getgather
+docker run -p 9999:8000 ghcr.io/mcp-getgather/mcp-getgather
 ```
 
-and then navigate to `http://localhost:8000/docs` to see the API docs.
+and then navigate to `http://localhost:9999/docs` to see the API docs.
 
-To live stream the container desktop, go to `http://localhost:8000/live`.
+To live stream the container desktop, go to `http://localhost:9999/live`.
 
 All additional documentation is located in the [docs](./docs) directory:
 
@@ -29,7 +29,7 @@ For VS Code, Cursor, and other MCP clients which support remote MCP servers:
 {
   "mcpServers": {
     "getgather": {
-      "url": "http://127.0.0.1:8000/mcp"
+      "url": "http://127.0.0.1:9999/mcp"
     }
   }
 }
@@ -42,7 +42,7 @@ For Claude Desktop:
   "mcpServers": {
     "getgather": {
       "command": "npx",
-      "args": ["mcp-remote", "http://127.0.0.1:8000/mcp", "--allow-http"]
+      "args": ["mcp-remote", "http://127.0.0.1:9999/mcp", "--allow-http"]
     }
   }
 }
@@ -61,7 +61,7 @@ After cloning the repo:
 
 ```bash
 docker build -t mcp-getgather .
-docker run -p 8000:8000 mcp-getgather
+docker run -p 9999:8000 mcp-getgather
 ```
 
 ### Proxy Configuration
