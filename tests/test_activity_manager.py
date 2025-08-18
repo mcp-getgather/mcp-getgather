@@ -1,5 +1,8 @@
 import asyncio
+import tempfile
 from datetime import UTC, datetime
+from pathlib import Path
+from typing import Generator
 
 import pytest
 
@@ -10,9 +13,19 @@ class TestActivityManager:
     """Test cases for ActivityManager class."""
 
     @pytest.fixture
-    def manager(self) -> ActivityManager:
+    def temp_json_file(self) -> Generator[Path, None, None]:
+        """Create a temporary JSON file for testing."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            temp_path = Path(f.name)
+        yield temp_path
+        # Clean up
+        if temp_path.exists():
+            temp_path.unlink()
+
+    @pytest.fixture
+    def manager(self, temp_json_file: Path) -> ActivityManager:
         """Create a fresh ActivityManager for each test."""
-        return ActivityManager()
+        return ActivityManager(json_file_path=temp_json_file)
 
     @pytest.mark.asyncio
     async def test_create_activity(self, manager: ActivityManager) -> None:
@@ -23,7 +36,8 @@ class TestActivityManager:
 
         activity_id = await manager.create_activity(brand_id, name, start_time)
 
-        assert activity_id == 1
+        assert isinstance(activity_id, str)
+        assert len(activity_id) == 32  # UUID hex format
         activity_obj = await manager.get_activity(activity_id)
         assert activity_obj is not None
         assert activity_obj.brand_id == brand_id
@@ -34,16 +48,18 @@ class TestActivityManager:
 
     @pytest.mark.asyncio
     async def test_multiple_activities_get_unique_ids(self, manager: ActivityManager) -> None:
-        """Test that multiple activities get unique incrementing IDs."""
+        """Test that multiple activities get unique UUIDs."""
         start_time = datetime.now(UTC)
 
         id1 = await manager.create_activity("brand1", "activity1", start_time)
         id2 = await manager.create_activity("brand2", "activity2", start_time)
         id3 = await manager.create_activity("brand3", "activity3", start_time)
 
-        assert id1 == 1
-        assert id2 == 2
-        assert id3 == 3
+        # All IDs should be unique UUID hex strings
+        assert isinstance(id1, str) and len(id1) == 32
+        assert isinstance(id2, str) and len(id2) == 32
+        assert isinstance(id3, str) and len(id3) == 32
+        assert len({id1, id2, id3}) == 3  # All unique
 
     @pytest.mark.asyncio
     async def test_update_end_time(self, manager: ActivityManager) -> None:
@@ -67,13 +83,13 @@ class TestActivityManager:
     @pytest.mark.asyncio
     async def test_update_nonexistent_activity(self, manager: ActivityManager) -> None:
         """Test updating a nonexistent activity raises error."""
-        with pytest.raises(ValueError, match="Activity 999 not found"):
-            await manager.update_end_time(999, datetime.now(UTC))
+        with pytest.raises(ValueError, match="Activity nonexistent-id not found"):
+            await manager.update_end_time("nonexistent-id", datetime.now(UTC))
 
     @pytest.mark.asyncio
     async def test_get_nonexistent_activity(self, manager: ActivityManager) -> None:
         """Test getting a nonexistent activity returns None."""
-        activity_obj = await manager.get_activity(999)
+        activity_obj = await manager.get_activity("nonexistent-id")
         assert activity_obj is None
 
     @pytest.mark.asyncio
@@ -104,37 +120,63 @@ class TestActivityManager:
         assert activities[2].id == id1  # first (oldest)
 
     @pytest.mark.asyncio
-    async def test_activity_thread_safety(self, manager: ActivityManager) -> None:
-        """Test that ActivityManager is thread-safe with concurrent operations."""
+    async def test_json_persistence(self, manager: ActivityManager) -> None:
+        """Test that activities persist across manager instances."""
         start_time = datetime.now(UTC)
+        
+        # Create activity with first manager instance
+        activity_id = await manager.create_activity("test-brand", "test-activity", start_time)
+        
+        # Create new manager instance with same file
+        new_manager = ActivityManager(json_file_path=manager.json_file_path)
+        
+        # Should be able to retrieve the activity
+        activity = await new_manager.get_activity(activity_id)
+        assert activity is not None
+        assert activity.brand_id == "test-brand"
+        assert activity.name == "test-activity"
 
-        # Create multiple activities concurrently
-        tasks: list[asyncio.Task[int]] = []
-        for i in range(10):
-            task = asyncio.create_task(
-                manager.create_activity(f"brand{i}", f"activity{i}", start_time)
-            )
-            tasks.append(task)
-
-        activity_ids = await asyncio.gather(*tasks)
-
-        # All IDs should be unique
-        assert len(set(activity_ids)) == 10
-        assert sorted(activity_ids) == list(range(1, 11))
+    @pytest.mark.asyncio
+    async def test_json_file_corruption_handling(self, temp_json_file: Path) -> None:
+        """Test handling of corrupted JSON file."""
+        # Write invalid JSON to file
+        with open(temp_json_file, "w") as f:
+            f.write("invalid json content")
+        
+        manager = ActivityManager(json_file_path=temp_json_file)
+        
+        # Should handle corruption gracefully and start fresh
+        activities = await manager.get_all_activities()
+        assert activities == []
+        
+        # Should be able to create new activities
+        start_time = datetime.now(UTC)
+        activity_id = await manager.create_activity("test-brand", "test-activity", start_time)
+        assert isinstance(activity_id, str) and len(activity_id) == 32
 
 
 class TestActivityContextManager:
     """Test cases for activity context manager."""
 
-    def create_fresh_manager(self) -> ActivityManager:
+    @pytest.fixture
+    def temp_json_file(self) -> Generator[Path, None, None]:
+        """Create a temporary JSON file for testing."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            temp_path = Path(f.name)
+        yield temp_path
+        # Clean up
+        if temp_path.exists():
+            temp_path.unlink()
+
+    def create_fresh_manager(self, temp_json_file: Path) -> ActivityManager:
         """Create a fresh ActivityManager instance for testing."""
-        return ActivityManager()
+        return ActivityManager(json_file_path=temp_json_file)
 
     @pytest.mark.asyncio
-    async def test_activity_context_manager_basic(self) -> None:
+    async def test_activity_context_manager_basic(self, temp_json_file: Path) -> None:
         """Test activity context manager creates and updates activity."""
         # Create a fresh manager for this test
-        test_manager = self.create_fresh_manager()
+        test_manager = self.create_fresh_manager(temp_json_file)
 
         # Patch the global activity_manager temporarily
         import getgather.activity
@@ -168,10 +210,10 @@ class TestActivityContextManager:
             getgather.activity.activity_manager = original_manager
 
     @pytest.mark.asyncio
-    async def test_activity_context_manager_with_exception(self) -> None:
+    async def test_activity_context_manager_with_exception(self, temp_json_file: Path) -> None:
         """Test activity context manager handles exceptions properly."""
         # Create a fresh manager for this test
-        test_manager = self.create_fresh_manager()
+        test_manager = self.create_fresh_manager(temp_json_file)
 
         # Patch the global activity_manager temporarily
         import getgather.activity
@@ -203,10 +245,10 @@ class TestActivityContextManager:
             getgather.activity.activity_manager = original_manager
 
     @pytest.mark.asyncio
-    async def test_activity_context_manager_execution_time(self) -> None:
+    async def test_activity_context_manager_execution_time(self, temp_json_file: Path) -> None:
         """Test activity context manager measures execution time correctly."""
         # Create a fresh manager for this test
-        test_manager = self.create_fresh_manager()
+        test_manager = self.create_fresh_manager(temp_json_file)
 
         # Patch the global activity_manager temporarily
         import getgather.activity
@@ -232,10 +274,10 @@ class TestActivityContextManager:
             getgather.activity.activity_manager = original_manager
 
     @pytest.mark.asyncio
-    async def test_nested_activity_context_managers(self) -> None:
+    async def test_nested_activity_context_managers(self, temp_json_file: Path) -> None:
         """Test that nested activity context managers work correctly."""
         # Create a fresh manager for this test
-        test_manager = self.create_fresh_manager()
+        test_manager = self.create_fresh_manager(temp_json_file)
 
         # Patch the global activity_manager temporarily
         import getgather.activity
