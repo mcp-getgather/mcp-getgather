@@ -1,68 +1,101 @@
-import asyncio
+import json
+import uuid
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import AsyncGenerator
 
+from pydantic import BaseModel, Field
 
-@dataclass
-class Activity:
-    """In-memory activity record."""
+from getgather.config import settings
 
-    id: int
+
+class Activity(BaseModel):
+    """JSON-persisted activity record."""
+
+    id: str
     brand_id: str
     name: str
     start_time: datetime
     end_time: datetime | None = None
     execution_time_ms: int | None = None
-    created_at: datetime = field(default_factory=lambda: datetime.now())
+    created_at: datetime = Field(default_factory=lambda: datetime.now())
+
 
 
 class ActivityManager:
-    """Async-safe in-memory activity management."""
+    """JSON file-based activity management."""
 
-    def __init__(self):
-        self._activities: dict[int, Activity] = {}
-        self._next_id = 1
-        self._lock = asyncio.Lock()
+    def __init__(self, json_file_path: Path):
+        self.json_file_path = json_file_path
 
-    async def create_activity(self, brand_id: str, name: str, start_time: datetime) -> int:
+    def _load_activities(self) -> list[Activity]:
+        """Load activities from JSON file."""
+        with open(self.json_file_path, "r") as f:
+            content = f.read().strip()
+            if not content:
+                return []
+            data = json.loads(content)
+
+        return [Activity.model_validate(activity_data) for activity_data in data]
+
+    def _save_activities(self, activities: list[Activity]) -> None:
+        """Save activities to JSON file."""
+        # Ensure parent directory exists
+        self.json_file_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        data = [activity.model_dump() for activity in activities]
+        with open(self.json_file_path, "w") as f:
+            json.dump(data, f, indent=2, default=str)
+
+    async def create_activity(self, brand_id: str, name: str, start_time: datetime) -> str:
         """Create a new activity and return its ID."""
-        async with self._lock:
-            activity_id = self._next_id
-            self._next_id += 1
+        activities = self._load_activities()
+        
+        activity_id = uuid.uuid4().hex
+        activity = Activity(id=activity_id, brand_id=brand_id, name=name, start_time=start_time)
+        activities.append(activity)
+        
+        self._save_activities(activities)
+        return activity_id
 
-            activity = Activity(id=activity_id, brand_id=brand_id, name=name, start_time=start_time)
-
-            self._activities[activity_id] = activity
-            return activity_id
-
-    async def update_end_time(self, activity_id: int, end_time: datetime) -> None:
+    async def update_end_time(self, activity_id: str, end_time: datetime) -> None:
         """Update the end time of an activity."""
-        async with self._lock:
-            if activity_id not in self._activities:
-                raise ValueError(f"Activity {activity_id} not found")
+        activities = self._load_activities()
+        
+        # Find the activity
+        activity = None
+        for act in activities:
+            if act.id == activity_id:
+                activity = act
+                break
+        
+        if not activity:
+            raise ValueError(f"Activity {activity_id} not found")
+        
+        # Update the activity fields directly
+        activity.end_time = end_time
+        activity.execution_time_ms = int((end_time - activity.start_time).total_seconds() * 1000)
+        
+        self._save_activities(activities)
 
-            activity = self._activities[activity_id]
-            activity.end_time = end_time
-            activity.execution_time_ms = int(
-                (end_time - activity.start_time).total_seconds() * 1000
-            )
-
-    async def get_activity(self, activity_id: int) -> Activity | None:
+    async def get_activity(self, activity_id: str) -> Activity | None:
         """Get an activity by ID."""
-        async with self._lock:
-            return self._activities.get(activity_id)
+        activities = self._load_activities()
+        for activity in activities:
+            if activity.id == activity_id:
+                return activity
+        return None
 
     async def get_all_activities(self) -> list[Activity]:
         """Get all activities ordered by start_time descending."""
-        async with self._lock:
-            return sorted(self._activities.values(), key=lambda a: a.start_time, reverse=True)
+        activities = self._load_activities()
+        return sorted(activities, key=lambda a: a.start_time, reverse=True)
 
 
 # Global instance
-activity_manager = ActivityManager()
+activity_manager = ActivityManager(settings.activities_json_path)
 
 # Context variable for active activity tracking
 active_activity_ctx: ContextVar[Activity | None] = ContextVar("active_activity", default=None)

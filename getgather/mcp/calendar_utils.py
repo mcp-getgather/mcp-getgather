@@ -4,12 +4,10 @@ from typing import Any, Literal
 from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
-from fastmcp import Context
-
-from getgather.mcp.registry import BrandMCPBase
+from fastmcp import Context, FastMCP
 
 # Create a generic calendar MCP
-calendar_mcp = BrandMCPBase(prefix="calendar", name="Calendar MCP")
+calendar_mcp = FastMCP[Context](name="Calendar MCP")
 
 
 def escape_ics_text(value: str) -> str:

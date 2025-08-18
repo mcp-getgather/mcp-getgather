@@ -1,6 +1,6 @@
 import asyncio
 import socket
-from contextlib import asynccontextmanager
+from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import datetime
 from os import path
 from typing import Final
@@ -22,10 +22,10 @@ from getgather.config import settings
 from getgather.database.migrate import run_migration
 from getgather.hosted_link_manager import HostedLinkManager
 from getgather.logs import logger
-from getgather.mcp.main import create_mcp_app
+from getgather.mcp.main import create_mcp_apps
 
-# Create MCP app once and reuse for lifespan and mounting
-mcp_app = create_mcp_app()
+# Create MCP apps once and reuse for lifespan and mounting
+mcp_apps = create_mcp_apps()
 from getgather.startup import startup
 
 # Run database migrations
@@ -40,7 +40,9 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await startup()
-    async with mcp_app.lifespan(app):  # type: ignore
+    async with AsyncExitStack() as stack:
+        for mcp_app in mcp_apps.values():
+            await stack.enter_async_context(mcp_app.lifespan(app))  # type: ignore
         yield
 
 
@@ -240,4 +242,6 @@ app.include_router(activities_router)
 app.include_router(brands_router)
 app.include_router(auth_router)
 app.include_router(link_router)
-app.mount("/mcp", mcp_app)
+for bundle_name, mcp_app in mcp_apps.items():
+    route_name = "/mcp" if bundle_name == "all" else f"/mcp-{bundle_name}"
+    app.mount(route_name, mcp_app)

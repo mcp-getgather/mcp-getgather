@@ -1,13 +1,16 @@
+from typing import ClassVar
+
 from fastmcp import Context, FastMCP
 
+from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.logs import logger
 
 
 class BrandMCPBase(FastMCP[Context]):
-    registry: dict[str, FastMCP[Context]] = {}
+    registry: ClassVar[dict[BrandIdEnum, "BrandMCPBase"]] = {}
 
-    def __init__(self, *, prefix: str, name: str) -> None:
+    def __init__(self, *, brand_id: str, name: str) -> None:
         super().__init__(name=name)
-        self._prefix = prefix
-        BrandMCPBase.registry[prefix] = self
-        logger.debug(f"Registered MCP with prefix '{prefix}' and name '{name}'")
+        self.brand_id = BrandIdEnum(brand_id)
+        BrandMCPBase.registry[self.brand_id] = self
+        logger.debug(f"Registered MCP with brand_id '{brand_id}' and name '{name}'")

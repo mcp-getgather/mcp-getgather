@@ -4,14 +4,14 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from getgather.activity import activity_manager
+from getgather.activity import Activity, activity_manager
 from getgather.rrweb.event_manager import rrweb_event_manager
 
 
 class ActivityResponse(BaseModel):
     """Activity response model for API."""
 
-    id: int
+    id: str
     brand_id: str
     name: str
     start_time: datetime
@@ -24,9 +24,8 @@ class ActivityResponse(BaseModel):
 class RecordingResponse(BaseModel):
     """Recording response model for API."""
 
-    activity_id: int
+    activity_id: str
     events: list[dict[str, Any]]
-
 
 router = APIRouter(prefix="/api/activities", tags=["activities"])
 
@@ -53,7 +52,7 @@ async def get_activities():
 
 
 @router.get("/{activity_id}", response_model=ActivityResponse)
-async def get_activity(activity_id: int):
+async def get_activity(activity_id: str):
     """Get a specific activity by ID."""
     activity = await activity_manager.get_activity(activity_id)
 
@@ -75,7 +74,7 @@ async def get_activity(activity_id: int):
 
 
 @router.get("/{activity_id}/recordings", response_model=RecordingResponse)
-async def get_recording(activity_id: int):
+async def get_recording(activity_id: str):
     """Get rrweb events for a specific activity."""
     # Verify activity exists
     activity = await activity_manager.get_activity(activity_id)

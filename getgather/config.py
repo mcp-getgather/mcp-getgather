@@ -32,8 +32,8 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
 
     # Proxy Settings
-    HTTP_PROXY: str = ""
-    HTTP_PROXY_PASSWORD: str = ""
+    BROWSER_HTTP_PROXY: str = ""
+    BROWSER_HTTP_PROXY_PASSWORD: str = ""
 
     @property
     def brand_spec_dir(self) -> Path:
@@ -75,6 +75,13 @@ class Settings(BaseSettings):
         data_dir = PROJECT_DIR / "data"
         data_dir.mkdir(parents=True, exist_ok=True)
         return data_dir / "getgather.db"
+
+    @property
+    def activities_json_path(self) -> Path:
+        """Path to activities JSON file in the main data directory."""
+        data_dir = PROJECT_DIR / "data"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        return data_dir / "activities.json"
 
     @field_validator("LOG_LEVEL", mode="after")
     @classmethod
