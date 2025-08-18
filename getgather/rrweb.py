@@ -15,70 +15,60 @@ class Recording(BaseModel):
 
 
 class RRWebManager:
-    """JSON file-based RRWeb recording management."""
+    """Per-activity file-based RRWeb recording management."""
 
-    def __init__(self, json_file_path: Path):
-        self.json_file_path = json_file_path
+    def __init__(self, recordings_dir: Path):
+        self.recordings_dir = recordings_dir
 
-    def _load_recordings(self) -> list[Recording]:
-        """Load recordings from JSON file."""
-        if not self.json_file_path.exists():
-            return []
+    def _get_activity_file_path(self, activity_id: str) -> Path:
+        """Get the file path for an activity's recording."""
+        return self.recordings_dir / f"activity_{activity_id}.json"
+
+    def _load_activity_recording(self, activity_id: str) -> Recording | None:
+        """Load recording for a specific activity."""
+        file_path = self._get_activity_file_path(activity_id)
+        if not file_path.exists():
+            return None
 
         try:
-            with open(self.json_file_path, "r") as f:
+            with open(file_path, "r") as f:
                 content = f.read().strip()
                 if not content:
-                    return []
+                    return None
                 data = json.loads(content)
+                return Recording.model_validate(data)
         except (json.JSONDecodeError, OSError):
-            # Handle corrupted JSON or file access issues
-            return []
+            return None
 
-        return [Recording.model_validate(recording_data) for recording_data in data]
+    def _save_activity_recording(self, recording: Recording) -> None:
+        """Save recording for a specific activity."""
+        file_path = self._get_activity_file_path(recording.activity_id)
+        
+        with open(file_path, "w") as f:
+            json.dump(recording.model_dump(), f, indent=2, default=str)
 
-    def _save_recordings(self, recordings: list[Recording]) -> None:
-        """Save recordings to JSON file."""
-        # Ensure parent directory exists
-        self.json_file_path.parent.mkdir(parents=True, exist_ok=True)
-
-        data = [recording.model_dump() for recording in recordings]
-        with open(self.json_file_path, "w") as f:
-            json.dump(data, f, indent=2, default=str)
-
-    async def add_event_to_recording(self, recording: Recording) -> None:
+    async def add_event(self, activity_id: str, event: dict[str, Any]) -> None:
         """Add an RRWeb event to an activity."""
-        recordings = self._load_recordings()
+        recording = self._load_activity_recording(activity_id)
         
-        # Find existing recording for this activity
-        existing_recording = None
-        for rec in recordings:
-            if rec.activity_id == recording.activity_id:
-                existing_recording = rec
-                break
-        
-        if existing_recording:
-            # Extend existing recording with new events
-            existing_recording.events.extend(recording.events)
+        if recording:
+            # Add event to existing recording
+            recording.events.append(event)
         else:
-            # Add new recording
-            recordings.append(recording)
+            # Create new recording with this event
+            recording = Recording(activity_id=activity_id, events=[event])
         
-        self._save_recordings(recordings)
+        self._save_activity_recording(recording)
 
     async def get_recording_by_activity_id(self, activity_id: str) -> Recording | None:
         """Get recording by activity ID."""
-        recordings = self._load_recordings()
-        for recording in recordings:
-            if recording.activity_id == activity_id:
-                return recording
-        return None
+        return self._load_activity_recording(activity_id)
     
     async def activity_has_recording(self, activity_id: str) -> bool:
         """Check if activity has recording."""
-        recording = await self.get_recording_by_activity_id(activity_id)
-        return recording is not None and len(recording.events) > 0
+        file_path = self._get_activity_file_path(activity_id)
+        return file_path.exists()
 
 
 # Global instance
-rrweb_manager = RRWebManager(settings.recordings_json_path)
+rrweb_manager = RRWebManager(settings.recordings_dir)

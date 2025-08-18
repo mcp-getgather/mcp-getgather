@@ -84,11 +84,11 @@ class Settings(BaseSettings):
         return data_dir / "activities.json"
 
     @property
-    def recordings_json_path(self) -> Path:
-        """Path to recordings JSON file in the main data directory."""
-        data_dir = PROJECT_DIR / "data"
-        data_dir.mkdir(parents=True, exist_ok=True)
-        return data_dir / "recordings.json"
+    def recordings_dir(self) -> Path:
+        """Path to recordings directory for per-activity files."""
+        recordings_dir = PROJECT_DIR / "data" / "recordings"
+        recordings_dir.mkdir(parents=True, exist_ok=True)
+        return recordings_dir
 
     @field_validator("LOG_LEVEL", mode="after")
     @classmethod
