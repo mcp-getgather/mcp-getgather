@@ -22,34 +22,6 @@ class Activity(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now())
 
 
-class Activities(BaseModel):
-    """Collection of activities with helper methods."""
-
-    activities: list[Activity] = Field(default_factory=lambda: [])
-
-    def add(self, activity: Activity) -> None:
-        """Add an activity to the collection."""
-        self.activities.append(activity)
-
-    def get_by_id(self, activity_id: str) -> Activity | None:
-        """Get an activity by ID."""
-        for activity in self.activities:
-            if activity.id == activity_id:
-                return activity
-        return None
-
-    def get_all_sorted(self) -> list[Activity]:
-        """Get all activities sorted by start_time descending."""
-        return sorted(self.activities, key=lambda a: a.start_time, reverse=True)
-
-    def update_activity(self, activity: Activity) -> bool:
-        """Update an activity. Returns True if found and updated."""
-        for i, existing_activity in enumerate(self.activities):
-            if existing_activity.id == activity.id:
-                self.activities[i] = activity
-                return True
-        return False
-
 
 class ActivityManager:
     """JSON file-based activity management."""
@@ -57,31 +29,32 @@ class ActivityManager:
     def __init__(self, json_file_path: Path):
         self.json_file_path = json_file_path
 
-    def _load_activities(self) -> Activities:
+    def _load_activities(self) -> list[Activity]:
         """Load activities from JSON file."""
         if not self.json_file_path.exists():
-            return Activities()
+            return []
         
         try:
             with open(self.json_file_path, "r") as f:
                 content = f.read().strip()
                 if not content:
-                    return Activities()
+                    return []
                 data = json.loads(content)
 
-            return Activities.model_validate(data)
+            return [Activity.model_validate(activity_data) for activity_data in data]
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Warning: Failed to load activities from {self.json_file_path}: {e}")
-            return Activities()
+            return []
 
-    def _save_activities(self, activities: Activities) -> None:
+    def _save_activities(self, activities: list[Activity]) -> None:
         """Save activities to JSON file."""
         try:
             # Ensure parent directory exists
             self.json_file_path.parent.mkdir(parents=True, exist_ok=True)
             
+            data = [activity.model_dump() for activity in activities]
             with open(self.json_file_path, "w") as f:
-                f.write(activities.model_dump_json(indent=2))
+                json.dump(data, f, indent=2, default=str)
         except (OSError, IOError) as e:
             # Log error but don't raise - allows app to continue working
             # In a real app, you might want to use proper logging here
@@ -92,9 +65,8 @@ class ActivityManager:
         activities = self._load_activities()
         
         activity_id = uuid.uuid4().hex
-
         activity = Activity(id=activity_id, brand_id=brand_id, name=name, start_time=start_time)
-        activities.add(activity)
+        activities.append(activity)
         
         self._save_activities(activities)
         return activity_id
@@ -103,7 +75,13 @@ class ActivityManager:
         """Update the end time of an activity."""
         activities = self._load_activities()
         
-        activity = activities.get_by_id(activity_id)
+        # Find the activity
+        activity = None
+        for act in activities:
+            if act.id == activity_id:
+                activity = act
+                break
+        
         if not activity:
             raise ValueError(f"Activity {activity_id} not found")
         
@@ -111,18 +89,20 @@ class ActivityManager:
         activity.end_time = end_time
         activity.execution_time_ms = int((end_time - activity.start_time).total_seconds() * 1000)
         
-        activities.update_activity(activity)
         self._save_activities(activities)
 
     async def get_activity(self, activity_id: str) -> Activity | None:
         """Get an activity by ID."""
         activities = self._load_activities()
-        return activities.get_by_id(activity_id)
+        for activity in activities:
+            if activity.id == activity_id:
+                return activity
+        return None
 
     async def get_all_activities(self) -> list[Activity]:
         """Get all activities ordered by start_time descending."""
         activities = self._load_activities()
-        return activities.get_all_sorted()
+        return sorted(activities, key=lambda a: a.start_time, reverse=True)
 
 
 # Global instance
