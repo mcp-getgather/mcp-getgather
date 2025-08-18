@@ -83,6 +83,13 @@ class Settings(BaseSettings):
         data_dir.mkdir(parents=True, exist_ok=True)
         return data_dir / "activities.json"
 
+    @property
+    def recordings_json_path(self) -> Path:
+        """Path to recordings JSON file in the main data directory."""
+        data_dir = PROJECT_DIR / "data"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        return data_dir / "recordings.json"
+
     @field_validator("LOG_LEVEL", mode="after")
     @classmethod
     def set_log_level(cls, v: str) -> str:
