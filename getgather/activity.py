@@ -23,7 +23,6 @@ class Activity(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now())
 
 
-
 class ActivityManager:
     """JSON file-based activity management."""
 
@@ -32,11 +31,18 @@ class ActivityManager:
 
     def _load_activities(self) -> list[Activity]:
         """Load activities from JSON file."""
-        with open(self.json_file_path, "r") as f:
-            content = f.read().strip()
-            if not content:
-                return []
-            data = json.loads(content)
+        if not self.json_file_path.exists():
+            return []
+
+        try:
+            with open(self.json_file_path, "r") as f:
+                content = f.read().strip()
+                if not content:
+                    return []
+                data = json.loads(content)
+        except (json.JSONDecodeError, OSError):
+            # Handle corrupted JSON or file access issues
+            return []
 
         return [Activity.model_validate(activity_data) for activity_data in data]
 
@@ -44,7 +50,7 @@ class ActivityManager:
         """Save activities to JSON file."""
         # Ensure parent directory exists
         self.json_file_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         data = [activity.model_dump() for activity in activities]
         with open(self.json_file_path, "w") as f:
             json.dump(data, f, indent=2, default=str)
@@ -52,32 +58,32 @@ class ActivityManager:
     async def create_activity(self, brand_id: str, name: str, start_time: datetime) -> str:
         """Create a new activity and return its ID."""
         activities = self._load_activities()
-        
+
         activity_id = uuid.uuid4().hex
         activity = Activity(id=activity_id, brand_id=brand_id, name=name, start_time=start_time)
         activities.append(activity)
-        
+
         self._save_activities(activities)
         return activity_id
 
     async def update_end_time(self, activity_id: str, end_time: datetime) -> None:
         """Update the end time of an activity."""
         activities = self._load_activities()
-        
+
         # Find the activity
         activity = None
         for act in activities:
             if act.id == activity_id:
                 activity = act
                 break
-        
+
         if not activity:
             raise ValueError(f"Activity {activity_id} not found")
-        
+
         # Update the activity fields directly
         activity.end_time = end_time
         activity.execution_time_ms = int((end_time - activity.start_time).total_seconds() * 1000)
-        
+
         self._save_activities(activities)
 
     async def get_activity(self, activity_id: str) -> Activity | None:
@@ -102,18 +108,18 @@ active_activity_ctx: ContextVar[Activity | None] = ContextVar("active_activity",
 
 
 @asynccontextmanager
-async def activity(name: str, brand_id: str = "") -> AsyncGenerator[int, None]:
+async def activity(name: str, brand_id: str = "") -> AsyncGenerator[str, None]:
     """Context manager for tracking activity."""
     activity_id = await activity_manager.create_activity(
         brand_id=brand_id,
         name=name,
         start_time=datetime.now(UTC),
     )
-    
+
     # Get the activity object and set it in the context variable
     activity_obj = await activity_manager.get_activity(activity_id)
     token = active_activity_ctx.set(activity_obj)
-    
+
     try:
         yield activity_id
     finally:

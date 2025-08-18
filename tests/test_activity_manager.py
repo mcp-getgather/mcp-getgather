@@ -6,7 +6,7 @@ from typing import Generator
 
 import pytest
 
-from getgather.activity import ActivityManager, activity
+from getgather.activity import ActivityManager, active_activity_ctx, activity
 
 
 class TestActivityManager:
@@ -15,7 +15,7 @@ class TestActivityManager:
     @pytest.fixture
     def temp_json_file(self) -> Generator[Path, None, None]:
         """Create a temporary JSON file for testing."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             temp_path = Path(f.name)
         yield temp_path
         # Clean up
@@ -123,13 +123,13 @@ class TestActivityManager:
     async def test_json_persistence(self, manager: ActivityManager) -> None:
         """Test that activities persist across manager instances."""
         start_time = datetime.now(UTC)
-        
+
         # Create activity with first manager instance
         activity_id = await manager.create_activity("test-brand", "test-activity", start_time)
-        
+
         # Create new manager instance with same file
         new_manager = ActivityManager(json_file_path=manager.json_file_path)
-        
+
         # Should be able to retrieve the activity
         activity = await new_manager.get_activity(activity_id)
         assert activity is not None
@@ -142,13 +142,13 @@ class TestActivityManager:
         # Write invalid JSON to file
         with open(temp_json_file, "w") as f:
             f.write("invalid json content")
-        
+
         manager = ActivityManager(json_file_path=temp_json_file)
-        
+
         # Should handle corruption gracefully and start fresh
         activities = await manager.get_all_activities()
         assert activities == []
-        
+
         # Should be able to create new activities
         start_time = datetime.now(UTC)
         activity_id = await manager.create_activity("test-brand", "test-activity", start_time)
@@ -161,7 +161,7 @@ class TestActivityContextManager:
     @pytest.fixture
     def temp_json_file(self) -> Generator[Path, None, None]:
         """Create a temporary JSON file for testing."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             temp_path = Path(f.name)
         yield temp_path
         # Clean up
@@ -309,3 +309,73 @@ class TestActivityContextManager:
         finally:
             # Restore original manager
             getgather.activity.activity_manager = original_manager
+
+    @pytest.mark.asyncio
+    async def test_activity_context_variable_tracking(self) -> None:
+        """Test that context variable tracks active activity correctly."""
+        # Initially no active activity
+        assert active_activity_ctx.get() is None
+
+        async with activity("context-test", "test-brand") as activity_id:
+            # During execution, context variable should be set
+            current_activity = active_activity_ctx.get()
+            assert current_activity is not None
+            assert current_activity.id == activity_id
+            assert current_activity.name == "context-test"
+            assert current_activity.brand_id == "test-brand"
+            assert current_activity.end_time is None  # Not finished yet
+
+        # After context exit, context variable should be reset
+        assert active_activity_ctx.get() is None
+
+    @pytest.mark.asyncio
+    async def test_nested_activity_context_variable_tracking(self) -> None:
+        """Test that context variable correctly handles nested activities."""
+        # Initially no active activity
+        assert active_activity_ctx.get() is None
+
+        async with activity("outer-context", "outer-brand") as outer_id:
+            # Should track outer activity
+            outer_activity = active_activity_ctx.get()
+            assert outer_activity is not None
+            assert outer_activity.id == outer_id
+            assert outer_activity.name == "outer-context"
+
+            async with activity("inner-context", "inner-brand") as inner_id:
+                # Should now track inner activity
+                inner_activity = active_activity_ctx.get()
+                assert inner_activity is not None
+                assert inner_activity.id == inner_id
+                assert inner_activity.name == "inner-context"
+                # Should be different from outer
+                assert inner_activity.id != outer_activity.id
+
+            # After inner context exits, should return to outer activity
+            current_activity = active_activity_ctx.get()
+            assert current_activity is not None
+            assert current_activity.id == outer_id
+            assert current_activity.name == "outer-context"
+
+        # After outer context exits, should be None
+        assert active_activity_ctx.get() is None
+
+    @pytest.mark.asyncio
+    async def test_activity_context_variable_with_exception(self) -> None:
+        """Test that context variable is properly reset even when exceptions occur."""
+        # Initially no active activity
+        assert active_activity_ctx.get() is None
+
+        try:
+            async with activity("exception-context", "test-brand"):
+                # Context variable should be set
+                current_activity = active_activity_ctx.get()
+                assert current_activity is not None
+                assert current_activity.name == "exception-context"
+
+                # Raise an exception
+                raise ValueError("Test exception")
+        except ValueError:
+            pass  # Expected exception
+
+        # After exception, context variable should still be reset
+        assert active_activity_ctx.get() is None
