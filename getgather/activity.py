@@ -21,6 +21,7 @@ class Activity(BaseModel):
     end_time: datetime | None = None
     execution_time_ms: int | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now())
+    has_recording: bool | None = None
 
 
 class ActivityManager:

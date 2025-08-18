@@ -9,7 +9,7 @@ from patchright.async_api import BrowserContext, Page, Playwright, async_playwri
 from getgather.activity import active_activity_ctx
 from getgather.browser.profile import BrowserProfile
 from getgather.logs import logger
-from getgather.rrweb.event_manager import rrweb_event_manager
+from getgather.rrweb import rrweb_manager
 
 
 class BrowserStartupError(HTTPException):
@@ -55,7 +55,7 @@ class BrowserSession:
         # Get active activity from context
         activity = active_activity_ctx.get()
         if activity is not None:
-            await rrweb_event_manager.add_event_to_activity(activity.id, event)
+            await rrweb_manager.add_event(activity.id, event)
             logger.debug(f"Saved RRWeb event for activity {activity.id}: {event.get('type', 'unknown')}")
         else:
             logger.warning("No active activity found when saving RRWeb event")

@@ -12,7 +12,10 @@ async def get_activities() -> list[Activity]:
     """Get all activities ordered by start_time descending."""
     activities = await activity_manager.get_all_activities()
 
-    # TODO: recording count
+    # Add recording status to each activity
+    for activity in activities:
+        activity.has_recording = await rrweb_manager.activity_has_recording(activity.id)
+
     return activities
 
 
@@ -26,4 +29,6 @@ async def get_recording(activity_id: str) -> Recording:
 
     # Get recording events
     recording = await rrweb_manager.get_recording_by_activity_id(activity_id)
+    if not recording:
+        raise HTTPException(status_code=404, detail="Recording not found")
     return recording
