@@ -6,7 +6,6 @@ from urllib.parse import quote, urlparse
 from getgather.actions import handle_graphql_response
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
-from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.logs import logger
@@ -14,7 +13,7 @@ from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import start_browser_session
 from getgather.parse import parse_html
 
-tokopedia_mcp = BrandMCPBase(prefix="tokopedia", name="Tokopedia MCP")
+tokopedia_mcp = BrandMCPBase(brand_id="tokopedia", name="Tokopedia MCP")
 
 
 @tokopedia_mcp.tool
@@ -65,7 +64,7 @@ async def search_product(
                 ],
             })
             result = await parse_html(
-                brand_id=BrandIdEnum("tokopedia"), html_content=html, schema=spec_schema
+                brand_id=tokopedia_mcp.brand_id, html_content=html, schema=spec_schema
             )
             await page.close()
             return {kw: result.content}
@@ -84,8 +83,8 @@ async def get_product_details(
     product_url: str,
 ) -> dict[str, Any]:
     """Get product details from tokopedia. Get product_url from search_product tool."""
-    if BrandState.is_brand_connected(BrandIdEnum("tokopedia")):
-        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("tokopedia"))
+    if BrandState.is_brand_connected(tokopedia_mcp.brand_id):
+        profile_id = BrandState.get_browser_profile_id(tokopedia_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -127,7 +126,7 @@ async def get_product_details(
         ],
     })
     result = await parse_html(
-        brand_id=BrandIdEnum("tokopedia"), html_content=html, schema=spec_schema
+        brand_id=tokopedia_mcp.brand_id, html_content=html, schema=spec_schema
     )
     return {"product_detail": result.content}
 
@@ -137,8 +136,8 @@ async def search_shop(
     keyword: str,
 ) -> dict[str, Any]:
     """Search shop on tokopedia."""
-    if BrandState.is_brand_connected(BrandIdEnum("tokopedia")):
-        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("tokopedia"))
+    if BrandState.is_brand_connected(tokopedia_mcp.brand_id):
+        profile_id = BrandState.get_browser_profile_id(tokopedia_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -188,7 +187,7 @@ async def search_shop(
         ],
     })
     result = await parse_html(
-        brand_id=BrandIdEnum("tokopedia"), html_content=html, schema=spec_schema
+        brand_id=tokopedia_mcp.brand_id, html_content=html, schema=spec_schema
     )
     return {"shop_list": result.content}
 
@@ -243,8 +242,8 @@ async def get_shop_details(
     if not target_url:
         return {"error": "Could not determine valid shop URL"}
 
-    if BrandState.is_brand_connected(BrandIdEnum("tokopedia")):
-        profile_id = BrandState.get_browser_profile_id(BrandIdEnum("tokopedia"))
+    if BrandState.is_brand_connected(tokopedia_mcp.brand_id):
+        profile_id = BrandState.get_browser_profile_id(tokopedia_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -267,7 +266,7 @@ async def get_shop_details(
         ],
     })
     result = await parse_html(
-        brand_id=BrandIdEnum("tokopedia"), html_content=html, schema=spec_schema
+        brand_id=tokopedia_mcp.brand_id, html_content=html, schema=spec_schema
     )
     return {"shop_detail": result.content}
 
@@ -278,7 +277,7 @@ async def get_purchase_history(
 ) -> dict[str, Any]:
     """Get purchase history of a tokopedia."""
 
-    browser_session = await start_browser_session(brand_id=BrandIdEnum("tokopedia"))
+    browser_session = await start_browser_session(brand_id=tokopedia_mcp.brand_id)
     page = await browser_session.page()
     await page.goto(f"https://www.tokopedia.com/order-list?page={page_number}")
     raw_data = await handle_graphql_response(
@@ -324,7 +323,7 @@ async def get_purchase_history(
 async def get_cart() -> dict[str, Any]:
     """Get cart of a tokopedia."""
 
-    browser_session = await start_browser_session(brand_id=BrandIdEnum("tokopedia"))
+    browser_session = await start_browser_session(brand_id=tokopedia_mcp.brand_id)
     page = await browser_session.page()
     await page.goto(f"https://www.tokopedia.com/cart")
     raw_data = await handle_graphql_response(
@@ -373,7 +372,7 @@ async def get_wishlist(
 ) -> dict[str, Any]:
     """Get purchase history of a tokopedia."""
 
-    browser_session = await start_browser_session(brand_id=BrandIdEnum("tokopedia"))
+    browser_session = await start_browser_session(brand_id=tokopedia_mcp.brand_id)
     page = await browser_session.page()
     await page.goto(f"https://www.tokopedia.com/wishlist/all?page={page_number}")
     raw_data = await handle_graphql_response(
@@ -408,7 +407,7 @@ async def add_to_cart(
     """Add a product to cart of a tokopedia."""
 
     logger.info(f"Adding product to cart: {product_url}")
-    profile_id = BrandState.get_browser_profile_id(BrandIdEnum("tokopedia"))
+    profile_id = BrandState.get_browser_profile_id(tokopedia_mcp.brand_id)
     profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
     product_urls = [product_url] if isinstance(product_url, str) else product_url
@@ -458,7 +457,7 @@ async def action_product_in_cart(
     Action can be toggle_checklist or remove_from_cart."""
 
     logger.info(f"Actioning product in cart: {product_id} with action: {action}")
-    profile_id = BrandState.get_browser_profile_id(BrandIdEnum("tokopedia"))
+    profile_id = BrandState.get_browser_profile_id(tokopedia_mcp.brand_id)
     profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
     product_ids = [product_id] if isinstance(product_id, str) else product_id
