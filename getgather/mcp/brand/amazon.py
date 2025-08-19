@@ -21,7 +21,11 @@ async def get_purchase_history() -> dict[str, Any]:
 async def search_product(
     keyword: str,
 ) -> dict[str, Any]:
-    """Search product on amazon."""
+    """Search product on amazon.
+
+    Args:
+        keyword: Search keyword
+    """
     if BrandState.is_brand_connected(amazon_mcp.brand_id):
         profile_id = BrandState.get_browser_profile_id(amazon_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
@@ -38,7 +42,7 @@ async def search_product(
             "format": "html",
             "output": "search_results.json",
             "row_selector": "div[data-component-type='s-search-result']",
-            "extraction_method": "evaluator",
+            "extraction_method": "server_side",
             "columns": [
                 {"name": "product_name", "selector": "h2 span"},
                 {
