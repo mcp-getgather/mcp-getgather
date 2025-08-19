@@ -32,8 +32,8 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
 
     # Proxy Settings
-    HTTP_PROXY: str = ""
-    HTTP_PROXY_PASSWORD: str = ""
+    BROWSER_HTTP_PROXY: str = ""
+    BROWSER_HTTP_PROXY_PASSWORD: str = ""
 
     @property
     def brand_spec_dir(self) -> Path:

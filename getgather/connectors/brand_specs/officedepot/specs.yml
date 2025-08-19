@@ -3,7 +3,7 @@ name: Office Depot
 auth:
   fields:
     - name: dismiss_cookies
-      type: click
+      type: autoclick
       prompt: Accept cookies
       selector: '#onetrust-accept-btn-handler'
       expect_nav: false
@@ -54,6 +54,7 @@ auth:
       type: autoclick
       prompt: Send Code
       selector: button:has-text("Send Code")
+      delay_ms: 8000
     - name: validation-code
       type: text
       prompt: Validation Code

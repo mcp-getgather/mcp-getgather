@@ -83,7 +83,7 @@ async def create_hosted_link(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating hosted link: {e}", exc_info=True)
+        logger.error("Error creating hosted link", extra={"error": str(e)}, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error while creating hosted link",
@@ -106,7 +106,6 @@ async def get_hosted_link(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Hosted link '{link_id}' not found",
             )
-
         logger.info(f"[get_hosted_link] Found link data:")
         logger.info(f"  - brand_id: {link_data.brand_id}")
         logger.info(f"  - profile_id: {link_data.profile_id}")
@@ -131,7 +130,7 @@ async def get_hosted_link(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error retrieving hosted link: {e}", exc_info=True)
+        logger.error("Error retrieving hosted link", extra={"error": str(e)}, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error while retrieving hosted link",
@@ -198,7 +197,7 @@ async def update_hosted_link(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating hosted link status: {e}", exc_info=True)
+        logger.error("Error updating hosted link status", extra={"error": str(e)}, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error while updating hosted link status",
