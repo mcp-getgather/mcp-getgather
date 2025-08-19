@@ -8,7 +8,7 @@ import pytest
 from pytest import MonkeyPatch
 
 from getgather.activity import ActivityManager, active_activity_ctx, activity
-from getgather.database import DatabaseManager
+from getgather.db import DatabaseManager
 
 
 class TestActivityManager:

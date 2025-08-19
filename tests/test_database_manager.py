@@ -4,7 +4,7 @@ from typing import Generator
 
 import pytest
 
-from getgather.database import DatabaseManager, db_manager
+from getgather.db import DatabaseManager, db_manager
 
 
 class TestDatabaseManager:

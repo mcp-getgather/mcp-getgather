@@ -6,7 +6,7 @@ from typing import AsyncGenerator
 
 from pydantic import BaseModel, Field
 
-from getgather.database import db_manager
+from getgather.db import db_manager
 
 
 class Activity(BaseModel):
