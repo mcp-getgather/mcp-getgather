@@ -3,7 +3,7 @@ import base64
 import json
 import sys
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from patchright.async_api import Locator, Page, async_playwright
 from pydantic import BaseModel
@@ -183,6 +183,11 @@ async def _extract_data_with_evaluate(
     Returns:
         List of dictionaries containing extracted data
     """
+    # First validate that the columns have correct schema
+    for col in schema.columns:
+        if not getattr(col, "name", None) or not getattr(col, "selector", None):
+            raise ValueError(f"Invalid column definition: {col}")
+
     # Prepare column data for JavaScript
     columns_for_js: list[dict[str, Any]] = []
     for col in schema.columns:
@@ -199,6 +204,9 @@ async def _extract_data_with_evaluate(
         """
         ({rowSelector, columns}) => {
             const rows = document.querySelectorAll(rowSelector);
+            if (!rows.length) {
+                return [];
+            }
             const results = [];
 
             for (const row of rows) {
@@ -245,22 +253,18 @@ async def _extract_data_from_page(
     brand_id: BrandIdEnum,
     schema: Schema,
     page: Page,
-    *,
-    force_method: Literal["locator", "evaluate", None] = None,
 ) -> list[dict[str, str | list[str]]]:
     """
     Router function that chooses the appropriate extraction method.
 
     Decides between locator-based and evaluate-based extraction based on:
-    1. force_method parameter (if specified)
-    2. schema.use_evaluate_extraction flag
-    3. Presence of custom functions (forces locator method)
+    1. schema.extraction_method setting
+    2. Presence of custom functions (forces locator method)
 
     Args:
         brand_id: Brand identifier for custom parsing functions
         schema: Schema definition with CSS selectors
         page: Live Playwright page object
-        force_method: Force a specific extraction method
 
     Returns:
         List of dictionaries containing extracted data
@@ -268,15 +272,9 @@ async def _extract_data_from_page(
     # Check if we need to use locator method due to custom functions
     has_custom_functions = any(col.function is not None for col in schema.columns)
 
-    # Determine which method to use (default to locator)
-    use_evaluate = False
-
-    if not has_custom_functions:
-        if force_method == "evaluate":
-            use_evaluate = True
-        elif force_method != "locator":
-            # Use schema configuration
-            use_evaluate = getattr(schema, "use_evaluate_extraction", False)
+    # Determine which method to use
+    # Custom functions force locator method, otherwise use schema setting
+    use_evaluate = not has_custom_functions and schema.extraction_method == "evaluate"
 
     # Execute the appropriate extraction method
     if use_evaluate:
