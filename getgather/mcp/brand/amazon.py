@@ -108,7 +108,7 @@ async def search_purchase_history(
     keyword: str,
 ) -> dict[str, Any]:
     """Search purchase history of a amazon."""
-    browser_session = await start_browser_session(brand_id=BrandIdEnum("amazon"))
+    browser_session = get_mcp_browser_session()
     page = await browser_session.page()
     await page.goto(
         f"https://www.amazon.com/your-orders/search/ref=ppx_yo2ov_dt_b_search?opt=ab&search={keyword}"
@@ -140,5 +140,5 @@ async def search_purchase_history(
         ],
     })
 
-    result = await parse_html(brand_id=BrandIdEnum("amazon"), html_content=html, schema=spec_schema)
+    result = await parse_html(brand_id=amazon_mcp.brand_id, html_content=html, schema=spec_schema)
     return {"order_history": result.content}
