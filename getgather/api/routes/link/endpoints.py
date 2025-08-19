@@ -21,9 +21,26 @@ async def create_hosted_link(
         HostedLinkTokenRequest, "Request data for creating a hosted link."
     ],
 ) -> HostedLinkTokenResponse:
-    logger.info(f"Creating hosted link for brand: {hosted_link_request.brand_id}")
+    relevant_headers = {
+        "host": request.headers.get("host"),
+        "x-forwarded-host": request.headers.get("x-forwarded-host"),
+        "x-forwarded-proto": request.headers.get("x-forwarded-proto"),
+        "x-forwarded-port": request.headers.get("x-forwarded-port"),
+        "user-agent": request.headers.get("user-agent"),
+    }
+
+    logger.info(
+        "[create_hosted_link] Creating hosted link",
+        extra={
+            "brand_id": hosted_link_request.brand_id,
+            "request_url": str(request.url),
+            "headers": relevant_headers,
+        },
+    )
+
     try:
         redirect_url = hosted_link_request.redirect_url or ""
+
         link_data = HostedLinkManager.create_link(
             brand_id=BrandIdEnum(hosted_link_request.brand_id),
             redirect_url=redirect_url,
@@ -33,18 +50,44 @@ async def create_hosted_link(
         link_id = link_data["link_id"]
         expiration = link_data["expiration"]
         profile_id = link_data["profile_id"]
-        base_url = str(request.base_url).rstrip("/")
+
+        # URL construction
+        original_scheme = request.url.scheme
+        original_host = request.headers.get("host")
+        forwarded_proto = request.headers.get("x-forwarded-proto")
+        forwarded_host = request.headers.get("x-forwarded-host")
+
+        scheme = forwarded_proto or original_scheme
+        host = forwarded_host or original_host
+        base_url = f"{scheme}://{host}".rstrip("/")
         hosted_link_url = f"{base_url}/link/{link_id}"
-        return HostedLinkTokenResponse(
+        response = HostedLinkTokenResponse(
             link_id=link_id,
             profile_id=profile_id,
             hosted_link_url=hosted_link_url,
             expiration=expiration,
         )
+
+        logger.info(
+            "[create_hosted_link] Successfully created hosted link",
+            extra={
+                "link_id": link_id,
+                "profile_id": profile_id,
+                "redirect_url": redirect_url,
+                "hosted_link_url": hosted_link_url,
+                "original_scheme": original_scheme,
+                "original_host": original_host,
+                "forwarded_proto": forwarded_proto,
+                "forwarded_host": forwarded_host,
+                "final_scheme": scheme,
+                "final_host": host,
+            },
+        )
+        return response
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating hosted link: {e}", exc_info=True)
+        logger.error("Error creating hosted link", extra={"error": str(e)}, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error while creating hosted link",
@@ -53,18 +96,24 @@ async def create_hosted_link(
 
 @router.get("/status/{link_id}", response_model=TokenLookupResponse)
 async def get_hosted_link(
+    request: Request,
     link_id: str,
 ) -> TokenLookupResponse:
-    logger.info(f"Retrieving hosted link: {link_id}")
+    logger.info(
+        "[get_hosted_link] Retrieving hosted link",
+        extra={"link_id": link_id, "request_url": str(request.url)},
+    )
+
     try:
         link_data = HostedLinkManager.get_link_data(link_id)
         if not link_data:
+            logger.warning("[get_hosted_link] Link not found", extra={"link_id": link_id})
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Hosted link '{link_id}' not found",
             )
 
-        return TokenLookupResponse(
+        response = TokenLookupResponse(
             link_id=link_id,
             profile_id=link_data.profile_id,
             brand_id=str(link_data.brand_id),
@@ -76,10 +125,23 @@ async def get_hosted_link(
             extract_result=link_data.extract_result,
             message=link_data.status_message or "Auth in progress...",
         )
+
+        logger.info(
+            "[get_hosted_link] Successfully retrieved link data",
+            extra={
+                "link_id": link_id,
+                "brand_id": link_data.brand_id,
+                "profile_id": link_data.profile_id,
+                "status": link_data.status,
+                "redirect_url": link_data.redirect_url,
+                "status_message": link_data.status_message,
+            },
+        )
+        return response
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error retrieving hosted link: {e}", exc_info=True)
+        logger.error("Error retrieving hosted link", extra={"error": str(e)}, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error while retrieving hosted link",
@@ -88,13 +150,23 @@ async def get_hosted_link(
 
 @router.patch("/status/{link_id}")
 async def update_hosted_link(
+    request: Request,
     link_id: str,
     update_data: LinkDataUpdate,
 ) -> TokenLookupResponse:
-    logger.info(f"Updating hosted link status: {link_id}")
+    logger.info(
+        "[update_hosted_link] Updating hosted link status",
+        extra={
+            "link_id": link_id,
+            "request_url": str(request.url),
+            "update_data": update_data.model_dump(),
+        },
+    )
+
     try:
         link_data = HostedLinkManager.get_link_data(link_id)
         if not link_data:
+            logger.warning("[update_hosted_link] Link not found", extra={"link_id": link_id})
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Hosted link '{link_id}' not found",
@@ -103,18 +175,30 @@ async def update_hosted_link(
         updated_link = HostedLinkManager.update_link(link_id, update_data)
         if not updated_link:
             if HostedLinkManager.is_expired(link_data):
+                logger.warning("[update_hosted_link] Link expired", extra={"link_id": link_id})
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Hosted link '{link_id}' has expired",
                 )
             else:
+                logger.warning(
+                    "[update_hosted_link] Link not found for update", extra={"link_id": link_id}
+                )
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Hosted link '{link_id}' not found for update",
                 )
 
-        logger.info(f"Updated hosted link {link_id} with status: {updated_link.status}")
-        return TokenLookupResponse(
+        logger.info(
+            "[update_hosted_link] Successfully updated hosted link",
+            extra={
+                "link_id": link_id,
+                "new_status": updated_link.status,
+                "brand_id": updated_link.brand_id,
+                "profile_id": updated_link.profile_id,
+            },
+        )
+        response = TokenLookupResponse(
             link_id=link_id,
             profile_id=updated_link.profile_id,
             brand_id=str(updated_link.brand_id),
@@ -126,10 +210,14 @@ async def update_hosted_link(
             extract_result=updated_link.extract_result,
             message="Link status updated successfully",
         )
+        logger.info(
+            f"[update_hosted_link] Returning updated response with status: {response.status}"
+        )
+        return response
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating hosted link status: {e}", exc_info=True)
+        logger.error("Error updating hosted link status", extra={"error": str(e)}, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error while updating hosted link status",
