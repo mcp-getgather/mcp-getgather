@@ -119,7 +119,10 @@ async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict
             )
 
             response = await client.get(url)
-            logger.info("[poll_status_hosted_link] Response status", extra={"status_code": response.status_code, "url": response.request.url})
+            logger.info(
+                "[poll_status_hosted_link] Response status",
+                extra={"status_code": response.status_code, "url": response.request.url},
+            )
             response_json = response.json()
 
             logger.info(
