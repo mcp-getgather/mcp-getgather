@@ -5,14 +5,14 @@ from getgather.activity import Activity, activity_manager
 router = APIRouter(prefix="/api/activities", tags=["activities"])
 
 
-@router.get("/", response_model=list[Activity])
-async def get_activities():
+@router.get("/")
+async def get_activities() -> list[Activity]:
     """Get all activities ordered by start_time descending."""
     return await activity_manager.get_all_activities()
 
 
-@router.get("/{activity_id}", response_model=Activity)
-async def get_activity(activity_id: str):
+@router.get("/{activity_id}")
+async def get_activity(activity_id: str) -> Activity:
     """Get a specific activity by ID."""
     activity = await activity_manager.get_activity(activity_id)
 
