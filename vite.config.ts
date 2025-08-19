@@ -12,10 +12,15 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "^/(brands|link|parse|start|auth|replay|static|live)": {
-        target: "http://127.0.0.1:8000/",
-        changeOrigin: true,
-      },
+      "^/(brands|link/create|link/status|parse|start|auth|replay|static|live)":
+        {
+          target: "http://127.0.0.1:8000/",
+          changeOrigin: true,
+          headers: {
+            "X-Forwarded-Host": "localhost:5173",
+            "X-Forwarded-Proto": "http",
+          },
+        },
     },
   },
   resolve: {

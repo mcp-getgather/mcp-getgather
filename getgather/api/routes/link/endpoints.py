@@ -33,7 +33,14 @@ async def create_hosted_link(
         link_id = link_data["link_id"]
         expiration = link_data["expiration"]
         profile_id = link_data["profile_id"]
-        base_url = str(request.base_url).rstrip("/")
+
+        forwarded_host = request.headers.get("x-forwarded-host")
+        forwarded_proto = request.headers.get("x-forwarded-proto", "http")
+        if forwarded_host:
+            base_url = str(f"{forwarded_proto}://{forwarded_host}").rstrip("/")
+        else:
+            base_url = str(request.base_url).rstrip("/")
+
         hosted_link_url = f"{base_url}/link/{link_id}"
         return HostedLinkTokenResponse(
             link_id=link_id,
