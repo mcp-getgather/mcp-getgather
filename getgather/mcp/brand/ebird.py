@@ -7,6 +7,7 @@ from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract, get_mcp_browser_session, with_brand_browser_session
 from getgather.parse import parse_html
+from patchright.async_api import Page
 
 ebird_mcp = BrandMCPBase(brand_id="ebird", name="Ebird MCP")
 
@@ -86,9 +87,19 @@ async def explore_species(
         "species_statistic_html": species_statistic_html,
     }
 
+
 @ebird_mcp.tool(tags={"private"})
 @with_brand_browser_session
-async def submit_checklist(location: str, birds: list[str]):
+async def submit_checklist(
+    location: str,
+    birds: list[str],
+    month: str,
+    day: str,
+    start_time: str,
+    am_pm: str,
+    duration_hours: str = "1",
+    distance: str = "1",
+):
     """Submit checklist to ebird."""
     session = get_mcp_browser_session()
     page = await session.page()
@@ -96,32 +107,62 @@ async def submit_checklist(location: str, birds: list[str]):
     await page.wait_for_selector("select#myLocSel")
     await page.wait_for_timeout(1000)
 
-    print(f"🔍 ⛔️ Selecting location: {location}")
-    await page.select_option("#myLocSel", location)
-    await page.wait_for_timeout(1000)
+    await select_location(page, location)
     await page.click("input[type=submit]")
+    await select_date(page, month, day)
+    await select_trip_details(page, start_time, duration_hours, distance, am_pm)
 
-    print(f"🔍 ⛔️ Selecting month")
-    await page.wait_for_selector("select#p-month")
-    await page.select_option("#p-month", "8")
-    await page.select_option("#p-day", "17")
-
-    print(f"🔍 ⛔️ Selecting traveling")
-    await page.click("label:has-text('Traveling')")
-    await page.fill("input#p-shared-hr", "6")
-    await page.select_option("#p-shared-ampm", "PM")
-    await page.fill("input#p-dur-hrs", "1")
-    await page.fill("input#p-dist", "1")
-    await page.fill("input#p-party-size", "1")
-
-    print(f"🔍 ⛔️ Submitting checklist")
+    print(f"🧭 Going to checklist")
     await page.click("button[type=submit]")
     await page.wait_for_selector("input[name=jumpToSpp]")
 
-    print(f"🔍 ⛔️ Submitting checklist")
-    inner_element = page.locator("li:has(span:text('House Finch'))")
-    input_field = inner_element.locator("input.sc")
-    await input_field.fill(str(1))
-    
+    print(f"🦆 Adding birds")
+    await add_birds_to_checklist(page, birds)
+
+    print(f"✅ Submitting checklist")
     await page.click("input#all-spp-n")
     await page.click("button[type=submit]")
+
+
+async def select_location(page: Page, location: str):
+    """Select location for checklist."""
+    print(f"🌎 Selecting location: {location}")
+    await page.select_option("#myLocSel", location)
+    await page.wait_for_timeout(1000)
+
+
+async def select_date(page: Page, month: str, day: str):
+    """Select date for checklist."""
+    print(f"📆 Selecting date: {month}/{day}")
+    await page.wait_for_selector("select#p-month")
+    await page.select_option("#p-month", month)
+    await page.select_option("#p-day", day)
+
+
+async def select_trip_details(page: Page, start_time: str, duration_hours: str, distance: str, am_pm: str):
+    """Select trip details including time, duration, and distance."""
+    # Parse hour and minute from start_time (format: "5:23")
+    time_parts = start_time.split(":")
+    hour = time_parts[0]
+    minute = time_parts[1] if len(time_parts) > 1 else "00"
+    
+    print(f"🚶🏻 Selecting trip details: {hour}:{minute}, {duration_hours}h, {distance}mi")
+    await page.click("label:has-text('Traveling')")
+    await page.fill("input#p-shared-hr", hour)
+    await page.fill("input#p-shared-min", minute)
+    await page.select_option("#p-shared-ampm", am_pm.upper())
+    await page.fill("input#p-dur-hrs", duration_hours)
+    await page.fill("input#p-dist", distance)
+    await page.fill("input#p-party-size", "1")
+
+
+async def add_birds_to_checklist(page: Page, birds: list[str]):
+    """Add birds to checklist with case-insensitive partial matching."""
+    for bird in birds:
+        inner_element = page.locator("li").filter(has_text=bird).first
+        if await inner_element.count() == 0:
+            print(f"⚠️  Could not find bird: {bird}")
+            continue
+
+        input_field = inner_element.locator("input.sc")
+        await input_field.fill(str(1))
