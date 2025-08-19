@@ -1,6 +1,6 @@
 # Get Gather
 
-GetGather is a containerized service that allows MCP clients to interact with your data and act on your behalf. 
+GetGather is a containerized service that allows MCP clients to interact with your data and act on your behalf.
 
 ## Quickstart
 
