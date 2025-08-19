@@ -177,6 +177,7 @@ def start(brand: str):
     return HTMLResponse(content=rendered)
 
 
+@app.get("/")
 @app.get("/activities")
 def activities():
     file_path = path.join(path.dirname(__file__), "frontend", "index.html")
