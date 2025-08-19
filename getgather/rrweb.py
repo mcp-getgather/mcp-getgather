@@ -1,11 +1,12 @@
 import json
 from pathlib import Path
-from typing import Any, Awaitable, Callable
+from typing import Any
 from urllib.parse import urlparse
 
 from patchright.async_api import Page
 from pydantic import BaseModel
 
+from getgather.activity import active_activity_ctx
 from getgather.config import settings
 from getgather.logs import logger
 
@@ -32,6 +33,18 @@ class RRWebInjector:
         self.script_url = settings.RRWEB_SCRIPT_URL
         self.mask_all_inputs = settings.RRWEB_MASK_ALL_INPUTS
         self.enabled = settings.ENABLE_RRWEB_RECORDING
+
+    async def save_event(self, event: dict[str, Any]) -> None:
+        """Save an rrweb event from browser."""
+        # Get active activity from context
+        activity = active_activity_ctx.get()
+        if activity is not None:
+            await rrweb_manager.add_event(activity.id, event)
+            logger.debug(
+                f"Saved RRWeb event for activity {activity.id}: {event.get('type', 'unknown')}"
+            )
+        else:
+            logger.warning("No active activity found when saving RRWeb event")
 
     def _generate_injection_script(self) -> str:
         """Generate the JavaScript injection script."""
@@ -77,16 +90,14 @@ class RRWebInjector:
 
         return True
 
-    async def inject_into_page(
-        self, page: Page, save_event_callback: Callable[[dict[str, Any]], Awaitable[None]]
-    ) -> bool:
+    async def inject_into_page(self, page: Page) -> bool:
         """Inject RRWeb recording into a page if conditions are met."""
         try:
             if not self.should_inject_for_page(page):
                 return False
 
             # Expose save_event function to browser
-            await page.expose_function("saveEvent", save_event_callback)  # type: ignore[reportUnknownMemberType]
+            await page.expose_function("saveEvent", self.save_event)  # type: ignore[reportUnknownMemberType]
 
             # Inject RRWeb recording script
             await page.add_init_script(self._generate_injection_script())

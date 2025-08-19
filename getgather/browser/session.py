@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from fastapi import HTTPException
 from patchright.async_api import BrowserContext, Page, Playwright, async_playwright
 
-from getgather.activity import active_activity_ctx
 from getgather.browser.profile import BrowserProfile
 from getgather.logs import logger
-from getgather.rrweb import rrweb_injector, rrweb_manager
+from getgather.rrweb import rrweb_injector
 
 
 class BrowserStartupError(HTTPException):
@@ -50,18 +49,6 @@ class BrowserSession:
             await self.context.new_page()
         return self.context.pages[-1]
 
-    async def save_event(self, event: dict[str, Any]) -> None:
-        """Save an rrweb event from browser."""
-        # Get active activity from context
-        activity = active_activity_ctx.get()
-        if activity is not None:
-            await rrweb_manager.add_event(activity.id, event)
-            logger.debug(
-                f"Saved RRWeb event for activity {activity.id}: {event.get('type', 'unknown')}"
-            )
-        else:
-            logger.warning("No active activity found when saving RRWeb event")
-
     async def start(self):
         try:
             if self.profile.id in BrowserSession._sessions:
@@ -82,7 +69,7 @@ class BrowserSession:
 
             # Set up page navigation handler for conditional RRWeb injection
             async def handle_page(page: Page):
-                await rrweb_injector.inject_into_page(page, self.save_event)
+                await rrweb_injector.inject_into_page(page)
 
             self._context.on("page", handle_page)
         except Exception as e:
