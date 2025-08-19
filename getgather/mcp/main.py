@@ -144,10 +144,8 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
         logger.info(f"Mounting {brand_mcp.name} to MCP bundle {bundle_name}")
         mcp.mount(server=brand_mcp, prefix=brand_mcp.brand_id)
 
-    # Handle special case for some bundles
-    if bundle_name in ["all", "books", "shopping"]:
-        from getgather.mcp.calendar_utils import calendar_mcp
+    from getgather.mcp.calendar_utils import calendar_mcp
 
-        mcp.mount(server=calendar_mcp, prefix="calendar")
+    mcp.mount(server=calendar_mcp, prefix="calendar")
 
     return mcp.http_app(path="/")
