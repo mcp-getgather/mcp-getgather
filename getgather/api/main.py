@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
     await startup()
     async with AsyncExitStack() as stack:
         for mcp_app in mcp_apps.values():
-            await stack.enter_async_context(mcp_app.lifespan(app)) # type: ignore
+            await stack.enter_async_context(mcp_app.lifespan(app))  # type: ignore
         yield
 
 
@@ -167,16 +167,8 @@ async def vnc_websocket_proxy(websocket: WebSocket):
             pass
 
 
-@app.get("/start/{brand}", response_class=HTMLResponse)
-def start(brand: str):
-    file_path = path.join(path.dirname(__file__), "frontend", "start.html")
-    with open(file_path) as f:
-        template = Template(f.read())
-    rendered = template.render(brand=brand)
-    return HTMLResponse(content=rendered)
-
-
-@app.get("/activities")
+@app.get("/", include_in_schema=False)
+@app.get("/activities", include_in_schema=False)
 def activities():
     file_path = path.join(path.dirname(__file__), "frontend", "index.html")
     with open(file_path) as f:
