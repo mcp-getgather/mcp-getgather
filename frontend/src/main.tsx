@@ -9,6 +9,7 @@ import Settings from "./pages/Settings";
 import "./index.css";
 import Home from "./pages/Home";
 import Link from "./pages/Link";
+import Start from "./pages/Start";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -16,6 +17,7 @@ createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/link/:linkId" element={<Link />} />
+        <Route path="/start/:brandId" element={<Start />} />
         <Route path="/" element={<Layout />}>
           <Route path="welcome" element={<GetStarted />} />
           <Route path="live-view" element={<LiveView />} />
