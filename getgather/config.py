@@ -87,11 +87,11 @@ class Settings(BaseSettings):
         return data_dir / "getgather.db"
 
     @property
-    def activities_json_path(self) -> Path:
-        """Path to activities JSON file in the main data directory."""
+    def db_json_path(self) -> Path:
+        """Path to general database JSON file in the main data directory."""
         data_dir = PROJECT_DIR / "data"
         data_dir.mkdir(parents=True, exist_ok=True)
-        return data_dir / "activities.json"
+        return data_dir / "db.json"
 
     @property
     def recordings_dir(self) -> Path:

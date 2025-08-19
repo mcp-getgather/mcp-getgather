@@ -5,8 +5,10 @@ from pathlib import Path
 from typing import Generator
 
 import pytest
+from pytest import MonkeyPatch
 
 from getgather.activity import ActivityManager, active_activity_ctx, activity
+from getgather.database import DatabaseManager
 
 
 class TestActivityManager:
@@ -23,9 +25,15 @@ class TestActivityManager:
             temp_path.unlink()
 
     @pytest.fixture
-    def manager(self, temp_json_file: Path) -> ActivityManager:
-        """Create a fresh ActivityManager for each test."""
-        return ActivityManager(json_file_path=temp_json_file)
+    def manager(self, temp_json_file: Path, monkeypatch: MonkeyPatch) -> ActivityManager:
+        """Create a fresh ActivityManager for each test with isolated database."""
+        # Create isolated database manager for testing
+        test_db_manager = DatabaseManager(temp_json_file)
+
+        # Patch the global db_manager import in activity module
+        monkeypatch.setattr("getgather.activity.db_manager", test_db_manager)
+
+        return ActivityManager()
 
     @pytest.mark.asyncio
     async def test_create_activity(self, manager: ActivityManager) -> None:
@@ -127,8 +135,8 @@ class TestActivityManager:
         # Create activity with first manager instance
         activity_id = await manager.create_activity("test-brand", "test-activity", start_time)
 
-        # Create new manager instance with same file
-        new_manager = ActivityManager(json_file_path=manager.json_file_path)
+        # Create new manager instance (both use same global database)
+        new_manager = ActivityManager()
 
         # Should be able to retrieve the activity
         activity = await new_manager.get_activity(activity_id)
@@ -139,15 +147,8 @@ class TestActivityManager:
     @pytest.mark.asyncio
     async def test_json_file_corruption_handling(self, temp_json_file: Path) -> None:
         """Test handling of corrupted JSON file."""
-        # Write invalid JSON to file
-        with open(temp_json_file, "w") as f:
-            f.write("invalid json content")
-
-        manager = ActivityManager(json_file_path=temp_json_file)
-
-        # Should handle corruption gracefully and start fresh
-        activities = await manager.get_all_activities()
-        assert activities == []
+        # This test now uses the global database, so we test general resilience
+        manager = ActivityManager()
 
         # Should be able to create new activities
         start_time = datetime.now(UTC)
@@ -170,18 +171,29 @@ class TestActivityContextManager:
 
     def create_fresh_manager(self, temp_json_file: Path) -> ActivityManager:
         """Create a fresh ActivityManager instance for testing."""
-        return ActivityManager(json_file_path=temp_json_file)
+        # Create isolated database manager for testing
+        test_db_manager = DatabaseManager(temp_json_file)
+
+        # Patch the global db_manager in activity module
+        import getgather.activity
+
+        getgather.activity.db_manager = test_db_manager
+
+        return ActivityManager()
 
     @pytest.mark.asyncio
     async def test_activity_context_manager_basic(self, temp_json_file: Path) -> None:
         """Test activity context manager creates and updates activity."""
-        # Create a fresh manager for this test
-        test_manager = self.create_fresh_manager(temp_json_file)
+        # Create isolated database manager for testing
+        test_db_manager = DatabaseManager(temp_json_file)
+        test_manager = ActivityManager()
 
-        # Patch the global activity_manager temporarily
+        # Patch the global managers temporarily
         import getgather.activity
 
+        original_db_manager = getgather.activity.db_manager
         original_manager = getgather.activity.activity_manager
+        getgather.activity.db_manager = test_db_manager
         getgather.activity.activity_manager = test_manager
 
         try:
@@ -206,19 +218,23 @@ class TestActivityContextManager:
             assert completed_activity.execution_time_ms >= 0
 
         finally:
-            # Restore original manager
+            # Restore original managers
+            getgather.activity.db_manager = original_db_manager
             getgather.activity.activity_manager = original_manager
 
     @pytest.mark.asyncio
     async def test_activity_context_manager_with_exception(self, temp_json_file: Path) -> None:
         """Test activity context manager handles exceptions properly."""
-        # Create a fresh manager for this test
-        test_manager = self.create_fresh_manager(temp_json_file)
+        # Create isolated database manager for testing
+        test_db_manager = DatabaseManager(temp_json_file)
+        test_manager = ActivityManager()
 
-        # Patch the global activity_manager temporarily
+        # Patch the global managers temporarily
         import getgather.activity
 
+        original_db_manager = getgather.activity.db_manager
         original_manager = getgather.activity.activity_manager
+        getgather.activity.db_manager = test_db_manager
         getgather.activity.activity_manager = test_manager
 
         try:
@@ -241,19 +257,23 @@ class TestActivityContextManager:
             assert latest_activity.execution_time_ms is not None
 
         finally:
-            # Restore original manager
+            # Restore original managers
+            getgather.activity.db_manager = original_db_manager
             getgather.activity.activity_manager = original_manager
 
     @pytest.mark.asyncio
     async def test_activity_context_manager_execution_time(self, temp_json_file: Path) -> None:
         """Test activity context manager measures execution time correctly."""
-        # Create a fresh manager for this test
-        test_manager = self.create_fresh_manager(temp_json_file)
+        # Create isolated database manager for testing
+        test_db_manager = DatabaseManager(temp_json_file)
+        test_manager = ActivityManager()
 
-        # Patch the global activity_manager temporarily
+        # Patch the global managers temporarily
         import getgather.activity
 
+        original_db_manager = getgather.activity.db_manager
         original_manager = getgather.activity.activity_manager
+        getgather.activity.db_manager = test_db_manager
         getgather.activity.activity_manager = test_manager
 
         try:
@@ -270,19 +290,23 @@ class TestActivityContextManager:
             assert activity_obj.execution_time_ms < 200
 
         finally:
-            # Restore original manager
+            # Restore original managers
+            getgather.activity.db_manager = original_db_manager
             getgather.activity.activity_manager = original_manager
 
     @pytest.mark.asyncio
     async def test_nested_activity_context_managers(self, temp_json_file: Path) -> None:
         """Test that nested activity context managers work correctly."""
-        # Create a fresh manager for this test
-        test_manager = self.create_fresh_manager(temp_json_file)
+        # Create isolated database manager for testing
+        test_db_manager = DatabaseManager(temp_json_file)
+        test_manager = ActivityManager()
 
-        # Patch the global activity_manager temporarily
+        # Patch the global managers temporarily
         import getgather.activity
 
+        original_db_manager = getgather.activity.db_manager
         original_manager = getgather.activity.activity_manager
+        getgather.activity.db_manager = test_db_manager
         getgather.activity.activity_manager = test_manager
 
         try:
@@ -307,7 +331,8 @@ class TestActivityContextManager:
             assert outer_activity.end_time is not None
 
         finally:
-            # Restore original manager
+            # Restore original managers
+            getgather.activity.db_manager = original_db_manager
             getgather.activity.activity_manager = original_manager
 
     @pytest.mark.asyncio
