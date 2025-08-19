@@ -111,6 +111,6 @@ EXPOSE 8000
 # port for VNC server
 EXPOSE 5900
 # port for MCP inspector
-EXPOSE 6274
+EXPOSE 6274 6277
 
 ENTRYPOINT ["/app/entrypoint.sh"]
