@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from patchright.async_api import Locator, async_playwright
+from patchright.async_api import Locator, Page, async_playwright
 from pydantic import BaseModel
 from rich import print
 
@@ -117,64 +117,97 @@ async def _get_value(brand_id: BrandIdEnum, column: Column, element: Locator) ->
         return await element.inner_text()
 
 
+async def _extract_data_from_page(
+    brand_id: BrandIdEnum,
+    schema: Schema,
+    page: Page,
+) -> list[dict[str, str | list[str]]]:
+    """Extract data from a page using schema selectors."""
+    data: list[dict[str, str | list[str]]] = []
+
+    lc_rows = page.locator(schema.row_selector)
+    for lc in await lc_rows.all():
+        row: dict[str, str | list[str]] = {}
+        for column in schema.columns:
+            elements = lc.locator(column.selector)
+            count = await elements.count()
+            if count == 0:
+                row[column.name] = [] if column.multiple else ""
+                continue
+            if column.multiple:
+                values = await asyncio.gather(*[
+                    _get_value(brand_id, column, element) for element in await elements.all()
+                ])
+                row[column.name] = [v for v in values if v is not None]
+            else:
+                value = await _get_value(brand_id, column, elements.first)
+                row[column.name] = value if value is not None else ""
+
+        data.append(row)
+
+    return data
+
+
 async def parse_html(
     brand_id: BrandIdEnum,
     schema: Schema,
     *,
     bundle_dir: Path | None = None,
     html_content: str | None = None,
+    page: Page | None = None,
 ) -> BundleOutput:
     """
-    Use headless Playwright to parse HTML content into a tabular format stored as
-    JSON file.
-    Assuming schema.row_selector is a valid CSS selector to identify the individual rows,
-    and schema.columns is a list of CSS selectors to identify the individual
-    columns within a row.
+    Parse HTML content using CSS selectors into a tabular format.
+
+    This function supports two modes:
+    1. Headless browser mode: Creates a new Playwright browser instance to parse
+       HTML from files or content strings, optionally saving results to JSON
+    2. Live page mode: Uses an existing live browser page for parsing without
+       creating a new browser instance (more efficient for real-time data extraction)
+
+    Args:
+        brand_id: Brand identifier for custom parsing functions
+        schema: Schema definition with CSS selectors for data extraction
+        bundle_dir: Directory containing HTML files to parse (headless mode)
+        html_content: HTML content string to parse (headless mode)
+        page: Live Playwright page object to parse from (live mode)
+
+    Returns:
+        BundleOutput containing parsed data and metadata
+
+    Note: When using headless mode, exactly one of bundle_dir or html_content must be provided.
+          When using live mode, only the page parameter is needed.
     """
     logger.info(
-        f"Parsing HTML content: {html_content[:200] if html_content else 'None'}",
+        f"Parsing HTML content: {html_content[:200] if html_content else 'None'} with page: {page is not None}",
         extra={"schema": schema},
     )
-    if not (bundle_dir is None) ^ (html_content is None):
-        raise ValueError("Exactly one of bundle_dir or html_content must be provided")
 
-    data: list[dict[str, str | list[str]]] = []
-    async with async_playwright() as pw:
-        browser = await pw.chromium.launch()
-        context = await browser.new_context()
-        context.set_default_timeout(TIMEOUT)
-        context.set_default_navigation_timeout(TIMEOUT)
-        page = await context.new_page()
+    # If page is provided, use it directly (live page parsing)
+    if page is not None:
+        data = await _extract_data_from_page(brand_id, schema, page)
+    else:
+        # Original headless browser logic
+        if not (bundle_dir is None) ^ (html_content is None):
+            raise ValueError("Exactly one of bundle_dir or html_content must be provided")
 
-        if html_content:
-            await page.set_content(html_content)
-        else:
-            assert bundle_dir is not None
-            input_path = bundle_dir / schema.bundle
-            logger.info(f"Parsing {input_path} ...")
-            await page.goto(Path(input_path).absolute().as_uri())
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch()
+            context = await browser.new_context()
+            context.set_default_timeout(TIMEOUT)
+            context.set_default_navigation_timeout(TIMEOUT)
+            page = await context.new_page()
 
-        lc_rows = page.locator(schema.row_selector)
-        for lc in await lc_rows.all():
-            row: dict[str, str | list[str]] = {}
-            for column in schema.columns:
-                elements = lc.locator(column.selector)
-                count = await elements.count()
-                if count == 0:
-                    row[column.name] = [] if column.multiple else ""
-                    continue
-                if column.multiple:
-                    values = await asyncio.gather(*[
-                        _get_value(brand_id, column, element) for element in await elements.all()
-                    ])
-                    row[column.name] = [v for v in values if v is not None]
-                else:
-                    value = await _get_value(brand_id, column, elements.first)
-                    row[column.name] = value if value is not None else ""
+            if html_content:
+                await page.set_content(html_content)
+            else:
+                assert bundle_dir is not None
+                input_path = bundle_dir / schema.bundle
+                logger.info(f"Parsing {input_path} ...")
+                await page.goto(Path(input_path).absolute().as_uri())
 
-            data.append(row)
-
-        await browser.close()
+            data = await _extract_data_from_page(brand_id, schema, page)
+            await browser.close()
 
     if bundle_dir:
         output_path = bundle_dir / schema.output
