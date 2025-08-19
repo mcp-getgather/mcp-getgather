@@ -9,7 +9,7 @@ from patchright.async_api import BrowserContext, Page, Playwright, async_playwri
 from getgather.activity import active_activity_ctx
 from getgather.browser.profile import BrowserProfile
 from getgather.logs import logger
-from getgather.rrweb import rrweb_manager
+from getgather.rrweb import rrweb_injector, rrweb_manager
 
 
 class BrowserStartupError(HTTPException):
@@ -56,7 +56,9 @@ class BrowserSession:
         activity = active_activity_ctx.get()
         if activity is not None:
             await rrweb_manager.add_event(activity.id, event)
-            logger.debug(f"Saved RRWeb event for activity {activity.id}: {event.get('type', 'unknown')}")
+            logger.debug(
+                f"Saved RRWeb event for activity {activity.id}: {event.get('type', 'unknown')}"
+            )
         else:
             logger.warning("No active activity found when saving RRWeb event")
 
@@ -77,33 +79,12 @@ class BrowserSession:
             self._context = await self.profile.launch(
                 profile_id=self.profile.id, browser_type=self.playwright.chromium
             )
-            
-            # Expose save_event function to browser
-            # await self._context.expose_function("saveEvent", self.save_event)
-            #
-            # # Inject RRWeb recording script
-            # await self._context.add_init_script("""
-            #     // RRWeb recording script injection
-            #     const rrwebScript = document.createElement('script');
-            #     rrwebScript.src = 'https://cdn.jsdelivr.net/npm/rrweb@2.0.0-alpha.14/dist/record/rrweb-record.min.js';
-            #     rrwebScript.onload = function() {
-            #         console.log('RRWeb script loaded');
-            #         startRRWebRecording();
-            #     };
-            #     document.head.appendChild(rrwebScript);
-            #
-            #     function startRRWebRecording() {
-            #         if (typeof rrwebRecord !== 'undefined' && window.saveEvent) {
-            #             rrwebRecord({ 
-            #                 emit(event) { 
-            #                     window.saveEvent(event); 
-            #                 }, 
-            #                 maskAllInputs: true 
-            #             });
-            #             console.log('RRWeb recording started');
-            #         }
-            #     }
-            # """)
+
+            # Set up page navigation handler for conditional RRWeb injection
+            async def handle_page(page: Page):
+                await rrweb_injector.inject_into_page(page, self.save_event)
+
+            self._context.on("page", handle_page)
         except Exception as e:
             logger.error(f"Error starting browser: {e}")
             raise BrowserStartupError(f"Failed to start browser: {e}") from e

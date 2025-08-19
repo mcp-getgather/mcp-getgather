@@ -35,6 +35,16 @@ class Settings(BaseSettings):
     BROWSER_HTTP_PROXY: str = ""
     BROWSER_HTTP_PROXY_PASSWORD: str = ""
 
+    # Websites with Content Security Policy
+    CSP_WEBSITES: list[str] = ["*.bbc.com"]
+
+    # RRWeb Recording Settings
+    ENABLE_RRWEB_RECORDING: bool = True
+    RRWEB_SCRIPT_URL: str = (
+        "https://cdn.jsdelivr.net/npm/rrweb@2.0.0-alpha.14/dist/record/rrweb-record.min.js"
+    )
+    RRWEB_MASK_ALL_INPUTS: bool = True
+
     @property
     def brand_spec_dir(self) -> Path:
         return PROJECT_DIR / "getgather" / "connectors" / "brand_specs"
