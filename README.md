@@ -68,7 +68,7 @@ The container runs an [MCP inspector](https://github.com/modelcontextprotocol/in
 Run docker container with additional ports 6274 and 6277
 
 ```bash
-docker run --env MCP_INSPECTOR_ENABLED=true  -p 9999:8000 -p 6274:6274 -p 6277:6277 ghcr.io/mcp-getgather/mcp-getgather
+docker run --env MCP_INSPECTOR_ENABLED=true -p 9999:8000 -p 6274:6274 -p 6277:6277 ghcr.io/mcp-getgather/mcp-getgather
 ```
 
 Open [inspector url](http://localhost:6274/?MCP_PROXY_AUTH_TOKEN=getgather&transport=streamable-http&serverUrl=http://localhost:8000/mcp) in your browser.
