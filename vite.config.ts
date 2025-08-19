@@ -12,7 +12,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "^/(brands|link|parse|start|auth|replay|static|live)|^/$": {
+      "^/(brands|link|parse|start|auth|replay|static|live)": {
         target: "http://127.0.0.1:8000/",
         changeOrigin: true,
       },
