@@ -24,7 +24,7 @@ async def get_activity(activity_id: str) -> Activity:
     activity = await activity_manager.get_activity(activity_id)
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
-    
+
     # Add recording status
     activity.has_recording = await rrweb_manager.activity_has_recording(activity_id)
     return activity
