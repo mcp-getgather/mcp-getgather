@@ -41,7 +41,7 @@ async def check_order_status(ctx: Context) -> dict[str, Any]:
         " check the status of the in progress order on Doordash:"
         " 1. Go to Orders page at https://www.doordash.com/orders."
         " 2. Find the most recent in progress order on the top of the page,"
-        " 3. Extract the order status and return the result."
+        " 3. Extract the order status including the estinated delivery time if available, and return the result."
         " 4. If there is no in progress order, return 'no in progress order found'."
     )
     return await run_agent_for_brand(task)
