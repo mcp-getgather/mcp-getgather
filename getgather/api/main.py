@@ -167,7 +167,8 @@ async def vnc_websocket_proxy(websocket: WebSocket):
             pass
 
 
-@app.get("/activities")
+@app.get("/", include_in_schema=False)
+@app.get("/activities", include_in_schema=False)
 def activities():
     file_path = path.join(path.dirname(__file__), "frontend", "index.html")
     with open(file_path) as f:
