@@ -123,34 +123,18 @@ async def _extract_data_with_locators(
     schema: Schema,
     page: Page,
 ) -> list[dict[str, str | list[str]]]:
-    """
-    Extract data from a page using Playwright locators.
-
-    This is the original extraction method that uses individual DOM queries.
-    Best for: Authentication flows, interactive elements, complex waiting conditions.
-
-    Args:
-        brand_id: Brand identifier for custom parsing functions
-        schema: Schema definition with CSS selectors
-        page: Live Playwright page object
-
-    Returns:
-        List of dictionaries containing extracted data
-    """
+    """Extract data from a page using schema selectors."""
     data: list[dict[str, str | list[str]]] = []
-    lc_rows = page.locator(schema.row_selector)
 
+    lc_rows = page.locator(schema.row_selector)
     for lc in await lc_rows.all():
         row: dict[str, str | list[str]] = {}
-
         for column in schema.columns:
             elements = lc.locator(column.selector)
             count = await elements.count()
-
             if count == 0:
                 row[column.name] = [] if column.multiple else ""
                 continue
-
             if column.multiple:
                 values = await asyncio.gather(*[
                     _get_value(brand_id, column, element) for element in await elements.all()
@@ -161,6 +145,7 @@ async def _extract_data_with_locators(
                 row[column.name] = value if value is not None else ""
 
         data.append(row)
+
     return data
 
 
