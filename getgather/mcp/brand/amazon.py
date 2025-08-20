@@ -38,7 +38,7 @@ async def search_product(
             "format": "html",
             "output": "search_results.json",
             "row_selector": "div[data-component-type='s-search-result']",
-            "extraction_method": "evaluate",
+            "extraction_method": "evaluator",
             "columns": [
                 {"name": "product_name", "selector": "h2 span"},
                 {

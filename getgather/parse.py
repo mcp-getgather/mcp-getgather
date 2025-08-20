@@ -164,7 +164,7 @@ async def _extract_data_with_locators(
     return data
 
 
-async def _extract_data_with_evaluate(
+async def _extract_data_with_evaluator(
     brand_id: BrandIdEnum,
     schema: Schema,
     page: Page,
@@ -183,14 +183,12 @@ async def _extract_data_with_evaluate(
     Returns:
         List of dictionaries containing extracted data
     """
-    # First validate that the columns have correct schema
+    # Prepare column data for JavaScript
+    columns_for_js: list[dict[str, Any]] = []
     for col in schema.columns:
         if not getattr(col, "name", None) or not getattr(col, "selector", None):
             raise ValueError(f"Invalid column definition: {col}")
 
-    # Prepare column data for JavaScript
-    columns_for_js: list[dict[str, Any]] = []
-    for col in schema.columns:
         col_data: dict[str, Any] = {
             "name": col.name,
             "selector": col.selector,
@@ -274,12 +272,12 @@ async def _extract_data_from_page(
 
     # Determine which method to use
     # Custom functions force locator method, otherwise use schema setting
-    use_evaluate = not has_custom_functions and schema.extraction_method == "evaluate"
+    use_evaluate = not has_custom_functions and schema.extraction_method == "evaluator"
 
     # Execute the appropriate extraction method
     if use_evaluate:
         try:
-            return await _extract_data_with_evaluate(brand_id, schema, page)
+            return await _extract_data_with_evaluator(brand_id, schema, page)
         except Exception as e:
             print(f"[PARSE] Evaluate extraction failed: {e}, falling back to locator method")
             return await _extract_data_with_locators(brand_id, schema, page)
