@@ -8,6 +8,7 @@ from patchright.async_api import BrowserContext, Page, Playwright, async_playwri
 
 from getgather.browser.profile import BrowserProfile
 from getgather.logs import logger
+from getgather.rrweb import rrweb_injector
 
 
 class BrowserStartupError(HTTPException):
@@ -65,6 +66,12 @@ class BrowserSession:
             self._context = await self.profile.launch(
                 profile_id=self.profile.id, browser_type=self.playwright.chromium
             )
+
+            # Set up page navigation handler for conditional RRWeb injection
+            async def handle_page(page: Page):
+                await rrweb_injector.inject_into_page(page)
+
+            self._context.on("page", handle_page)
         except Exception as e:
             logger.error(f"Error starting browser: {e}")
             raise BrowserStartupError(f"Failed to start browser: {e}") from e
