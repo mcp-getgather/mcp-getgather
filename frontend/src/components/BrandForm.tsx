@@ -10,7 +10,11 @@ import {
 type GroupChoiceOption = { value: string; label: string };
 
 type GroupItem =
-  | { type: "text" | "email" | "password"; name: string; prompt: string }
+  | {
+      type: "text" | "email" | "password" | "text_multi" | "text_multi_auto";
+      name: string;
+      prompt: string;
+    }
   | {
       type: "choice";
       name: string;
@@ -287,6 +291,8 @@ const BrandForm = forwardRef<BrandFormHandle, BrandFormProps>(
         case "text":
         case "email":
         case "password":
+        case "text_multi":
+        case "text_multi_auto":
           return (
             <div key={idx} className="mb-3">
               <label
@@ -405,6 +411,19 @@ const BrandForm = forwardRef<BrandFormHandle, BrandFormProps>(
                     >
                       {choice.groups.map((g, idx) =>
                         renderGroupItem(g as GroupItem, idx),
+                      )}
+                      {/* If there are no click/button type, render a submit button */}
+                      {choice.groups.every(
+                        (group) => group.type !== "click",
+                      ) && (
+                        <Button
+                          className="w-full text-white rounded-md px-4 py-2"
+                          type="submit"
+                          name={choice.name}
+                          value="true"
+                        >
+                          {choice.name}
+                        </Button>
                       )}
                     </form>
                     {action.state.prompt &&
