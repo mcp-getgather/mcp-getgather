@@ -9,4 +9,4 @@ kindle_mcp = BrandMCPBase(brand_id="kindle", name="Kindle MCP")
 @kindle_mcp.tool(tags={"private"})
 async def get_book_list() -> dict[str, Any]:
     """Get book list from Amazon Kindle."""
-    return await extract(brand_id=kindle_mcp.brand_id)
+    return await extract()
