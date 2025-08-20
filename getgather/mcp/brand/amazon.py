@@ -32,13 +32,13 @@ async def search_product(
         page = await session.page()
         await page.goto(f"https://www.amazon.com/s?k={keyword}", wait_until="commit")
         await page.wait_for_selector("div[data-component-type='s-search-result']")
-        await page.wait_for_timeout(500)
 
         spec_schema = SpecSchema.model_validate({
             "bundle": "search_results.html",
             "format": "html",
             "output": "search_results.json",
             "row_selector": "div[data-component-type='s-search-result']",
+            "extraction_method": "evaluator",
             "columns": [
                 {"name": "product_name", "selector": "h2 span"},
                 {

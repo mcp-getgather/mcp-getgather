@@ -108,6 +108,7 @@ async def _parse_by_format(
 
 
 async def _get_value(brand_id: BrandIdEnum, column: Column, element: Locator) -> str | None:
+    """Extract value from an element based on column configuration."""
     if column.attribute is not None:
         return await element.get_attribute(column.attribute)
     elif column.function is not None:
@@ -117,23 +118,39 @@ async def _get_value(brand_id: BrandIdEnum, column: Column, element: Locator) ->
         return await element.inner_text()
 
 
-async def _extract_data_from_page(
+async def _extract_data_with_locators(
     brand_id: BrandIdEnum,
     schema: Schema,
     page: Page,
 ) -> list[dict[str, str | list[str]]]:
-    """Extract data from a page using schema selectors."""
-    data: list[dict[str, str | list[str]]] = []
+    """
+    Extract data from a page using Playwright locators.
 
+    This is the original extraction method that uses individual DOM queries.
+    Best for: Authentication flows, interactive elements, complex waiting conditions.
+
+    Args:
+        brand_id: Brand identifier for custom parsing functions
+        schema: Schema definition with CSS selectors
+        page: Live Playwright page object
+
+    Returns:
+        List of dictionaries containing extracted data
+    """
+    data: list[dict[str, str | list[str]]] = []
     lc_rows = page.locator(schema.row_selector)
+
     for lc in await lc_rows.all():
         row: dict[str, str | list[str]] = {}
+
         for column in schema.columns:
             elements = lc.locator(column.selector)
             count = await elements.count()
+
             if count == 0:
                 row[column.name] = [] if column.multiple else ""
                 continue
+
             if column.multiple:
                 values = await asyncio.gather(*[
                     _get_value(brand_id, column, element) for element in await elements.all()
@@ -144,8 +161,128 @@ async def _extract_data_from_page(
                 row[column.name] = value if value is not None else ""
 
         data.append(row)
-
     return data
+
+
+async def _extract_data_with_evaluator(
+    brand_id: BrandIdEnum,
+    schema: Schema,
+    page: Page,
+) -> list[dict[str, Any]]:
+    """
+    Extract data from a page using JavaScript evaluation.
+
+    This method executes all extraction logic in the browser context in a single call.
+    Best for: Bulk data extraction, search results, product listings, read-only operations.
+
+    Args:
+        brand_id: Brand identifier (not used in evaluate method but kept for consistency)
+        schema: Schema definition with CSS selectors
+        page: Live Playwright page object
+
+    Returns:
+        List of dictionaries containing extracted data
+    """
+    # Prepare column data for JavaScript
+    columns_for_js: list[dict[str, Any]] = []
+    for col in schema.columns:
+        if not getattr(col, "name", None) or not getattr(col, "selector", None):
+            raise ValueError(f"Invalid column definition: {col}")
+
+        col_data: dict[str, Any] = {
+            "name": col.name,
+            "selector": col.selector,
+            "attribute": col.attribute,
+            "multiple": col.multiple if hasattr(col, "multiple") else False,
+        }
+        columns_for_js.append(col_data)
+
+    # Execute all extraction in a single browser call
+    data: list[dict[str, Any]] = await page.evaluate(
+        """
+        ({rowSelector, columns}) => {
+            const rows = document.querySelectorAll(rowSelector);
+            if (!rows.length) {
+                return [];
+            }
+            const results = [];
+
+            for (const row of rows) {
+                const rowData = {};
+
+                for (const col of columns) {
+                    if (col.multiple) {
+                        const elements = row.querySelectorAll(col.selector);
+                        const values = [];
+                        for (const el of elements) {
+                            if (col.attribute) {
+                                values.push(el.getAttribute(col.attribute) || "");
+                            } else {
+                                values.push(el.innerText || "");
+                            }
+                        }
+                        rowData[col.name] = values;
+                    } else {
+                        const el = row.querySelector(col.selector);
+                        if (el) {
+                            if (col.attribute) {
+                                rowData[col.name] = el.getAttribute(col.attribute) || "";
+                            } else {
+                                rowData[col.name] = el.innerText || "";
+                            }
+                        } else {
+                            rowData[col.name] = "";
+                        }
+                    }
+                }
+
+                results.push(rowData);
+            }
+
+            return results;
+        }
+    """,
+        {"rowSelector": schema.row_selector, "columns": columns_for_js},
+    )
+    return data
+
+
+async def _extract_data_from_page(
+    brand_id: BrandIdEnum,
+    schema: Schema,
+    page: Page,
+) -> list[dict[str, str | list[str]]]:
+    """
+    Router function that chooses the appropriate extraction method.
+
+    Decides between locator-based and evaluate-based extraction based on:
+    1. schema.extraction_method setting
+    2. Presence of custom functions (forces locator method)
+
+    Args:
+        brand_id: Brand identifier for custom parsing functions
+        schema: Schema definition with CSS selectors
+        page: Live Playwright page object
+
+    Returns:
+        List of dictionaries containing extracted data
+    """
+    # Check if we need to use locator method due to custom functions
+    has_custom_functions = any(col.function is not None for col in schema.columns)
+
+    # Determine which method to use
+    # Custom functions force locator method, otherwise use schema setting
+    use_evaluate = not has_custom_functions and schema.extraction_method == "evaluator"
+
+    # Execute the appropriate extraction method
+    if use_evaluate:
+        try:
+            return await _extract_data_with_evaluator(brand_id, schema, page)
+        except Exception as e:
+            print(f"[PARSE] Evaluate extraction failed: {e}, falling back to locator method")
+            return await _extract_data_with_locators(brand_id, schema, page)
+    else:
+        return await _extract_data_with_locators(brand_id, schema, page)
 
 
 async def parse_html(
@@ -214,7 +351,7 @@ async def parse_html(
         with open(output_path, "w") as f:
             json.dump(data, f)
         logger.info(f"{len(data)} rows written to {output_path}")
-        return BundleOutput(
+        result = BundleOutput(
             name=schema.bundle,
             parsed=True,
             parse_schema=schema,
@@ -225,12 +362,14 @@ async def parse_html(
         logger.info(
             f"Returning data directly: {data[:200] if data else 'None'}", extra={"schema": schema}
         )
-        return BundleOutput(
+        result = BundleOutput(
             name=schema.bundle,
             parsed=True,
             parse_schema=schema,
             content=data,
         )
+
+    return result
 
 
 # test with:
