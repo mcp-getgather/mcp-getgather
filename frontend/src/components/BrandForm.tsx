@@ -419,10 +419,11 @@ const BrandForm = forwardRef<BrandFormHandle, BrandFormProps>(
                         <Button
                           className="w-full text-white rounded-md px-4 py-2"
                           type="submit"
-                          name={choice.name}
+                          name="submit"
                           value="true"
+                          data-testid="submit-button"
                         >
-                          {choice.name}
+                          Continue
                         </Button>
                       )}
                     </form>
