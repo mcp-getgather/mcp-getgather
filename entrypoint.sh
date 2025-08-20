@@ -38,7 +38,7 @@ dbus-daemon --system --fork
 echo "D-BUS daemon started with pid: $(cat /run/dbus/pid)"
 
 # start mcp inspector
-if [ "$MCP_INSPECTOR_ENABLED" = "true" ]; then
+if [ -z "$MCP_INSPECTOR_DISABLED" ] || [ ! "$MCP_INSPECTOR_DISABLED" = "true" ]; then
   if [ -z $MCP_PROXY_AUTH_TOKEN ]; then
     export MCP_PROXY_AUTH_TOKEN=getgather
   fi
