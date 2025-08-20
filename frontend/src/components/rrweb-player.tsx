@@ -94,7 +94,7 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
             playerRef.current?.goto(0, true); // Go to start and auto-play
           });
         }
-      } catch (error) {
+      } catch {
         if (!isDestroyed) {
           setHasError(true);
         }
@@ -109,6 +109,7 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
 
       // Copy refs to variables to avoid React hooks warning about stale refs
       const player = playerRef.current;
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       const container = containerRef.current;
 
       if (player && typeof player.$destroy === "function") {
