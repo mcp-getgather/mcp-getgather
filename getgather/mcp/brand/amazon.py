@@ -51,6 +51,7 @@ async def search_product(
                 {"name": "currency", "selector": "span.a-price-symbol"},
                 {"name": "rating", "selector": "span.a-icon-alt"},
                 {"name": "image_url", "selector": "img.s-image", "attribute": "src"},
+                {"name": "reviews", "selector": "div[data-cy='reviews-block']"},
             ],
         })
 
