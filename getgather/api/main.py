@@ -12,6 +12,7 @@ from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Template
 
+from getgather.api.routes.activities.endpoints import router as activities_router
 from getgather.api.routes.auth.endpoints import router as auth_router
 from getgather.api.routes.brands.endpoints import router as brands_router
 from getgather.api.routes.link.endpoints import router as link_router
@@ -98,13 +99,6 @@ async def proxy_live_files(file_path: str):
             return Response(status_code=404)
 
 
-@app.get("/", response_class=HTMLResponse)
-def index():
-    file_path = path.join(path.dirname(__file__), "frontend", "old-index.html")
-    with open(file_path) as f:
-        return HTMLResponse(content=f.read())
-
-
 @app.websocket("/websockify")
 async def vnc_websocket_proxy(websocket: WebSocket):
     """WebSocket proxy to bridge NoVNC client and VNC server."""
@@ -184,6 +178,7 @@ def start(brand: str):
     return HTMLResponse(content=rendered)
 
 
+@app.get("/")
 @app.get("/activities")
 def activities():
     file_path = path.join(path.dirname(__file__), "frontend", "index.html")
@@ -237,6 +232,7 @@ async def extended_health():
     return PlainTextResponse(content=f"OK IP: {ip_text}")
 
 
+app.include_router(activities_router)
 app.include_router(brands_router)
 app.include_router(auth_router)
 app.include_router(link_router)

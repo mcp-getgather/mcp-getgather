@@ -28,6 +28,8 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router": "^7.8.0",
+    "rrweb": "^2.0.0-alpha.18",
+    "rrweb-player": "^2.0.0-alpha.18",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.11"
   },

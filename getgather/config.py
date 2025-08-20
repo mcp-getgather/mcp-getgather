@@ -35,6 +35,16 @@ class Settings(BaseSettings):
     BROWSER_HTTP_PROXY: str = ""
     BROWSER_HTTP_PROXY_PASSWORD: str = ""
 
+    # Websites with Content Security Policy
+    CSP_WEBSITES: list[str] = ["*.bbc.com"]
+
+    # RRWeb Recording Settings
+    ENABLE_RRWEB_RECORDING: bool = True
+    RRWEB_SCRIPT_URL: str = (
+        "https://cdn.jsdelivr.net/npm/rrweb@2.0.0-alpha.14/dist/record/rrweb-record.min.js"
+    )
+    RRWEB_MASK_ALL_INPUTS: bool = True
+
     @property
     def brand_spec_dir(self) -> Path:
         return PROJECT_DIR / "getgather" / "connectors" / "brand_specs"
@@ -75,6 +85,20 @@ class Settings(BaseSettings):
         data_dir = PROJECT_DIR / "data"
         data_dir.mkdir(parents=True, exist_ok=True)
         return data_dir / "getgather.db"
+
+    @property
+    def db_json_path(self) -> Path:
+        """Path to general database JSON file in the main data directory."""
+        data_dir = PROJECT_DIR / "data"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        return data_dir / "db.json"
+
+    @property
+    def recordings_dir(self) -> Path:
+        """Path to recordings directory for per-activity files."""
+        recordings_dir = PROJECT_DIR / "data" / "recordings"
+        recordings_dir.mkdir(parents=True, exist_ok=True)
+        return recordings_dir
 
     @field_validator("LOG_LEVEL", mode="after")
     @classmethod

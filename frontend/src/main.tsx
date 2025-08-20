@@ -6,17 +6,21 @@ import GetStarted from "./pages/GetStarted";
 import Activities from "./pages/Activities";
 import LiveView from "./pages/LiveView";
 import Settings from "./pages/Settings";
+import { ReplayPage } from "./pages/Replay";
 import "./index.css";
+import Home from "./pages/Home";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<Home />} />
         <Route path="/" element={<Layout />}>
           <Route path="welcome" element={<GetStarted />} />
           <Route path="live-view" element={<LiveView />} />
           <Route path="activities" element={<Activities />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="replay" element={<ReplayPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

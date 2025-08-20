@@ -30,28 +30,36 @@ async def search_product(
 
     async with browser_session(profile) as session:
         page = await session.page()
-        await page.goto(f"https://www.amazon.com/s?k={keyword}")
-        await page.wait_for_selector("div[role='listitem]")
-        await page.wait_for_timeout(1000)
-        html = await page.locator("div.s-search-results").inner_html()
-    spec_schema = SpecSchema.model_validate({
-        "bundle": "",
-        "format": "html",
-        "output": "",
-        "row_selector": "div[role='listitem']",
-        "columns": [
-            {"name": "product_name", "selector": "div[data-cy='title-recipe'] > a"},
-            {
-                "name": "product_url",
-                "selector": "div[data-cy='title-recipe'] > a",
-                "attribute": "href",
-            },
-            {"name": "price", "selector": "div[data-cy='price-recipe']"},
-            {"name": "reviews", "selector": "div[data-cy='reviews-block']"},
-        ],
-    })
-    result = await parse_html(brand_id=amazon_mcp.brand_id, html_content=html, schema=spec_schema)
-    return {"product_list": result.content}
+        await page.goto(f"https://www.amazon.com/s?k={keyword}", wait_until="commit")
+        await page.wait_for_selector("div[data-component-type='s-search-result']")
+
+        spec_schema = SpecSchema.model_validate({
+            "bundle": "search_results.html",
+            "format": "html",
+            "output": "search_results.json",
+            "row_selector": "div[data-component-type='s-search-result']",
+            "extraction_method": "evaluator",
+            "columns": [
+                {"name": "product_name", "selector": "h2 span"},
+                {
+                    "name": "product_url",
+                    "selector": "div[data-cy='title-recipe'] a",
+                    "attribute": "href",
+                },
+                {"name": "price", "selector": "span.a-price-whole"},
+                {"name": "price_fraction", "selector": "span.a-price-fraction"},
+                {"name": "currency", "selector": "span.a-price-symbol"},
+                {"name": "rating", "selector": "span.a-icon-alt"},
+                {"name": "image_url", "selector": "img.s-image", "attribute": "src"},
+                {"name": "reviews", "selector": "div[data-cy='reviews-block']"},
+            ],
+        })
+
+        bundle_result = await parse_html(
+            brand_id=amazon_mcp.brand_id, schema=spec_schema, page=page
+        )
+
+        return {"product_list": bundle_result.content or []}
 
 
 @amazon_mcp.tool
