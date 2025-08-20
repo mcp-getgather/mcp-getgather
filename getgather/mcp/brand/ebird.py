@@ -133,6 +133,8 @@ async def select_location(page: Page, location: str):
 
 async def select_date(page: Page, month: str, day: str):
     """Select date for checklist."""
+    month = month.lstrip("0")
+    day = day.lstrip("0")
     print(f"📆 Selecting date: {month}/{day}")
     await page.wait_for_selector("select#p-month")
     await page.select_option("#p-month", month)
