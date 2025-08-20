@@ -184,14 +184,14 @@ export default function Activities() {
                               <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
                             )}
                             {activity.has_recording && (
-                                <Link
-                                  to={`/replay?id=${activity.id}`}
-                                  className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 transition-colors"
-                                >
-                                  <Play className="h-3 w-3" />
-                                  Replay ({activity.recording_count} events)
-                                </Link>
-                              )}
+                              <Link
+                                to={`/replay?id=${activity.id}`}
+                                className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 transition-colors"
+                              >
+                                <Play className="h-3 w-3" />
+                                Replay ({activity.recording_count} events)
+                              </Link>
+                            )}
                           </div>
                         </div>
                         <span className="text-xs text-gray-500">
