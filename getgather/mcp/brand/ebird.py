@@ -130,9 +130,9 @@ async def select_date(page: Page, checklist_datetime: datetime):
     current_month = datetime.now().month
     checklist_month = checklist_datetime.month
     day = str(checklist_datetime.day)
-    
+
     await page.wait_for_selector("select#p-month")
-    
+
     # Only select month if it's different from current month
     if checklist_month != current_month:
         await page.select_option("#p-month", str(checklist_month))
@@ -141,13 +141,15 @@ async def select_date(page: Page, checklist_datetime: datetime):
     await page.wait_for_timeout(1000)
 
 
-async def select_trip_details(page: Page, checklist_datetime: datetime, duration_hours: str, distance: str):
+async def select_trip_details(
+    page: Page, checklist_datetime: datetime, duration_hours: str, distance: str
+):
     """Select trip details including time, duration, and distance."""
     # Extract hour, minute, and AM/PM from datetime object
     hour = str(checklist_datetime.hour % 12 or 12)  # Convert to 12-hour format
     minute = str(checklist_datetime.minute).zfill(2)
     am_pm = "AM" if checklist_datetime.hour < 12 else "PM"
-    
+
     await page.click("label:has-text('Traveling')")
     await page.fill("input#p-shared-hr", hour)
     await page.fill("input#p-shared-min", minute)
