@@ -125,7 +125,7 @@ class PageSpecDetector:
 
 
 async def _detect_field(field: Field, page: Page):
-    selector = field.selector
+    selector = field.selector or field.selectors
     if selector is None:
         return True
 
@@ -148,26 +148,25 @@ async def _detect_fields(fields: list[Field], page: Page) -> dict[str, bool]:
 class PageDetectResult(BaseModel):
     page_name: str
     url: bool | None  # whether the url matches
-    recall: float  # percentage of required fields that are visible
-    score: int  # sum of scores of required fields that are visible
+    fields: float  # percentage of fields that are visible
+    score: int
 
     @property
     def matched(self) -> bool:
-        return self.url is not False and self.recall == 1.0
+        return self.url is not False and self.fields == 1.0
 
 
 def _detect_page_spec(
     spec: PageSpec, url: str, visible_fields: dict[str, bool]
 ) -> PageDetectResult:
     url_match = url.startswith(str(spec.url)) if spec.url else None
-    num_required = len(spec.fields(include="required"))
-    required_visible = [
-        f for f in spec.fields(include="required") if visible_fields.get(f.name, False)
-    ]
+    fields_match = {
+        fld.name: visible_fields.get(fld.name, False) for fld in spec.fields(include="required")
+    }
+
+    score = sum(fields_match.values())
+    fields_match_ratio = score / len(fields_match) if fields_match else 1.0
 
     return PageDetectResult(
-        page_name=spec.name,
-        url=url_match,
-        recall=len(required_visible) / num_required if num_required > 0 else 1.0,
-        score=sum([f.score for f in required_visible]),
+        page_name=spec.name, url=url_match, fields=fields_match_ratio, score=score
     )

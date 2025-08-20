@@ -5,7 +5,7 @@ from getgather.browser.session import browser_session
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import extract, get_mcp_browser_session, with_brand_browser_session
+from getgather.mcp.shared import extract, start_browser_session
 from getgather.parse import parse_html
 
 amazon_mcp = BrandMCPBase(brand_id="amazon", name="Amazon MCP")
@@ -14,7 +14,7 @@ amazon_mcp = BrandMCPBase(brand_id="amazon", name="Amazon MCP")
 @amazon_mcp.tool(tags={"private"})
 async def get_purchase_history() -> dict[str, Any]:
     """Get purchase/order history of a amazon."""
-    return await extract()
+    return await extract(brand_id=amazon_mcp.brand_id)
 
 
 @amazon_mcp.tool
@@ -78,10 +78,9 @@ async def get_product_detail(
 
 
 @amazon_mcp.tool(tags={"private"})
-@with_brand_browser_session
 async def get_cart_summary() -> dict[str, Any]:
     """Get cart summary from amazon."""
-    browser_session = get_mcp_browser_session()
+    browser_session = await start_browser_session(brand_id=amazon_mcp.brand_id)
     page = await browser_session.page()
     await page.goto("https://www.amazon.com/gp/cart/view.html")
     await page.wait_for_selector("div#sc-active-cart")
@@ -91,54 +90,12 @@ async def get_cart_summary() -> dict[str, Any]:
 
 
 @amazon_mcp.tool(tags={"private"})
-@with_brand_browser_session
 async def get_browsing_history() -> dict[str, Any]:
     """Get browsing history from amazon."""
-    browser_session = get_mcp_browser_session()
+    browser_session = await start_browser_session(brand_id=amazon_mcp.brand_id)
     page = await browser_session.page()
     await page.goto("https://www.amazon.com/gp/history?ref_=nav_AccountFlyout_browsinghistory")
     await page.wait_for_timeout(1000)
     await page.wait_for_selector("div[class*='desktop-grid']")
     html = await page.locator("div[class*='desktop-grid']").inner_html()
     return {"browsing_history_html": html}
-
-
-@amazon_mcp.tool(tags={"private"})
-async def search_purchase_history(
-    keyword: str,
-) -> dict[str, Any]:
-    """Search purchase history of a amazon."""
-    browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
-    await page.goto(
-        f"https://www.amazon.com/your-orders/search/ref=ppx_yo2ov_dt_b_search?opt=ab&search={keyword}"
-    )
-    await page.wait_for_selector("div.a-section.a-spacing-none.a-padding-small")
-    await page.wait_for_timeout(1000)
-    html = await page.locator("div.a-section.a-spacing-none.a-padding-small").inner_html()
-
-    spec_schema = SpecSchema.model_validate({
-        "bundle": "",
-        "format": "html",
-        "output": "",
-        "row_selector": "div.a-section.a-spacing-large.a-spacing-top-large",
-        "columns": [
-            {
-                "name": "product_name",
-                "selector": "a.a-link-normal p",
-            },
-            {
-                "name": "product_url",
-                "selector": "a.a-link-normal[href*='/dp/']",
-                "attribute": "href",
-            },
-            {"name": "product_image", "selector": "img", "attribute": "src"},
-            {
-                "name": "order_date",
-                "selector": "div.a-row.a-spacing-small > span",
-            },
-        ],
-    })
-
-    result = await parse_html(brand_id=amazon_mcp.brand_id, html_content=html, schema=spec_schema)
-    return {"order_history": result.content}

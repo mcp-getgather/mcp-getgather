@@ -38,8 +38,6 @@ class AuthMiddleware(Middleware):
                 return await call_next(context)
 
         brand_id = context.message.name.split("_")[0]
-        context.fastmcp_context.set_state("brand_id", brand_id)
-
         if "private" not in tool.tags or BrandState.is_brand_connected(brand_id):
             async with activity(
                 brand_id=brand_id,
@@ -122,8 +120,10 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
         logger.info(f"Mounting {brand_mcp.name} to MCP bundle {bundle_name}")
         mcp.mount(server=brand_mcp, prefix=brand_mcp.brand_id)
 
-    from getgather.mcp.calendar_utils import calendar_mcp
+    # Handle special case for some bundles
+    if bundle_name in ["all", "books", "shopping"]:
+        from getgather.mcp.calendar_utils import calendar_mcp
 
-    mcp.mount(server=calendar_mcp, prefix="calendar")
+        mcp.mount(server=calendar_mcp, prefix="calendar")
 
     return mcp.http_app(path="/")

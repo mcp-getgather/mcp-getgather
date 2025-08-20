@@ -165,7 +165,7 @@ def _format_quantity_result(
 @astro_mcp.tool(tags={"private"})
 async def get_purchase_history() -> dict[str, Any]:
     """Get astro purchase history."""
-    return await extract()
+    return await extract(brand_id=astro_mcp.brand_id)
 
 
 @astro_mcp.tool

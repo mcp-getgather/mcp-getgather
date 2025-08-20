@@ -8,6 +8,7 @@ from patchright.async_api import BrowserContext, Page, Playwright, async_playwri
 
 from getgather.browser.profile import BrowserProfile
 from getgather.logs import logger
+from getgather.rrweb import rrweb_injector
 
 
 class BrowserStartupError(HTTPException):
@@ -26,7 +27,7 @@ class BrowserSession:
         self._context: BrowserContext | None = None
 
     @classmethod
-    def get(cls, profile: BrowserProfile) -> BrowserSession:
+    async def get(cls, profile: BrowserProfile) -> BrowserSession:
         if profile.id in cls._sessions:  # retrieve active session
             return cls._sessions[profile.id]
         else:  # create new session
@@ -65,6 +66,12 @@ class BrowserSession:
             self._context = await self.profile.launch(
                 profile_id=self.profile.id, browser_type=self.playwright.chromium
             )
+
+            # Expose saveEvent function at context level - this ensures it's available on all pages
+            await self._context.expose_function("saveEvent", rrweb_injector.save_event)
+            
+            # Inject RRWeb at context level - this persists across all page navigation
+            await rrweb_injector.inject_into_context(self._context)
         except Exception as e:
             logger.error(f"Error starting browser: {e}")
             raise BrowserStartupError(f"Failed to start browser: {e}") from e
@@ -93,7 +100,7 @@ class BrowserSession:
 
 @asynccontextmanager
 async def browser_session(profile: BrowserProfile, *, nested: bool = False):
-    session = BrowserSession.get(profile)
+    session = await BrowserSession.get(profile)
     if not nested:
         await session.start()
     try:

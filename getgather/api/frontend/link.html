@@ -124,15 +124,7 @@
       function renderFormInput(item) {
         const { type, name, prompt } = item;
 
-        if (
-          [
-            "text",
-            "text_multi",
-            "text_multi_auto",
-            "email",
-            "password",
-          ].includes(type)
-        ) {
+        if (type === "text" || type === "email" || type === "password") {
           return `
             <label for="${name}">${escapeHtml(prompt)}</label>
             <input type="${type}" name="${name}" id="${name}" required data-testid="input-${name}">
@@ -180,17 +172,11 @@
           : "";
 
         const inputs = choice.groups.map(renderFormInput).join("");
-        // add a submit button if there is no click button in the choice
-        const hasSubmit = choice.groups.some((group) => group.type === "click");
-        const submitButton = !hasSubmit
-          ? `<button type="submit" name="submit" value="true" data-testid="button-submit">Continue</button>`
-          : "";
 
         return `
           <form data-testid="form-${choice.name}">
             ${errorMessage}
             ${inputs}
-            ${submitButton}
           </form>
           <hr>
         `;

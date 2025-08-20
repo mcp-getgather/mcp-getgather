@@ -18,10 +18,10 @@ dependencies = [
   "uvicorn[standard]>=0.34.2",
   # Browser Automation: Locked to specific versions to avoid breaking changes.
   "patchright==1.52.5",
+  "fastmcp>=2.10.5",
   "requests>=2.32.4",
   "httpx>=0.28.1",
   "browser-use>=0.5.10",
-  "fastmcp>=2.11.3",
 ]
 
 [dependency-groups]

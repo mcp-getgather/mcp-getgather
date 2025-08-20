@@ -140,31 +140,29 @@ async def handle_fill_single(frame: Frame | Page, field: Field, value: str) -> N
 
 
 async def handle_fill_multi(frame: Frame | Page, field: Field, values: str | list[str]) -> None:
-    """Fill repeated elements for text_multi type fields."""
+    """Fill repeated elements selected by `field.selectors`."""
     await frame.wait_for_timeout(500)
     # Coerce single string into a list for uniform processing.
     vals: list[str] = list(values) if isinstance(values, str) else values
-    outer = frame.locator(field.selector)  # type: ignore[arg-type]
+    outer = frame.locator(field.selectors)  # type: ignore[arg-type]
     await outer.first.wait_for(state="attached", timeout=5_000)
 
-    inner = frame.locator(f"{field.selector} >>> input")
+    inner = frame.locator(f"{field.selectors} >>> input")
     if await inner.count() > 0:
         await inner.first.wait_for(state="attached", timeout=5_000)
         target = inner
     else:
         # Fallback if no match
-        await frame.locator(f"css={field.selector}").first.wait_for(state="attached", timeout=5_000)
-        target = frame.locator(f"css={field.selector}")
+        await frame.locator(f"css={field.selectors}").first.wait_for(
+            state="attached", timeout=5_000
+        )
+        target = frame.locator(f"css={field.selectors}")
 
-    if field.type == "text_multi_auto":
-        await target.first.click()
-        await target.first.press_sequentially("".join(vals), delay=100)
-    else:
-        for idx, val in enumerate(vals):
-            logger.info(f"📝 Filling {field.name} {idx + 1}/{len(vals)}")
-            await target.nth(idx).clear()
-            await target.nth(idx).press_sequentially(val, delay=100)
-            await frame.wait_for_timeout(200)
+    for idx, val in enumerate(vals):
+        logger.info(f"📝 Filling {field.name} {idx + 1}/{len(vals)}")
+        await target.nth(idx).clear()
+        await target.nth(idx).press_sequentially(val, delay=100)
+        await frame.wait_for_timeout(200)
 
 
 async def handle_network_extraction(page: Page, predicate: str) -> Any:

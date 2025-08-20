@@ -14,7 +14,7 @@ ebird_mcp = BrandMCPBase(brand_id="ebird", name="Ebird MCP")
 @ebird_mcp.tool(tags={"private"})
 async def get_life_list() -> dict[str, Any]:
     """Get life list of a ebird."""
-    return await extract()
+    return await extract(brand_id=ebird_mcp.brand_id)
 
 
 @ebird_mcp.tool

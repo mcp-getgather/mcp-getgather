@@ -16,9 +16,9 @@ auth:
       selector: div[role="dialog"] button[type=button] span:has-text("Use password instead")
 
     - name: otp
-      type: text_multi
+      type: text
       prompt: 6-digit code sent to email
-      selector: div[role="dialog"] input[aria-label^="6-digit code digit"]
+      selectors: div[role="dialog"] input[aria-label^="6-digit code digit"]
     - name: otp_submit_button
       type: click
       prompt: Confirm

@@ -10,7 +10,7 @@ from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.logs import logger
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import get_mcp_browser_session, with_brand_browser_session
+from getgather.mcp.shared import start_browser_session
 from getgather.parse import parse_html
 
 tokopedia_mcp = BrandMCPBase(brand_id="tokopedia", name="Tokopedia MCP")
@@ -272,14 +272,12 @@ async def get_shop_details(
 
 
 @tokopedia_mcp.tool(tags={"private"})
-@with_brand_browser_session
 async def get_purchase_history(
-    *,
     page_number: int = 1,
 ) -> dict[str, Any]:
     """Get purchase history of a tokopedia."""
 
-    browser_session = get_mcp_browser_session()
+    browser_session = await start_browser_session(brand_id=tokopedia_mcp.brand_id)
     page = await browser_session.page()
     await page.goto(f"https://www.tokopedia.com/order-list?page={page_number}")
     raw_data = await handle_graphql_response(
@@ -322,10 +320,10 @@ async def get_purchase_history(
 
 
 @tokopedia_mcp.tool(tags={"private"})
-@with_brand_browser_session
 async def get_cart() -> dict[str, Any]:
     """Get cart of a tokopedia."""
-    browser_session = get_mcp_browser_session()
+
+    browser_session = await start_browser_session(brand_id=tokopedia_mcp.brand_id)
     page = await browser_session.page()
     await page.goto(f"https://www.tokopedia.com/cart")
     raw_data = await handle_graphql_response(
@@ -369,10 +367,12 @@ async def get_cart() -> dict[str, Any]:
 
 
 @tokopedia_mcp.tool(tags={"private"})
-@with_brand_browser_session
-async def get_wishlist(page_number: int = 1) -> dict[str, Any]:
+async def get_wishlist(
+    page_number: int = 1,
+) -> dict[str, Any]:
     """Get purchase history of a tokopedia."""
-    browser_session = get_mcp_browser_session()
+
+    browser_session = await start_browser_session(brand_id=tokopedia_mcp.brand_id)
     page = await browser_session.page()
     await page.goto(f"https://www.tokopedia.com/wishlist/all?page={page_number}")
     raw_data = await handle_graphql_response(

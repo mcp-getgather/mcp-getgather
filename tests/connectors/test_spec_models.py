@@ -20,6 +20,10 @@ def test_field():
         type: email
         prompt: Enter your email
         selector: input[name="email"]
+      - name: field_with_selectors
+        type: text
+        prompt: Enter your OTP
+        selectors: input[name^="otp"]
       - name: navigate_field
         type: navigate
         prompt: Navigate to the page
@@ -31,7 +35,7 @@ def test_field():
         Field.from_yml(FieldYML.model_validate(f), fields_map={}, pages_map={})
         for f in yml["fields"]
     ]
-    assert len(spec) == 2
+    assert len(spec) == 3
 
 
 def test_field_without_selector():
@@ -42,7 +46,28 @@ def test_field_without_selector():
         prompt: Enter your text
     """
     yml = yaml.load(txt, Loader=RegexLoader)
-    with pytest.raises(ValueError, match="selector is required for non-selection fields"):
+    with pytest.raises(
+        ValueError, match="One and only one of selector and selectors must be provided"
+    ):
+        [
+            Field.from_yml(FieldYML.model_validate(f), fields_map={}, pages_map={})
+            for f in yml["fields"]
+        ]
+
+
+def test_field_with_both_selector_and_selectors():
+    txt = """
+    fields:
+      - name: field
+        type: text
+        prompt: Enter your text
+        selector: input[name="text"]
+        selectors: input[name="text"]
+    """
+    yml = yaml.load(txt, Loader=RegexLoader)
+    with pytest.raises(
+        ValueError, match="One and only one of selector and selectors must be provided"
+    ):
         [
             Field.from_yml(FieldYML.model_validate(f), fields_map={}, pages_map={})
             for f in yml["fields"]
@@ -115,14 +140,14 @@ def test_page_with_optional_fields():
         type: text
         prompt: Enter your text
         selector: input[name="text"]
-      - name: optional_field
+      - name: optional_field 
         type: text
         prompt: Enter your text
         selector: input[name="text"]
     pages:
       - name: page_with_fields
         url: https://example.com
-        fields:
+        fields: 
           required: [required_field]
           optional: [optional_field]
     """
@@ -182,7 +207,7 @@ def test_page_with_choices():
         selector: input[name="text"]
     pages:
       - name: page_with_choices
-        url: https://example.com
+        url: https://example.com 
         choices:
           name: a list of choices
           prompt: Choose one of the following options

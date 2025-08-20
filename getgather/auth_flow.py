@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
 
+from getgather.activity import activity
 from getgather.api.types import RequestInfo
 from getgather.auth_orchestrator import AuthOrchestrator, AuthStatus, ProxyError
 from getgather.browser.profile import BrowserProfile
@@ -53,6 +54,61 @@ class AuthFlowResponse(BaseModel):
     )
 
 
+async def _auth_flow(
+    brand_id: BrandIdEnum,
+    auth_request: AuthFlowRequest,
+) -> AuthFlowResponse:
+    """Private method to handle authentication flow logic."""
+    # Initialize the auth manager
+    if auth_request.profile_id:
+        browser_profile = BrowserProfile(id=auth_request.profile_id)
+    else:
+        browser_profile = BrowserProfile()
+
+    browser_session = await BrowserSession.get(browser_profile)
+    await browser_session.start()
+    auth_orchestrator = AuthOrchestrator(
+        brand_id=brand_id,
+        browser_profile=browser_profile,
+        state=auth_request.state,
+    )
+    state = await auth_orchestrator.advance()
+
+    extract_result = None
+    if state.finished:
+        if state.error:
+            logger.warning(
+                f"❗ Unauthenticated terminal page during auth: {state.error}",
+                extra={"profile_id": browser_profile.id},
+            )
+        elif auth_request.extract:
+            extract_orchestrator = ExtractOrchestrator(
+                brand_id=brand_id,
+                browser_profile=browser_profile,
+                nested_browser_session=True,
+            )
+            await extract_orchestrator.extract_flow()
+            extract_result = ExtractResult(
+                profile_id=browser_profile.id,
+                state=extract_orchestrator.state,
+                bundles=extract_orchestrator.bundles,
+            )
+        await auth_orchestrator.finalize()
+
+    if extract_result:
+        logger.info(
+            f"Extracted Data sample: {extract_result.bundles[0].content[:200] if extract_result.bundles else 'None'}",
+            extra={"brand_id": brand_id},
+        )
+    # Convert response to API format
+    return AuthFlowResponse(
+        profile_id=browser_profile.id,
+        state=auth_orchestrator.state,
+        status=auth_orchestrator.status,
+        extract_result=extract_result,
+    )
+
+
 async def auth_flow(
     brand_id: BrandIdEnum,
     auth_request: AuthFlowRequest,
@@ -60,54 +116,15 @@ async def auth_flow(
     """Start or continue an authentication flow for a connector."""
     # Validate connector against the enum
     try:
-        # Initialize the auth manager
-        if auth_request.profile_id:
-            browser_profile = BrowserProfile(id=auth_request.profile_id)
-        else:
-            browser_profile = BrowserProfile()
-
-        browser_session = BrowserSession.get(browser_profile)
-        await browser_session.start()
-        auth_orchestrator = AuthOrchestrator(
-            brand_id=brand_id,
-            browser_profile=browser_profile,
-            state=auth_request.state,
-        )
-        state = await auth_orchestrator.advance()
-
-        extract_result = None
-        if state.finished:
-            if state.error:
-                logger.warning(
-                    f"❗ Unauthenticated terminal page during auth: {state.error}",
-                    extra={"profile_id": browser_profile.id},
-                )
-            elif auth_request.extract:
-                extract_orchestrator = ExtractOrchestrator(
-                    brand_id=brand_id,
-                    browser_profile=browser_profile,
-                    nested_browser_session=True,
-                )
-                await extract_orchestrator.extract_flow()
-                extract_result = ExtractResult(
-                    profile_id=browser_profile.id,
-                    state=extract_orchestrator.state,
-                    bundles=extract_orchestrator.bundles,
-                )
-            await auth_orchestrator.finalize()
-
-        if extract_result:
-            logger.info(
-                f"Extracted Data sample: {extract_result.bundles[0].content[:200] if extract_result.bundles else 'None'}",
-                extra={"brand_id": brand_id},
-            )
-        # Convert response to API format
-        return AuthFlowResponse(
-            profile_id=browser_profile.id,
-            state=auth_orchestrator.state,
-            status=auth_orchestrator.status,
-            extract_result=extract_result,
-        )
+        async with activity(
+            brand_id=str(brand_id),
+            name="auth_flow",
+        ) as activity_id:
+            result = await _auth_flow(brand_id, auth_request)
+            # Flush any pending RRWeb events to this activity
+            from getgather.rrweb import rrweb_manager
+            await rrweb_manager.flush_pending_to_activity(activity_id)
+            return result
 
     except BrowserStartupError as e:
         logger.error(f"Browser startup error in auth flow: {e}", exc_info=True)

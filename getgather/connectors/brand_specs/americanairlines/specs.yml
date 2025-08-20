@@ -27,8 +27,8 @@ auth:
       type: wait
       selector: hp-account-dropdown-button#accountButtonDesktop
     - name: mfa_code
-      type: text_multi
-      selector: '[type="text"][inputmode="numeric"]'
+      type: text
+      selectors: '[type="text"][inputmode="numeric"]'
       prompt: Enter the verification code you received by email
       label: span[class*='_info_'], span[class*='_email_']
     - name: mfa_code_submit

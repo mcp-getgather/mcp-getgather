@@ -18,9 +18,9 @@ auth:
       prompt: Sign In
       selector: button#login-submit-button
     - name: otp
-      type: text_multi
+      type: text
       prompt: 6-digit one time code
-      selector: input[type="number"]
+      selectors: input[type="number"]
   pages:
     - name: Email page
       fields: [email, email_continue]

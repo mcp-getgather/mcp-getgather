@@ -27,13 +27,10 @@ auth:
       selector: label:has-text("Keep me signed in.")
       expect_nav: false
     - name: otp
-      score: 10
-      type: text_multi_auto
+      type: text
       prompt: Please enter your one-time code
       label: '[role="dialog"] >> text=/^We sent a code to:/'
-      selector: input[name^='otpEntry']
-      expect_nav: true
-      url: https://www.nordstrom.com/
+      selectors: input[name^='otpEntry']
     - name: otp_choice_button
       prompt: Sign In with a Code Instead
       type: click
