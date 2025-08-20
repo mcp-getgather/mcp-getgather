@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+// TEST COMMENT - should trigger reload
 
 type Brand = {
   id: string;

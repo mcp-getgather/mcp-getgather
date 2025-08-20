@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 import { useState } from "react";
-import { Outlet, NavLink } from "react-router";
+import { NavLink, Outlet } from "react-router";
 
 export default function Layout() {
   const [showBanner, setShowBanner] = useState(true);
@@ -42,54 +42,11 @@ export default function Layout() {
       <div className="px-6">
         <nav className="w-full">
           <div className="flex gap-4 border-b border-gray-200 mb-8">
-            <NavLink
-              to="/welcome"
-              className={({ isActive }) =>
-                `px-4 py-2 border-b-2 transition-colors ${
-                  isActive
-                    ? "border-indigo-600 text-indigo-600"
-                    : "border-transparent text-gray-600 hover:text-gray-900"
-                }`
-              }
-            >
-              Get Started
-            </NavLink>
-            <NavLink
-              to="/live-view"
-              className={({ isActive }) =>
-                `px-4 py-2 border-b-2 transition-colors ${
-                  isActive
-                    ? "border-indigo-600 text-indigo-600"
-                    : "border-transparent text-gray-600 hover:text-gray-900"
-                }`
-              }
-            >
-              Live View
-            </NavLink>
-            <NavLink
-              to="/activities"
-              className={({ isActive }) =>
-                `px-4 py-2 border-b-2 transition-colors ${
-                  isActive
-                    ? "border-indigo-600 text-indigo-600"
-                    : "border-transparent text-gray-600 hover:text-gray-900"
-                }`
-              }
-            >
-              Activity
-            </NavLink>
-            <NavLink
-              to="/settings"
-              className={({ isActive }) =>
-                `px-4 py-2 border-b-2 transition-colors ${
-                  isActive
-                    ? "border-indigo-600 text-indigo-600"
-                    : "border-transparent text-gray-600 hover:text-gray-900"
-                }`
-              }
-            >
-              Settings
-            </NavLink>
+            <NavItem href="/welcome" label="Get Started" />
+            <NavItem href="/live-view" label="Live View" />
+            <NavItem href="/activities" label="Activities" />
+            <NavItem href="/settings" label="Settings" />
+            <NavItem href="/mcp-docs" label="MCP Docs" />
           </div>
         </nav>
 
@@ -97,5 +54,22 @@ export default function Layout() {
         <Outlet />
       </div>
     </div>
+  );
+}
+
+function NavItem({ href, label }: { href: string; label: string }) {
+  return (
+    <NavLink
+      to={href}
+      className={({ isActive }) =>
+        `px-4 py-2 border-b-2 transition-colors ${
+          isActive
+            ? "border-indigo-600 text-indigo-600"
+            : "border-transparent text-gray-600 hover:text-gray-900"
+        }`
+      }
+    >
+      {label}
+    </NavLink>
   );
 }
