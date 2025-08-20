@@ -98,13 +98,6 @@ async def proxy_live_files(file_path: str):
             return Response(status_code=404)
 
 
-@app.get("/", response_class=HTMLResponse)
-def index():
-    file_path = path.join(path.dirname(__file__), "frontend", "old-index.html")
-    with open(file_path) as f:
-        return HTMLResponse(content=f.read())
-
-
 @app.websocket("/websockify")
 async def vnc_websocket_proxy(websocket: WebSocket):
     """WebSocket proxy to bridge NoVNC client and VNC server."""
@@ -184,6 +177,7 @@ def start(brand: str):
     return HTMLResponse(content=rendered)
 
 
+@app.get("/")
 @app.get("/activities")
 def activities():
     file_path = path.join(path.dirname(__file__), "frontend", "index.html")
