@@ -178,6 +178,7 @@ def start(brand: str):
 
 @app.get("/")
 @app.get("/activities")
+@app.get("/link/{link_id}")
 def activities():
     file_path = path.join(path.dirname(__file__), "frontend", "index.html")
     with open(file_path) as f:
