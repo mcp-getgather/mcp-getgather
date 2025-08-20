@@ -3,9 +3,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from patchright.async_api import Page
-from pydantic import BaseModel
 from patchright.async_api import BrowserContext, Page
+from pydantic import BaseModel
 
 from getgather.activity import active_activity_ctx
 from getgather.config import settings
@@ -83,25 +82,6 @@ class RRWebInjector:
             return False
 
         return True
-
-    async def inject_into_page(self, page: Page) -> bool:
-        """Inject RRWeb recording into a page if conditions are met."""
-        try:
-            if not self.should_inject_for_page(page):
-                return False
-
-            # Expose save_event function to browser
-            await page.expose_function("saveEvent", self.save_event)  # type: ignore[reportUnknownMemberType]
-
-            # Inject RRWeb recording script
-            await page.add_init_script(self._generate_injection_script())
-
-            logger.debug(f"RRWeb script injected for page: {page.url}")
-            return True
-
-        except Exception as e:
-            logger.error(f"Failed to inject RRWeb script: {e}")
-            return False
 
     async def inject_into_context(self, context: BrowserContext):
         """Inject RRWeb recording into a browser context for whole page recording."""
