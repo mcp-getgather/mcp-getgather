@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import Any
 
+from patchright.async_api import Page
+
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
 from getgather.connectors.spec_models import Schema as SpecSchema
@@ -8,7 +10,6 @@ from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract, get_mcp_browser_session, with_brand_browser_session
 from getgather.parse import parse_html
-from patchright.async_api import Page
 
 ebird_mcp = BrandMCPBase(brand_id="ebird", name="Ebird MCP")
 
