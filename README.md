@@ -7,8 +7,12 @@ GetGather is a containerized service that allows MCP clients to interact with yo
 First, run the container with Docker or Podman:
 
 ```bash
-docker run -p 9999:8000 ghcr.io/mcp-getgather/mcp-getgather
+docker run  -v /etc/localtime:/etc/localtime:ro -p 9999:8000 ghcr.io/mcp-getgather/mcp-getgather
 ```
+
+On MacOS `-v /etc/localtime:/etc/localtime:ro` is needed for the service to use your local timezone,
+and on Linux it's `-v /etc/timezone:/etc/timezone:ro` instead.
+On windows, the timezone has to be set directly as `-e TZ=America/Los_Angeles`.
 
 Optionally, with `--env-file` if you have an env file for OPENAI_API_KEY, etc.
 

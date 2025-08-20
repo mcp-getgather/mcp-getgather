@@ -101,3 +101,44 @@ async def get_browsing_history() -> dict[str, Any]:
     await page.wait_for_selector("div[class*='desktop-grid']")
     html = await page.locator("div[class*='desktop-grid']").inner_html()
     return {"browsing_history_html": html}
+
+
+@amazon_mcp.tool(tags={"private"})
+async def search_purchase_history(
+    keyword: str,
+) -> dict[str, Any]:
+    """Search purchase history of a amazon."""
+    browser_session = get_mcp_browser_session()
+    page = await browser_session.page()
+    await page.goto(
+        f"https://www.amazon.com/your-orders/search/ref=ppx_yo2ov_dt_b_search?opt=ab&search={keyword}"
+    )
+    await page.wait_for_selector("div.a-section.a-spacing-none.a-padding-small")
+    await page.wait_for_timeout(1000)
+    html = await page.locator("div.a-section.a-spacing-none.a-padding-small").inner_html()
+
+    spec_schema = SpecSchema.model_validate({
+        "bundle": "",
+        "format": "html",
+        "output": "",
+        "row_selector": "div.a-section.a-spacing-large.a-spacing-top-large",
+        "columns": [
+            {
+                "name": "product_name",
+                "selector": "a.a-link-normal p",
+            },
+            {
+                "name": "product_url",
+                "selector": "a.a-link-normal[href*='/dp/']",
+                "attribute": "href",
+            },
+            {"name": "product_image", "selector": "img", "attribute": "src"},
+            {
+                "name": "order_date",
+                "selector": "div.a-row.a-spacing-small > span",
+            },
+        ],
+    })
+
+    result = await parse_html(brand_id=amazon_mcp.brand_id, html_content=html, schema=spec_schema)
+    return {"order_history": result.content}

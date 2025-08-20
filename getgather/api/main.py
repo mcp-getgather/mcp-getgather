@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
     await startup()
     async with AsyncExitStack() as stack:
         for mcp_app in mcp_apps.values():
-            await stack.enter_async_context(mcp_app.lifespan(app)) # type: ignore
+            await stack.enter_async_context(mcp_app.lifespan(app))  # type: ignore
         yield
 
 
@@ -176,6 +176,7 @@ def start(brand: str):
     return HTMLResponse(content=rendered)
 
 
+@app.get("/")
 @app.get("/activities")
 def activities():
     file_path = path.join(path.dirname(__file__), "frontend", "index.html")
