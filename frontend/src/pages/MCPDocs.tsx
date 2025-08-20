@@ -30,11 +30,11 @@ export default function McpDocs() {
   const getTypeTitle = (type: string) => {
     switch (type) {
       case "brand":
-        return "Brand Integrations";
+        return "Brand Specific Servers";
       case "category":
-        return "Category Groups";
+        return "Category Servers";
       case "all":
-        return "All Services";
+        return "Everything Server";
       default:
         return type.charAt(0).toUpperCase() + type.slice(1);
     }
@@ -45,11 +45,11 @@ export default function McpDocs() {
       case "brand":
         return "Individual brand-specific MCP servers";
       case "category":
-        return "Grouped services by category";
+        return "Grouped brands and tools by category";
       case "all":
-        return "Comprehensive service collections";
+        return "Every brand and tool";
       default:
-        return `${type} services`;
+        return `${type} servers`;
     }
   };
 
