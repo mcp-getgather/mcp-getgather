@@ -110,21 +110,17 @@ async def submit_checklist(
     await select_date(page, checklist_datetime)
     await select_trip_details(page, checklist_datetime, duration_hours, distance)
 
-    print(f"🧭 Going to checklist")
     await page.click("button[type=submit]")
     await page.wait_for_selector("input[name=jumpToSpp]")
 
-    print(f"🦆 Adding birds")
     await add_birds_to_checklist(page, birds)
 
-    print(f"✅ Submitting checklist")
     await page.click("input#all-spp-n")
     await page.click("button[type=submit]")
 
 
 async def select_location(page: Page, location: str):
     """Select location for checklist."""
-    print(f"🌎 Selecting location: {location}")
     await page.select_option("#myLocSel", location)
     await page.wait_for_timeout(1000)
 
@@ -135,7 +131,6 @@ async def select_date(page: Page, checklist_datetime: datetime):
     checklist_month = checklist_datetime.month
     day = str(checklist_datetime.day)
     
-    print(f"📆 Selecting date: {checklist_month}/{day}")
     await page.wait_for_selector("select#p-month")
     
     # Only select month if it's different from current month
@@ -153,7 +148,6 @@ async def select_trip_details(page: Page, checklist_datetime: datetime, duration
     minute = str(checklist_datetime.minute).zfill(2)
     am_pm = "AM" if checklist_datetime.hour < 12 else "PM"
     
-    print(f"🚶🏻 Selecting trip details: {hour}:{minute} {am_pm}, {duration_hours}h, {distance}mi")
     await page.click("label:has-text('Traveling')")
     await page.fill("input#p-shared-hr", hour)
     await page.fill("input#p-shared-min", minute)
@@ -169,12 +163,10 @@ async def add_birds_to_checklist(page: Page, birds: list[str]):
         for bird in birds:
             bird_locator = page.locator("li").filter(has_text=bird)
             if await bird_locator.count() == 0:
-                print(f"⚠️  Could not find bird: {bird}")
                 continue
 
             inner_element = bird_locator.first
             input_field = inner_element.locator("input.sc")
             await input_field.fill(str(1))
     except Exception as e:
-        print(f"❌ Error adding birds: {e}")
         raise e
