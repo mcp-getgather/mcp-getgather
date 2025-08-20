@@ -1,11 +1,12 @@
 import { useSearchParams } from "react-router";
 import { RRWebPlayer } from "@/components/rrweb-player";
 import { useState, useEffect } from "react";
+import { ApiService, type RRWebEvent } from "@/lib/api";
 
 export function ReplayPage() {
   const [searchParams] = useSearchParams();
   const activityId = searchParams.get("id");
-  const [events, setEvents] = useState([]);
+  const [events, setEvents] = useState<RRWebEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,13 +19,7 @@ export function ReplayPage() {
       }
 
       try {
-        const response = await fetch(
-          `/api/activities/${activityId}/recordings`,
-        );
-        if (!response.ok) {
-          throw new Error("Failed to load events");
-        }
-        const data = await response.json();
+        const data = await ApiService.getRecording(activityId);
         setEvents(data.events);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");

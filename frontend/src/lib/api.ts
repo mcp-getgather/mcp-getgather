@@ -1,5 +1,5 @@
 // API service for activities
-export interface Activity {
+export type Activity = {
   id: number;
   created_at: string;
   brand_id: string;
@@ -9,7 +9,18 @@ export interface Activity {
   execution_time_ms: number | null;
   recording_count: number;
   has_recording: boolean;
-}
+};
+
+export type RecordingResponse = {
+  events: RRWebEvent[];
+};
+
+export type RRWebEvent = {
+  type: number;
+  data: Record<string, unknown>;
+  timestamp: number;
+  [key: string]: unknown;
+};
 
 export class ApiService {
   private static baseUrl = "/api";
@@ -25,7 +36,7 @@ export class ApiService {
     return data;
   }
 
-  static async getRecording(activityId: number) {
+  static async getRecording(activityId: string): Promise<RecordingResponse> {
     const response = await fetch(
       `${this.baseUrl}/activities/${activityId}/recordings`,
     );

@@ -6,7 +6,7 @@ import GetStarted from "./pages/GetStarted";
 import Activities from "./pages/Activities";
 import LiveView from "./pages/LiveView";
 import Settings from "./pages/Settings";
-import { ReplayPage } from "./pages/replay";
+import { ReplayPage } from "./pages/Replay";
 import "./index.css";
 import Home from "./pages/Home";
 

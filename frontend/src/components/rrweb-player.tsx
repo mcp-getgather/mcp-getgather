@@ -1,29 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import "rrweb-player/dist/style.css";
+import { type RRWebEvent } from "@/lib/api";
 
-// RRWeb event type definition
-interface RRWebEvent {
-  type: number;
-  data: Record<string, unknown>;
-  timestamp: number;
-  [key: string]: unknown;
-}
-
-// RRWeb player interface
-interface RRWebPlayerInstance {
+// RRWeb player type
+type RRWebPlayerInstance = {
   $destroy(): void;
   $set(props: { width: number; height: number }): void;
   triggerResize(): void;
   goto(time: number, autoPlay?: boolean): void;
   addEventListener(event: string, handler: () => void): void;
   [key: string]: unknown; // Allow additional properties
-}
+};
 
-interface RRWebPlayerProps {
+type RRWebPlayerProps = {
   events: RRWebEvent[];
   width?: number;
   height?: number;
-}
+};
 
 export function RRWebPlayer({ events }: RRWebPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -97,13 +90,11 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
         // Add loop functionality (always enabled)
         if (playerRef.current) {
           playerRef.current.addEventListener("finish", () => {
-            console.log("Replay finished, restarting loop...");
             // Restart the replay from beginning
             playerRef.current?.goto(0, true); // Go to start and auto-play
           });
         }
       } catch (error) {
-        console.error("Error initializing rrweb player:", error);
         if (!isDestroyed) {
           setHasError(true);
         }
@@ -112,7 +103,27 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
 
     initializePlayer();
 
-    // Handle window resize
+    // Cleanup function
+    return () => {
+      isDestroyed = true;
+
+      // Copy refs to variables to avoid React hooks warning about stale refs
+      const player = playerRef.current;
+      const container = containerRef.current;
+
+      if (player && typeof player.$destroy === "function") {
+        player.$destroy();
+        playerRef.current = null;
+      }
+
+      if (container) {
+        container.innerHTML = "";
+      }
+    };
+  }, [events]);
+
+  // Handle window resize in separate effect
+  useEffect(() => {
     const handleResize = () => {
       if (
         !playerRef.current ||
@@ -146,23 +157,8 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
 
     window.addEventListener("resize", handleResize);
 
-    // Cleanup function
     return () => {
-      isDestroyed = true;
       window.removeEventListener("resize", handleResize);
-
-      // Copy refs to variables to avoid React hooks warning about stale refs
-      const player = playerRef.current;
-      const container = containerRef.current;
-
-      if (player && typeof player.$destroy === "function") {
-        player.$destroy();
-        playerRef.current = null;
-      }
-
-      if (container) {
-        container.innerHTML = "";
-      }
     };
   }, [events]);
 
