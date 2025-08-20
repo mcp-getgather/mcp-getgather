@@ -16,13 +16,16 @@ export default function McpDocs() {
       .then((data) => setServers(data));
   }, []);
 
-  const groupedServers = servers.reduce((acc, server) => {
-    if (!acc[server.type]) {
-      acc[server.type] = [];
-    }
-    acc[server.type].push(server);
-    return acc;
-  }, {} as Record<string, MCPDoc[]>);
+  const groupedServers = servers.reduce(
+    (acc, server) => {
+      if (!acc[server.type]) {
+        acc[server.type] = [];
+      }
+      acc[server.type].push(server);
+      return acc;
+    },
+    {} as Record<string, MCPDoc[]>,
+  );
 
   const getTypeTitle = (type: string) => {
     switch (type) {
@@ -86,12 +89,16 @@ export default function McpDocs() {
                   </h2>
                   <p className="text-slate-600">{getTypeDescription(type)}</p>
                   <span className="inline-block mt-2 text-sm text-slate-500">
-                    {typeServers.length} server{typeServers.length !== 1 ? "s" : ""}
+                    {typeServers.length} server
+                    {typeServers.length !== 1 ? "s" : ""}
                   </span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {typeServers.map((server, serverIndex) => (
-                    <ServerCard key={`${server.name}-${serverIndex}`} server={server} />
+                    <ServerCard
+                      key={`${server.name}-${serverIndex}`}
+                      server={server}
+                    />
                   ))}
                 </div>
               </section>
