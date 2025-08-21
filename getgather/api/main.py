@@ -22,11 +22,11 @@ from getgather.config import settings
 from getgather.database.migrate import run_migration
 from getgather.hosted_link_manager import HostedLinkManager
 from getgather.logs import logger
-from getgather.mcp.main import create_mcp_apps
+from getgather.mcp.main import MCPDoc, create_mcp_apps, mcp_app_docs
+from getgather.startup import startup
 
 # Create MCP apps once and reuse for lifespan and mounting
 mcp_apps = create_mcp_apps()
-from getgather.startup import startup
 
 # Run database migrations
 run_migration()
@@ -41,8 +41,8 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 async def lifespan(app: FastAPI):
     await startup()
     async with AsyncExitStack() as stack:
-        for mcp_app in mcp_apps.values():
-            await stack.enter_async_context(mcp_app.lifespan(app))  # type: ignore
+        for mcp_app in mcp_apps:
+            await stack.enter_async_context(mcp_app.app.lifespan(app))  # type: ignore
         yield
 
 
@@ -290,6 +290,10 @@ app.include_router(activities_router)
 app.include_router(brands_router)
 app.include_router(auth_router)
 app.include_router(link_router)
-for bundle_name, mcp_app in mcp_apps.items():
-    route_name = "/mcp" if bundle_name == "all" else f"/mcp-{bundle_name}"
-    app.mount(route_name, mcp_app)
+for mcp_app in mcp_apps:
+    app.mount(mcp_app.route, mcp_app.app)
+
+
+@app.get("/api/mcp-docs")
+async def mcp_docs() -> list[MCPDoc]:
+    return await asyncio.gather(*[mcp_app_docs(mcp_app) for mcp_app in mcp_apps])
