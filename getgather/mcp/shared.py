@@ -44,7 +44,7 @@ async def auth_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
 
     request_data = HostedLinkTokenRequest(brand_id=str(brand_id), profile_id=profile_id)
 
-    async with httpx.AsyncClient(follow_redirects=True) as client:
+    async with httpx.AsyncClient(follow_redirects=True, proxy=None) as client:
         headers = get_http_headers(include_all=True)
         sanitized = _sanitize_headers(headers)
         host = headers.get("host")
@@ -97,7 +97,7 @@ async def auth_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
 async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict[str, Any]:
     """Poll auth for a hosted link."""
     progress_count = 0
-    async with httpx.AsyncClient(follow_redirects=True) as client:
+    async with httpx.AsyncClient(follow_redirects=True, proxy=None) as client:
         processing = True
         while processing:
             headers = get_http_headers(include_all=True)
