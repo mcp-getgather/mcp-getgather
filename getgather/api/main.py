@@ -19,7 +19,6 @@ from getgather.api.routes.link.endpoints import router as link_router
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.config import settings
-from getgather.database.migrate import run_migration
 from getgather.hosted_link_manager import HostedLinkManager
 from getgather.logs import logger
 from getgather.mcp.main import MCPDoc, create_mcp_apps, mcp_app_docs
@@ -27,9 +26,6 @@ from getgather.startup import startup
 
 # Create MCP apps once and reuse for lifespan and mounting
 mcp_apps = create_mcp_apps()
-
-# Run database migrations
-run_migration()
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
