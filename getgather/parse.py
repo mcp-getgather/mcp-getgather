@@ -124,7 +124,17 @@ async def _extract_data_with_locators(
     schema: Schema,
     page: Page,
 ) -> list[dict[str, str | list[str]]]:
-    """Extract data from a page using schema selectors."""
+    """
+    Extract data from a page using Playwright locators.
+
+    Args:
+        brand_id: Brand identifier for custom parsing functions
+        schema: Schema definition with CSS selectors
+        page: Live Playwright page object
+
+    Returns:
+        List of dictionaries containing extracted data
+    """
     data: list[dict[str, str | list[str]]] = []
 
     lc_rows = page.locator(schema.row_selector)
@@ -157,9 +167,6 @@ async def _extract_data_with_evaluator(
 ) -> list[dict[str, Any]]:
     """
     Extract data from a page using JavaScript evaluation.
-
-    This method executes all extraction logic in the browser context in a single call.
-    Best for: Bulk data extraction, search results, product listings, read-only operations.
 
     Args:
         brand_id: Brand identifier (not used in evaluate method but kept for consistency)
