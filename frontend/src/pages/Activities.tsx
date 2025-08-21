@@ -189,7 +189,7 @@ export default function Activities() {
                                 className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 transition-colors"
                               >
                                 <Play className="h-3 w-3" />
-                                Replay ({activity.recording_count} events)
+                                Replay
                               </Link>
                             )}
                           </div>
