@@ -28,6 +28,7 @@ api_app = FastAPI(
     generate_unique_id_function=custom_generate_unique_id,
 )
 
+
 api_app.include_router(activities_router)
 api_app.include_router(brands_router)
 api_app.include_router(auth_router)

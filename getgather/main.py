@@ -3,10 +3,10 @@ import socket
 from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Final
+from typing import Awaitable, Callable, Final
 
 import httpx
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import (
     FileResponse,
     HTMLResponse,
@@ -54,7 +54,20 @@ app = FastAPI(
     redoc_url="/redoc",
     generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan,
+    redirect_slashes=False,
 )
+
+
+@app.middleware("http")
+async def add_trailing_slash(request: Request, call_next: Callable[[Request], Awaitable[Response]]):
+    path = request.url.path
+    query = request.url.query
+
+    if path.startswith("/api") or path.endswith("/"):
+        return await call_next(request)
+
+    new_url = f"{path}/" if not query else f"{path}/?{query}"
+    return RedirectResponse(url=new_url, status_code=307)
 
 
 STATIC_ASSETS_DIR = Path(__file__).parent / "static" / "assets"
@@ -64,11 +77,6 @@ FRONTEND_DIR = Path(__file__).parent / "frontend"
 
 app.mount("/static/assets", StaticFiles(directory=STATIC_ASSETS_DIR), name="assets")
 app.mount("/assets", StaticFiles(directory=BUILD_ASSETS_DIR), name="assets")
-
-
-@app.get("/live")
-def read_live():
-    return RedirectResponse(url="/live/", status_code=301)
 
 
 @app.get("/live/{file_path:path}")
@@ -212,11 +220,6 @@ async def extended_health():
     finally:
         await session.stop()
     return PlainTextResponse(content=f"OK IP: {ip_text}")
-
-
-@app.get("/inspector")
-def inspector_root():
-    return RedirectResponse(url="/inspector/", status_code=301)
 
 
 @app.get("/inspector/{file_path:path}")
