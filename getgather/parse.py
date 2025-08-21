@@ -298,40 +298,6 @@ async def _extract_data_with_python_parser(
     return data
 
 
-async def _extract_data_from_html(
-    brand_id: BrandIdEnum,
-    schema: Schema,
-    html_content: str,
-) -> list[dict[str, str | list[str]]]:
-    """
-    Extract data from HTML content using the schema's extraction method.
-
-    Note: This function only supports python_parser method. For other methods,
-    a Playwright page is required. Custom functions force locator method.
-
-    Args:
-        brand_id: Brand identifier for custom parsing functions
-        schema: Schema definition with CSS selectors and extraction_method
-        html_content: Raw HTML content to parse
-
-    Returns:
-        List of dictionaries containing extracted data
-
-    Raises:
-        ValueError: If extraction_method is not "python_parser" or if custom functions are present
-    """
-    has_custom_functions = any(col.function is not None for col in schema.columns)
-    extraction_method = getattr(schema, "extraction_method", "locator")
-
-    if has_custom_functions:
-        raise ValueError("Custom functions require a Playwright page (locator method)")
-
-    if extraction_method != "python_parser":
-        raise ValueError(f"Extraction method '{extraction_method}' requires a Playwright page")
-
-    return await _extract_data_with_python_parser(brand_id, schema, html_content, None)
-
-
 async def _extract_data_from_page(
     brand_id: BrandIdEnum,
     schema: Schema,
@@ -423,11 +389,12 @@ async def parse_html(
         data = await _extract_data_from_page(brand_id, schema, page)
 
     elif html_content:
-        # Try to extract directly from HTML if possible
-        try:
-            data = await _extract_data_from_html(brand_id, schema, html_content)
-        except ValueError:
-            # Need a browser to extract HTML
+        # Check if we can extract directly from HTML
+        has_custom_functions = any(col.function is not None for col in schema.columns)
+        extraction_method = getattr(schema, "extraction_method", "locator")
+
+        if has_custom_functions or extraction_method != "python_parser":
+            # Need a browser for extraction
             async with async_playwright() as pw:
                 browser = await pw.chromium.launch()
                 context = await browser.new_context()
@@ -437,6 +404,9 @@ async def parse_html(
                 await page.set_content(html_content)
                 data = await _extract_data_from_page(brand_id, schema, page)
                 await browser.close()
+        else:
+            # Can extract directly from HTML using python_parser
+            data = await _extract_data_with_python_parser(brand_id, schema, html_content, None)
 
     else:
         # Headless browser mode with bundle_dir
