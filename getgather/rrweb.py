@@ -89,7 +89,7 @@ class RRWebInjector:
             if not self.enabled:
                 return
             await context.add_init_script(self._generate_injection_script())
-            logger.debug("RRWeb script injected at context level for whole page recording")
+            logger.info("RRWeb script injected at context level for whole page recording")
 
         except Exception as e:
             logger.error(f"Failed to inject RRWeb script at context level: {e}")
