@@ -6,7 +6,7 @@ from os import path
 from typing import Final
 
 import httpx
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
@@ -20,13 +20,12 @@ from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.config import settings
 from getgather.database.migrate import run_migration
-from getgather.hosted_link_manager import HostedLinkManager
 from getgather.logs import logger
 from getgather.mcp.main import create_mcp_apps
+from getgather.startup import startup
 
 # Create MCP apps once and reuse for lifespan and mounting
 mcp_apps = create_mcp_apps()
-from getgather.startup import startup
 
 # Run database migrations
 run_migration()
@@ -180,6 +179,7 @@ def start(brand: str):
 
 @app.get("/")
 @app.get("/activities")
+@app.get("/link/{link_id}")
 def activities():
     file_path = path.join(path.dirname(__file__), "frontend", "index.html")
     with open(file_path) as f:
@@ -193,25 +193,6 @@ def health():
     return PlainTextResponse(
         content=f"OK {int(datetime.now().timestamp())} GIT_REV: {settings.GIT_REV}"
     )
-
-
-@app.get("/link/{link_id}", response_class=HTMLResponse)
-async def link_page(link_id: str):
-    """Serve the hosted link frontend page for user authentication."""
-
-    # Look up the brand from the link store
-    link_data = HostedLinkManager.get_link_data(link_id)
-    if not link_data:
-        raise HTTPException(status_code=404, detail=f"Link ID '{link_id}' not found")
-
-    brand = str(link_data.brand_id)
-    redirect_url = link_data.redirect_url
-
-    file_path = path.join(path.dirname(__file__), "frontend", "link.html")
-    with open(file_path) as f:
-        template = Template(f.read())
-    rendered = template.render(brand=brand, link_id=link_id, redirect_url=redirect_url)
-    return HTMLResponse(content=rendered)
 
 
 IP_CHECK_URL: Final[str] = "https://ifconfig.me/ip"

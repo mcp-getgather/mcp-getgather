@@ -9,12 +9,14 @@ import Settings from "./pages/Settings";
 import { ReplayPage } from "./pages/Replay";
 import "./index.css";
 import Home from "./pages/Home";
+import Link from "./pages/Link";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/link/:linkId" element={<Link />} />
         <Route path="/" element={<Layout />}>
           <Route path="welcome" element={<GetStarted />} />
           <Route path="live-view" element={<LiveView />} />
