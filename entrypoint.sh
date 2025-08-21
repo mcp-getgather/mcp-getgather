@@ -43,7 +43,9 @@ if [ -z "$MCP_INSPECTOR_DISABLED" ] || [ ! "$MCP_INSPECTOR_DISABLED" = "true" ];
     export MCP_PROXY_AUTH_TOKEN=getgather
   fi
   echo "Starting MCP inspector..."
-  HOST=0.0.0.0 MCP_AUTO_OPEN_ENABLED=false MCP_PROXY_AUTH_TOKEN=$MCP_PROXY_AUTH_TOKEN npx @modelcontextprotocol/inspector &
+  HOST=0.0.0.0 ALLOWED_ORIGINS=http://localhost:6274,http://localhost:8000,http://localhost:9999 \
+    MCP_AUTO_OPEN_ENABLED=false MCP_PROXY_AUTH_TOKEN=$MCP_PROXY_AUTH_TOKEN \
+    npx @modelcontextprotocol/inspector &
 else
   echo "MCP inspector disabled"
 fi

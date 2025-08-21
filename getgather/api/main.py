@@ -232,6 +232,60 @@ async def extended_health():
     return PlainTextResponse(content=f"OK IP: {ip_text}")
 
 
+@app.get("/inspector")
+def inspector_root():
+    return RedirectResponse(url="/inspector/", status_code=301)
+
+
+@app.get("/inspector/{file_path:path}")
+async def proxy_inspector(file_path: str):
+    """Proxy MCP Inspector service running on localhost:6274."""
+    target_url = f"http://localhost:6274/{file_path}"
+
+    logger.info(f"Proxying inspector request {file_path} to {target_url}")
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(target_url)
+            content = response.content
+
+            # Filter out headers that can cause decoding issues
+            headers = dict(response.headers)
+            for header in ["content-encoding", "content-length", "transfer-encoding"]:
+                headers.pop(header, None)
+
+            # Set appropriate content type for static assets
+            content_type = response.headers.get("content-type", "")
+            if file_path.endswith((".js", ".mjs")):
+                headers["content-type"] = "application/javascript"
+            elif file_path.endswith(".css"):
+                headers["content-type"] = "text/css"
+            elif file_path.endswith(".html") or file_path == "":
+                headers["content-type"] = "text/html"
+                # Rewrite HTML content to fix asset paths
+                try:
+                    html_content = content.decode("utf-8")
+                    # Replace absolute asset paths with proxied paths
+                    html_content = html_content.replace('src="/', 'src="/inspector/')
+                    html_content = html_content.replace('href="/', 'href="/inspector/')
+                    html_content = html_content.replace("src='/", "src='/inspector/")
+                    html_content = html_content.replace("href='/", "href='/inspector/")
+                    content = html_content.encode("utf-8")
+                except UnicodeDecodeError:
+                    # If decoding fails, leave content unchanged
+                    pass
+            elif content_type:
+                headers["content-type"] = content_type
+
+            return Response(status_code=response.status_code, content=content, headers=headers)
+        except httpx.RequestError as e:
+            logger.error(f"Error proxying inspector request: {e}")
+            return Response(status_code=502, content=f"Bad Gateway: {str(e)}")
+        except Exception as e:
+            logger.error(f"Unexpected error proxying inspector request: {e}")
+            return Response(status_code=500, content=f"Internal Server Error: {str(e)}")
+
+
 app.include_router(activities_router)
 app.include_router(brands_router)
 app.include_router(auth_router)
