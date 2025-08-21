@@ -150,10 +150,11 @@ function ServerCard({ server }: { server: MCPDoc }) {
 }
 
 function InspectorLink({ route }: { route: string }) {
-  const baseUrl = "/inspector/?MCP_PROXY_AUTH_TOKEN=getgather";
+  const baseUrl =
+    "/inspector/?MCP_PROXY_AUTH_TOKEN=getgather&transport=streamable-http";
   return (
     <a
-      href={`${baseUrl}&transport=streamable-http&serverUrl=http://localhost:8000${route}`}
+      href={`${baseUrl}&serverUrl=http://localhost:23456${route}`}
       target="_blank"
       rel="noopener noreferrer"
       className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-md hover:bg-indigo-200 transition-colors"

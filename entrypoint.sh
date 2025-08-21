@@ -17,13 +17,13 @@ jwm >/dev/null 2>&1 &
 
 echo "Starting x11vnc server..."
 x11vnc \
-    -forever \
-    -nopw \
-    -rfbport 5900 \
-    -display :99 \
-    -listen 0.0.0.0 \
-    -quiet \
-    -no6 >/dev/null 2>&1 &
+  -forever \
+  -nopw \
+  -rfbport 5900 \
+  -display :99 \
+  -listen 0.0.0.0 \
+  -quiet \
+  -no6 >/dev/null 2>&1 &
 echo "VNC server started on port 5900"
 
 # So that the desktop is not completely empty
@@ -43,7 +43,7 @@ if [ -z "$MCP_INSPECTOR_DISABLED" ] || [ ! "$MCP_INSPECTOR_DISABLED" = "true" ];
     export MCP_PROXY_AUTH_TOKEN=getgather
   fi
   echo "Starting MCP inspector..."
-  HOST=0.0.0.0 ALLOWED_ORIGINS=http://localhost:6274,http://localhost:8000,http://localhost:9999 \
+  HOST=0.0.0.0 ALLOWED_ORIGINS=http://localhost:23456 \
     MCP_AUTO_OPEN_ENABLED=false MCP_PROXY_AUTH_TOKEN=$MCP_PROXY_AUTH_TOKEN \
     npx @modelcontextprotocol/inspector &
 else
@@ -51,4 +51,4 @@ else
 fi
 
 # Start FastAPI server
-/opt/venv/bin/python -m uvicorn getgather.api.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips="*"
+/opt/venv/bin/python -m uvicorn getgather.api.main:app --host 0.0.0.0 --port 23456 --proxy-headers --forwarded-allow-ips="*"
