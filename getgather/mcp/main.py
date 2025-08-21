@@ -9,9 +9,9 @@ from fastmcp.tools.tool import ToolResult
 from pydantic import BaseModel
 
 from getgather.activity import activity
+from getgather.brand_state import BrandState, brand_state_manager
 from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
-from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.logs import logger
 from getgather.mcp.auto_import import auto_import
 from getgather.mcp.calendar_utils import calendar_mcp
@@ -43,18 +43,18 @@ class AuthMiddleware(Middleware):
         brand_id = context.message.name.split("_")[0]
         context.fastmcp_context.set_state("brand_id", brand_id)
 
-        if "private" not in tool.tags or BrandState.is_brand_connected(brand_id):
+        if "private" not in tool.tags or await brand_state_manager.is_brand_connected(brand_id):
             async with activity(
                 brand_id=brand_id,
                 name=context.message.name,
             ):
                 return await call_next(context)
 
-        browser_profile_id = BrandState.get_browser_profile_id(brand_id)
+        browser_profile_id = await brand_state_manager.get_browser_profile_id(brand_id)
         if not browser_profile_id:
             # Create and persist a new profile for the auth flow
             browser_profile = BrowserProfile()
-            BrandState.add(
+            await brand_state_manager.add(
                 BrandState(
                     brand_id=BrandIdEnum(brand_id),
                     browser_profile_id=browser_profile.id,

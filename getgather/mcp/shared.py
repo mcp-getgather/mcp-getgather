@@ -8,10 +8,10 @@ from fastmcp.server.dependencies import get_context, get_http_headers
 
 from getgather.api.routes.link.types import HostedLinkTokenRequest
 from getgather.auth_flow import ExtractResult
+from getgather.brand_state import brand_state_manager
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.connectors.spec_loader import BrandIdEnum
-from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.extract_orchestrator import ExtractOrchestrator
 from getgather.logs import logger
 
@@ -31,13 +31,13 @@ def _sanitize_headers(headers: dict[str, str]) -> dict[str, str]:
 async def auth_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
     """Auth with a link."""
 
-    if BrandState.is_brand_connected(brand_id):
+    if await brand_state_manager.is_brand_connected(brand_id):
         return {
             "status": "FINISHED",
             "message": "Brand already connected.",
         }
 
-    profile_id = BrandState.get_browser_profile_id(brand_id)
+    profile_id = await brand_state_manager.get_browser_profile_id(brand_id)
     logger.info(
         "Creating link for brand", extra={"brand_id": str(brand_id), "profile_id": profile_id}
     )
@@ -137,7 +137,7 @@ async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict
 
             if response_json["status"] == "completed":
                 processing = False
-                BrandState.update_is_connected(
+                await brand_state_manager.update_is_connected(
                     brand_id=BrandIdEnum(response_json["brand_id"]),
                     is_connected=True,
                 )
@@ -186,8 +186,8 @@ def with_brand_browser_session(func: Callable[P, Awaitable[T]]) -> Callable[P, A
         brand_id = get_mcp_brand_id()
 
         profile_id = (
-            BrandState.get_browser_profile_id(brand_id)
-            if BrandState.is_brand_connected(brand_id)
+            await brand_state_manager.get_browser_profile_id(brand_id)
+            if await brand_state_manager.is_brand_connected(brand_id)
             else None
         )
         browser_profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()

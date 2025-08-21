@@ -2,10 +2,10 @@ from typing import Any
 
 from fastmcp import Context
 
+from getgather.brand_state import brand_state_manager
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
 from getgather.connectors.spec_models import Schema as SpecSchema
-from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.mcp.agent import run_agent_for_brand
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract, get_mcp_browser_session, with_brand_browser_session
@@ -24,13 +24,9 @@ async def get_purchase_history() -> dict[str, Any]:
 async def search_product(
     keyword: str,
 ) -> dict[str, Any]:
-    """Search product on amazon.
-
-    Args:
-        keyword: Search keyword
-    """
-    if BrandState.is_brand_connected(amazon_mcp.brand_id):
-        profile_id = BrandState.get_browser_profile_id(amazon_mcp.brand_id)
+    """Search product on amazon."""
+    if await brand_state_manager.is_brand_connected(amazon_mcp.brand_id):
+        profile_id = await brand_state_manager.get_browser_profile_id(amazon_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -75,8 +71,8 @@ async def get_product_detail(
     product_url: str,
 ) -> dict[str, Any]:
     """Get product detail from amazon."""
-    if BrandState.is_brand_connected(amazon_mcp.brand_id):
-        profile_id = BrandState.get_browser_profile_id(amazon_mcp.brand_id)
+    if await brand_state_manager.is_brand_connected(amazon_mcp.brand_id):
+        profile_id = await brand_state_manager.get_browser_profile_id(amazon_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
