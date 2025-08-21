@@ -12,6 +12,7 @@ from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Template
 
+from getgather.api.routes.activities.endpoints import router as activities_router
 from getgather.api.routes.auth.endpoints import router as auth_router
 from getgather.api.routes.brands.endpoints import router as brands_router
 from getgather.api.routes.link.endpoints import router as link_router
@@ -212,6 +213,7 @@ async def extended_health():
     return PlainTextResponse(content=f"OK IP: {ip_text}")
 
 
+app.include_router(activities_router)
 app.include_router(brands_router)
 app.include_router(auth_router)
 app.include_router(link_router)

@@ -1,11 +1,14 @@
+from datetime import datetime
 from typing import Any
+
+from patchright.async_api import Page
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import extract
+from getgather.mcp.shared import extract, get_mcp_browser_session, with_brand_browser_session
 from getgather.parse import parse_html
 
 ebird_mcp = BrandMCPBase(brand_id="ebird", name="Ebird MCP")
@@ -85,3 +88,88 @@ async def explore_species(
         "species_identification_html": species_identification_html,
         "species_statistic_html": species_statistic_html,
     }
+
+
+@ebird_mcp.tool(tags={"private"})
+@with_brand_browser_session
+async def submit_checklist(
+    location: str,
+    birds: list[str],
+    checklist_datetime: datetime,
+    duration_hours: str = "1",
+    distance: str = "1",
+):
+    """Submit checklist to ebird."""
+    session = get_mcp_browser_session()
+    page = await session.page()
+    await page.goto("https://ebird.org/submit")
+    await page.wait_for_selector("select#myLocSel")
+    await page.wait_for_timeout(1000)
+
+    await select_location(page, location)
+    await page.click("input[type=submit]")
+    await select_date(page, checklist_datetime)
+    await select_trip_details(page, checklist_datetime, duration_hours, distance)
+
+    await page.click("button[type=submit]")
+    await page.wait_for_selector("input[name=jumpToSpp]")
+
+    await add_birds_to_checklist(page, birds)
+
+    await page.click("input#all-spp-n")
+    await page.click("button[type=submit]")
+
+
+async def select_location(page: Page, location: str):
+    """Select location for checklist."""
+    await page.select_option("#myLocSel", location)
+    await page.wait_for_timeout(1000)
+
+
+async def select_date(page: Page, checklist_datetime: datetime):
+    """Select date for checklist."""
+    current_month = datetime.now().month
+    checklist_month = checklist_datetime.month
+    day = str(checklist_datetime.day)
+
+    await page.wait_for_selector("select#p-month")
+
+    # Only select month if it's different from current month
+    if checklist_month != current_month:
+        await page.select_option("#p-month", str(checklist_month))
+    await page.wait_for_timeout(1000)
+    await page.select_option("#p-day", day)
+    await page.wait_for_timeout(1000)
+
+
+async def select_trip_details(
+    page: Page, checklist_datetime: datetime, duration_hours: str, distance: str
+):
+    """Select trip details including time, duration, and distance."""
+    # Extract hour, minute, and AM/PM from datetime object
+    hour = str(checklist_datetime.hour % 12 or 12)  # Convert to 12-hour format
+    minute = str(checklist_datetime.minute).zfill(2)
+    am_pm = "AM" if checklist_datetime.hour < 12 else "PM"
+
+    await page.click("label:has-text('Traveling')")
+    await page.fill("input#p-shared-hr", hour)
+    await page.fill("input#p-shared-min", minute)
+    await page.select_option("#p-shared-ampm", am_pm)
+    await page.fill("input#p-dur-hrs", duration_hours)
+    await page.fill("input#p-dist", distance)
+    await page.fill("input#p-party-size", "1")
+
+
+async def add_birds_to_checklist(page: Page, birds: list[str]):
+    """Add birds to checklist with case-insensitive partial matching."""
+    try:
+        for bird in birds:
+            bird_locator = page.locator("li").filter(has_text=bird)
+            if await bird_locator.count() == 0:
+                continue
+
+            inner_element = bird_locator.first
+            input_field = inner_element.locator("input.sc")
+            await input_field.fill(str(1))
+    except Exception as e:
+        raise e

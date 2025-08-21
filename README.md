@@ -65,6 +65,22 @@ Choose one of the following options if you'd like the MCP clients to automatical
 1. Add [playwright-mcp](https://github.com/microsoft/playwright-mcp/) server.
 2. In Claude Desktop, enable "Control Chrome" in "Settings" -> "Extensions".
 
+## MCP inspector
+
+The container runs an [MCP inspector](https://github.com/modelcontextprotocol/inspector). It's useful for debugging and listing available tools without a client.
+
+Run docker container with additional ports 6274 and 6277
+
+```bash
+docker run -p 9999:8000 -p 6274:6274 -p 6277:6277 ghcr.io/mcp-getgather/mcp-getgather
+```
+
+Open [inspector url](http://localhost:6274/?MCP_PROXY_AUTH_TOKEN=getgather&transport=streamable-http&serverUrl=http://localhost:8000/mcp) in your browser.
+
+The default `MCP_PROXY_AUTH_TOKEN` is `getgather`. You can change it by running the container with `--env MCP_PROXY_AUTH_TOKEN=SOME_TOKEN`.
+
+The inspector can be disabled with `--env MCP_INSPECTOR_DISABLED=true`.
+
 ## Build and run locally
 
 After cloning the repo:

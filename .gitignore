@@ -499,3 +499,5 @@ getgather/api/frontend/index.html
 getgather/api/frontend/assets
 
 !frontend/src/lib
+
+.claude/

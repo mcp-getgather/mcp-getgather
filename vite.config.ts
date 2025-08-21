@@ -13,7 +13,7 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     proxy: {
-      "^/(brands|link/create|link/status|parse|start|auth|replay|static|live|mcp)":
+      "^/(api|brands|link/create|link/status|parse|start|auth|replay|static|live|mcp)":
         {
           target: "http://127.0.0.1:8000/",
           changeOrigin: false,

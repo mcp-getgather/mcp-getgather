@@ -1,41 +1,19 @@
 import importlib
-from contextlib import asynccontextmanager
-from datetime import UTC, datetime
-from typing import Any, AsyncGenerator
+from typing import Any
 
 from fastmcp import Context, FastMCP
 from fastmcp.server.http import StarletteWithLifespan
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools.tool import ToolResult
 
+from getgather.activity import activity
 from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
-from getgather.database.repositories.activity_repository import Activity
 from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.logs import logger
 from getgather.mcp.auto_import import auto_import
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import auth_hosted_link, poll_status_hosted_link
-
-
-@asynccontextmanager
-async def activity(name: str, brand_id: str = "") -> AsyncGenerator[None, None]:
-    """Context manager for tracking activity."""
-    activity_id = Activity.add(
-        Activity(
-            brand_id=brand_id,
-            name=name,
-            start_time=datetime.now(UTC),
-        )
-    )
-    try:
-        yield
-    finally:
-        Activity.update_end_time(
-            id=activity_id,
-            end_time=datetime.now(UTC),
-        )
-
 
 # Ensure calendar MCP is registered by importing its module
 try:
@@ -86,8 +64,8 @@ class AuthMiddleware(Middleware):
         )
 
         async with activity(
-            brand_id=brand_id,
             name="auth",
+            brand_id=brand_id,
         ):
             result = await auth_hosted_link(brand_id=BrandIdEnum(brand_id))
             return ToolResult(structured_content=result)

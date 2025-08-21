@@ -18,6 +18,7 @@
     "format": "prettier --write \"**/*.{html,js,jsx,ts,tsx,css,json,md}\""
   },
   "dependencies": {
+    "@modelcontextprotocol/inspector": "^0.16.5",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tabs": "^1.1.12",
     "@tailwindcss/vite": "^4.1.11",
@@ -27,6 +28,8 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router": "^7.8.0",
+    "rrweb": "^2.0.0-alpha.18",
+    "rrweb-player": "^2.0.0-alpha.18",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.11"
   },
