@@ -42,7 +42,7 @@ You will be prompted to tweak the settings before proceeding. Enter `yes` to pro
 
 - App Name: (Pick a unique name for your app, such as `getgather`)
 - Region: (Pick a region closest to you, or that Fly.io recommends)
-- Internal Port: `8000` (You can change this to any port you want, but 8000 is the default for the application)
+- Internal Port: `23456` (You can change this to any port you want, but 23456 is the default for the application)
 - Machine Size: `shared-cpu-2x` (or a larger size if you need more resources)
 - Memory: `2GB` (or a larger amount if you need more memory)
 

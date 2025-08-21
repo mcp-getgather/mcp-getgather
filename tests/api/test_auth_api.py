@@ -12,7 +12,7 @@ from tests.acme_corp.constants import (
     VALID_PASSWORD,
 )
 
-HOST = os.environ.get("HOST", "http://localhost:8000")
+HOST = os.environ.get("HOST", "http://localhost:23456")
 API_KEY = os.environ.get("API_KEY")
 
 TEST_CASES = [

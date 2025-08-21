@@ -13,7 +13,7 @@ export default defineConfig({
   server: {
     proxy: {
       "^/(api|brands|link|parse|start|auth|replay|static|live|inspector)": {
-        target: "http://127.0.0.1:8000/",
+        target: "http://127.0.0.1:23456/",
         changeOrigin: true,
       },
     },
