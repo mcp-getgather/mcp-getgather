@@ -151,7 +151,7 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
     return mcp.http_app(path="/")
 
 
-class MCPTool(BaseModel):
+class MCPToolDoc(BaseModel):
     name: str
     description: str
 
@@ -160,7 +160,7 @@ class MCPDoc(BaseModel):
     name: str
     type: Literal["brand", "category", "all"]
     route: str
-    tools: list[MCPTool]
+    tools: list[MCPToolDoc]
 
 
 async def mcp_app_docs(mcp_app: MCPApp) -> MCPDoc:
@@ -169,7 +169,7 @@ async def mcp_app_docs(mcp_app: MCPApp) -> MCPDoc:
         type=mcp_app.type,
         route=mcp_app.route,
         tools=[
-            MCPTool(
+            MCPToolDoc(
                 name=tool.name,
                 description=tool.description,
             )
