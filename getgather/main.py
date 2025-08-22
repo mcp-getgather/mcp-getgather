@@ -66,6 +66,11 @@ app.mount("/static/assets", StaticFiles(directory=STATIC_ASSETS_DIR), name="asse
 app.mount("/assets", StaticFiles(directory=BUILD_ASSETS_DIR), name="assets")
 
 
+@app.get("/live")
+def read_live():
+    return RedirectResponse(url="/live/", status_code=301)
+
+
 @app.get("/live/{file_path:path}")
 async def proxy_live_files(file_path: str):
     # noVNC lite's main web UI
@@ -207,6 +212,11 @@ async def extended_health():
     finally:
         await session.stop()
     return PlainTextResponse(content=f"OK IP: {ip_text}")
+
+
+@app.get("/inspector")
+def inspector_root():
+    return RedirectResponse(url="/inspector/", status_code=301)
 
 
 @app.get("/inspector/{file_path:path}")
