@@ -3,10 +3,10 @@ import socket
 from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Awaitable, Callable, Final
+from typing import Final
 
 import httpx
-from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import (
     FileResponse,
     HTMLResponse,
@@ -54,20 +54,7 @@ app = FastAPI(
     redoc_url="/redoc",
     generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan,
-    redirect_slashes=False,
 )
-
-
-@app.middleware("http")
-async def add_trailing_slash(request: Request, call_next: Callable[[Request], Awaitable[Response]]):
-    path = request.url.path
-    query = request.url.query
-
-    if path.startswith("/api") or path.endswith("/"):
-        return await call_next(request)
-
-    new_url = f"{path}/" if not query else f"{path}/?{query}"
-    return RedirectResponse(url=new_url, status_code=307)
 
 
 STATIC_ASSETS_DIR = Path(__file__).parent / "static" / "assets"
@@ -273,8 +260,16 @@ async def proxy_inspector(file_path: str):
 
 app.mount("/api", api_app)
 
+
 for mcp_app in mcp_apps:
     app.mount(mcp_app.route, mcp_app.app)
+
+    # Add explicit redirect for /mcp* -> /mcp*/
+    @app.api_route(
+        mcp_app.route, methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
+    )
+    async def redirect_to_mcp_with_slash():
+        return RedirectResponse(url=f"{mcp_app.route}/", status_code=307)
 
 
 # Everything else is handled by the SPA
