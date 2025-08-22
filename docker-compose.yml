@@ -3,12 +3,12 @@ services:
     image: ghcr.io/mcp-getgather/mcp-getgather:latest
     container_name: mcp-getgather
     ports:
-      - "23456:23456" # mcp-getgather server port
-      - "6277:6277" # mcp inspector server port
+      - 23456:23456  # mcp-getgather server port
+      - 6277:6277  # mcp inspector server port
     volumes:
-      - /etc/localtime:/etc/localtime:ro # use local timezone on MacOS
-      - /etc/timezone:/etc/timezone:ro # use local timezone on Linux
+      - /etc/localtime:/etc/localtime:ro  # use local timezone on MacOS
+      - /etc/timezone:/etc/timezone:ro  # use local timezone on Linux
     environment:
-      - MCP_INSPECTOR_DISABLED=false # toggle mcp inspector
-      - MCP_PROXY_AUTH_TOKEN=getgather # auth token for mcp inspector
-      - OPENAI_API_KEY= # openai api key only required for browser-use
+      - MCP_INSPECTOR_DISABLED=false  # toggle mcp inspector
+      - MCP_PROXY_AUTH_TOKEN=getgather  # auth token for mcp inspector
+      - OPENAI_API_KEY=  # openai api key only required for browser-use
