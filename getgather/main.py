@@ -3,10 +3,10 @@ import socket
 from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Final
+from typing import Awaitable, Callable, Final
 
 import httpx
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import (
     FileResponse,
     HTMLResponse,
@@ -274,12 +274,16 @@ app.mount("/api", api_app)
 for mcp_app in mcp_apps:
     app.mount(mcp_app.route, mcp_app.app)
 
-    # Add explicit redirect for /mcp* -> /mcp*/
-    @app.api_route(
-        mcp_app.route, methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
-    )
-    async def redirect_to_mcp_with_slash():
-        return RedirectResponse(url=f"{mcp_app.route}/", status_code=307)
+
+@app.middleware("http")
+async def mcp_redirect_middleware(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+):
+    # redirect /mcp* to /mcp*/
+    path = request.url.path
+    if path.startswith("/mcp") and not path.endswith("/"):
+        return RedirectResponse(url=f"{path}/", status_code=307)
+    return await call_next(request)
 
 
 # Everything else is handled by the SPA
