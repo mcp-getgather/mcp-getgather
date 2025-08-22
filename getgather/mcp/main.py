@@ -5,7 +5,7 @@ from typing import Any, Literal
 from fastmcp import Context, FastMCP
 from fastmcp.server.http import StarletteWithLifespan
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
-from fastmcp.tools.tool import Tool, ToolResult
+from fastmcp.tools.tool import ToolResult
 from pydantic import BaseModel
 
 from getgather.activity import activity
@@ -151,11 +151,16 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
     return mcp.http_app(path="/")
 
 
+class MCPToolDoc(BaseModel):
+    name: str
+    description: str
+
+
 class MCPDoc(BaseModel):
     name: str
     type: Literal["brand", "category", "all"]
     route: str
-    tools: list[Tool]
+    tools: list[MCPToolDoc]
 
 
 async def mcp_app_docs(mcp_app: MCPApp) -> MCPDoc:
@@ -163,5 +168,11 @@ async def mcp_app_docs(mcp_app: MCPApp) -> MCPDoc:
         name=mcp_app.name,
         type=mcp_app.type,
         route=mcp_app.route,
-        tools=(await mcp_app.app.state.fastmcp_server.get_tools()).values(),
+        tools=[
+            MCPToolDoc(
+                name=tool.name,
+                description=tool.description,
+            )
+            for tool in (await mcp_app.app.state.fastmcp_server.get_tools()).values()
+        ],
     )

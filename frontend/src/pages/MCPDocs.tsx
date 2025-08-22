@@ -5,7 +5,7 @@ type MCPDoc = {
   name: string;
   type: "brand" | "category" | "all";
   route: string;
-  tools: { name: string; route: string; description: string }[];
+  tools: { name: string; description: string }[];
 };
 
 export default function McpDocs() {
