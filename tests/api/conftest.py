@@ -6,7 +6,7 @@ expect.set_options(timeout=2_000)
 
 @pytest.fixture(scope="session")
 def site_url() -> str:
-    return "http://localhost:8000"
+    return "http://localhost:23456"
 
 
 @pytest.fixture(autouse=True)

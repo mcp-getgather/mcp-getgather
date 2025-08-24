@@ -3,7 +3,7 @@ import os
 import pytest
 import requests
 
-HOST = os.environ.get("HOST", "http://localhost:8000")
+HOST = os.environ.get("HOST", "http://localhost:23456")
 
 
 @pytest.mark.api

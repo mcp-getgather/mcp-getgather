@@ -1,7 +1,7 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
 import path from "node:path";
+import { defineConfig } from "vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -12,8 +12,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "^/(api|brands|link|parse|start|auth|replay|static|live)": {
-        target: "http://127.0.0.1:8000/",
+      "^/(api|brands|link|parse|start|auth|replay|static|live|inspector)": {
+        target: "http://127.0.0.1:23456/",
         changeOrigin: true,
       },
     },
