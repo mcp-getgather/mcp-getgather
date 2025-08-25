@@ -24,9 +24,9 @@ auth:
       type: autoclick
       selector: text="Continue shopping"
 
-    - name: email
-      type: email
-      prompt: Email
+    - name: login
+      type: text
+      prompt: Email or phone number
       selector: input[type="email"]
 
     - name: continue
@@ -81,7 +81,7 @@ auth:
       prompt: Submit
       selector: span#cvf-submit-otp-button input[type="submit"]
 
-    - name: incorrect-email
+    - name: incorrect-login
       type: wait
       selector: div[id="auth-error-message-box"]
 
@@ -110,7 +110,7 @@ auth:
       fields: [not_signed_in, signin_click]
 
     - name: Login Page
-      fields: [email, continue]
+      fields: [login, continue]
 
     - name: Input Password Page
       fields: [password, sign_in]
@@ -148,9 +148,9 @@ auth:
             option_label: span.a-radio-label
           afterwards: [alt_send_otp]
 
-    - name: Incorrect Email
-      fields: [email, continue, incorrect-input]
-      message: ❌ The email you entered are incorrect. Please try again.
+    - name: Incorrect Login
+      fields: [login, continue, incorrect-input]
+      message: ❌ The login you entered are incorrect. Please try again.
 
     - name: Incorrect Password
       fields: [password, sign_in, incorrect-input]
