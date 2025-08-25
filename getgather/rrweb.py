@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 from patchright.async_api import BrowserContext, Page
 from pydantic import BaseModel
 
-from getgather.activity import active_activity_ctx
 from getgather.config import settings
 from getgather.logs import logger
 
@@ -33,38 +32,29 @@ class RRWebInjector:
         self.script_url = settings.RRWEB_SCRIPT_URL
         self.mask_all_inputs = settings.RRWEB_MASK_ALL_INPUTS
         self.enabled = settings.ENABLE_RRWEB_RECORDING
+        self.injected_contexts: set[BrowserContext] = set()
+        self.events: list[Any] = []
 
     async def save_event(self, event: dict[str, Any]) -> None:
         """Save an rrweb event from browser."""
-        # Get active activity from context
-        activity = active_activity_ctx.get()
-        if activity is not None:
-            await rrweb_manager.add_event(activity.id, event)
-            logger.debug(
-                f"Saved RRWeb event for activity {activity.id}: {event.get('type', 'unknown')}"
+        self.events.append(event)
+
+    def flush_events(self) -> list[Any]:
+        """Return the events and reset events to empty list"""
+        try:
+            return self.events
+        finally:
+            self.events = []
+
+    async def inject_into_page(self, page: Page):
+        if self._should_inject_for_page(page):
+            await page.add_script_tag(url=self.script_url)
+            await page.evaluate(
+                "() => { rrwebRecord({ emit(event) { window.saveEvent(event); }, maskAllInputs: true }); }",
+                isolated_context=False,
             )
-        else:
-            logger.warning("No active activity found when saving RRWeb event")
 
-    def _generate_injection_script(self) -> str:
-        """Generate the JavaScript injection script."""
-        return f"""
-            const script = document.createElement('script');
-            script.src = '{self.script_url}';
-            script.onload = () => {{
-                if (typeof rrwebRecord !== 'undefined' && window.saveEvent) {{
-                    rrwebRecord({{
-                        emit: window.saveEvent,
-                        maskAllInputs: {str(self.mask_all_inputs).lower()},
-                        recordCanvas: true,
-                        collectFonts: true
-                    }});
-                }}
-            }};
-            document.head.appendChild(script);
-        """
-
-    def should_inject_for_page(self, page: Page) -> bool:
+    def _should_inject_for_page(self, page: Page) -> bool:
         """Determine if RRWeb should be injected for this page."""
         if not self.enabled:
             return False
@@ -82,17 +72,6 @@ class RRWebInjector:
             return False
 
         return True
-
-    async def inject_into_context(self, context: BrowserContext):
-        """Inject RRWeb recording into a browser context for whole page recording."""
-        try:
-            if not self.enabled:
-                return
-            await context.add_init_script(self._generate_injection_script())
-            logger.info("RRWeb script injected at context level for whole page recording")
-
-        except Exception as e:
-            logger.error(f"Failed to inject RRWeb script at context level: {e}")
 
 
 class Recording(BaseModel):
@@ -135,18 +114,12 @@ class RRWebManager:
         with open(file_path, "w") as f:
             json.dump(recording.model_dump(), f, indent=2, default=str)
 
-    async def add_event(self, activity_id: str, event: dict[str, Any]) -> None:
+    async def save_recording(self, activity_id: str) -> None:
         """Add an RRWeb event to an activity."""
-        recording = self._load_activity_recording(activity_id)
-
-        if recording:
-            # Add event to existing recording
-            recording.events.append(event)
-        else:
-            # Create new recording with this event
-            recording = Recording(activity_id=activity_id, events=[event])
-
-        self._save_activity_recording(recording)
+        events = rrweb_injector.flush_events()
+        if len(events) > 0:
+            recording = Recording(activity_id=activity_id, events=events)
+            self._save_activity_recording(recording)
 
     async def get_recording_by_activity_id(self, activity_id: str) -> Recording | None:
         """Get recording by activity ID."""

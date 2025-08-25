@@ -55,7 +55,7 @@ You can set environment variables in step #6 here, or just hit enter to skip.
 Set the following variable for your app.
 
 ```bash
-railway variables --set PORT=8000 --service backend
+railway variables --set PORT=23456 --service backend
 ```
 
 You may also optionally consider setting other environment variables in the [Railway dashboard](https://railway.app/dashboard) or via the CLI. See also [`.env.template`](../.env.template) and the main [README](../README.md) for more information on environment variables.
@@ -68,7 +68,7 @@ Run the following command to deploy `getgather` to Railway with the configuratio
 railway up
 ```
 
-Railway will build and deploy the app, which will take a few minutes. At the end, when you see `INFO: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)`, you can press `CTRL+C` to exit, as this is just showing the logs.
+Railway will build and deploy the app, which will take a few minutes. At the end, when you see `INFO: Uvicorn running on http://0.0.0.0:23456 (Press CTRL+C to quit)`, you can press `CTRL+C` to exit, as this is just showing the logs.
 
 #### 8. Create a domain
 

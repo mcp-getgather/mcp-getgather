@@ -7,7 +7,7 @@ from typing import Generator
 import pytest
 from pytest import MonkeyPatch
 
-from getgather.activity import ActivityManager, active_activity_ctx, activity
+from getgather.activity import ActivityManager, activity
 from getgather.db import DatabaseManager
 
 
@@ -334,73 +334,3 @@ class TestActivityContextManager:
             # Restore original managers
             getgather.activity.db_manager = original_db_manager
             getgather.activity.activity_manager = original_manager
-
-    @pytest.mark.asyncio
-    async def test_activity_context_variable_tracking(self) -> None:
-        """Test that context variable tracks active activity correctly."""
-        # Initially no active activity
-        assert active_activity_ctx.get() is None
-
-        async with activity("context-test", "test-brand") as activity_id:
-            # During execution, context variable should be set
-            current_activity = active_activity_ctx.get()
-            assert current_activity is not None
-            assert current_activity.id == activity_id
-            assert current_activity.name == "context-test"
-            assert current_activity.brand_id == "test-brand"
-            assert current_activity.end_time is None  # Not finished yet
-
-        # After context exit, context variable should be reset
-        assert active_activity_ctx.get() is None
-
-    @pytest.mark.asyncio
-    async def test_nested_activity_context_variable_tracking(self) -> None:
-        """Test that context variable correctly handles nested activities."""
-        # Initially no active activity
-        assert active_activity_ctx.get() is None
-
-        async with activity("outer-context", "outer-brand") as outer_id:
-            # Should track outer activity
-            outer_activity = active_activity_ctx.get()
-            assert outer_activity is not None
-            assert outer_activity.id == outer_id
-            assert outer_activity.name == "outer-context"
-
-            async with activity("inner-context", "inner-brand") as inner_id:
-                # Should now track inner activity
-                inner_activity = active_activity_ctx.get()
-                assert inner_activity is not None
-                assert inner_activity.id == inner_id
-                assert inner_activity.name == "inner-context"
-                # Should be different from outer
-                assert inner_activity.id != outer_activity.id
-
-            # After inner context exits, should return to outer activity
-            current_activity = active_activity_ctx.get()
-            assert current_activity is not None
-            assert current_activity.id == outer_id
-            assert current_activity.name == "outer-context"
-
-        # After outer context exits, should be None
-        assert active_activity_ctx.get() is None
-
-    @pytest.mark.asyncio
-    async def test_activity_context_variable_with_exception(self) -> None:
-        """Test that context variable is properly reset even when exceptions occur."""
-        # Initially no active activity
-        assert active_activity_ctx.get() is None
-
-        try:
-            async with activity("exception-context", "test-brand"):
-                # Context variable should be set
-                current_activity = active_activity_ctx.get()
-                assert current_activity is not None
-                assert current_activity.name == "exception-context"
-
-                # Raise an exception
-                raise ValueError("Test exception")
-        except ValueError:
-            pass  # Expected exception
-
-        # After exception, context variable should still be reset
-        assert active_activity_ctx.get() is None

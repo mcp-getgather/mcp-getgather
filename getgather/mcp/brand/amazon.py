@@ -112,6 +112,7 @@ async def get_browsing_history() -> dict[str, Any]:
 
 
 @amazon_mcp.tool(tags={"private"})
+@with_brand_browser_session
 async def search_purchase_history(
     keyword: str,
 ) -> dict[str, Any]:

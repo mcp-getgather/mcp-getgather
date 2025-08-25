@@ -83,8 +83,8 @@ dokku version
 
 ```bash
 dokku apps:create getgather
-dokku ports:add getgather http:80:8000
-dokku ports:add getgather https:443:8000
+dokku ports:add getgather http:80:23456
+dokku ports:add getgather https:443:23456
 dokku domains:set getgather <YOUR_DOMAIN>
 dokku nginx:set getgather proxy-read-timeout 600s
 dokku nginx:set getgather proxy-connect-timeout 600s
