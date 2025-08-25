@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
 from typing import ClassVar
 
@@ -25,6 +26,8 @@ class BrowserSession:
         self.profile: BrowserProfile = BrowserProfile(id=profile_id)
         self._playwright: Playwright | None = None
         self._context: BrowserContext | None = None
+
+        self.total_event = 0
 
     @classmethod
     def get(cls, profile: BrowserProfile) -> BrowserSession:
@@ -67,10 +70,11 @@ class BrowserSession:
                 profile_id=self.profile.id, browser_type=self.playwright.chromium
             )
 
+            await self._context.expose_function("saveEvent", rrweb_injector.save_event)  # type: ignore
+
             page = await self.page()
-            if rrweb_injector.should_inject_for_page(page):
-                await self._context.expose_function("saveEvent", rrweb_injector.save_event)  # type: ignore[reportUnknownMemberType]
-                await rrweb_injector.inject_into_context(self._context)
+            page.on("load", lambda page: asyncio.create_task(rrweb_injector.inject_into_page(page)))
+
         except Exception as e:
             logger.error(f"Error starting browser: {e}")
             raise BrowserStartupError(f"Failed to start browser: {e}") from e
