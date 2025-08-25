@@ -32,13 +32,13 @@ async def search_product(
         page = await session.page()
         await page.goto(f"https://www.amazon.com/s?k={keyword}", wait_until="commit")
         await page.wait_for_selector("div[data-component-type='s-search-result']")
-        await page.wait_for_timeout(500)
 
         spec_schema = SpecSchema.model_validate({
             "bundle": "search_results.html",
             "format": "html",
             "output": "search_results.json",
             "row_selector": "div[data-component-type='s-search-result']",
+            "extraction_method": "evaluator",
             "columns": [
                 {"name": "product_name", "selector": "h2 span"},
                 {
@@ -65,10 +65,7 @@ async def search_product(
 async def get_product_detail(
     product_url: str,
 ) -> dict[str, Any]:
-    """Get product detail from amazon.
-    Notes that it works better with short product url,
-    such as with this format /dp/XXXXXXXXX
-    """
+    """Get product detail from amazon."""
     if BrandState.is_brand_connected(amazon_mcp.brand_id):
         profile_id = BrandState.get_browser_profile_id(amazon_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
@@ -243,7 +240,7 @@ async def get_cart_summary() -> dict[str, Any]:
     browser_session = get_mcp_browser_session()
     page = await browser_session.page()
     await page.goto("https://www.amazon.com/gp/cart/view.html")
-    await page.wait_for_timeout(2000)
+    await page.wait_for_timeout(1000)
 
     cart_summary: dict[str, Any] = {
         "local_carts": [],
