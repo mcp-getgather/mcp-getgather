@@ -1,9 +1,12 @@
 from typing import Any
 
+from fastmcp import Context
+
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.database.repositories.brand_state_repository import BrandState
+from getgather.mcp.agent import run_agent_for_brand
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract, get_mcp_browser_session, with_brand_browser_session
 from getgather.parse import parse_html
@@ -64,6 +67,7 @@ async def search_product(
 
 @amazon_mcp.tool
 async def get_product_detail(
+    ctx: Context,
     product_url: str,
 ) -> dict[str, Any]:
     """Get product detail from amazon."""
@@ -81,21 +85,51 @@ async def get_product_detail(
 
         await page.wait_for_selector("span#productTitle")
         await page.wait_for_timeout(1000)
-        html = await page.locator("#centerCol").inner_html()
-    return {"product_detail_html": html}
+
+        product_data: dict[str, Any] = {}
+
+        title_elem = page.locator("span#productTitle")
+        if await title_elem.count() > 0:
+            product_data["title"] = await title_elem.inner_text()
+
+        main_image = page.locator("#landingImage, #imgTagWrapperId img")
+        if await main_image.count() > 0:
+            image_src = await main_image.first.get_attribute("src")
+            if image_src:
+                product_data["main_image"] = image_src
+
+        feature_bullets = page.locator("#feature-bullets ul li")
+        features: list[str] = []
+        feature_count = await feature_bullets.count()
+        for i in range(min(feature_count, 8)):  # Limit to 8 features
+            feature = feature_bullets.nth(i)
+            feature_text = await feature.inner_text()
+            if feature_text and feature_text.strip():
+                features.append(feature_text.strip())
+        product_data["features"] = features
+
+        price_elem = page.locator(".a-price .a-offscreen").first
+        if await price_elem.count() > 0:
+            product_data["price"] = await price_elem.inner_text()
+
+        return {"product_details": product_data}
 
 
 @amazon_mcp.tool(tags={"private"})
-@with_brand_browser_session
 async def get_cart_summary() -> dict[str, Any]:
     """Get cart summary from amazon."""
-    browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
-    await page.goto("https://www.amazon.com/gp/cart/view.html")
-    await page.wait_for_selector("div#sc-active-cart")
-    await page.wait_for_timeout(1000)
-    html = await page.locator("div#sc-active-cart").inner_html()
-    return {"cart_summary_html": html}
+    task = (
+        "Go to the Amazon cart page and extract cart summary information:\n"
+        " 1. Navigate to https://www.amazon.com/gp/cart/view.html\n"
+        " 2. Wait for the page to fully load\n"
+        " 3. Extract information about:\n"
+        "    - Regular cart items (if any) with titles, prices, quantities\n"
+        "    - Local delivery carts (Amazon Fresh, Whole Foods, etc.) with store types, subtotals, item counts\n"
+        "    - Overall cart totals and delivery information\n"
+        " 4. Return structured data about all cart contents"
+    )
+
+    return await run_agent_for_brand(task)
 
 
 @amazon_mcp.tool(tags={"private"})
@@ -151,3 +185,41 @@ async def search_purchase_history(
 
     result = await parse_html(brand_id=amazon_mcp.brand_id, html_content=html, schema=spec_schema)
     return {"order_history": result.content}
+
+
+@amazon_mcp.tool(tags={"private"})
+async def add_to_cart(
+    ctx: Context,
+    product_url: str,
+    quantity: int = 1,
+    variant_name: str | None = None,
+    buying_option: str = "regular",
+) -> dict[str, Any]:
+    """Add a product to cart on Amazon.com with specified quantity and options.
+
+    Args:
+        product_url: The Amazon product URL or path
+        quantity: Number of items to add (default: 1)
+        variant_name: Optional variant name (e.g., "Medium", "Blue", "32GB") to select
+        buying_option: Which buying option to use - "regular" for Amazon.com or "local_delivery" for Fresh/Local (default: "regular")
+    """
+    task = (
+        "Following the instructions below to add a product to the Amazon cart:\n"
+        f" 1. Go to the product page at {product_url if product_url.startswith('https') else 'https://www.amazon.com' + product_url}.\n"
+        " 2. Wait for the page to fully load and verify the product title is visible.\n"
+    )
+
+    if quantity > 1:
+        task += (
+            f" 3. Locate the quantity selector and change it to {quantity}.\n"
+            "    - For regular items, look for a dropdown labeled 'Qty:' or similar\n"
+            "    - For Fresh/Local delivery items, look for the quantity widget\n"
+            "    - If quantity selector shows '10+', click it and enter the exact number\n"
+        )
+
+    task += (
+        " 5. Find and click 'Add to Cart' button. "
+        " 6. After that you're going to be redirected to a new page, or new pop up going to show up. In both cases, there should be 'Added to cart' explanation. if that's the case, then add to cart process is done."
+    )
+
+    return await run_agent_for_brand(task)
