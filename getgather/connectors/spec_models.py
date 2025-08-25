@@ -586,7 +586,7 @@ class SchemaYML(YMLModel):
     output: str
     row_selector: str
     columns: list[ColumnYML]
-    extraction_method: Literal["locator", "evaluator"] = "locator"
+    extraction_method: Literal["locator", "evaluator", "python_parser"] = "locator"
 
 
 class Schema(SpecModel[SchemaYML]):
@@ -595,7 +595,7 @@ class Schema(SpecModel[SchemaYML]):
     output: str
     row_selector: str
     columns: list[Column]
-    extraction_method: Literal["locator", "evaluator"] = "locator"
+    extraction_method: Literal["locator", "evaluator", "python_parser"] = "locator"
 
 
 class BrandSpecYML(YMLModel):

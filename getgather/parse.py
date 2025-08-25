@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from bs4 import BeautifulSoup
 from patchright.async_api import Locator, Page, async_playwright
 from pydantic import BaseModel
 from rich import print
@@ -126,9 +127,6 @@ async def _extract_data_with_locators(
     """
     Extract data from a page using Playwright locators.
 
-    This is the original extraction method that uses individual DOM queries.
-    Best for: Authentication flows, interactive elements, complex waiting conditions.
-
     Args:
         brand_id: Brand identifier for custom parsing functions
         schema: Schema definition with CSS selectors
@@ -138,19 +136,16 @@ async def _extract_data_with_locators(
         List of dictionaries containing extracted data
     """
     data: list[dict[str, str | list[str]]] = []
-    lc_rows = page.locator(schema.row_selector)
 
+    lc_rows = page.locator(schema.row_selector)
     for lc in await lc_rows.all():
         row: dict[str, str | list[str]] = {}
-
         for column in schema.columns:
             elements = lc.locator(column.selector)
             count = await elements.count()
-
             if count == 0:
                 row[column.name] = [] if column.multiple else ""
                 continue
-
             if column.multiple:
                 values = await asyncio.gather(*[
                     _get_value(brand_id, column, element) for element in await elements.all()
@@ -161,6 +156,7 @@ async def _extract_data_with_locators(
                 row[column.name] = value if value is not None else ""
 
         data.append(row)
+
     return data
 
 
@@ -171,9 +167,6 @@ async def _extract_data_with_evaluator(
 ) -> list[dict[str, Any]]:
     """
     Extract data from a page using JavaScript evaluation.
-
-    This method executes all extraction logic in the browser context in a single call.
-    Best for: Bulk data extraction, search results, product listings, read-only operations.
 
     Args:
         brand_id: Brand identifier (not used in evaluate method but kept for consistency)
@@ -247,41 +240,103 @@ async def _extract_data_with_evaluator(
     return data
 
 
+async def _extract_data_with_python_parser(
+    brand_id: BrandIdEnum,
+    schema: Schema,
+    html_content: str,
+    page: Page | None = None,
+) -> list[dict[str, str | list[str]]]:
+    """
+    This method parses HTML using python parser.
+
+    Args:
+        brand_id: Brand identifier for custom parsing functions
+        schema: Schema definition with CSS selectors
+        html_content: Raw HTML content to parse
+        page: Optional Playwright page (not used, kept for API compatibility)
+
+    Returns:
+        List of dictionaries containing extracted data
+    """
+    soup = BeautifulSoup(html_content, "lxml")
+    data: list[dict[str, str | list[str]]] = []
+
+    rows = soup.select(schema.row_selector)
+    logger.info(f"Found {len(rows)} rows using python_parser")
+
+    for row in rows:
+        row_data: dict[str, str | list[str]] = {}
+
+        for column in schema.columns:
+            elements = row.select(column.selector)
+
+            if not elements:
+                row_data[column.name] = [] if column.multiple else ""
+                continue
+
+            if column.multiple:
+                values: list[str] = []
+                for elem in elements:
+                    if column.attribute:
+                        value = elem.get(column.attribute, "")
+                    else:
+                        value = elem.get_text(strip=True)
+
+                    if value:
+                        values.append(str(value))
+                row_data[column.name] = values
+            else:
+                elem = elements[0]
+                if column.attribute:
+                    value = elem.get(column.attribute, "")
+                else:
+                    value = elem.get_text(strip=True)
+                row_data[column.name] = value if value else ""
+
+        data.append(row_data)
+
+    return data
+
+
 async def _extract_data_from_page(
     brand_id: BrandIdEnum,
     schema: Schema,
     page: Page,
 ) -> list[dict[str, str | list[str]]]:
     """
-    Router function that chooses the appropriate extraction method.
+    Extract data from a live Playwright page using the schema's extraction method.
 
-    Decides between locator-based and evaluate-based extraction based on:
-    1. schema.extraction_method setting
-    2. Presence of custom functions (forces locator method)
+    Custom functions force locator method regardless of schema setting.
 
     Args:
         brand_id: Brand identifier for custom parsing functions
-        schema: Schema definition with CSS selectors
+        schema: Schema definition with CSS selectors and extraction_method
         page: Live Playwright page object
 
     Returns:
         List of dictionaries containing extracted data
     """
-    # Check if we need to use locator method due to custom functions
     has_custom_functions = any(col.function is not None for col in schema.columns)
+    extraction_method = getattr(schema, "extraction_method", "locator")
 
-    # Determine which method to use
-    # Custom functions force locator method, otherwise use schema setting
-    use_evaluate = not has_custom_functions and schema.extraction_method == "evaluator"
+    if has_custom_functions:
+        extraction_method = "locator"  # Force locator method for custom functions
 
-    # Execute the appropriate extraction method
-    if use_evaluate:
+    if extraction_method == "evaluator":
         try:
             return await _extract_data_with_evaluator(brand_id, schema, page)
         except Exception as e:
             print(f"[PARSE] Evaluate extraction failed: {e}, falling back to locator method")
             return await _extract_data_with_locators(brand_id, schema, page)
+    elif extraction_method == "python_parser":
+        try:
+            html_content = await page.content()
+            return await _extract_data_with_python_parser(brand_id, schema, html_content, page)
+        except Exception as e:
+            print(f"[PARSE] Python parser extraction failed: {e}, falling back to locator method")
+            return await _extract_data_with_locators(brand_id, schema, page)
     else:
+        # Default to locator method
         return await _extract_data_with_locators(brand_id, schema, page)
 
 
@@ -294,7 +349,7 @@ async def parse_html(
     page: Page | None = None,
 ) -> BundleOutput:
     """
-    Parse HTML content using CSS selectors into a tabular format.
+    Parse HTML content into a tabular format.
 
     This function supports two modes:
     1. Headless browser mode: Creates a new Playwright browser instance to parse
@@ -302,9 +357,14 @@ async def parse_html(
     2. Live page mode: Uses an existing live browser page for parsing without
        creating a new browser instance (more efficient for real-time data extraction)
 
+    Supports three extraction methods (configured in schema):
+    1. "locator" (default): Uses Playwright locators with auto-wait
+    2. "evaluator": Extract data from a page using JavaScript evaluation.
+    3. "python_parser": Parses HTML using Python's BeautifulSoup
+
     Args:
         brand_id: Brand identifier for custom parsing functions
-        schema: Schema definition with CSS selectors for data extraction
+        schema: Schema definition with CSS selectors and extraction_method configuration
         bundle_dir: Directory containing HTML files to parse (headless mode)
         html_content: HTML content string to parse (headless mode)
         page: Live Playwright page object to parse from (live mode)
@@ -314,19 +374,44 @@ async def parse_html(
 
     Note: When using headless mode, exactly one of bundle_dir or html_content must be provided.
           When using live mode, only the page parameter is needed.
+          Custom functions force locator method regardless of extraction_method setting.
     """
     logger.info(
         f"Parsing HTML content: {html_content[:200] if html_content else 'None'} with page: {page is not None}",
         extra={"schema": schema},
     )
 
-    # If page is provided, use it directly (live page parsing)
+    data: list[dict[str, str | list[str]]] = []
+
+    # Decide extraction path based on available inputs
     if page is not None:
+        # Live page mode: use the page directly
         data = await _extract_data_from_page(brand_id, schema, page)
+
+    elif html_content:
+        # Check if we can extract directly from HTML
+        has_custom_functions = any(col.function is not None for col in schema.columns)
+        extraction_method = getattr(schema, "extraction_method", "locator")
+
+        if has_custom_functions or extraction_method != "python_parser":
+            # Need a browser for extraction
+            async with async_playwright() as pw:
+                browser = await pw.chromium.launch()
+                context = await browser.new_context()
+                context.set_default_timeout(TIMEOUT)
+                context.set_default_navigation_timeout(TIMEOUT)
+                page = await context.new_page()
+                await page.set_content(html_content)
+                data = await _extract_data_from_page(brand_id, schema, page)
+                await browser.close()
+        else:
+            # Can extract directly from HTML using python_parser
+            data = await _extract_data_with_python_parser(brand_id, schema, html_content, None)
+
     else:
-        # Original headless browser logic
-        if not (bundle_dir is None) ^ (html_content is None):
-            raise ValueError("Exactly one of bundle_dir or html_content must be provided")
+        # Headless browser mode with bundle_dir
+        if bundle_dir is None:
+            raise ValueError("Either page, html_content, or bundle_dir must be provided")
 
         async with async_playwright() as pw:
             browser = await pw.chromium.launch()
@@ -335,15 +420,12 @@ async def parse_html(
             context.set_default_navigation_timeout(TIMEOUT)
             page = await context.new_page()
 
-            if html_content:
-                await page.set_content(html_content)
-            else:
-                assert bundle_dir is not None
-                input_path = bundle_dir / schema.bundle
-                logger.info(f"Parsing {input_path} ...")
-                await page.goto(Path(input_path).absolute().as_uri())
+            input_path = bundle_dir / schema.bundle
+            logger.info(f"Parsing {input_path} ...")
+            await page.goto(Path(input_path).absolute().as_uri())
 
             data = await _extract_data_from_page(brand_id, schema, page)
+
             await browser.close()
 
     if bundle_dir:
