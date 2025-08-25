@@ -17,7 +17,7 @@ export default function Home() {
       setError(null);
       const params = new URL(window.location.href).searchParams;
       const includeTest = Boolean(params.get("test"));
-      const url = includeTest ? "/brands?test=1" : "/brands";
+      const url = includeTest ? "/api/brands?test=1" : "/api/brands";
       const res = await fetch(url);
       if (!res.ok) throw new Error(`Failed to load brands: ${res.status}`);
       const data = (await res.json()) as Brand[];
