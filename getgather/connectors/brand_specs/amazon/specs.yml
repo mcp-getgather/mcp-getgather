@@ -74,7 +74,7 @@ auth:
       type: text
       prompt: Enter the verification code we sent you
       selector: input[id="input-box-otp"]
-      label: "#channelDetailsForOtp span.transaction-approval-word-break"
+      label: '#channelDetailsForOtp span.transaction-approval-word-break'
 
     - name: verification_code_submit
       type: click
@@ -124,7 +124,7 @@ auth:
           prompt: Would you like to use the following OTP method?
           groups:
             - name: MFA Current Modality Choice
-              fields: [verification_code_form, verification_code_submit] # TODO when seen ['div[id="channelDetailsForOtp"]']
+              fields: [verification_code_form, verification_code_submit]  # TODO when seen ['div[id="channelDetailsForOtp"]']
             - name: Alternative MFA Modality Choice
               fields: [challenge_alt_verification_link]
 
@@ -198,8 +198,7 @@ parse:
       - name: order_id
         selector: div.yohtmlc-order-id span:nth-child(2)
       - name: product_names
-        selector:
-          div.yohtmlc-product-title, a.a-link-normal[href*="/gp/product/"], a.a-link-normal[href*="/gp/video/"], .a-fixed-left-grid-col
+        selector: div.yohtmlc-product-title, a.a-link-normal[href*="/gp/product/"], a.a-link-normal[href*="/gp/video/"], .a-fixed-left-grid-col
           a.a-link-normal
         multiple: true
       - name: image_urls
