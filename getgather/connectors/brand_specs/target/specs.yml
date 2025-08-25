@@ -1,0 +1,82 @@
+name: Target
+
+auth:
+  fields:
+    - name: username
+      type: text
+      prompt: Username
+      selector: input#username
+    - name: password
+      type: password
+      prompt: Password
+      selector: input#password
+    - name: choose_password
+      type: click
+      prompt: Choose Password
+      selector: span:has-text("Enter your password")
+    - name: choose_code
+      type: click
+      prompt: Choose Code
+      selector: span:has-text("Get a code")
+    - name: continue
+      type: autoclick
+      prompt: Continue
+      selector: button#login
+    - name: account_logged_out
+      type: autoclick
+      prompt: Account Logged Out
+      selector: span:has-text("Account")
+      delay_ms: 2000
+    - name: sign_in
+      type: autoclick
+      prompt: Sign In
+      selector: button:has-text("Sign in or create account")
+    - name: sign_in_password
+      type: autoclick
+      prompt: Sign In Password
+      selector: span:has-text("Sign in with password")
+      expect_nav: true
+      url: https://www.target.com
+    - name: signed_in
+      type: wait
+      selector: span:has-text("Hi,")
+
+  pages:
+    - name: Home page (signed out)
+      url: https://www.target.com
+      fields:
+        required: [account_logged_out]
+
+    - name: Sign in
+      fields:
+        required: [sign_in]
+
+    - name: Fill email
+      fields:
+        required: [username, continue]
+
+    - name: Choose auth method
+      choices:
+        - name: Authentication choice method
+          prompt: How would you like to sign in?
+          groups:
+            - name: Password
+              fields: [choose_password]
+            - name: Code
+              fields: [choose_code]
+
+    - name: Home page (signed in)
+      url: https://www.target.com
+      fields:
+        required: [signed_in]
+
+  start: https://www.target.com
+
+extract:
+  steps:
+    - name: Go to the Orders and Rewards History page
+      url: https://www.target.com/orders?lnk=acct_nav_my_account
+
+    - name: Extract orders
+      bundle: orders.html
+      slurp_selector: main#content
