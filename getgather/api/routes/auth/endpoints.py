@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter
 from fastapi.responses import RedirectResponse
 
+from getgather.activity import activity
 from getgather.api.types import request_info
 from getgather.auth_flow import AuthFlowRequest, AuthFlowResponse, auth_flow
 from getgather.connectors.spec_loader import BrandIdEnum
@@ -22,8 +23,12 @@ async def auth(
     auth_request: Annotated[AuthFlowRequest, "Request data for an auth flow."],
 ) -> AuthFlowResponse:
     """Start or continue an authentication flow for a connector."""
-
     if auth_request.location:
         request_info.set(auth_request.location)
 
-    return await auth_flow(brand_id, auth_request)
+    activity_name = "auth"
+    if auth_request.state:
+        activity_name += f"_step_{auth_request.state.step_index}"
+
+    async with activity(activity_name, brand_id):
+        return await auth_flow(brand_id, auth_request)
