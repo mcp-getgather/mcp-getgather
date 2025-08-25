@@ -56,6 +56,7 @@ class BrowserProfile(FreezableModel):
             headless=settings.HEADLESS,
             viewport=viewport_config,
             proxy=proxy,  # type: ignore[arg-type]
+            args=["--disable-web-security"],
         )
 
     def cleanup(self, profile_id: str):
