@@ -4,7 +4,23 @@ GetGather is a containerized service that allows MCP clients to interact with yo
 
 ## Quickstart
 
-First, run the container with Docker or Podman:
+### 0. Prerequisite
+
+Install [Docker](https://www.docker.com/products/docker-desktop/).
+
+### 1. Start the container
+
+#### 1.A: Use docker-compose
+
+Download the [docker-compose.yml](https://github.com/mcp-getgather/mcp-getgather/blob/main/docker-compose.yml) file and run
+
+```bash
+docker-compose up
+```
+
+#### 1.B: Use docker run directly
+
+Run the container with Docker or Podman:
 
 ```bash
 docker run  -v /etc/localtime:/etc/localtime:ro -p 23456:23456 ghcr.io/mcp-getgather/mcp-getgather
@@ -20,18 +36,7 @@ Optionally, with `--env-file` if you have an env file for OPENAI_API_KEY, etc.
 docker run --env-file ~/getgather.env -p 23456:23456 ghcr.io/mcp-getgather/mcp-getgather
 ```
 
-and then navigate to `http://localhost:23456/docs` to see the API docs.
-
-To live stream the container desktop, go to `http://localhost:23456/live`.
-
-All additional documentation is located in the [docs](./docs) directory:
-
-- [Local Development Setup](./docs/local-development.md)
-- [Deploying on Dokku](./docs/deploy_dokku.md)
-- [Deploying on Fly.io](./docs/deploy_fly.md)
-- [Deploying on Railway](./docs/deploy_railway.md)
-
-### MCP configuration
+### 2. Connect to MCP clients
 
 For VS Code, Cursor, and other MCP clients which support remote MCP servers:
 
@@ -58,12 +63,27 @@ For Claude Desktop:
 }
 ```
 
-### (Optional) Enable url opener tool
+#### (Optional) Enable url opener tool
 
 Choose one of the following options if you'd like the MCP clients to automatically open the authentication link in a browser.
 
 1. Add [playwright-mcp](https://github.com/microsoft/playwright-mcp/) server.
 2. In Claude Desktop, enable "Control Chrome" in "Settings" -> "Extensions".
+
+### 3. Read more
+
+Navigate to `http://localhost:23456/welcome` for more tools.
+
+Navigate to `http://localhost:23456/docs` to see the API docs.
+
+To live stream the container desktop, go to `http://localhost:23456/live`.
+
+Development documentation is located in the [docs](./docs) directory:
+
+- [Local Development Setup](./docs/local-development.md)
+- [Deploying on Dokku](./docs/deploy_dokku.md)
+- [Deploying on Fly.io](./docs/deploy_fly.md)
+- [Deploying on Railway](./docs/deploy_railway.md)
 
 ## MCP inspector
 
