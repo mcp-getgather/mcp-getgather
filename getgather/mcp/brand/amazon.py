@@ -192,8 +192,6 @@ async def add_to_cart(
     ctx: Context,
     product_url: str,
     quantity: int = 1,
-    variant_name: str | None = None,
-    buying_option: str = "regular",
 ) -> dict[str, Any]:
     """Add a product to cart on Amazon.com with specified quantity and options.
 
@@ -218,8 +216,8 @@ async def add_to_cart(
         )
 
     task += (
-        " 5. Find and click 'Add to Cart' button. "
-        " 6. After that you're going to be redirected to a new page, or new pop up going to show up. In both cases, there should be 'Added to cart' explanation. if that's the case, then add to cart process is done."
+        " 4. Find and click 'Add to Cart' button. "
+        " 5. After that you're going to be redirected to a new page, or new pop up going to show up. In both cases, there should be 'Added to cart' explanation. if that's the case, then add to cart process is done."
     )
 
     return await run_agent_for_brand(task)
