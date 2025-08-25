@@ -1,6 +1,5 @@
 import uuid
 from contextlib import asynccontextmanager
-from contextvars import ContextVar
 from datetime import UTC, datetime
 from typing import AsyncGenerator
 
@@ -86,9 +85,6 @@ class ActivityManager:
 
 # Global instance
 activity_manager = ActivityManager()
-
-# Context variable for active activity tracking
-active_activity_ctx: ContextVar[Activity | None] = ContextVar("active_activity", default=None)
 
 
 @asynccontextmanager
