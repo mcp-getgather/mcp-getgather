@@ -13,7 +13,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/{brand_id}")
 async def auth_flow_redirect(brand_id: BrandIdEnum) -> RedirectResponse:
     """Redirect old auth flow endpoint to versioned endpoint."""
-    return RedirectResponse(url=f"/auth/v1/{brand_id}", status_code=307)
+    return RedirectResponse(url=f"/api/auth/v1/{brand_id}", status_code=307)
 
 
 @router.post("/v1/{brand_id}")

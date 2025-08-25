@@ -96,7 +96,7 @@ COPY --from=backend-builder /app/getgather /app/getgather
 COPY --from=backend-builder /app/tests /app/tests
 COPY --from=backend-builder /app/entrypoint.sh /app/entrypoint.sh
 COPY --from=backend-builder /opt/ms-playwright /opt/ms-playwright
-COPY --from=frontend-builder /app/getgather/api/frontend /app/getgather/api/frontend
+COPY --from=frontend-builder /app/getgather/frontend /app/getgather/frontend
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONFAULTHANDLER=1 \

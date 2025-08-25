@@ -9,7 +9,7 @@ flowchart TD
 
     %% API Layer
     subgraph "API Layer"
-        API_Main["getgather/api/main.py"]:::compute
+        API_Main["getgather/main.py"]:::compute
         AuthEndpoints["Auth Endpoints"]:::compute
         BrandsEndpoints["Brands Endpoints"]:::compute
         SharedTypes["getgather/api/types.py"]:::compute
@@ -113,8 +113,8 @@ flowchart TD
     %% Click Events
     click Docs "https://github.com/getgather-hub/getgather/tree/main//docs"
     click HTTPClients "https://github.com/getgather-hub/getgather/tree/main//docs"
-    click APIFrontend "https://github.com/getgather-hub/getgather/blob/main/getgather/api/frontend/index.html"
-    click API_Main "https://github.com/getgather-hub/getgather/blob/main/getgather/api/main.py"
+    click APIFrontend "https://github.com/getgather-hub/getgather/blob/main/getgather/frontend/index.html"
+    click API_Main "https://github.com/getgather-hub/getgather/blob/main/getgather/main.py"
     click AuthEndpoints "https://github.com/getgather-hub/getgather/blob/main/getgather/api/routes/auth/endpoints.py"
     click BrandsEndpoints "https://github.com/getgather-hub/getgather/blob/main/getgather/api/routes/brands/endpoints.py"
     click SharedTypes "https://github.com/getgather-hub/getgather/blob/main/getgather/api/types.py"

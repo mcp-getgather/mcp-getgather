@@ -288,7 +288,9 @@
         try {
           let profileId = state.action?.profile_id;
           if (!state.action) {
-            const linkResponse = await fetch(`/link/status/${state.linkId}`);
+            const linkResponse = await fetch(
+              `/api/link/status/${state.linkId}`,
+            );
             if (linkResponse.ok) {
               const linkData = await linkResponse.json();
               profileId = linkData?.profile_id;
@@ -311,7 +313,7 @@
             }
           }
 
-          const response = await fetch(`/auth/v1/${state.brand}`, {
+          const response = await fetch(`/api/auth/v1/${state.brand}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -464,7 +466,7 @@
             profileId,
           };
 
-          const response = await fetch(`/link/status/${state.linkId}`, {
+          const response = await fetch(`/api/link/status/${state.linkId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(updateData),

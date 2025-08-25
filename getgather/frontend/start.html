@@ -451,7 +451,7 @@
           };
 
           const body = JSON.stringify(requestBody);
-          const response = await fetch(`/auth/v1/${brand}`, {
+          const response = await fetch(`/api/auth/v1/${brand}`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

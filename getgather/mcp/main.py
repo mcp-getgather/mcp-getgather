@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from functools import cached_property
+from functools import cache, cached_property
 from typing import Any, Literal
 
 from fastmcp import Context, FastMCP
@@ -93,6 +93,7 @@ class MCPApp:
         return _create_mcp_app(self.name, self.brand_ids)
 
 
+@cache
 def create_mcp_apps() -> list[MCPApp]:
     # Discover and import all brand MCP modules (registers into BrandMCPBase.registry)
     auto_import("getgather.mcp.brand")

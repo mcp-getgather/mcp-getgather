@@ -51,4 +51,4 @@ else
 fi
 
 # Start FastAPI server
-/opt/venv/bin/python -m uvicorn getgather.api.main:app --host 0.0.0.0 --port 23456 --proxy-headers --forwarded-allow-ips="*"
+/opt/venv/bin/python -m uvicorn getgather.main:app --host 0.0.0.0 --port 23456 --proxy-headers --forwarded-allow-ips="*"

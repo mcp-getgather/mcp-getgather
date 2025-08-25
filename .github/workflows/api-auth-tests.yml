@@ -31,7 +31,7 @@ jobs:
         run: npm run build
 
       - name: Run the API server
-        run: uv run -m uvicorn getgather.api.main:app --host 127.0.0.1 --port 23456 &
+        run: uv run -m uvicorn getgather.main:app --host 127.0.0.1 --port 23456 &
         env:
           DISPLAY: :1
 

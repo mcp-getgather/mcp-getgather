@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from getgather.activity import Activity, activity_manager
 from getgather.rrweb import Recording, rrweb_manager
 
-router = APIRouter(prefix="/api/activities", tags=["activities"])
+router = APIRouter(prefix="/activities", tags=["activities"])
 
 
 @router.get("/")

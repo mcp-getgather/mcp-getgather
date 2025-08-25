@@ -8,7 +8,7 @@ export default defineConfig({
   root: path.resolve(__dirname, "frontend"),
   plugins: [react(), tailwindcss()],
   build: {
-    outDir: path.resolve(__dirname, "getgather", "api", "frontend"),
+    outDir: path.resolve(__dirname, "getgather", "frontend"),
   },
   server: {
     proxy: {

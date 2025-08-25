@@ -84,7 +84,7 @@ def test_auth_api_flow(test_case: dict[str, str]):
     # 1. Start the auth flow
     initial_payload = {"extract": True}
     res = requests.post(
-        f"{HOST}/auth/{brand_id}", json=initial_payload, headers=headers, timeout=120
+        f"{HOST}/api/auth/{brand_id}", json=initial_payload, headers=headers, timeout=120
     )
     print(res.text)
     res.raise_for_status()
@@ -155,7 +155,9 @@ def test_auth_api_flow(test_case: dict[str, str]):
         state["inputs"]["submit"] = "true"
 
         payload = {"profile_id": profile_id, "state": state, "extract": True}
-        res = requests.post(f"{HOST}/auth/{brand_id}", json=payload, headers=headers, timeout=120)
+        res = requests.post(
+            f"{HOST}/api/auth/{brand_id}", json=payload, headers=headers, timeout=120
+        )
         res.raise_for_status()
         data = res.json()
         state = data["state"]
