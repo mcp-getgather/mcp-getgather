@@ -29,7 +29,7 @@ export default function Link() {
     profileId?: string;
   }) {
     try {
-      const response = await fetch(`/link/status/${linkId}`, {
+      const response = await fetch(`/api/link/status/${linkId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -74,7 +74,7 @@ export default function Link() {
   useEffect(() => {
     const fetchLinkStatus = async () => {
       try {
-        const linkResponse = await fetch(`/link/status/${linkId}`);
+        const linkResponse = await fetch(`/api/link/status/${linkId}`);
         if (linkResponse.ok) {
           const linkData = (await linkResponse.json()) as LinkStatusResponse;
           setLinkData(linkData);
