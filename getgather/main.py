@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Awaitable, Callable, Final
 
 import httpx
-from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import (
     FileResponse,
     HTMLResponse,
@@ -16,13 +16,11 @@ from fastapi.responses import (
 )
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
-from jinja2 import Template
 
 from getgather.api.api import api_app
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.config import settings
-from getgather.hosted_link_manager import HostedLinkManager
 from getgather.logs import logger
 from getgather.mcp.main import create_mcp_apps
 from getgather.startup import startup
