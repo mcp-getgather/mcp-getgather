@@ -389,7 +389,7 @@ const BrandForm = forwardRef<BrandFormHandle, BrandFormProps>(
               </h1>
             </div>
 
-            {!!message && (!action?.state?.prompt || !action?.state?.error) && (
+            {!!message && (
               <p
                 className="text-center text-slate-500 mb-4 whitespace-pre-line"
                 data-testid="progress"
