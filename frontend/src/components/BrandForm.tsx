@@ -4,6 +4,7 @@ import {
   useEffect,
   useImperativeHandle,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -44,11 +45,19 @@ type StatePayload = {
   inputs?: Record<string, unknown>;
 };
 
+export type ExtractResult = {
+  bundles: Array<{
+    name: string;
+    content: unknown;
+    parsed?: boolean;
+  }>;
+};
+
 type ActionResponse = {
   profile_id?: string;
   status: "FINISHED" | "NEED_INPUT" | "ERROR" | string;
   state: StatePayload;
-  extract_result?: unknown;
+  extract_result?: ExtractResult;
 };
 
 type View = "loading" | "input" | "success" | "error";
@@ -62,7 +71,13 @@ type BrandFormProps = {
   brandId?: string;
   profileId?: string;
   extract?: boolean;
-  onSuccess?: (profileId?: string) => void;
+  onSuccess?: ({
+    extractResult,
+    profileId,
+  }: {
+    extractResult?: ExtractResult;
+    profileId?: string;
+  }) => void;
   onUpdateStatus?: ({
     status,
     statusMessage,
@@ -90,6 +105,7 @@ const BrandForm = forwardRef<BrandFormHandle, BrandFormProps>(
     const [message, setMessage] = useState<string>("Connecting...");
     const [action, setAction] = useState<ActionResponse | null>(null);
     const [profileId, setProfileId] = useState<string | undefined>(undefined);
+    const isMounted = useRef(false);
 
     useImperativeHandle(
       ref,
@@ -118,10 +134,6 @@ const BrandForm = forwardRef<BrandFormHandle, BrandFormProps>(
       }
     };
 
-    function handleSuccess(nextProfileId?: string) {
-      onSuccess?.(nextProfileId || profileId);
-    }
-
     function applyAuthResponse(nextAction: ActionResponse) {
       setAction(nextAction);
       if (nextAction.profile_id && !profileId) {
@@ -149,8 +161,10 @@ const BrandForm = forwardRef<BrandFormHandle, BrandFormProps>(
             extractResult: nextAction.extract_result,
             profileId: nextAction.profile_id,
           });
-          console.log({ nextAction });
-          handleSuccess(nextAction.profile_id);
+          onSuccess?.({
+            extractResult: nextAction.extract_result,
+            profileId: nextAction.profile_id,
+          });
         }
         return;
       }
@@ -247,7 +261,8 @@ const BrandForm = forwardRef<BrandFormHandle, BrandFormProps>(
     useEffect(() => {
       setView("loading");
       setMessage("Connecting...");
-      if (brandId) {
+      if (brandId && !isMounted.current) {
+        isMounted.current = true;
         authenticateNext();
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -356,7 +371,7 @@ const BrandForm = forwardRef<BrandFormHandle, BrandFormProps>(
     };
 
     return (
-      <div className="min-h-screen bg-slate-50 py-8 px-4">
+      <div className="bg-slate-50 py-8 px-4">
         <main className="max-w-md mx-auto">
           <div className="bg-white border rounded-xl shadow-sm p-8 mt-6">
             <div className="text-center mb-6">

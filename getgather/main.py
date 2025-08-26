@@ -171,15 +171,6 @@ async def vnc_websocket_proxy(websocket: WebSocket):
             pass
 
 
-@app.get("/start/{brand}", response_class=HTMLResponse)
-def start(brand: str):
-    file_path = FRONTEND_DIR / "start.html"
-    with open(file_path) as f:
-        template = Template(f.read())
-    rendered = template.render(brand=brand)
-    return HTMLResponse(content=rendered)
-
-
 @app.get("/health")
 def health():
     return PlainTextResponse(

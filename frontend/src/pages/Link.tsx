@@ -59,7 +59,7 @@ export default function Link() {
     }
   }
 
-  function handleSuccess(profileId?: string) {
+  function handleSuccess({ profileId }: { profileId?: string }) {
     if (linkData?.redirect_url && profileId) {
       setTimeout(() => {
         window.location.href = `${linkData.redirect_url}?profile_id=${encodeURIComponent(
