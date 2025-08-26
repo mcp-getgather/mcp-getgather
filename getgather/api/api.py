@@ -10,11 +10,7 @@ from getgather.api.routes.auth.endpoints import router as auth_router
 from getgather.api.routes.brands.endpoints import router as brands_router
 from getgather.api.routes.link.endpoints import router as link_router
 from getgather.config import settings
-from getgather.database.migrate import run_migration
 from getgather.mcp.main import MCPDoc, create_mcp_apps, mcp_app_docs
-
-# Run database migrations
-run_migration()
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
