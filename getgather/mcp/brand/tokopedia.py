@@ -4,10 +4,10 @@ from typing import Any, Literal
 from urllib.parse import quote, urlparse
 
 from getgather.actions import handle_graphql_response
+from getgather.brand_state import brand_state_manager
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
 from getgather.connectors.spec_models import Schema as SpecSchema
-from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.logs import logger
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import get_mcp_browser_session, with_brand_browser_session
@@ -83,8 +83,8 @@ async def get_product_details(
     product_url: str,
 ) -> dict[str, Any]:
     """Get product details from tokopedia. Get product_url from search_product tool."""
-    if BrandState.is_brand_connected(tokopedia_mcp.brand_id):
-        profile_id = BrandState.get_browser_profile_id(tokopedia_mcp.brand_id)
+    if brand_state_manager.is_brand_connected(tokopedia_mcp.brand_id):
+        profile_id = brand_state_manager.get_browser_profile_id(tokopedia_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -136,8 +136,8 @@ async def search_shop(
     keyword: str,
 ) -> dict[str, Any]:
     """Search shop on tokopedia."""
-    if BrandState.is_brand_connected(tokopedia_mcp.brand_id):
-        profile_id = BrandState.get_browser_profile_id(tokopedia_mcp.brand_id)
+    if brand_state_manager.is_brand_connected(tokopedia_mcp.brand_id):
+        profile_id = brand_state_manager.get_browser_profile_id(tokopedia_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -242,8 +242,8 @@ async def get_shop_details(
     if not target_url:
         return {"error": "Could not determine valid shop URL"}
 
-    if BrandState.is_brand_connected(tokopedia_mcp.brand_id):
-        profile_id = BrandState.get_browser_profile_id(tokopedia_mcp.brand_id)
+    if brand_state_manager.is_brand_connected(tokopedia_mcp.brand_id):
+        profile_id = brand_state_manager.get_browser_profile_id(tokopedia_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -407,7 +407,7 @@ async def add_to_cart(
     """Add a product to cart of a tokopedia."""
 
     logger.info(f"Adding product to cart: {product_url}")
-    profile_id = BrandState.get_browser_profile_id(tokopedia_mcp.brand_id)
+    profile_id = brand_state_manager.get_browser_profile_id(tokopedia_mcp.brand_id)
     profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
     product_urls = [product_url] if isinstance(product_url, str) else product_url
@@ -457,7 +457,7 @@ async def action_product_in_cart(
     Action can be toggle_checklist or remove_from_cart."""
 
     logger.info(f"Actioning product in cart: {product_id} with action: {action}")
-    profile_id = BrandState.get_browser_profile_id(tokopedia_mcp.brand_id)
+    profile_id = brand_state_manager.get_browser_profile_id(tokopedia_mcp.brand_id)
     profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
     product_ids = [product_id] if isinstance(product_id, str) else product_id
