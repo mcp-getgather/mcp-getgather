@@ -25,8 +25,8 @@ async def search_product(
     keyword: str,
 ) -> dict[str, Any]:
     """Search product on amazon."""
-    if await brand_state_manager.is_brand_connected(amazon_mcp.brand_id):
-        profile_id = await brand_state_manager.get_browser_profile_id(amazon_mcp.brand_id)
+    if brand_state_manager.is_brand_connected(amazon_mcp.brand_id):
+        profile_id = brand_state_manager.get_browser_profile_id(amazon_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -71,8 +71,8 @@ async def get_product_detail(
     product_url: str,
 ) -> dict[str, Any]:
     """Get product detail from amazon."""
-    if await brand_state_manager.is_brand_connected(amazon_mcp.brand_id):
-        profile_id = await brand_state_manager.get_browser_profile_id(amazon_mcp.brand_id)
+    if brand_state_manager.is_brand_connected(amazon_mcp.brand_id):
+        profile_id = brand_state_manager.get_browser_profile_id(amazon_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
