@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Route, Routes } from "react-router";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import Layout from "./components/Layout";
 import "./index.css";
 import Activities from "./pages/Activities";
@@ -17,11 +17,11 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/home" element={<Home />} />
         <Route path="/link/:linkId" element={<Link />} />
         <Route path="/start/:brandId" element={<Start />} />
         <Route path="/" element={<Layout />}>
-          <Route path="welcome" element={<GetStarted />} />
+          <Route path="" element={<GetStarted />} />
           <Route path="live-view" element={<LiveView />} />
           <Route path="activities" element={<Activities />} />
           <Route path="settings" element={<Settings />} />
