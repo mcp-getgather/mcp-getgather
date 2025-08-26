@@ -61,10 +61,10 @@ npm run dev
 ```bash
 npm run dev:backend
 # or
-uv run -m uvicorn getgather.api.main:app --reload --host 127.0.0.1 --port 8000
+uv run -m uvicorn getgather.main:app --reload --host 127.0.0.1 --port 23456
 ```
 
-**Open in browser: `http://localhost:8000`**
+**Open in browser: `http://localhost:23456`**
 
 #### Frontend Only
 
@@ -84,16 +84,16 @@ vite
 npm run build
 ```
 
-This compiles TypeScript and builds the React app to `getgather/api/frontend/`.
+This compiles TypeScript and builds the React app to `getgather/frontend/`.
 
 ### Run Production Build
 
 ```bash
 # Start backend (serves built frontend)
-uv run -m uvicorn getgather.api.main:app --host 0.0.0.0 --port 8000
+uv run -m uvicorn getgather.main:app --host 0.0.0.0 --port 23456
 ```
 
-**Open in browser: `http://localhost:8000`**
+**Open in browser: `http://localhost:23456`**
 
 In production mode, FastAPI serves both the API and the built frontend.
 
@@ -117,9 +117,8 @@ mcp-getgather/
 │   ├── index.html
 │   └── ...
 ├── getgather/
-│   ├── api/
-│   │   ├── frontend/     # Built frontend (generated)
-│   │   └── main.py       # FastAPI server
+│   ├── frontend/         # Built frontend (generated)
+│   ├── main.py           # FastAPI server
 │   └── ...
 ├── package.json          # Node.js dependencies
 ├── vite.config.ts        # Vite configuration

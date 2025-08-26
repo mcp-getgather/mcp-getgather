@@ -1,19 +1,19 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
 import path from "node:path";
+import { defineConfig } from "vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   root: path.resolve(__dirname, "frontend"),
   plugins: [react(), tailwindcss()],
   build: {
-    outDir: path.resolve(__dirname, "getgather", "api", "frontend"),
+    outDir: path.resolve(__dirname, "getgather", "frontend"),
   },
   server: {
     host: "0.0.0.0",
     proxy: {
-      "^/(api|brands|link/create|link/status|parse|start|auth|replay|static|live|mcp)":
+      "^/(api|brands|link/create|link/status|parse|start|auth|replay|static|live|mcp|inspector)":
         {
           target: "http://127.0.0.1:8000/",
           changeOrigin: false,

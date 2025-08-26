@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from patchright.async_api import Page
+from patchright.async_api import BrowserContext, Page
 from pydantic import BaseModel
 
 from getgather.activity import active_activity_ctx
@@ -49,26 +49,19 @@ class RRWebInjector:
     def _generate_injection_script(self) -> str:
         """Generate the JavaScript injection script."""
         return f"""
-            // RRWeb recording script injection
-            const rrwebScript = document.createElement('script');
-            rrwebScript.src = '{self.script_url}';
-            rrwebScript.onload = function() {{
-                console.log('RRWeb script loaded');
-                startRRWebRecording();
-            }};
-            document.head.appendChild(rrwebScript);
-
-            function startRRWebRecording() {{
+            const script = document.createElement('script');
+            script.src = '{self.script_url}';
+            script.onload = () => {{
                 if (typeof rrwebRecord !== 'undefined' && window.saveEvent) {{
-                    rrwebRecord({{ 
-                        emit(event) {{ 
-                            window.saveEvent(event); 
-                        }}, 
-                        maskAllInputs: {str(self.mask_all_inputs).lower()}
+                    rrwebRecord({{
+                        emit: window.saveEvent,
+                        maskAllInputs: {str(self.mask_all_inputs).lower()},
+                        recordCanvas: true,
+                        collectFonts: true
                     }});
-                    console.log('RRWeb recording started');
                 }}
-            }}
+            }};
+            document.head.appendChild(script);
         """
 
     def should_inject_for_page(self, page: Page) -> bool:
@@ -90,24 +83,16 @@ class RRWebInjector:
 
         return True
 
-    async def inject_into_page(self, page: Page) -> bool:
-        """Inject RRWeb recording into a page if conditions are met."""
+    async def inject_into_context(self, context: BrowserContext):
+        """Inject RRWeb recording into a browser context for whole page recording."""
         try:
-            if not self.should_inject_for_page(page):
-                return False
-
-            # Expose save_event function to browser
-            await page.expose_function("saveEvent", self.save_event)  # type: ignore[reportUnknownMemberType]
-
-            # Inject RRWeb recording script
-            await page.add_init_script(self._generate_injection_script())
-
-            logger.debug(f"RRWeb script injected for page: {page.url}")
-            return True
+            if not self.enabled:
+                return
+            await context.add_init_script(self._generate_injection_script())
+            logger.info("RRWeb script injected at context level for whole page recording")
 
         except Exception as e:
-            logger.error(f"Failed to inject RRWeb script: {e}")
-            return False
+            logger.error(f"Failed to inject RRWeb script at context level: {e}")
 
 
 class Recording(BaseModel):

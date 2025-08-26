@@ -65,7 +65,7 @@ RUN uv sync --no-dev
 FROM mirror.gcr.io/library/python:3.13-slim-bookworm
 
 RUN apt-get update && apt-get install -y curl gnupg \
-    && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - 
+    && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
 
 RUN apt-get install -y \
     xvfb \
@@ -96,7 +96,7 @@ COPY --from=backend-builder /app/getgather /app/getgather
 COPY --from=backend-builder /app/tests /app/tests
 COPY --from=backend-builder /app/entrypoint.sh /app/entrypoint.sh
 COPY --from=backend-builder /opt/ms-playwright /opt/ms-playwright
-COPY --from=frontend-builder /app/getgather/api/frontend /app/getgather/api/frontend
+COPY --from=frontend-builder /app/getgather/frontend /app/getgather/frontend
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONFAULTHANDLER=1 \
@@ -107,10 +107,10 @@ ENV PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 
 # port for FastAPI server
-EXPOSE 8000
+EXPOSE 23456
 # port for VNC server
 EXPOSE 5900
-# port for MCP inspector
-EXPOSE 6274 6277
+# port for MCP inspector server
+EXPOSE 6277
 
 ENTRYPOINT ["/app/entrypoint.sh"]

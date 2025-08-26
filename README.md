@@ -4,10 +4,26 @@ GetGather is a containerized service that allows MCP clients to interact with yo
 
 ## Quickstart
 
-First, run the container with Docker or Podman:
+### 0. Prerequisite
+
+Install [Docker](https://www.docker.com/products/docker-desktop/).
+
+### 1. Start the container
+
+#### 1.A: Use docker-compose
+
+Download the [docker-compose.yml](https://github.com/mcp-getgather/mcp-getgather/blob/main/docker-compose.yml) file and run
 
 ```bash
-docker run  -v /etc/localtime:/etc/localtime:ro -p 9999:8000 ghcr.io/mcp-getgather/mcp-getgather
+docker-compose up
+```
+
+#### 1.B: Use docker run directly
+
+Run the container with Docker or Podman:
+
+```bash
+docker run  -v /etc/localtime:/etc/localtime:ro -p 23456:23456 ghcr.io/mcp-getgather/mcp-getgather
 ```
 
 On MacOS `-v /etc/localtime:/etc/localtime:ro` is needed for the service to use your local timezone,
@@ -17,21 +33,10 @@ On windows, the timezone has to be set directly as `-e TZ=America/Los_Angeles`.
 Optionally, with `--env-file` if you have an env file for OPENAI_API_KEY, etc.
 
 ```bash
-docker run --env-file ~/getgather.env -p 9999:8000 ghcr.io/mcp-getgather/mcp-getgather
+docker run --env-file ~/getgather.env -p 23456:23456 ghcr.io/mcp-getgather/mcp-getgather
 ```
 
-and then navigate to `http://localhost:9999/docs` to see the API docs.
-
-To live stream the container desktop, go to `http://localhost:9999/live`.
-
-All additional documentation is located in the [docs](./docs) directory:
-
-- [Local Development Setup](./docs/local-development.md)
-- [Deploying on Dokku](./docs/deploy_dokku.md)
-- [Deploying on Fly.io](./docs/deploy_fly.md)
-- [Deploying on Railway](./docs/deploy_railway.md)
-
-### MCP configuration
+### 2. Connect to MCP clients
 
 For VS Code, Cursor, and other MCP clients which support remote MCP servers:
 
@@ -39,7 +44,7 @@ For VS Code, Cursor, and other MCP clients which support remote MCP servers:
 {
   "mcpServers": {
     "getgather": {
-      "url": "http://127.0.0.1:9999/mcp"
+      "url": "http://127.0.0.1:23456/mcp"
     }
   }
 }
@@ -52,30 +57,45 @@ For Claude Desktop:
   "mcpServers": {
     "getgather": {
       "command": "npx",
-      "args": ["mcp-remote", "http://127.0.0.1:9999/mcp", "--allow-http"]
+      "args": ["mcp-remote", "http://127.0.0.1:23456/mcp", "--allow-http"]
     }
   }
 }
 ```
 
-### (Optional) Enable url opener tool
+#### (Optional) Enable url opener tool
 
 Choose one of the following options if you'd like the MCP clients to automatically open the authentication link in a browser.
 
 1. Add [playwright-mcp](https://github.com/microsoft/playwright-mcp/) server.
 2. In Claude Desktop, enable "Control Chrome" in "Settings" -> "Extensions".
 
+### 3. Read more
+
+Navigate to `http://localhost:23456/welcome` for more tools.
+
+Navigate to `http://localhost:23456/docs` to see the API docs.
+
+To live stream the container desktop, go to `http://localhost:23456/live`.
+
+Development documentation is located in the [docs](./docs) directory:
+
+- [Local Development Setup](./docs/local-development.md)
+- [Deploying on Dokku](./docs/deploy_dokku.md)
+- [Deploying on Fly.io](./docs/deploy_fly.md)
+- [Deploying on Railway](./docs/deploy_railway.md)
+
 ## MCP inspector
 
 The container runs an [MCP inspector](https://github.com/modelcontextprotocol/inspector). It's useful for debugging and listing available tools without a client.
 
-Run docker container with additional ports 6274 and 6277
+Run docker container with additional port 6277
 
 ```bash
-docker run -p 9999:8000 -p 6274:6274 -p 6277:6277 ghcr.io/mcp-getgather/mcp-getgather
+docker run -p 23456:23456 -p 6277:6277 ghcr.io/mcp-getgather/mcp-getgather
 ```
 
-Open [inspector url](http://localhost:6274/?MCP_PROXY_AUTH_TOKEN=getgather&transport=streamable-http&serverUrl=http://localhost:8000/mcp) in your browser.
+Open [inspector url](http://localhost:6274/?MCP_PROXY_AUTH_TOKEN=getgather&transport=streamable-http&serverUrl=http://localhost:23456/mcp) in your browser.
 
 The default `MCP_PROXY_AUTH_TOKEN` is `getgather`. You can change it by running the container with `--env MCP_PROXY_AUTH_TOKEN=SOME_TOKEN`.
 
@@ -87,7 +107,7 @@ After cloning the repo:
 
 ```bash
 docker build -t mcp-getgather .
-docker run -p 9999:8000 mcp-getgather
+docker run -p 23456:23456 mcp-getgather
 ```
 
 ### Proxy Configuration

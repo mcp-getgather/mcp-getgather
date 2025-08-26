@@ -56,9 +56,9 @@ async def auth_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
                 "[auth_hosted_link] Missing Host header; defaulting to localhost",
                 extra={"host": host, "scheme": scheme, "headers": sanitized},
             )
-            base_url = "http://localhost:8000"
+            base_url = "http://localhost:23456"
 
-        url = f"{base_url}/link/create"
+        url = f"{base_url}/api/link/create"
         logger.info(
             "[auth_hosted_link] Creating hosted link",
             extra={"url": url, "host": host, "scheme": scheme, "headers": sanitized},
@@ -110,9 +110,9 @@ async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict
                     "[poll_status_hosted_link] Missing Host header; defaulting to localhost",
                     extra={"host": host, "scheme": scheme, "headers": sanitized},
                 )
-                base_url = "http://localhost:8000"
+                base_url = "http://localhost:23456"
 
-            url = f"{base_url}/link/status/{hosted_link_id}"
+            url = f"{base_url}/api/link/status/{hosted_link_id}"
             logger.info(
                 "[poll_status_hosted_link] Polling link status",
                 extra={"url": url, "host": host, "scheme": scheme, "headers": sanitized},

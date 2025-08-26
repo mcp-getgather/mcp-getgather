@@ -67,11 +67,10 @@ class BrowserSession:
                 profile_id=self.profile.id, browser_type=self.playwright.chromium
             )
 
-            # Set up page navigation handler for conditional RRWeb injection
-            async def handle_page(page: Page):
-                await rrweb_injector.inject_into_page(page)
-
-            self._context.on("page", handle_page)
+            page = await self.page()
+            if rrweb_injector.should_inject_for_page(page):
+                await self._context.expose_function("saveEvent", rrweb_injector.save_event)  # type: ignore[reportUnknownMemberType]
+                await rrweb_injector.inject_into_context(self._context)
         except Exception as e:
             logger.error(f"Error starting browser: {e}")
             raise BrowserStartupError(f"Failed to start browser: {e}") from e

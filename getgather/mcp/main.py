@@ -1,10 +1,12 @@
-import importlib
-from typing import Any
+from dataclasses import dataclass
+from functools import cache, cached_property
+from typing import Any, Literal
 
 from fastmcp import Context, FastMCP
 from fastmcp.server.http import StarletteWithLifespan
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools.tool import ToolResult
+from pydantic import BaseModel
 
 from getgather.activity import activity
 from getgather.browser.profile import BrowserProfile
@@ -12,6 +14,7 @@ from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.database.repositories.brand_state_repository import BrandState
 from getgather.logs import logger
 from getgather.mcp.auto_import import auto_import
+from getgather.mcp.calendar_utils import calendar_mcp
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import auth_hosted_link, poll_status_hosted_link
 
@@ -78,29 +81,51 @@ CATEGORY_BUNDLES: dict[str, list[str]] = {
 }
 
 
-def create_mcp_apps() -> dict[str, StarletteWithLifespan]:
+@dataclass
+class MCPApp:
+    name: str
+    type: Literal["brand", "category", "all"]
+    route: str
+    brand_ids: list[BrandIdEnum]
+
+    @cached_property
+    def app(self) -> StarletteWithLifespan:
+        return _create_mcp_app(self.name, self.brand_ids)
+
+
+@cache
+def create_mcp_apps() -> list[MCPApp]:
     # Discover and import all brand MCP modules (registers into BrandMCPBase.registry)
     auto_import("getgather.mcp.brand")
 
-    # Ensure calendar MCP is registered by importing its module
-    try:
-        importlib.import_module("getgather.mcp.calendar_utils")
-    except Exception as e:
-        logger.warning(f"Failed to register calendar MCP: {e}")
+    apps: list[MCPApp] = []
+    apps.append(
+        MCPApp(
+            name="all",
+            type="all",
+            route="/mcp",
+            brand_ids=list(BrandMCPBase.registry.keys()),
+        )
+    )
+    apps.extend([
+        MCPApp(
+            name=brand_id.value,
+            type="brand",
+            route=f"/mcp-{brand_id.value}",
+            brand_ids=[brand_id],
+        )
+        for brand_id in BrandMCPBase.registry.keys()
+    ])
+    apps.extend([
+        MCPApp(
+            name=category,
+            type="category",
+            route=f"/mcp-{category}",
+            brand_ids=[BrandIdEnum(brand_id) for brand_id in brand_ids],
+        )
+        for category, brand_ids in CATEGORY_BUNDLES.items()
+    ])
 
-    # "all" MCP has all brands and tools
-    bundles: dict[str, list[BrandIdEnum]] = {"all": list(BrandMCPBase.registry.keys())}
-    # [brand] MCP has tools for a single brand
-    bundles.update({brand_id.value: [brand_id] for brand_id in BrandMCPBase.registry.keys()})
-    # [category] MCP has tools for a category of brands
-    bundles.update({
-        bundle_name: [BrandIdEnum(brand_id) for brand_id in brand_ids]
-        for bundle_name, brand_ids in CATEGORY_BUNDLES.items()
-    })
-    apps = {
-        bundle_name: _create_mcp_app(bundle_name, brand_ids)
-        for bundle_name, brand_ids in bundles.items()
-    }
     return apps
 
 
@@ -122,8 +147,33 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
         logger.info(f"Mounting {brand_mcp.name} to MCP bundle {bundle_name}")
         mcp.mount(server=brand_mcp, prefix=brand_mcp.brand_id)
 
-    from getgather.mcp.calendar_utils import calendar_mcp
-
     mcp.mount(server=calendar_mcp, prefix="calendar")
 
     return mcp.http_app(path="/")
+
+
+class MCPToolDoc(BaseModel):
+    name: str
+    description: str
+
+
+class MCPDoc(BaseModel):
+    name: str
+    type: Literal["brand", "category", "all"]
+    route: str
+    tools: list[MCPToolDoc]
+
+
+async def mcp_app_docs(mcp_app: MCPApp) -> MCPDoc:
+    return MCPDoc(
+        name=mcp_app.name,
+        type=mcp_app.type,
+        route=mcp_app.route,
+        tools=[
+            MCPToolDoc(
+                name=tool.name,
+                description=tool.description,
+            )
+            for tool in (await mcp_app.app.state.fastmcp_server.get_tools()).values()
+        ],
+    )

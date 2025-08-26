@@ -31,12 +31,12 @@ jobs:
         run: npm run build
 
       - name: Run the API server
-        run: uv run -m uvicorn getgather.api.main:app --host 127.0.0.1 --port 8000 &
+        run: uv run -m uvicorn getgather.main:app --host 127.0.0.1 --port 23456 &
         env:
           DISPLAY: :1
 
       - name: Wait for the API server to start
-        run: while ! curl -s 'http://localhost:8000/health' | grep 'OK'; do sleep 1; done
+        run: while ! curl -s 'http://localhost:23456/health' | grep 'OK'; do sleep 1; done
         timeout-minutes: 3
 
       - name: Install Chromium for API authentication tests
@@ -54,6 +54,6 @@ jobs:
         run: uv run pytest -n 7 -m "api" tests/api/test_auth_api.py
         env:
           DISPLAY: :1
-          HOST: http://localhost:8000
+          HOST: http://localhost:23456
           CNN_USERNAME: ${{ secrets.CNN_USERNAME }}
           CNN_PASSWORD: ${{ secrets.CNN_PASSWORD }}

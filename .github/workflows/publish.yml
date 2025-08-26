@@ -20,15 +20,15 @@ jobs:
 
       - run: docker build -t getgather .
 
-      - run: docker run -p 8000:8000 --name getgather -d getgather
+      - run: docker run -p 23456:23456 --name getgather -d getgather
         timeout-minutes: 3
 
       - name: Run the health check validation
-        run: while ! curl -s 'http://localhost:8000/health' | grep 'OK'; do sleep 1; done
+        run: while ! curl -s 'http://localhost:23456/health' | grep 'OK'; do sleep 1; done
         timeout-minutes: 3
 
       - name: Run the extended health check validation
-        run: while ! curl -s 'http://localhost:8000/extended-health' | grep 'OK'; do sleep 1; done
+        run: while ! curl -s 'http://localhost:23456/extended-health' | grep 'OK'; do sleep 1; done
         timeout-minutes: 3
 
       - name: Get the container logs
@@ -75,14 +75,14 @@ jobs:
 
     steps:
       - name: Run the container
-        run: docker run -d --rm --name getgather -p 8000:8000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        run: docker run -d --rm --name getgather -p 23456:23456 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
       - name: Run the health check validation
-        run: while ! curl -s 'http://localhost:8000/health' | grep 'OK'; do sleep 1; done
+        run: while ! curl -s 'http://localhost:23456/health' | grep 'OK'; do sleep 1; done
         timeout-minutes: 3
 
       - name: Run the extended health check validation
-        run: while ! curl -s 'http://localhost:8000/extended-health' | grep 'OK'; do sleep 1; done
+        run: while ! curl -s 'http://localhost:23456/extended-health' | grep 'OK'; do sleep 1; done
         timeout-minutes: 3
 
       - name: Get the container logs
