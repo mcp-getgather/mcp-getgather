@@ -178,25 +178,6 @@ def health():
     )
 
 
-@app.get("/link/{link_id}", response_class=HTMLResponse)
-async def link_page(link_id: str):
-    """Serve the hosted link frontend page for user authentication."""
-
-    # Look up the brand from the link store
-    link_data = HostedLinkManager.get_link_data(link_id)
-    if not link_data:
-        raise HTTPException(status_code=404, detail=f"Link ID '{link_id}' not found")
-
-    brand = str(link_data.brand_id)
-    redirect_url = link_data.redirect_url
-
-    file_path = FRONTEND_DIR / "link.html"
-    with open(file_path) as f:
-        template = Template(f.read())
-    rendered = template.render(brand=brand, link_id=link_id, redirect_url=redirect_url)
-    return HTMLResponse(content=rendered)
-
-
 IP_CHECK_URL: Final[str] = "https://ifconfig.me/ip"
 
 
