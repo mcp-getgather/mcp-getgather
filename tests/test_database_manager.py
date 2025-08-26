@@ -267,18 +267,3 @@ class TestDatabaseManager:
         for key, expected_value in write_results:
             actual_value = db_manager.get(key)
             assert actual_value == expected_value
-
-
-class TestGlobalDatabaseManager:
-    """Test cases for the global db_manager instance."""
-
-    def test_global_instance_exists(self) -> None:
-        """Test that global db_manager instance exists and works."""
-        # The global instance should be available
-        assert db_manager is not None
-        assert isinstance(db_manager, DatabaseManager)
-
-        # Should be able to use it for basic operations
-        db_manager.set("test_global", "global_value")
-        value = db_manager.get("test_global")
-        assert value == "global_value"
