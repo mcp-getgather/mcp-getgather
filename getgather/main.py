@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Awaitable, Callable, Final
 
 import httpx
-from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import (
     FileResponse,
     HTMLResponse,
@@ -16,13 +16,11 @@ from fastapi.responses import (
 )
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
-from jinja2 import Template
 
 from getgather.api.api import api_app
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.config import settings
-from getgather.hosted_link_manager import HostedLinkManager
 from getgather.logs import logger
 from getgather.mcp.main import create_mcp_apps
 from getgather.startup import startup
@@ -171,39 +169,11 @@ async def vnc_websocket_proxy(websocket: WebSocket):
             pass
 
 
-@app.get("/start/{brand}", response_class=HTMLResponse)
-def start(brand: str):
-    file_path = FRONTEND_DIR / "start.html"
-    with open(file_path) as f:
-        template = Template(f.read())
-    rendered = template.render(brand=brand)
-    return HTMLResponse(content=rendered)
-
-
 @app.get("/health")
 def health():
     return PlainTextResponse(
         content=f"OK {int(datetime.now().timestamp())} GIT_REV: {settings.GIT_REV}"
     )
-
-
-@app.get("/link/{link_id}", response_class=HTMLResponse)
-async def link_page(link_id: str):
-    """Serve the hosted link frontend page for user authentication."""
-
-    # Look up the brand from the link store
-    link_data = HostedLinkManager.get_link_data(link_id)
-    if not link_data:
-        raise HTTPException(status_code=404, detail=f"Link ID '{link_id}' not found")
-
-    brand = str(link_data.brand_id)
-    redirect_url = link_data.redirect_url
-
-    file_path = FRONTEND_DIR / "link.html"
-    with open(file_path) as f:
-        template = Template(f.read())
-    rendered = template.render(brand=brand, link_id=link_id, redirect_url=redirect_url)
-    return HTMLResponse(content=rendered)
 
 
 IP_CHECK_URL: Final[str] = "https://ifconfig.me/ip"
