@@ -22,6 +22,7 @@ export default function Start() {
         ref={brandFormRef}
         onSuccess={handleSuccess}
         extract
+        successMessage="Connection successful"
       />
       <ExtractResults extractResult={extractResult} />
     </div>

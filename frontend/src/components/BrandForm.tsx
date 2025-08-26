@@ -71,6 +71,7 @@ type BrandFormProps = {
   brandId?: string;
   profileId?: string;
   extract?: boolean;
+  successMessage?: string;
   onSuccess?: ({
     extractResult,
     profileId,
@@ -98,6 +99,7 @@ const BrandForm = forwardRef<BrandFormHandle, BrandFormProps>(
       onSuccess,
       profileId: profileIdProps,
       extract = false,
+      successMessage,
     }: BrandFormProps,
     ref,
   ) {
@@ -151,9 +153,7 @@ const BrandForm = forwardRef<BrandFormHandle, BrandFormProps>(
           });
         } else {
           setView("success");
-          setMessage(
-            "Authentication successful!\nYou can go back to the app now.",
-          );
+          setMessage(successMessage || "Connection successful");
 
           onUpdateStatus?.({
             status: "completed",
@@ -389,14 +389,12 @@ const BrandForm = forwardRef<BrandFormHandle, BrandFormProps>(
               </h1>
             </div>
 
-            {!!message && (
-              <p
-                className="text-center text-slate-500 mb-4 whitespace-pre-line"
-                data-testid="progress"
-              >
-                {message}
-              </p>
-            )}
+            <p
+              className="text-center text-slate-500 mb-4 whitespace-pre-line"
+              data-testid="progress"
+            >
+              {message}
+            </p>
 
             {view === "input" && action?.state?.prompt && (
               <section id="forms">

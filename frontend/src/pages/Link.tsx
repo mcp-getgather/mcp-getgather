@@ -104,6 +104,7 @@ export default function Link() {
       onUpdateStatus={handleUpdateLinkStatus}
       ref={brandFormRef}
       onSuccess={handleSuccess}
+      successMessage="Authentication successful!\nYou can go back to the app now."
     />
   );
 }
