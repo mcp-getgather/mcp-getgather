@@ -41,7 +41,8 @@ async def lifespan(app: FastAPI):
     await startup()
     async with AsyncExitStack() as stack:
         for mcp_app in mcp_apps:
-            await stack.enter_async_context(mcp_app.app.lifespan(app))  # type: ignore
+            # type: ignore
+            await stack.enter_async_context(mcp_app.app.lifespan(app))
         yield
 
 
