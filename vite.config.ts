@@ -11,11 +11,13 @@ export default defineConfig({
     outDir: path.resolve(__dirname, "getgather", "frontend"),
   },
   server: {
+    host: "0.0.0.0",
     proxy: {
-      "^/(api|brands|link|parse|start|auth|replay|static|live|inspector)": {
-        target: "http://127.0.0.1:23456/",
-        changeOrigin: true,
-      },
+      "^/(api|brands|link/create|link/status|parse|start|auth|replay|static|live|mcp|inspector)":
+        {
+          target: "http://127.0.0.1:23456/",
+          changeOrigin: false,
+        },
     },
   },
   resolve: {

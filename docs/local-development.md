@@ -42,6 +42,18 @@ npm run dev
 
 **Open in browser: `http://localhost:5173`**
 
+### MCP configuration
+
+```json
+{
+  "mcpServers": {
+    "getgather": {
+      "url": "http://localhost:5173/mcp"
+    }
+  }
+}
+```
+
 ### Separate Development Servers
 
 #### Backend Only

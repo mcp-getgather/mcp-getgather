@@ -6,6 +6,7 @@ import "./index.css";
 import Activities from "./pages/Activities";
 import GetStarted from "./pages/GetStarted";
 import Home from "./pages/Home";
+import Link from "./pages/Link";
 import LiveView from "./pages/LiveView";
 import McpDocs from "./pages/MCPDocs";
 import { ReplayPage } from "./pages/Replay";
@@ -16,6 +17,7 @@ createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/link/:linkId" element={<Link />} />
         <Route path="/" element={<Layout />}>
           <Route path="welcome" element={<GetStarted />} />
           <Route path="live-view" element={<LiveView />} />
