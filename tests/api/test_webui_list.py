@@ -6,7 +6,7 @@ from getgather.connectors.spec_loader import brand_id_list
 
 @pytest.mark.webui
 def test_list(page: Page, site_url: str):
-    page.goto(site_url)
+    page.goto(f"{site_url}/home")
 
     brands_grid = page.get_by_test_id("brands-grid")
     expect(brands_grid).to_have_count(1)
