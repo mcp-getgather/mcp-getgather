@@ -9,8 +9,7 @@ const EXAMPLES = [
     title: "Give me a list of purchases approaching their return expiration",
     description:
       "Analyzes your recent orders and identifies items with upcoming return deadlines",
-    prompt:
-      "Give me a list of purchases approaching their return expiration.",
+    prompt: "Give me a list of purchases approaching their return expiration.",
   },
   {
     title: "Pull out my recent DoorDash orders",
@@ -29,8 +28,6 @@ const EXAMPLES = [
 
 export default function GetStarted() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-
-
 
   const copyPrompt = async (text: string, idx: number) => {
     try {
