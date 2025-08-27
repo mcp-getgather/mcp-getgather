@@ -4,31 +4,33 @@ import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/PageHeader";
 import { Sparkles, Zap, Settings, Play, Copy, ArrowRight } from "lucide-react";
 
+const EXAMPLES = [
+  {
+    title: "Give me a list of purchases approaching their return expiration",
+    description:
+      "Analyzes your recent orders and identifies items with upcoming return deadlines",
+    prompt:
+      "Give me a list of purchases approaching their return expiration.",
+  },
+  {
+    title: "Pull out my recent DoorDash orders",
+    description:
+      "Retrieves your latest food delivery orders with details and receipts",
+    prompt: "Pull out my recent DoorDash orders.",
+  },
+  {
+    title: "Get my reading list from Goodreads and share the links with John",
+    description:
+      "Fetches your Goodreads library and formats it for easy sharing",
+    prompt:
+      "Get my reading list (read and currently reading) from Goodreads and share the links with John.",
+  },
+];
+
 export default function GetStarted() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  const examples = [
-    {
-      title: "Give me a list of purchases approaching their return expiration",
-      description:
-        "Analyzes your recent orders and identifies items with upcoming return deadlines",
-      prompt:
-        "Give me a list of purchases approaching their return expiration.",
-    },
-    {
-      title: "Pull out my recent DoorDash orders",
-      description:
-        "Retrieves your latest food delivery orders with details and receipts",
-      prompt: "Pull out my recent DoorDash orders.",
-    },
-    {
-      title: "Get my reading list from Goodreads and share the links with John",
-      description:
-        "Fetches your Goodreads library and formats it for easy sharing",
-      prompt:
-        "Get my reading list (read and currently reading) from Goodreads and share the links with John.",
-    },
-  ];
+
 
   const copyPrompt = async (text: string, idx: number) => {
     try {
@@ -168,7 +170,7 @@ export default function GetStarted() {
               Copy these examples and see the magic happen.
             </p>
             <div className="space-y-4">
-              {examples.map((ex, idx) => (
+              {EXAMPLES.map((ex, idx) => (
                 <div key={idx} className="rounded-lg border p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
