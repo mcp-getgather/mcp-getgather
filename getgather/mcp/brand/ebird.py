@@ -25,8 +25,8 @@ async def get_explore_species_list(
     keyword: str,
 ) -> dict[str, Any]:
     """Get species list from ebird to be explored."""
-    if await brand_state_manager.is_brand_connected(ebird_mcp.brand_id):
-        profile_id = await brand_state_manager.get_browser_profile_id(ebird_mcp.brand_id)
+    if brand_state_manager.is_brand_connected(ebird_mcp.brand_id):
+        profile_id = brand_state_manager.get_browser_profile_id(ebird_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -59,8 +59,8 @@ async def explore_species(
     sci_name: str,
 ) -> dict[str, Any]:
     """Explore species on Ebird from get_explore_species_list."""
-    if await brand_state_manager.is_brand_connected(ebird_mcp.brand_id):
-        profile_id = await brand_state_manager.get_browser_profile_id(ebird_mcp.brand_id)
+    if brand_state_manager.is_brand_connected(ebird_mcp.brand_id):
+        profile_id = brand_state_manager.get_browser_profile_id(ebird_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()

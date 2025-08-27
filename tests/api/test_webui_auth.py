@@ -41,7 +41,7 @@ def _run_auth(
     verification_choice: str | None = None,
     passwords: list[str] = [VALID_PASSWORD],
 ):
-    page.goto(f"{site_url}?test=1")
+    page.goto(f"{site_url}/home?test=1")
     page.get_by_test_id(f"brand-card_{brand_id}").click()
     page.wait_for_url(f"{site_url}/start/{brand_id}")
 

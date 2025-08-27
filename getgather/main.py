@@ -2,26 +2,27 @@ import asyncio
 import socket
 from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import datetime
-from os import path
-from typing import Final
+from pathlib import Path
+from typing import Awaitable, Callable, Final
 
 import httpx
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    PlainTextResponse,
+    RedirectResponse,
+    Response,
+)
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
-from jinja2 import Template
 
-from getgather.api.routes.activities.endpoints import router as activities_router
-from getgather.api.routes.auth.endpoints import router as auth_router
-from getgather.api.routes.brands.endpoints import router as brands_router
-from getgather.api.routes.link.endpoints import router as link_router
+from getgather.api.api import api_app
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.config import settings
-from getgather.hosted_link_manager import HostedLinkManager
 from getgather.logs import logger
-from getgather.mcp.main import MCPDoc, create_mcp_apps, mcp_app_docs
+from getgather.mcp.main import create_mcp_apps
 from getgather.startup import startup
 
 # Create MCP apps once and reuse for lifespan and mounting
@@ -38,13 +39,14 @@ async def lifespan(app: FastAPI):
     await startup()
     async with AsyncExitStack() as stack:
         for mcp_app in mcp_apps:
-            await stack.enter_async_context(mcp_app.app.lifespan(app))  # type: ignore
+            # type: ignore
+            await stack.enter_async_context(mcp_app.app.lifespan(app))
         yield
 
 
 app = FastAPI(
-    title="Get Gather API",
-    description="API for Get Gather",
+    title="Get Gather",
+    description="GetGather mcp, frontend, and api",
     version="0.1.0",
     openapi_url="/openapi.json",
     docs_url="/docs",
@@ -54,8 +56,10 @@ app = FastAPI(
 )
 
 
-STATIC_ASSETS_DIR = path.abspath(path.join(path.dirname(__file__), "..", "static", "assets"))
-BUILD_ASSETS_DIR = path.abspath(path.join(path.dirname(__file__), "frontend", "assets"))
+STATIC_ASSETS_DIR = Path(__file__).parent / "static" / "assets"
+BUILD_ASSETS_DIR = Path(__file__).parent / "frontend" / "assets"
+FRONTEND_DIR = Path(__file__).parent / "frontend"
+
 
 app.mount("/static/assets", StaticFiles(directory=STATIC_ASSETS_DIR), name="assets")
 app.mount("/assets", StaticFiles(directory=BUILD_ASSETS_DIR), name="assets")
@@ -70,7 +74,7 @@ def read_live():
 async def proxy_live_files(file_path: str):
     # noVNC lite's main web UI
     if file_path == "" or file_path == "old-index.html":
-        local_file_path = path.join(path.dirname(__file__), "frontend", "live.html")
+        local_file_path = FRONTEND_DIR / "live.html"
         with open(local_file_path) as f:
             return HTMLResponse(content=f.read())
 
@@ -165,49 +169,11 @@ async def vnc_websocket_proxy(websocket: WebSocket):
             pass
 
 
-@app.get("/start/{brand}", response_class=HTMLResponse)
-def start(brand: str):
-    file_path = path.join(path.dirname(__file__), "frontend", "start.html")
-    with open(file_path) as f:
-        template = Template(f.read())
-    rendered = template.render(brand=brand)
-    return HTMLResponse(content=rendered)
-
-
-@app.get("/")
-@app.get("/activities")
-def activities():
-    file_path = path.join(path.dirname(__file__), "frontend", "index.html")
-    with open(file_path) as f:
-        template = Template(f.read())
-    rendered = template.render()
-    return HTMLResponse(content=rendered)
-
-
 @app.get("/health")
 def health():
     return PlainTextResponse(
         content=f"OK {int(datetime.now().timestamp())} GIT_REV: {settings.GIT_REV}"
     )
-
-
-@app.get("/link/{link_id}", response_class=HTMLResponse)
-async def link_page(link_id: str):
-    """Serve the hosted link frontend page for user authentication."""
-
-    # Look up the brand from the link store
-    link_data = HostedLinkManager.get_link_data(link_id)
-    if not link_data:
-        raise HTTPException(status_code=404, detail=f"Link ID '{link_id}' not found")
-
-    brand = str(link_data.brand_id)
-    redirect_url = link_data.redirect_url
-
-    file_path = path.join(path.dirname(__file__), "frontend", "link.html")
-    with open(file_path) as f:
-        template = Template(f.read())
-    rendered = template.render(brand=brand, link_id=link_id, redirect_url=redirect_url)
-    return HTMLResponse(content=rendered)
 
 
 IP_CHECK_URL: Final[str] = "https://ifconfig.me/ip"
@@ -282,14 +248,26 @@ async def proxy_inspector(file_path: str):
             return Response(status_code=500, content=f"Internal Server Error: {str(e)}")
 
 
-app.include_router(activities_router)
-app.include_router(brands_router)
-app.include_router(auth_router)
-app.include_router(link_router)
+app.mount("/api", api_app)
+
+
 for mcp_app in mcp_apps:
     app.mount(mcp_app.route, mcp_app.app)
 
 
-@app.get("/api/mcp-docs")
-async def mcp_docs() -> list[MCPDoc]:
-    return await asyncio.gather(*[mcp_app_docs(mcp_app) for mcp_app in mcp_apps])
+@app.middleware("http")
+async def mcp_redirect_middleware(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+):
+    # redirect /mcp* to /mcp*/
+    path = request.url.path
+    if path.startswith("/mcp") and not path.endswith("/"):
+        return RedirectResponse(url=f"{path}/", status_code=307)
+    return await call_next(request)
+
+
+# Everything else is handled by the SPA
+@app.get("/{full_path:path}")
+def frontend_router(full_path: str):
+    logger.info(f"Routing to {full_path} to frontend")
+    return FileResponse(FRONTEND_DIR / "index.html")

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from functools import cached_property
+from functools import cache, cached_property
 from typing import Any, Literal
 
 from fastmcp import Context, FastMCP
@@ -43,18 +43,18 @@ class AuthMiddleware(Middleware):
         brand_id = context.message.name.split("_")[0]
         context.fastmcp_context.set_state("brand_id", brand_id)
 
-        if "private" not in tool.tags or await brand_state_manager.is_brand_connected(brand_id):
+        if "private" not in tool.tags or brand_state_manager.is_brand_connected(brand_id):
             async with activity(
                 brand_id=brand_id,
                 name=context.message.name,
             ):
                 return await call_next(context)
 
-        browser_profile_id = await brand_state_manager.get_browser_profile_id(brand_id)
+        browser_profile_id = brand_state_manager.get_browser_profile_id(brand_id)
         if not browser_profile_id:
             # Create and persist a new profile for the auth flow
             browser_profile = BrowserProfile()
-            await brand_state_manager.add(
+            brand_state_manager.add(
                 BrandState(
                     brand_id=BrandIdEnum(brand_id),
                     browser_profile_id=browser_profile.id,
@@ -93,6 +93,7 @@ class MCPApp:
         return _create_mcp_app(self.name, self.brand_ids)
 
 
+@cache
 def create_mcp_apps() -> list[MCPApp]:
     # Discover and import all brand MCP modules (registers into BrandMCPBase.registry)
     auto_import("getgather.mcp.brand")

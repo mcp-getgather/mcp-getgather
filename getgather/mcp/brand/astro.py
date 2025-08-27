@@ -173,8 +173,8 @@ async def search_product(
     keyword: str,
 ) -> dict[str, Any]:
     """Search product on astro."""
-    if await brand_state_manager.is_brand_connected(astro_mcp.brand_id):
-        profile_id = await brand_state_manager.get_browser_profile_id(astro_mcp.brand_id)
+    if brand_state_manager.is_brand_connected(astro_mcp.brand_id):
+        profile_id = brand_state_manager.get_browser_profile_id(astro_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -225,8 +225,8 @@ async def get_product_details(
     product_url: str,
 ) -> dict[str, Any]:
     """Get product detail from astro. Get product_url from search_product tool."""
-    if await brand_state_manager.is_brand_connected(astro_mcp.brand_id):
-        profile_id = await brand_state_manager.get_browser_profile_id(astro_mcp.brand_id)
+    if brand_state_manager.is_brand_connected(astro_mcp.brand_id):
+        profile_id = brand_state_manager.get_browser_profile_id(astro_mcp.brand_id)
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
@@ -280,7 +280,7 @@ async def add_item_to_cart(
     quantity: int = 1,
 ) -> dict[str, Any]:
     """Add item to cart on astro (add new item or update existing quantity). Get product_url from search_product tool."""
-    profile_id = await brand_state_manager.get_browser_profile_id(astro_mcp.brand_id)
+    profile_id = brand_state_manager.get_browser_profile_id(astro_mcp.brand_id)
     profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
     # Ensure the product URL is a full URL
@@ -353,7 +353,7 @@ async def update_cart_quantity(
     quantity: int,
 ) -> dict[str, Any]:
     """Update cart item quantity on astro (set quantity to 0 to remove item). Use product name from cart summary."""
-    profile_id = await brand_state_manager.get_browser_profile_id(astro_mcp.brand_id)
+    profile_id = brand_state_manager.get_browser_profile_id(astro_mcp.brand_id)
     profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
     async with browser_session(profile) as session:
@@ -408,7 +408,7 @@ async def update_cart_quantity(
 @astro_mcp.tool(tags={"private"})
 async def get_cart_summary() -> dict[str, Any]:
     """Get cart summary from astro."""
-    profile_id = await brand_state_manager.get_browser_profile_id(astro_mcp.brand_id)
+    profile_id = brand_state_manager.get_browser_profile_id(astro_mcp.brand_id)
     profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
     async with browser_session(profile) as session:

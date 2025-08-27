@@ -42,7 +42,7 @@ export default function Layout() {
       <div className="px-6">
         <nav className="w-full">
           <div className="flex gap-4 border-b border-gray-200 mb-8">
-            <NavItem href="/welcome" label="Get Started" />
+            <NavItem href="/" label="Get Started" />
             <NavItem href="/live-view" label="Live View" />
             <NavItem href="/activities" label="Activities" />
             <NavItem href="/settings" label="Settings" />

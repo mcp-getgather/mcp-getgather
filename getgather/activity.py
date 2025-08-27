@@ -25,33 +25,33 @@ class Activity(BaseModel):
 class ActivityManager:
     """Activity management."""
 
-    async def _load_activities(self) -> list[Activity]:
+    def _load_activities(self) -> list[Activity]:
         """Load activities from database."""
-        activities_data = await db_manager.get("activities")
+        activities_data = db_manager.get("activities")
         if not activities_data:
             return []
 
         return [Activity.model_validate(activity_data) for activity_data in activities_data]
 
-    async def _save_activities(self, activities: list[Activity]) -> None:
+    def _save_activities(self, activities: list[Activity]) -> None:
         """Save activities to database."""
         data = [activity.model_dump() for activity in activities]
-        await db_manager.set("activities", data)
+        db_manager.set("activities", data)
 
     async def create_activity(self, brand_id: str, name: str, start_time: datetime) -> str:
         """Create a new activity and return its ID."""
-        activities = await self._load_activities()
+        activities = self._load_activities()
 
         activity_id = uuid.uuid4().hex
         activity = Activity(id=activity_id, brand_id=brand_id, name=name, start_time=start_time)
         activities.append(activity)
 
-        await self._save_activities(activities)
+        self._save_activities(activities)
         return activity_id
 
     async def update_end_time(self, activity_id: str, end_time: datetime) -> None:
         """Update the end time of an activity."""
-        activities = await self._load_activities()
+        activities = self._load_activities()
 
         # Find the activity
         activity = None
@@ -67,11 +67,11 @@ class ActivityManager:
         activity.end_time = end_time
         activity.execution_time_ms = int((end_time - activity.start_time).total_seconds() * 1000)
 
-        await self._save_activities(activities)
+        self._save_activities(activities)
 
     async def get_activity(self, activity_id: str) -> Activity | None:
         """Get an activity by ID."""
-        activities = await self._load_activities()
+        activities = self._load_activities()
         for activity in activities:
             if activity.id == activity_id:
                 return activity
@@ -79,7 +79,7 @@ class ActivityManager:
 
     async def get_all_activities(self) -> list[Activity]:
         """Get all activities ordered by start_time descending."""
-        activities = await self._load_activities()
+        activities = self._load_activities()
         return sorted(activities, key=lambda a: a.start_time, reverse=True)
 
 

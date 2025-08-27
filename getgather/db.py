@@ -1,4 +1,5 @@
 import json
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,8 @@ class DatabaseManager:
 
     def __init__(self, json_file_path: Path):
         self.json_file_path = json_file_path
+        self.data: None | dict[str, Any] = None
+        self._lock = threading.RLock()
 
     def _load_data(self) -> dict[str, Any]:
         """Load data from JSON file."""
@@ -36,39 +39,22 @@ class DatabaseManager:
         with open(self.json_file_path, "w") as f:
             json.dump(data, f, indent=2, default=str)
 
-    async def get(self, key: str) -> Any:
+    def get(self, key: str) -> Any:
         """Get a value by key."""
-        data = self._load_data()
-        return data.get(key)
+        with self._lock:
+            if not self.data:
+                self.data = self._load_data()
 
-    async def set(self, key: str, value: Any) -> None:
+            return self.data.get(key)
+
+    def set(self, key: str, value: Any) -> None:
         """Set a value by key."""
-        data = self._load_data()
-        data[key] = value
-        self._save_data(data)
+        with self._lock:
+            if not self.data:
+                self.data = self._load_data()
 
-    async def delete(self, key: str) -> bool:
-        """Delete a key. Returns True if key existed, False otherwise."""
-        data = self._load_data()
-        if key in data:
-            del data[key]
-            self._save_data(data)
-            return True
-        return False
-
-    async def exists(self, key: str) -> bool:
-        """Check if a key exists."""
-        data = self._load_data()
-        return key in data
-
-    async def keys(self) -> list[str]:
-        """Get all keys."""
-        data = self._load_data()
-        return list(data.keys())
-
-    async def clear(self) -> None:
-        """Clear all data."""
-        self._save_data({})
+            self.data[key] = value
+            self._save_data(self.data)
 
 
 # Global instance
