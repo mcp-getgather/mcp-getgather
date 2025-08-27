@@ -22,7 +22,6 @@ async def auth(
     auth_request: Annotated[AuthFlowRequest, "Request data for an auth flow."],
 ) -> AuthFlowResponse:
     """Start or continue an authentication flow for a connector."""
-
     if auth_request.location:
         request_info.set(auth_request.location)
 
