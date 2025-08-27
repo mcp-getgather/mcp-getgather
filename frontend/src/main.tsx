@@ -10,7 +10,6 @@ import Link from "./pages/Link";
 import LiveView from "./pages/LiveView";
 import McpDocs from "./pages/MCPDocs";
 import { ReplayPage } from "./pages/Replay";
-import Settings from "./pages/Settings";
 import Start from "./pages/Start";
 import NotFound from "./pages/NotFound";
 
@@ -25,7 +24,6 @@ createRoot(document.getElementById("root")!).render(
           <Route path="" element={<GetStarted />} />
           <Route path="live-view" element={<LiveView />} />
           <Route path="activities" element={<Activities />} />
-          <Route path="settings" element={<Settings />} />
           <Route path="replay" element={<ReplayPage />} />
           <Route path="/mcp-docs" element={<McpDocs />} />
           <Route path="*" element={<NotFound />} />
