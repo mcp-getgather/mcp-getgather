@@ -47,14 +47,13 @@ class RRWebInjector:
             self.events = []
 
     async def inject_into_page(self, page: Page):
-        if self._should_inject_for_page(page):
-            await page.add_script_tag(url=self.script_url)
-            await page.evaluate(
-                "() => { rrwebRecord({ emit(event) { window.saveEvent(event); }, maskAllInputs: true }); }",
-                isolated_context=False,
-            )
+        await page.add_script_tag(url=self.script_url)
+        await page.evaluate(
+            "() => { rrwebRecord({ emit(event) { window.saveEvent(event); }, maskAllInputs: true }); }",
+            isolated_context=False,
+        )
 
-    def _should_inject_for_page(self, page: Page) -> bool:
+    def should_inject_for_page(self, page: Page) -> bool:
         """Determine if RRWeb should be injected for this page."""
         if not self.enabled:
             return False

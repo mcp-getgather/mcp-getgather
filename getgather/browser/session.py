@@ -70,10 +70,12 @@ class BrowserSession:
                 profile_id=self.profile.id, browser_type=self.playwright.chromium
             )
 
-            await self._context.expose_function("saveEvent", rrweb_injector.save_event)  # type: ignore
-
             page = await self.page()
-            page.on("load", lambda page: asyncio.create_task(rrweb_injector.inject_into_page(page)))
+            if rrweb_injector.should_inject_for_page(page):
+                await self._context.expose_function("saveEvent", rrweb_injector.save_event)  # type: ignore
+                page.on(
+                    "load", lambda page: asyncio.create_task(rrweb_injector.inject_into_page(page))
+                )
 
         except Exception as e:
             logger.error(f"Error starting browser: {e}")
