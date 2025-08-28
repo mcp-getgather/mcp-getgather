@@ -1,0 +1,55 @@
+name: ESPN
+
+auth:
+  fields:
+    - name: username
+      type: text
+      prompt: Username
+      selector: input#input-user-name
+    - name: password
+      type: password
+      prompt: Password
+      selector: input#input-password
+    - name: submit
+      type: click
+      prompt: Submit
+      selector: input#form-submit
+    - name: message_error
+      type: message
+      selector: div.Message-content
+      prompt: ❌ Invalid username or password. Please try again.
+
+  pages:
+    - name: Login Page
+      url: https://secure.birds.cornell.edu/cassso/login
+      fields:
+        required: [username, password, submit]
+        optional: [message_error]
+
+    - name: Success Login
+      url: https://secure.birds.cornell.edu/identity/?continue
+      end: true
+
+  start: Login Page
+
+extract:
+  steps:
+    - name: Go to eBird lifelist page
+      url: https://ebird.org/lifelist
+
+    - name: Extract lifelist
+      bundle: lifelist.html
+      slurp_selector: section#nativeNatProv
+
+parse:
+  - bundle: lifelist.html
+    format: html
+    output: lifelist.json
+    row_selector: li.Observation--sightingsList
+    columns:
+      - name: species
+        selector: .Observation-species .Heading-main
+      - name: date
+        selector: .Observation-meta-date a
+      - name: location
+        selector: .Observation-meta-location span a:first-child
