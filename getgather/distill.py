@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 from patchright.async_api import Locator, Page
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 NORMAL = "\033[0m"
 BOLD = "\033[1m"
@@ -20,7 +20,7 @@ class Pattern(BaseModel):
 
 class Match(BaseModel):
     name: str
-    priority: int = Field(ge=-1, description="Priority level for matching")
+    priority: int
     distilled: str
     matches: list[Locator]
 
