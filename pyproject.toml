@@ -24,6 +24,8 @@ dependencies = [
   "fastmcp>=2.11.3",
   "beautifulsoup4>=4.13.4",
   "lxml>=6.0.0",
+  "python-multipart>=0.0.20",
+  "pwinput>=1.0.3",
 ]
 
 [dependency-groups]
