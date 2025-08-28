@@ -45,6 +45,12 @@ class Settings(BaseSettings):
     )
     RRWEB_MASK_ALL_INPUTS: bool = True
 
+    SERVER_ORIGIN: str = "http://localhost:23456"
+
+    OAUTH_GITHUB_CLIENT_ID: str = ""
+    OAUTH_GITHUB_CLIENT_SECRET: str = ""
+    OAUTH_GITHUB_REDIRECT_PATH: str = "/auth/github/callback"
+
     @property
     def brand_spec_dir(self) -> Path:
         return PROJECT_DIR / "getgather" / "connectors" / "brand_specs"

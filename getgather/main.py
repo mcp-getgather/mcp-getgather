@@ -22,6 +22,7 @@ from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.config import settings
 from getgather.logs import logger
+from getgather.mcp.auth import setup_mcp_auth
 from getgather.mcp.main import create_mcp_apps
 from getgather.startup import startup
 
@@ -255,19 +256,44 @@ for mcp_app in mcp_apps:
     app.mount(mcp_app.route, mcp_app.app)
 
 
+setup_mcp_auth(app)
+
+
 @app.middleware("http")
-async def mcp_redirect_middleware(
+async def mcp_slash_redirect_middleware(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ):
     # redirect /mcp* to /mcp*/
     path = request.url.path
     if path.startswith("/mcp") and not path.endswith("/"):
         return RedirectResponse(url=f"{path}/", status_code=307)
-    return await call_next(request)
+    else:
+        return await call_next(request)
 
 
-# Everything else is handled by the SPA
+# # Everything else is handled by the SPA
 @app.get("/{full_path:path}")
 def frontend_router(full_path: str):
-    logger.info(f"Routing to {full_path} to frontend")
-    return FileResponse(FRONTEND_DIR / "index.html")
+    # Only serve frontend for paths that don't have file extensions
+    # This allows API routes and static assets to be handled by their respective handlers
+    if "." not in full_path or full_path.endswith(".html"):
+        logger.info(f"Routing {full_path} to frontend")
+        return FileResponse(FRONTEND_DIR / "index.html")
+    else:
+        # For paths with extensions (like .js, .css, .png, etc.), return 404
+        # so they can be handled by static file handlers or return proper 404
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=404, detail="Not found")
+
+
+from icecream import ic
+from starlette.routing import Mount, Route
+
+for route in app.routes:
+    if isinstance(route, Route):
+        ic(route.path, route.methods)
+    elif isinstance(route, Mount):
+        ic(route.path)
+        for sub_route in route.routes:
+            ic(f"{route.path}{sub_route.path}", sub_route.methods)
