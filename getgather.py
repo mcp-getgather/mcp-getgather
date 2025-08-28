@@ -5,13 +5,14 @@ import asyncio
 import os
 import sys
 import urllib.parse
-from typing import TypedDict, cast
+from typing import cast
 
 import nanoid
 import pwinput
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 from patchright.async_api import BrowserContext, Page, async_playwright
+from pydantic import BaseModel, Field
 
 from getgather.distill import Pattern, distill
 
@@ -75,12 +76,15 @@ def parse(html: str):
     return BeautifulSoup(html, "html.parser")
 
 
-class Handle(TypedDict):
-    id: str
+class Handle(BaseModel):
+    id: str = Field(min_length=1, description="Browser session identifier")
     hostname: str
     location: str
     context: BrowserContext
     page: Page
+    
+    class Config:
+        arbitrary_types_allowed = True
 
 
 async def init(location: str = "", hostname: str = "") -> Handle:
@@ -100,7 +104,7 @@ async def init(location: str = "", hostname: str = "") -> Handle:
     )
 
     page = context.pages[0] if context.pages else await context.new_page()
-    return {"id": id, "hostname": hostname, "location": location, "context": context, "page": page}
+    return Handle(id=id, hostname=hostname, location=location, context=context, page=page)
 
 
 def load_patterns() -> list[Pattern]:
@@ -109,7 +113,7 @@ def load_patterns() -> list[Pattern]:
         with open(name, "r", encoding="utf-8") as f:
             content = f.read()
         pattern = parse(content)
-        patterns.append({"name": name, "pattern": pattern})
+        patterns.append(Pattern(name=name, pattern=pattern))
     return patterns
 
 
@@ -200,7 +204,7 @@ async def distill_command(location: str, option: str | None = None):
         match = await distill(hostname, page, patterns)
 
         if match:
-            distilled = match["distilled"]
+            distilled = match.distilled
             print()
             print(distilled)
             print()
@@ -216,9 +220,9 @@ async def run_command(location: str):
     patterns = load_patterns()
 
     browser_data = await init(location, hostname)
-    browser_id = browser_data["id"]
-    context = browser_data["context"]
-    page = browser_data["page"]
+    browser_id = browser_data.id
+    context = browser_data.context
+    page = browser_data.page
 
     print(f"Starting browser {browser_id}")
 
@@ -239,13 +243,13 @@ async def run_command(location: str):
 
             match = await distill(hostname, page, patterns)
             if match:
-                name = match["name"]
-                distilled = match["distilled"]
+                name = match.name
+                distilled = match.distilled
 
-                if distilled == current["distilled"]:
+                if distilled == current.get("distilled"):
                     print(f"Still the same: {name}")
                 else:
-                    current = match
+                    current = {"name": name, "distilled": distilled}
                     print()
                     print(distilled)
                     await autofill(page, distilled, ["email", "password", "tel", "text"])
