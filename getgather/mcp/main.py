@@ -13,10 +13,11 @@ from getgather.brand_state import BrandState, brand_state_manager
 from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.logs import logger
+from getgather.mcp.auth import get_auth_user
 from getgather.mcp.auto_import import auto_import
 from getgather.mcp.calendar_utils import calendar_mcp
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import auth_hosted_link, get_auth_user, poll_status_hosted_link
+from getgather.mcp.shared import auth_hosted_link, poll_status_hosted_link
 
 # Ensure calendar MCP is registered by importing its module
 try:

@@ -2,12 +2,14 @@ from typing import cast
 
 from fastapi import FastAPI
 from fastmcp.server.auth.providers.github import GitHubProvider
+from fastmcp.server.dependencies import get_access_token
 from mcp.server.auth.middleware.auth_context import AuthContextMiddleware
 from mcp.server.auth.middleware.bearer_auth import (
     BearerAuthBackend,
     RequireAuthMiddleware,
 )
 from mcp.server.auth.provider import TokenVerifier
+from pydantic import BaseModel
 from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.types import Receive, Scope, Send
@@ -78,3 +80,34 @@ def setup_mcp_auth(app: FastAPI, mcp_routes: list[str]):
 
     for middleware in auth_middleware:
         app.add_middleware(middleware.cls, *middleware.args, **middleware.kwargs)
+
+
+LOCAL_USER = "user@localhost"
+
+
+class AuthUser(BaseModel):
+    sub: str
+    login: str
+    email: str | None = None
+
+
+def get_auth_user() -> AuthUser:
+    """Get the email of the authenticated user, which is common across OAuth providers."""
+    if not settings.mcp_auth_enabled:
+        return AuthUser(sub=LOCAL_USER, login=LOCAL_USER)
+
+    token = get_access_token()
+    if not token:
+        raise RuntimeError("No auth user found")
+
+    sub = token.claims.get("sub")
+    login = token.claims.get("login")
+    email = token.claims.get("email")
+    if not sub or not login:
+        raise RuntimeError("No sub or login found in auth token")
+
+    # make sure the sub and login are unique among auth providers
+    sub = f"{sub}@{settings.mcp_auth_provider}"
+    login = f"{login}@{settings.mcp_auth_provider}"
+
+    return AuthUser(sub=sub, login=login, email=email)
