@@ -285,15 +285,3 @@ def frontend_router(full_path: str):
         from fastapi import HTTPException
 
         raise HTTPException(status_code=404, detail="Not found")
-
-
-from icecream import ic
-from starlette.routing import Mount, Route
-
-for route in app.routes:
-    if isinstance(route, Route):
-        ic(route.path, route.methods)
-    elif isinstance(route, Mount):
-        ic(route.path)
-        for sub_route in route.routes:
-            ic(f"{route.path}{sub_route.path}", sub_route.methods)
