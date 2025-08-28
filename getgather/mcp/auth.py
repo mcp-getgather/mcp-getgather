@@ -15,11 +15,12 @@ from starlette.types import Receive, Scope, Send
 from getgather.config import settings
 
 ALLOWED_CLIENT_REDIRECT_URIS = [
-    # For claude: see https://support.anthropic.com/en/articles/11503834-building-custom-connectors-via-remote-mcp-servers
+    # For Claude Desktop: see https://support.anthropic.com/en/articles/11503834-building-custom-connectors-via-remote-mcp-servers
     "https://claude.ai/api/mcp/auth_callback",
     "https://claude.com/api/mcp/auth_callback",
+    # For Cursor
     "cursor://anysphere.cursor-retrieval/oauth/user-getgather-books/callback",
-    # local development
+    # For local development
     "http://localhost:*",
 ]
 
@@ -28,6 +29,7 @@ github_auth_provider = GitHubProvider(
     client_secret=settings.OAUTH_GITHUB_CLIENT_SECRET,
     base_url=settings.SERVER_ORIGIN,
     redirect_path=settings.OAUTH_GITHUB_REDIRECT_PATH,
+    required_scopes=["user"],
     allowed_client_redirect_uris=ALLOWED_CLIENT_REDIRECT_URIS,
 )
 
