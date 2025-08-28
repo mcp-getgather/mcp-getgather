@@ -251,12 +251,10 @@ async def proxy_inspector(file_path: str):
 
 app.mount("/api", api_app)
 
+setup_mcp_auth(app, [mcp_app.route for mcp_app in mcp_apps])
 
 for mcp_app in mcp_apps:
     app.mount(mcp_app.route, mcp_app.app)
-
-
-setup_mcp_auth(app)
 
 
 @app.middleware("http")
@@ -271,7 +269,7 @@ async def mcp_slash_redirect_middleware(
         return await call_next(request)
 
 
-# # Everything else is handled by the SPA
+# Everything else is handled by the SPA
 @app.get("/{full_path:path}")
 def frontend_router(full_path: str):
     # Only serve frontend for paths that don't have file extensions

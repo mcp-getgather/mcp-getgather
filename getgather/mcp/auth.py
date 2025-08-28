@@ -45,14 +45,25 @@ class RequireAuthMiddlewareCustom(RequireAuthMiddleware):
             await self.app(scope, receive, send)
 
 
-def setup_mcp_auth(app: FastAPI):
+def setup_mcp_auth(app: FastAPI, mcp_routes: list[str]):
     # Set up OAuth routes
+
     for route in github_auth_provider.get_routes():
         app.add_route(
             route.path,
             route.endpoint,
             list(route.methods) if route.methods else [],
         )
+
+        # handle '/.well-known/oauth-authorization-server/mcp-*' and
+        # '/.well-known/oauth-authorization-server/mcp-*'
+        if route.path.startswith("/.well-known"):
+            for mcp_route in mcp_routes:
+                app.add_route(
+                    f"{route.path}{mcp_route}",
+                    route.endpoint,
+                    list(route.methods) if route.methods else [],
+                )
 
     # Set up OAuth middlewares
     auth_middleware = [
