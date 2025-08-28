@@ -82,7 +82,7 @@ class Handle(BaseModel):
     location: str
     context: BrowserContext
     page: Page
-    
+
     class Config:
         arbitrary_types_allowed = True
 
