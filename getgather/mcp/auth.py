@@ -18,20 +18,9 @@ ALLOWED_CLIENT_REDIRECT_URIS = [
     # For Claude Desktop: see https://support.anthropic.com/en/articles/11503834-building-custom-connectors-via-remote-mcp-servers
     "https://claude.ai/api/mcp/auth_callback",
     "https://claude.com/api/mcp/auth_callback",
-    # For Cursor
-    "cursor://anysphere.cursor-retrieval/oauth/user-getgather-books/callback",
-    # For local development
-    "http://localhost:*",
+    "cursor://anysphere.cursor-retrieval/oauth/user-getgather-books/callback",  # For Cursor
+    "http://localhost:*",  # For local development
 ]
-
-github_auth_provider = GitHubProvider(
-    client_id=settings.OAUTH_GITHUB_CLIENT_ID,
-    client_secret=settings.OAUTH_GITHUB_CLIENT_SECRET,
-    base_url=settings.SERVER_ORIGIN,
-    redirect_path=settings.OAUTH_GITHUB_REDIRECT_PATH,
-    required_scopes=["user"],
-    allowed_client_redirect_uris=ALLOWED_CLIENT_REDIRECT_URIS,
-)
 
 
 class RequireAuthMiddlewareCustom(RequireAuthMiddleware):
@@ -46,8 +35,16 @@ class RequireAuthMiddlewareCustom(RequireAuthMiddleware):
 
 
 def setup_mcp_auth(app: FastAPI, mcp_routes: list[str]):
-    # Set up OAuth routes
+    github_auth_provider = GitHubProvider(
+        client_id=settings.OAUTH_GITHUB_CLIENT_ID,
+        client_secret=settings.OAUTH_GITHUB_CLIENT_SECRET,
+        base_url=settings.SERVER_ORIGIN,
+        redirect_path=settings.OAUTH_GITHUB_REDIRECT_PATH,
+        required_scopes=["user"],
+        allowed_client_redirect_uris=ALLOWED_CLIENT_REDIRECT_URIS,
+    )
 
+    # Set up OAuth routes
     for route in github_auth_provider.get_routes():
         app.add_route(
             route.path,

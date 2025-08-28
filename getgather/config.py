@@ -119,5 +119,16 @@ class Settings(BaseSettings):
             logger.warning("SENTRY_DSN is not set, logging will not be captured in Sentry.")
         return v
 
+    @property
+    def mcp_auth_enabled(self) -> bool:
+        enabled = all([
+            self.SERVER_ORIGIN,
+            self.OAUTH_GITHUB_CLIENT_ID,
+            self.OAUTH_GITHUB_CLIENT_SECRET,
+            self.OAUTH_GITHUB_REDIRECT_PATH,
+        ])
+        logger.info(f"MCP auth is {'enabled' if enabled else 'disabled'}.")
+        return enabled
+
 
 settings = Settings()

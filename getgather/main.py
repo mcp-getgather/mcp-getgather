@@ -251,7 +251,8 @@ async def proxy_inspector(file_path: str):
 
 app.mount("/api", api_app)
 
-setup_mcp_auth(app, [mcp_app.route for mcp_app in mcp_apps])
+if settings.mcp_auth_enabled:
+    setup_mcp_auth(app, [mcp_app.route for mcp_app in mcp_apps])
 
 for mcp_app in mcp_apps:
     app.mount(mcp_app.route, mcp_app.app)

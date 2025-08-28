@@ -24,6 +24,7 @@ FROM mirror.gcr.io/library/python:3.13-slim-bookworm AS backend-builder
 COPY --from=ghcr.io/astral-sh/uv:0.8.4 /uv /uvx /bin/
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
     curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
