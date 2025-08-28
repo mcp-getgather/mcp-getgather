@@ -16,7 +16,7 @@ from getgather.logs import logger
 from getgather.mcp.auto_import import auto_import
 from getgather.mcp.calendar_utils import calendar_mcp
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import auth_hosted_link, poll_status_hosted_link
+from getgather.mcp.shared import auth_hosted_link, get_auth_user, poll_status_hosted_link
 
 # Ensure calendar MCP is registered by importing its module
 try:
@@ -31,6 +31,9 @@ class AuthMiddleware(Middleware):
             return await call_next(context)
 
         logger.info(f"[AuthMiddleware Context]: {context.message}")
+
+        auth_user = get_auth_user()
+        logger.info(f"[AuthMiddleware] auth_user: {auth_user}")
 
         tool = await context.fastmcp_context.fastmcp.get_tool(context.message.name)  # type: ignore
 

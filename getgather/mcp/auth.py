@@ -62,18 +62,18 @@ def setup_mcp_auth(app: FastAPI, mcp_routes: list[str]):
                     list(route.methods) if route.methods else [],
                 )
 
-    # Set up OAuth middlewares
+    # Set up OAuth middlewares, in this order:
     auth_middleware = [
         Middleware(
-            RequireAuthMiddlewareCustom,
+            RequireAuthMiddlewareCustom,  # verify auth for MCP routes
             getattr(github_auth_provider, "required_scopes", None) or [],
             github_auth_provider.get_resource_metadata_url(),
         ),
+        Middleware(AuthContextMiddleware),  # store the auth user in the context_var
         Middleware(
-            AuthenticationMiddleware,
+            AuthenticationMiddleware,  # manage oauth flow
             backend=BearerAuthBackend(cast(TokenVerifier, github_auth_provider)),
         ),
-        Middleware(AuthContextMiddleware),
     ]
 
     for middleware in auth_middleware:

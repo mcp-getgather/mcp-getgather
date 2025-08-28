@@ -4,13 +4,15 @@ from typing import Any, Awaitable, Callable, ParamSpec, TypeVar
 
 import httpx
 from fastmcp import Context
-from fastmcp.server.dependencies import get_context, get_http_headers
+from fastmcp.server.dependencies import get_access_token, get_context, get_http_headers
+from pydantic import BaseModel
 
 from getgather.api.routes.link.types import HostedLinkTokenRequest
 from getgather.auth_flow import ExtractResult
 from getgather.brand_state import brand_state_manager
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
+from getgather.config import settings
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.extract_orchestrator import ExtractOrchestrator
 from getgather.logs import logger
@@ -154,6 +156,37 @@ async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict
             "status": "FINISHED",
             "message": "Auth completed successfully.",
         }
+
+
+LOCAL_USER = "user@localhost"
+
+
+class AuthUser(BaseModel):
+    sub: str
+    login: str
+    email: str | None = None
+
+
+def get_auth_user() -> AuthUser:
+    """Get the email of the authenticated user, which is common across OAuth providers."""
+    if not settings.mcp_auth_enabled:
+        return AuthUser(sub=LOCAL_USER, login=LOCAL_USER)
+
+    token = get_access_token()
+    if not token:
+        raise RuntimeError("No auth user found")
+
+    sub = token.claims.get("sub")
+    login = token.claims.get("login")
+    email = token.claims.get("email")
+    if not sub or not login:
+        raise RuntimeError("No sub or login found in auth token")
+
+    # make sure the sub and login are unique among auth providers
+    sub = f"{sub}@{settings.mcp_auth_provider}"
+    login = f"{login}@{settings.mcp_auth_provider}"
+
+    return AuthUser(sub=sub, login=login, email=email)
 
 
 def get_mcp_brand_id() -> BrandIdEnum:

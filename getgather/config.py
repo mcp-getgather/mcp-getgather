@@ -130,5 +130,10 @@ class Settings(BaseSettings):
         logger.info(f"MCP auth is {'enabled' if enabled else 'disabled'}.")
         return enabled
 
+    @property
+    def mcp_auth_provider(self) -> str:
+        """Only supports GitHub for now."""
+        return "github"
+
 
 settings = Settings()
