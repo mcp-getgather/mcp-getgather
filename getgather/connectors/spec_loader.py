@@ -133,5 +133,7 @@ if TYPE_CHECKING:
 
 else:
     # runtime: build the real StrEnum using direct brand spec loading
-    brand_ids = {id: id for id in brand_id_list(include="all")}
-    BrandIdEnum = StrEnum("BrandIdEnum", brand_ids)
+    yaml_ids = set(brand_id_list(include="all"))
+    extra_ids = {"espn"}
+    all_ids = {bid: bid for bid in (yaml_ids | extra_ids)}
+    BrandIdEnum = StrEnum("BrandIdEnum", all_ids)
