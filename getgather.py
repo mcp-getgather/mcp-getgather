@@ -48,9 +48,10 @@ async def click(page: Page, selector: str, timeout: int = 3000) -> None:
                     logger.warning(f"Failed to click on {selector} {element}: {err}")
     except Exception as e:
         if timeout > 0 and "TimeoutError" in str(type(e)):
-            logger.debug(f"retrying click {selector} {timeout}")
+            logger.warning(f"retrying click {selector} {timeout}")
             await click(page, selector, timeout - LOCATOR_ALL_TIMEOUT)
             return
+        logger.error(f"Failed to click on {selector}: {e}")
         raise e
 
 
