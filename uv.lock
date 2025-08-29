@@ -594,8 +594,8 @@ wheels = [
 
 [[package]]
 name = "fastmcp"
-version = "0.0.1.dev2040+aa48d6f"
-source = { git = "https://github.com/bin-ario/fastmcp.git#aa48d6fbbdc226319850269fa5a1e7ab31d5338e" }
+version = "2.11.4.dev132+210e9cc"
+source = { git = "https://github.com/jlowin/fastmcp.git?rev=210e9cc5ca4003a0bcfac73399051a780b67a43a#210e9cc5ca4003a0bcfac73399051a780b67a43a" }
 dependencies = [
     { name = "authlib" },
     { name = "cyclopts" },
@@ -658,7 +658,7 @@ requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.13.4" },
     { name = "browser-use", specifier = ">=0.5.10" },
     { name = "fastapi", specifier = ">=0.115.12" },
-    { name = "fastmcp", git = "https://github.com/bin-ario/fastmcp.git" },
+    { name = "fastmcp", git = "https://github.com/jlowin/fastmcp.git?rev=210e9cc5ca4003a0bcfac73399051a780b67a43a" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "lxml", specifier = ">=6.0.0" },
