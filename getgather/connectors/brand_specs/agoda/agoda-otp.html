@@ -1,0 +1,21 @@
+<html gg-domain="agoda" gg-priority="1">
+  <h2
+    gg-frame="iframe[title='Universal login']"
+    gg-match="h2:has-text('Sign in with OTP')"
+  >
+    Sign in with OTP
+  </h2>
+  <input
+    gg-frame="iframe[title='Universal login']"
+    type="tel"
+    gg-match="input[name='otp-0']"
+    placeholder="OTP"
+  />
+  <button
+    gg-frame="iframe[title='Universal login']"
+    gg-autoclick
+    gg-match="button[data-element-name='universal-login-unified-auth-otp-continue']"
+  >
+    Continue
+  </button>
+</html>
