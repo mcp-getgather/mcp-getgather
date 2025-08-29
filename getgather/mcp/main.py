@@ -56,7 +56,7 @@ class AuthMiddleware(Middleware):
             browser_profile = BrowserProfile()
             brand_state_manager.add(
                 BrandState(
-                    brand_id=brand_id,
+                    brand_id=BrandIdEnum(brand_id),
                     browser_profile_id=browser_profile.id,
                     is_connected=False,
                 )
@@ -86,7 +86,7 @@ class MCPApp:
     name: str
     type: Literal["brand", "category", "all"]
     route: str
-    brand_ids: list[str]
+    brand_ids: list[BrandIdEnum]
 
     @cached_property
     def app(self) -> StarletteWithLifespan:
@@ -109,9 +109,9 @@ def create_mcp_apps() -> list[MCPApp]:
     )
     apps.extend([
         MCPApp(
-            name=brand_id,
+            name=brand_id.value,
             type="brand",
-            route=f"/mcp-{brand_id}",
+            route=f"/mcp-{brand_id.value}",
             brand_ids=[brand_id],
         )
         for brand_id in BrandMCPBase.registry.keys()
@@ -121,7 +121,7 @@ def create_mcp_apps() -> list[MCPApp]:
             name=category,
             type="category",
             route=f"/mcp-{category}",
-            brand_ids=[brand_id for brand_id in brand_ids],
+            brand_ids=[BrandIdEnum(brand_id) for brand_id in brand_ids],
         )
         for category, brand_ids in CATEGORY_BUNDLES.items()
     ])
@@ -129,7 +129,7 @@ def create_mcp_apps() -> list[MCPApp]:
     return apps
 
 
-def _create_mcp_app(bundle_name: str, brand_ids: list[str]):
+def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
     """Create and return the MCP ASGI app.
 
     This performs plugin discovery/registration and mounts brand MCPs.
