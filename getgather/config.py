@@ -45,6 +45,12 @@ class Settings(BaseSettings):
     )
     RRWEB_MASK_ALL_INPUTS: bool = True
 
+    SERVER_ORIGIN: str = "http://localhost:23456"
+
+    OAUTH_GITHUB_CLIENT_ID: str = ""
+    OAUTH_GITHUB_CLIENT_SECRET: str = ""
+    OAUTH_GITHUB_REDIRECT_PATH: str = "/auth/github/callback"
+
     @property
     def brand_spec_dir(self) -> Path:
         return PROJECT_DIR / "getgather" / "connectors" / "brand_specs"
@@ -112,6 +118,17 @@ class Settings(BaseSettings):
         if not v:
             logger.warning("SENTRY_DSN is not set, logging will not be captured in Sentry.")
         return v
+
+    @property
+    def mcp_auth_enabled(self) -> bool:
+        enabled = all([
+            self.SERVER_ORIGIN,
+            self.OAUTH_GITHUB_CLIENT_ID,
+            self.OAUTH_GITHUB_CLIENT_SECRET,
+            self.OAUTH_GITHUB_REDIRECT_PATH,
+        ])
+        logger.info(f"MCP auth is {'enabled' if enabled else 'disabled'}.")
+        return enabled
 
 
 settings = Settings()
