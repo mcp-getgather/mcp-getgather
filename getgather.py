@@ -15,17 +15,7 @@ from patchright.async_api import BrowserContext, Page, async_playwright
 from pydantic import BaseModel, Field
 
 from getgather.distill import Pattern, distill
-
-NORMAL = "\033[0m"
-BOLD = "\033[1m"
-YELLOW = "\033[93m"
-MAGENTA = "\033[35m"
-RED = "\033[91m"
-GREEN = "\033[92m"
-CYAN = "\033[36m"
-
-ARROW = "⇢"
-CROSS = "✘"
+from getgather.logs import logger
 
 FRIENDLY_CHARS = "23456789abcdefghijkmnpqrstuvwxyz"
 
@@ -46,21 +36,22 @@ async def click(page: Page, selector: str, timeout: int = 3000) -> None:
     locator = page.locator(selector)
     try:
         elements = await locator.all()
-        print(f'Found {len(elements)} elements for selector "{selector}"')
+        logger.debug(f'Found {len(elements)} elements for selector "{selector}"')
         for element in elements:
-            print("Checking", element)
+            logger.debug(f"Checking {element}")
             if await element.is_visible():
-                print("Clicking on", element)
+                logger.debug(f"Clicking on {element}")
                 try:
                     await element.click()
                     return
                 except Exception as err:
-                    print(f"Failed to click on {selector} {element}: {err}")
+                    logger.warning(f"Failed to click on {selector} {element}: {err}")
     except Exception as e:
         if timeout > 0 and "TimeoutError" in str(type(e)):
-            print(f"retrying click {selector} {timeout}")
+            logger.warning(f"retrying click {selector} {timeout}")
             await click(page, selector, timeout - LOCATOR_ALL_TIMEOUT)
             return
+        logger.error(f"Failed to click on {selector}: {e}")
         raise e
 
 
@@ -136,7 +127,7 @@ async def autofill(page: Page, distilled: str, fields: list[str]):
             value = os.getenv(key)
 
             if value and len(value) > 0:
-                print(f"{CYAN}{ARROW} Using {BOLD}{key}{NORMAL} for {field}{NORMAL}")
+                logger.info(f"Using {key} for {field}")
                 await page.fill(str(selector), value)
             else:
                 placeholder = cast(Tag, element).get("placeholder")
@@ -154,7 +145,7 @@ async def autoclick(page: Page, distilled: str):
         if isinstance(button, Tag):
             selector = button.get("gg-match")
             if selector:
-                print(f"{CYAN}{ARROW} Auto-clicking {NORMAL}{selector}")
+                logger.info(f"Auto-clicking {selector}")
                 await click(page, str(selector))
 
 
@@ -162,7 +153,7 @@ async def terminate(page: Page, distilled: str) -> bool:
     document = parse(distilled)
     stops = document.find_all(attrs={"gg-stop": True})
     if len(stops) > 0:
-        print("Found stop elements, terminating session...")
+        logger.info("Found stop elements, terminating session...")
         return True
     return False
 
@@ -176,13 +167,13 @@ async def list_command():
     spec_files = [f for f in spec_files if f.endswith(".html")]
 
     for name in spec_files:
-        print(name.replace("specs/", ""))
+        logger.info(name.replace("specs/", ""))
 
 
 async def distill_command(location: str, option: str | None = None):
     patterns = load_patterns()
 
-    print(f"Distilling {location}")
+    logger.info(f"Distilling {location}")
 
     async with async_playwright() as p:
         if location.startswith("http"):
@@ -204,9 +195,8 @@ async def distill_command(location: str, option: str | None = None):
         match = await distill(hostname, page, patterns)
 
         if match:
-            distilled = match.distilled
             print()
-            print(distilled)
+            print(match.distilled)
             print()
 
         await browser.close()
@@ -224,9 +214,9 @@ async def run_command(location: str):
     context = browser_data.context
     page = browser_data.page
 
-    print(f"Starting browser {browser_id}")
+    logger.info(f"Starting browser {browser_id}")
 
-    print(f"{GREEN}{ARROW} Navigating to {NORMAL}{location}")
+    logger.info(f"Navigating to {location}")
     await page.goto(location)
 
     TICK = 1  # seconds
@@ -237,8 +227,8 @@ async def run_command(location: str):
 
     try:
         for iteration in range(max):
-            print()
-            print(f"{MAGENTA}Iteration {iteration + 1}{NORMAL} of {max}")
+            logger.info("")
+            logger.info(f"Iteration {iteration + 1} of {max}")
             await sleep(TICK)
 
             match = await distill(hostname, page, patterns)
@@ -247,7 +237,7 @@ async def run_command(location: str):
                 distilled = match.distilled
 
                 if distilled == current.get("distilled"):
-                    print(f"Still the same: {name}")
+                    logger.debug(f"Still the same: {name}")
                 else:
                     current = {"name": name, "distilled": distilled}
                     print()
@@ -258,14 +248,14 @@ async def run_command(location: str):
                     if await terminate(page, distilled):
                         break
             else:
-                print(f"{CROSS}{RED} No matched pattern found{NORMAL}")
+                logger.debug(f"No matched pattern found")
 
-        print()
-        print(f"Terminating browser {browser_id}")
+        logger.info("")
+        logger.info(f"Terminating browser {browser_id}")
 
     finally:
         await context.close()
-        print("Terminated.")
+        logger.info("Terminated.")
 
 
 async def inspect_command(id: str, option: str | None = None):
@@ -323,4 +313,4 @@ async def main():
 if __name__ == "__main__":
     result = asyncio.run(main())
     if result == "server":
-        print("TODO: launch MCP server")
+        logger.info("TODO: launch MCP server")
