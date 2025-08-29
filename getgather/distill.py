@@ -71,7 +71,12 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
             if not selector or not isinstance(selector, str):
                 continue
 
-            source = await locate(page.locator(selector))
+            frame_selector = target.get("gg-frame")
+
+            if frame_selector:
+                source = await locate(page.frame_locator(str(frame_selector)).locator(selector))
+            else:
+                source = await locate(page.locator(selector))
 
             if source:
                 if html:

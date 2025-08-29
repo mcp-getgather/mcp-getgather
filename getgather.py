@@ -40,9 +40,14 @@ async def ask(message: str, mask: str | None = None) -> str:
         return input(f"{message}: ")
 
 
-async def click(page: Page, selector: str, timeout: int = 3000) -> None:
+async def click(
+    page: Page, selector: str, timeout: int = 3000, frame_selector: str | None = None
+) -> None:
     LOCATOR_ALL_TIMEOUT = 100
-    locator = page.locator(selector)
+    if frame_selector:
+        locator = page.frame_locator(str(frame_selector)).locator(str(selector))
+    else:
+        locator = page.locator(str(selector))
     try:
         elements = await locator.all()
         print(f'Found {len(elements)} elements for selector "{selector}"')
@@ -58,7 +63,7 @@ async def click(page: Page, selector: str, timeout: int = 3000) -> None:
     except Exception as e:
         if timeout > 0 and "TimeoutError" in str(type(e)):
             print(f"retrying click {selector} {timeout}")
-            await click(page, selector, timeout - LOCATOR_ALL_TIMEOUT)
+            await click(page, selector, timeout - LOCATOR_ALL_TIMEOUT, frame_selector)
             return
         raise e
 
@@ -123,22 +128,38 @@ async def autofill(page: Page, distilled: str, fields: list[str]):
     for field in fields:
         element = document.find("input", {"type": field})
         selector = None
+        frame_selector = None
+
         if element:
             selector = cast(Tag, element).get("gg-match")
+            frame_selector = cast(Tag, element).get("gg-frame")
 
-        if element and selector:
+        if selector:
             source = f"{domain}_{field}" if domain else field
             key = source.upper()
             value = os.getenv(key)
 
             if value and len(value) > 0:
                 print(f"{CYAN}{ARROW} Using {BOLD}{key}{NORMAL} for {field}{NORMAL}")
-                await page.fill(str(selector), value)
+
+                if frame_selector:
+                    await page.frame_locator(str(frame_selector)).locator(str(selector)).fill(value)
+                else:
+                    await page.fill(str(selector), value)
             else:
                 placeholder = cast(Tag, element).get("placeholder")
                 prompt = str(placeholder) if placeholder else f"Please enter {field}"
                 mask = "*" if field == "password" else None
-                await page.fill(str(selector), await ask(prompt, mask))
+
+                if frame_selector:
+                    await (
+                        page.frame_locator(str(frame_selector))
+                        .locator(str(selector))
+                        .fill(await ask(prompt, mask))
+                    )
+
+                else:
+                    await page.fill(str(selector), await ask(prompt, mask))
             await sleep(0.25)
 
 
@@ -151,7 +172,8 @@ async def autoclick(page: Page, distilled: str):
             selector = button.get("gg-match")
             if selector:
                 print(f"{CYAN}{ARROW} Auto-clicking {NORMAL}{selector}")
-                await click(page, str(selector))
+                frame_selector = button.get("gg-frame")
+                await click(page, str(selector), frame_selector=str(frame_selector))
 
 
 async def terminate(page: Page, distilled: str) -> bool:
