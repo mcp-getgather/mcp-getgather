@@ -75,4 +75,4 @@ line_length = 120
 whitelines = 1
 
 [tool.uv.sources]
-fastmcp = { git = "https://github.com/bin-ario/fastmcp.git" }
+fastmcp = { git = "https://github.com/jlowin/fastmcp.git", rev = "210e9cc5ca4003a0bcfac73399051a780b67a43a" }
