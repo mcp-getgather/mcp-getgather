@@ -138,7 +138,7 @@ async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict
             if response_json["status"] == "completed":
                 processing = False
                 brand_state_manager.update_is_connected(
-                    brand_id=BrandIdEnum(response_json["brand_id"]),
+                    brand_id=response_json["brand_id"],
                     is_connected=True,
                 )
                 logger.info(

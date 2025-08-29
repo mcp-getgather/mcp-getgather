@@ -30,7 +30,7 @@ class BrandStateManager:
         data = [brand_state.model_dump() for brand_state in brand_states]
         db_manager.set("brand_states", data)
 
-    def get_by_brand_id(self, brand_id: BrandIdEnum) -> BrandState | None:
+    def get_by_brand_id(self, brand_id: BrandIdEnum | str) -> BrandState | None:
         """Get a brand state by its brand ID."""
         brand_states = self._load_brand_states()
         for brand_state in brand_states:
@@ -38,7 +38,7 @@ class BrandStateManager:
                 return brand_state
         return None
 
-    def update_is_connected(self, brand_id: BrandIdEnum, is_connected: bool) -> None:
+    def update_is_connected(self, brand_id: BrandIdEnum | str, is_connected: bool) -> None:
         """Update the is_connected status for a brand."""
         brand_states = self._load_brand_states()
 
@@ -57,14 +57,14 @@ class BrandStateManager:
 
         self._save_brand_states(brand_states)
 
-    def is_brand_connected(self, brand_id: BrandIdEnum) -> bool:
+    def is_brand_connected(self, brand_id: BrandIdEnum | str) -> bool:
         """Check if a brand is connected."""
-        state = self.get_by_brand_id(BrandIdEnum(brand_id))
+        state = self.get_by_brand_id(brand_id)
         return state.is_connected if state else False
 
-    def get_browser_profile_id(self, brand_id: BrandIdEnum) -> str | None:
+    def get_browser_profile_id(self, brand_id: BrandIdEnum | str) -> str | None:
         """Get the browser profile ID for a brand."""
-        state = self.get_by_brand_id(BrandIdEnum(brand_id))
+        state = self.get_by_brand_id(brand_id)
         return state.browser_profile_id if state else None
 
     def add(self, brand_state: BrandState) -> None:
