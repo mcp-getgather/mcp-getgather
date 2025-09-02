@@ -8,21 +8,18 @@ import urllib.parse
 from glob import glob
 from typing import cast
 
-import nanoid
 import pwinput
 from bs4 import BeautifulSoup
 from bs4.element import Tag
-from patchright.async_api import BrowserContext, Page, async_playwright
-from pydantic import BaseModel, Field
+from patchright.async_api import Page
 
+from getgather.browser.profile import BrowserProfile
+from getgather.browser.session import browser_session
 from getgather.config import settings
 from getgather.distill import Pattern, distill
 from getgather.logs import logger
 
 _ = settings.LOG_LEVEL
-
-
-FRIENDLY_CHARS = "23456789abcdefghijkmnpqrstuvwxyz"
 
 
 async def sleep(seconds: float):
@@ -67,37 +64,6 @@ async def click(
 
 def parse(html: str):
     return BeautifulSoup(html, "html.parser")
-
-
-class Handle(BaseModel):
-    id: str = Field(min_length=1, description="Browser session identifier")
-    hostname: str
-    location: str
-    context: BrowserContext
-    page: Page
-
-    class Config:
-        arbitrary_types_allowed = True
-
-
-async def init(location: str = "", hostname: str = "") -> Handle:
-    global playwright_instance, browser_instance
-
-    id = nanoid.generate(FRIENDLY_CHARS, 6)
-    directory = f"data/profiles/{id}"
-
-    if not playwright_instance:
-        playwright_instance = await async_playwright().start()
-        browser_instance = await playwright_instance.chromium.launch(
-            headless=False, channel="chromium"
-        )
-
-    context = await playwright_instance.chromium.launch_persistent_context(  # type: ignore
-        directory, headless=False, viewport={"width": 1920, "height": 1080}
-    )
-
-    page = context.pages[0] if context.pages else await context.new_page()
-    return Handle(id=id, hostname=hostname, location=location, context=context, page=page)
 
 
 def load_patterns() -> list[Pattern]:
@@ -178,10 +144,6 @@ async def terminate(page: Page, distilled: str) -> bool:
     return False
 
 
-playwright_instance = None
-browser_instance = None
-
-
 async def list_command():
     spec_files = glob("./getgather/connectors/brand_specs/**/*", recursive=True)
     spec_files = [f for f in spec_files if f.endswith(".html")]
@@ -195,19 +157,15 @@ async def distill_command(location: str, option: str | None = None):
 
     logger.info(f"Distilling {location}")
 
-    async with async_playwright() as p:
+    profile = BrowserProfile()
+    async with browser_session(profile) as session:
+        page = await session.page()
+
         if location.startswith("http"):
             hostname = urllib.parse.urlparse(location).hostname
-            browser = await p.chromium.launch(headless=False, channel="chromium")
-            context = await browser.new_context()
-            page = await context.new_page()
             await page.goto(location)
         else:
             hostname = option or ""
-            browser = await p.chromium.launch(headless=False, channel="chromium")
-            context = await browser.new_context()
-            page = await context.new_page()
-
             with open(location, "r", encoding="utf-8") as f:
                 content = f.read()
             await page.set_content(content)
@@ -219,8 +177,6 @@ async def distill_command(location: str, option: str | None = None):
             print(match.distilled)
             print()
 
-        await browser.close()
-
 
 async def run_command(location: str):
     if not location.startswith("http"):
@@ -229,23 +185,20 @@ async def run_command(location: str):
     hostname = urllib.parse.urlparse(location).hostname or ""
     patterns = load_patterns()
 
-    browser_data = await init(location, hostname)
-    browser_id = browser_data.id
-    context = browser_data.context
-    page = browser_data.page
+    profile = BrowserProfile()
+    async with browser_session(profile) as session:
+        page = await session.page()
 
-    logger.info(f"Starting browser {browser_id}")
+        logger.info(f"Starting browser {profile.id}")
+        logger.info(f"Navigating to {location}")
+        await page.goto(location)
 
-    logger.info(f"Navigating to {location}")
-    await page.goto(location)
+        TICK = 1  # seconds
+        TIMEOUT = 15  # seconds
+        max = TIMEOUT // TICK
 
-    TICK = 1  # seconds
-    TIMEOUT = 15  # seconds
-    max = TIMEOUT // TICK
+        current = {"name": None, "distilled": None}
 
-    current = {"name": None, "distilled": None}
-
-    try:
         for iteration in range(max):
             logger.info("")
             logger.info(f"Iteration {iteration + 1} of {max}")
@@ -271,25 +224,22 @@ async def run_command(location: str):
                 logger.debug(f"No matched pattern found")
 
         logger.info("")
-        logger.info(f"Terminating browser {browser_id}")
-
-    finally:
-        await context.close()
+        logger.info(f"Terminating browser {profile.id}")
         logger.info("Terminated.")
 
 
 async def inspect_command(id: str, option: str | None = None):
-    directory = f"data/profiles/{id}"
-
-    async with async_playwright() as p:
-        context = await p.chromium.launch_persistent_context(directory, headless=False)
-        page = context.pages[0] if context.pages else await context.new_page()
+    profile = BrowserProfile(id=id)
+    async with browser_session(profile) as session:
+        page = await session.page()
 
         if option and len(option) > 0:
             url = option if option.startswith("http") else f"https://{option}"
             await page.goto(url)
+        else:
+            await page.goto("https://google.com")
 
-        await context.close()
+        await ask("Press Enter to terminate session")
 
 
 async def main():
