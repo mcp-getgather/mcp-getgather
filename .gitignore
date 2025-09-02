@@ -499,6 +499,7 @@ getgather/api/frontend/index.html
 getgather/api/frontend/assets
 getgather/frontend/index.html
 getgather/frontend/assets
+getgather/frontend/__assets
 
 !frontend/src/lib
 

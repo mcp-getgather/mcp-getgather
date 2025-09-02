@@ -58,12 +58,12 @@ app = FastAPI(
 
 
 STATIC_ASSETS_DIR = Path(__file__).parent / "static" / "assets"
-BUILD_ASSETS_DIR = Path(__file__).parent / "frontend" / "assets"
+BUILD_ASSETS_DIR = Path(__file__).parent / "frontend" / "__assets"
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 
 
-app.mount("/static/assets", StaticFiles(directory=STATIC_ASSETS_DIR), name="assets")
-app.mount("/assets", StaticFiles(directory=BUILD_ASSETS_DIR), name="assets")
+app.mount("/__static/assets", StaticFiles(directory=STATIC_ASSETS_DIR), name="assets")
+app.mount("/__assets", StaticFiles(directory=BUILD_ASSETS_DIR), name="__assets")
 
 
 @app.get("/live")

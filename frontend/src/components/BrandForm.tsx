@@ -131,7 +131,7 @@ const BrandForm = forwardRef<BrandFormHandle, BrandFormProps>(
         img.src = img.src.replace(/\.svg$/, ".png");
         img.dataset.fallback = "png";
       } else {
-        img.src = "/static/assets/logos/default.svg";
+        img.src = "/__static/assets/logos/default.svg";
         img.onerror = null;
       }
     };
@@ -378,7 +378,7 @@ const BrandForm = forwardRef<BrandFormHandle, BrandFormProps>(
               {brandId && (
                 <img
                   className="w-12 h-12 object-contain mx-auto rounded-lg bg-slate-100 p-2"
-                  src={`/static/assets/logos/${brandId}.svg`}
+                  src={`/__static/assets/logos/${brandId}.svg`}
                   alt={brandId}
                   onError={onImageError}
                   data-fallback="svg"
