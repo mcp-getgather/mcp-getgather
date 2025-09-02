@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router";
+
 import Layout from "./components/Layout";
 import "./index.css";
 import Activities from "./pages/Activities";
@@ -9,9 +10,9 @@ import Home from "./pages/Home";
 import Link from "./pages/Link";
 import LiveView from "./pages/LiveView";
 import McpDocs from "./pages/MCPDocs";
+import NotFound from "./pages/NotFound";
 import { ReplayPage } from "./pages/Replay";
 import Start from "./pages/Start";
-import NotFound from "./pages/NotFound";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

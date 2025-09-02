@@ -1,24 +1,19 @@
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { useState } from "react";
-import {
-  Info,
+  Database,
   Download,
-  Radio,
+  Info,
+  Monitor,
   Play,
-  Trash,
+  Radio,
   RotateCcw,
   Save,
+  Trash,
   Wifi,
-  Monitor,
-  Database,
 } from "lucide-react";
+import { useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Toggle } from "@/components/ui/toggle";
 
 type DataSource = {
@@ -91,20 +86,17 @@ export default function Settings() {
   function toggleDataSource(id: string) {
     // TODO: integrate to API
     setDataSources((prev) =>
-      prev.map((ds) =>
-        ds.id === id ? { ...ds, connected: !ds.connected } : ds,
-      ),
+      prev.map((ds) => (ds.id === id ? { ...ds, connected: !ds.connected } : ds)),
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10">
-      <div className="flex items-start justify-between gap-4 mb-8">
+    <div className="mx-auto max-w-6xl px-6 py-10">
+      <div className="mb-8 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
           <p className="text-muted-foreground mt-1">
-            Configure GetGather Station to work with your preferred tools and
-            data sources
+            Configure GetGather Station to work with your preferred tools and data sources
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -123,40 +115,33 @@ export default function Settings() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-6 max-w-4xl">
-        <Card className="border border-border">
+      <div className="flex max-w-4xl flex-col gap-6">
+        <Card className="border-border border">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <Radio className="h-4 w-4 text-red-500" />
-                  <CardTitle className="text-lg font-semibold">
-                    Recording with rrweb
-                  </CardTitle>
-                  <Info className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-lg font-semibold">Recording with rrweb</CardTitle>
+                  <Info className="text-muted-foreground h-4 w-4" />
                 </div>
               </div>
             </div>
-            <CardDescription>
-              Manage screen recording settings and playback options
-            </CardDescription>
+            <CardDescription>Manage screen recording settings and playback options</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Enable Recording</div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-sm">
                   Record user interactions and page changes
                 </div>
               </div>
-              <Toggle
-                checked={isRecordingEnabled}
-                onChange={setIsRecordingEnabled}
-              />
+              <Toggle checked={isRecordingEnabled} onChange={setIsRecordingEnabled} />
             </div>
 
             <div className="pt-2">
-              <div className="font-medium mb-4">Recording Delay</div>
+              <div className="mb-4 font-medium">Recording Delay</div>
               <div className="px-1">
                 <input
                   type="range"
@@ -167,7 +152,7 @@ export default function Settings() {
                   className="w-full accent-slate-900"
                 />
               </div>
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <div className="text-muted-foreground flex items-center justify-between text-sm">
                 <span>0s</span>
                 <span>{recordingDelay}s delay</span>
                 <span>30s</span>
@@ -186,82 +171,66 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        <Card className="border border-border">
+        <Card className="border-border border">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <Wifi className="h-4 w-4 text-blue-500" />
-                  <CardTitle className="text-lg font-semibold">
-                    Proxy Service
-                  </CardTitle>
-                  <Info className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-lg font-semibold">Proxy Service</CardTitle>
+                  <Info className="text-muted-foreground h-4 w-4" />
                 </div>
               </div>
             </div>
-            <CardDescription>
-              Enable proxy service for secure data access
-            </CardDescription>
+            <CardDescription>Enable proxy service for secure data access</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Proxy Service</div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-sm">
                   Route requests through secure proxy
                 </div>
               </div>
-              <Toggle
-                checked={isRecordingEnabled}
-                onChange={setIsRecordingEnabled}
-              />
+              <Toggle checked={isRecordingEnabled} onChange={setIsRecordingEnabled} />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border border-border">
+        <Card className="border-border border">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <Monitor className="h-4 w-4 text-green-500" />
-                  <CardTitle className="text-lg font-semibold">
-                    Interactive Live View
-                  </CardTitle>
-                  <Info className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-lg font-semibold">Interactive Live View</CardTitle>
+                  <Info className="text-muted-foreground h-4 w-4" />
                 </div>
               </div>
             </div>
-            <CardDescription>
-              Enable real-time interaction with the live view
-            </CardDescription>
+            <CardDescription>Enable real-time interaction with the live view</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Interactive Mode</div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-sm">
                   Allow clicking and interaction in live view
                 </div>
               </div>
-              <Toggle
-                checked={isRecordingEnabled}
-                onChange={setIsRecordingEnabled}
-              />
+              <Toggle checked={isRecordingEnabled} onChange={setIsRecordingEnabled} />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border border-border">
+        <Card className="border-border border">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <Database className="h-4 w-4 text-purple-500" />
-                  <CardTitle className="text-lg font-semibold">
-                    Data Link Management
-                  </CardTitle>
-                  <Info className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-lg font-semibold">Data Link Management</CardTitle>
+                  <Info className="text-muted-foreground h-4 w-4" />
                 </div>
               </div>
             </div>
@@ -279,14 +248,12 @@ export default function Settings() {
                   <div
                     className={`flex h-10 w-10 items-center justify-center rounded-xl ${ds.bgClass}`}
                   >
-                    <span className={`text-base font-semibold ${ds.textClass}`}>
-                      {ds.letter}
-                    </span>
+                    <span className={`text-base font-semibold ${ds.textClass}`}>{ds.letter}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div>
-                      <div className="font-medium leading-tight">{ds.name}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="leading-tight font-medium">{ds.name}</div>
+                      <div className="text-muted-foreground text-sm">
                         {ds.connected ? "Connected" : "Disconnected"}
                       </div>
                     </div>
@@ -295,10 +262,7 @@ export default function Settings() {
                     </span>
                   </div>
                 </div>
-                <Toggle
-                  checked={ds.connected}
-                  onChange={() => toggleDataSource(ds.id)}
-                />
+                <Toggle checked={ds.connected} onChange={() => toggleDataSource(ds.id)} />
               </div>
             ))}
           </CardContent>

@@ -54,25 +54,19 @@ export default function McpDocs() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto pb-12">
+    <div className="mx-auto max-w-7xl pb-12">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">MCP Servers</h1>
-        <p className="text-slate-600">
-          Explore available MCP servers and their tools
-        </p>
+        <h1 className="mb-2 text-3xl font-bold text-slate-800">MCP Servers</h1>
+        <p className="text-slate-600">Explore available MCP servers and their tools</p>
       </div>
 
       {Object.keys(groupedServers).length === 0 ? (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Wrench className="w-8 h-8 text-slate-400" />
+        <div className="py-12 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+            <Wrench className="h-8 w-8 text-slate-400" />
           </div>
-          <h3 className="text-lg font-medium text-slate-800 mb-2">
-            No MCP servers found
-          </h3>
-          <p className="text-slate-600">
-            MCP servers will appear here once they are configured.
-          </p>
+          <h3 className="mb-2 text-lg font-medium text-slate-800">No MCP servers found</h3>
+          <p className="text-slate-600">MCP servers will appear here once they are configured.</p>
         </div>
       ) : (
         <div className="space-y-12">
@@ -84,21 +78,16 @@ export default function McpDocs() {
             .map(([type, typeServers]) => (
               <section key={type} className="space-y-6">
                 <div className="border-b border-slate-200 pb-4">
-                  <h2 className="text-2xl font-bold text-slate-800 mb-1">
-                    {getTypeTitle(type)}
-                  </h2>
+                  <h2 className="mb-1 text-2xl font-bold text-slate-800">{getTypeTitle(type)}</h2>
                   <p className="text-slate-600">{getTypeDescription(type)}</p>
-                  <span className="inline-block mt-2 text-sm text-slate-500">
+                  <span className="mt-2 inline-block text-sm text-slate-500">
                     {typeServers.length} server
                     {typeServers.length !== 1 ? "s" : ""}
                   </span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {typeServers.map((server, serverIndex) => (
-                    <ServerCard
-                      key={`${server.name}-${serverIndex}`}
-                      server={server}
-                    />
+                    <ServerCard key={`${server.name}-${serverIndex}`} server={server} />
                   ))}
                 </div>
               </section>
@@ -111,22 +100,18 @@ export default function McpDocs() {
 
 function ServerCard({ server }: { server: MCPDoc }) {
   return (
-    <div className="bg-white rounded-lg shadow-md border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow">
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-md transition-shadow hover:shadow-lg">
       <div className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold text-slate-800 capitalize">
-            {server.name}
-          </h3>
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-xl font-semibold text-slate-800 capitalize">{server.name}</h3>
           <InspectorLink route={server.route} />
         </div>
 
         <div className="mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Wrench className="w-4 h-4 text-slate-500" />
-            <h4 className="text-sm font-medium text-slate-700">
-              Available Tools
-            </h4>
-            <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-full">
+          <div className="mb-3 flex items-center gap-2">
+            <Wrench className="h-4 w-4 text-slate-500" />
+            <h4 className="text-sm font-medium text-slate-700">Available Tools</h4>
+            <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">
               {server.tools.length}
             </span>
           </div>
@@ -135,9 +120,9 @@ function ServerCard({ server }: { server: MCPDoc }) {
               {server.tools.map((tool, toolIndex) => (
                 <li
                   key={`${tool.name}-${toolIndex}`}
-                  className="text-sm text-slate-600 flex items-center gap-2"
+                  className="flex items-center gap-2 text-sm text-slate-600"
                 >
-                  <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full flex-shrink-0"></div>
+                  <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-indigo-400"></div>
                   <span className="font-mono">{tool.name}</span>
                 </li>
               ))}
@@ -150,17 +135,16 @@ function ServerCard({ server }: { server: MCPDoc }) {
 }
 
 function InspectorLink({ route }: { route: string }) {
-  const baseUrl =
-    "/inspector/?MCP_PROXY_AUTH_TOKEN=getgather&transport=streamable-http";
+  const baseUrl = "/inspector/?MCP_PROXY_AUTH_TOKEN=getgather&transport=streamable-http";
   return (
     <a
       href={`${baseUrl}&serverUrl=http://localhost:23456${route}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-md hover:bg-indigo-200 transition-colors"
+      className="inline-flex items-center gap-1 rounded-md bg-indigo-100 px-3 py-1.5 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-200"
     >
       Inspector
-      <ExternalLink className="w-3 h-3" />
+      <ExternalLink className="h-3 w-3" />
     </a>
   );
 }

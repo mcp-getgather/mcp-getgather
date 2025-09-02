@@ -37,9 +37,7 @@ export class ApiService {
   }
 
   static async getRecording(activityId: string): Promise<RecordingResponse> {
-    const response = await fetch(
-      `${this.baseUrl}/activities/${activityId}/recordings`,
-    );
+    const response = await fetch(`${this.baseUrl}/activities/${activityId}/recordings`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch recording: ${response.statusText}`);

@@ -1,6 +1,7 @@
-import BrandForm, { type BrandFormHandle } from "@/components/BrandForm";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
+
+import BrandForm, { type BrandFormHandle } from "@/components/BrandForm";
 
 type LinkStatusResponse = {
   link_id: string;
@@ -16,9 +17,7 @@ type LinkStatusResponse = {
 
 export default function Link() {
   const { linkId } = useParams<{ brand: string; linkId: string }>();
-  const [linkData, setLinkData] = useState<LinkStatusResponse | undefined>(
-    undefined,
-  );
+  const [linkData, setLinkData] = useState<LinkStatusResponse | undefined>(undefined);
 
   const brandFormRef = useRef<BrandFormHandle>(null);
 
@@ -87,9 +86,7 @@ export default function Link() {
         }
       } catch (error) {
         brandFormRef?.current?.setView("error");
-        brandFormRef?.current?.setMessage(
-          "Link not found. Please check the URL and try again.",
-        );
+        brandFormRef?.current?.setMessage("Link not found. Please check the URL and try again.");
         console.error("Error fetching link status:", error);
       }
     };

@@ -1,6 +1,7 @@
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
+
 import { RRWebPlayer } from "@/components/rrweb-player";
-import { useState, useEffect } from "react";
 import { ApiService, type RRWebEvent } from "@/lib/api";
 
 export function ReplayPage() {
@@ -62,7 +63,7 @@ export function ReplayPage() {
         </p>
       </div>
 
-      <div className="w-full max-w-7xl mx-auto">
+      <div className="mx-auto w-full max-w-7xl">
         <RRWebPlayer events={events} />
       </div>
     </div>

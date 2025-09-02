@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "rrweb-player/dist/style.css";
+
 import { type RRWebEvent } from "@/lib/api";
 
 // RRWeb player type
@@ -36,10 +37,7 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
         if (isDestroyed || !containerRef.current) return;
 
         // Clean up previous player instance properly
-        if (
-          playerRef.current &&
-          typeof playerRef.current.$destroy === "function"
-        ) {
+        if (playerRef.current && typeof playerRef.current.$destroy === "function") {
           playerRef.current.$destroy();
           playerRef.current = null;
         }
@@ -51,8 +49,7 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
         const rrwebPlayer = (await import("rrweb-player")).default;
 
         // Prevent initialization if component was unmounted or no events to replay
-        if (isDestroyed || !containerRef.current || !events || !events.length)
-          return;
+        if (isDestroyed || !containerRef.current || !events || !events.length) return;
 
         // Get original dimensions from first event
         const originalWidth = Number(events[0]?.data?.width) || 1920;
@@ -126,13 +123,7 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
   // Handle window resize in separate effect
   useEffect(() => {
     const handleResize = () => {
-      if (
-        !playerRef.current ||
-        !containerRef.current ||
-        !events ||
-        !events.length
-      )
-        return;
+      if (!playerRef.current || !containerRef.current || !events || !events.length) return;
 
       // Recalculate dimensions on resize
       const originalWidth = Number(events[0]?.data?.width) || 1920;
@@ -165,8 +156,8 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
 
   if (!events.length) {
     return (
-      <div className="rrweb-player w-full min-h-[400px]">
-        <div className="w-full h-[400px] bg-gray-100 flex items-center justify-center border border-gray-300 rounded-lg">
+      <div className="rrweb-player min-h-[400px] w-full">
+        <div className="flex h-[400px] w-full items-center justify-center rounded-lg border border-gray-300 bg-gray-100">
           <div className="text-center text-gray-600">
             <h3>No Events</h3>
             <p>No recording events to replay</p>
@@ -178,8 +169,8 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
 
   if (hasError) {
     return (
-      <div className="rrweb-player w-full min-h-[400px]">
-        <div className="w-full h-[400px] bg-gray-100 flex items-center justify-center border border-gray-300 rounded-lg">
+      <div className="rrweb-player min-h-[400px] w-full">
+        <div className="flex h-[400px] w-full items-center justify-center rounded-lg border border-gray-300 bg-gray-100">
           <div className="text-center text-gray-600">
             <h3>Unable to Load Replay</h3>
             <p>Failed to initialize the replay player</p>
@@ -192,7 +183,7 @@ export function RRWebPlayer({ events }: RRWebPlayerProps) {
   return (
     <div
       ref={containerRef}
-      className="rrweb-player w-full min-h-[400px] flex justify-center items-center"
+      className="rrweb-player flex min-h-[400px] w-full items-center justify-center"
     />
   );
 }

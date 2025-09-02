@@ -14,11 +14,10 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     proxy: {
-      "^/(api|brands|link/create|link/status|parse|auth|replay|__static|live|mcp|inspector)":
-        {
-          target: "http://127.0.0.1:23456/",
-          changeOrigin: false,
-        },
+      "^/(api|brands|link/create|link/status|parse|auth|replay|__static|live|mcp|inspector)": {
+        target: "http://127.0.0.1:23456/",
+        changeOrigin: false,
+      },
     },
   },
   resolve: {

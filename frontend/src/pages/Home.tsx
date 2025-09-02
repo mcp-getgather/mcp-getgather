@@ -56,7 +56,7 @@ export default function Home() {
     <div className="min-h-screen bg-slate-50">
       <div className="flex min-h-screen">
         {/* Sidebar */}
-        <aside className="bg-white border-r w-80 p-8 flex flex-col gap-6">
+        <aside className="flex w-80 flex-col gap-6 border-r bg-white p-8">
           <div className="flex flex-col gap-2">
             <div className="text-2xl font-bold text-slate-800">GetGather</div>
             <div className="text-slate-500">Download your data!</div>
@@ -73,41 +73,37 @@ export default function Home() {
             href="https://github.com/mcp-getgather/mcp-getgather/blob/main/getgather/mcp/tools.md"
             target="_blank"
             rel="noreferrer"
-            className="inline-block text-center bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-md"
+            className="inline-block rounded-md bg-indigo-600 px-4 py-2 text-center font-medium text-white hover:bg-indigo-700"
           >
             MCP Documentation
           </a>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-8 overflow-x-auto">
-          <div className="text-center text-slate-500 mb-6 text-xl">
-            {loading
-              ? "Loading..."
-              : error
-                ? error
-                : `Available: ${filtered.length}`}
+        <main className="flex-1 overflow-x-auto p-8">
+          <div className="mb-6 text-center text-xl text-slate-500">
+            {loading ? "Loading..." : error ? error : `Available: ${filtered.length}`}
           </div>
 
           <div
-            className="grid gap-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7"
+            className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7"
             data-testid="brands-grid"
           >
             {filtered.map((brand) => (
               <a
                 key={brand.id}
                 href={`/start/${brand.id}`}
-                className="bg-white border rounded-xl shadow-sm flex flex-col items-center text-center p-5 hover:shadow-md hover:border-blue-600 transition"
+                className="flex flex-col items-center rounded-xl border bg-white p-5 text-center shadow-sm transition hover:border-blue-600 hover:shadow-md"
                 data-testid={`brand-card_${brand.id}`}
               >
                 <img
-                  className="w-12 h-12 object-contain mb-4 rounded-md bg-white"
+                  className="mb-4 h-12 w-12 rounded-md bg-white object-contain"
                   src={`/__static/assets/logos/${brand.id}.svg`}
                   alt={brand.name}
                   onError={onImageError}
                   data-fallback="svg"
                 />
-                <div className="text-slate-800 text-base text-xl font-medium mb-1">
+                <div className="mb-1 text-base text-xl font-medium text-slate-800">
                   {brand.name}
                 </div>
               </a>
