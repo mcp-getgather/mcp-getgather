@@ -5,14 +5,16 @@ from pathlib import Path
 
 import sentry_sdk
 from nanoid import generate
-from patchright.async_api import BrowserType, ViewportSize
 from pydantic import ConfigDict, Field, model_validator
+from stagehand import Stagehand
 
-from getgather.api.types import request_info
 from getgather.browser.freezable_model import FreezableModel
-from getgather.browser.proxy import setup_proxy
 from getgather.config import settings
 from getgather.logs import logger
+
+# Note: These imports are commented out as they're not used in the Stagehand implementation
+# from getgather.api.types import request_info
+# from getgather.browser.proxy import setup_proxy
 
 # avoid similar looking characters: number 0 and letter O, number 1 and letter L
 FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
@@ -34,29 +36,52 @@ class BrowserProfile(FreezableModel):
     def profile_dir(self, profile_id: str) -> Path:
         return settings.profiles_dir / profile_id
 
-    def get_viewport_config(self) -> ViewportSize:
+    def get_viewport_config(self) -> dict[str, int]:
         """Create viewport configuration from screen dimensions."""
-        return ViewportSize(width=self.screen_width, height=self.screen_height)
+        return {"width": self.screen_width, "height": self.screen_height}
 
-    async def launch(self, profile_id: str, browser_type: BrowserType):
+    async def launch(self, profile_id: str) -> Stagehand:
         logger.info(
-            f"Launching local browser {browser_type.name} with user_data_dir:"
+            f"Launching local browser with Stagehand using user_data_dir:"
             f" file://{self.profile_dir(profile_id)}",
             extra={"profile_id": profile_id},
         )
 
-        # Setup proxy if configured
-        proxy = await setup_proxy(profile_id, request_info.get())
+        # Note: Stagehand handles proxy and viewport configuration differently than patchright
+        # These might need to be configured through Stagehand's browser page after initialization
+        # proxy = await setup_proxy(profile_id, request_info.get())
+        # viewport_config = self.get_viewport_config()
 
-        # Get viewport configuration from parent class
-        viewport_config = self.get_viewport_config()
+        # Add macOS-specific launch arguments to prevent crashes
+        args = [
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--disable-web-security",
+            "--disable-features=VizDisplayCompositor",
+            "--disable-background-timer-throttling",
+            "--disable-backgrounding-occluded-windows",
+            "--disable-renderer-backgrounding",
+            "--disable-field-trial-config",
+            "--disable-ipc-flooding-protection",
+        ]
 
-        return await browser_type.launch_persistent_context(
-            user_data_dir=str(self.profile_dir(profile_id)),
+        # Prepare Stagehand launch options
+        launch_options = {
+            "user_data_dir": str(self.profile_dir(profile_id)),
+            "headless": settings.HEADLESS,
+            "args": args,
+        }
+
+        # Initialize Stagehand with the configured options
+        stagehand = Stagehand(
+            env="LOCAL",
             headless=settings.HEADLESS,
-            viewport=viewport_config,
-            proxy=proxy,  # type: ignore[arg-type]
+            local_browser_launch_options=launch_options,
         )
+
+        await stagehand.init()
+        return stagehand
 
     def cleanup(self, profile_id: str):
         user_data_dir = self.profile_dir(profile_id)

@@ -52,7 +52,8 @@ RUN uv sync --no-dev --no-install-workspace
 # so it can be copied to the final stage easily.
 ENV PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
-RUN $VENV_PATH/bin/patchright install --with-deps chromium
+# Install Playwright browsers for Stagehand (Stagehand uses Playwright under the hood)
+RUN $VENV_PATH/bin/playwright install --with-deps chromium
 
 # Now copy the actual source code
 COPY getgather /app/getgather

@@ -5,16 +5,16 @@ import asyncio
 import os
 import sys
 import urllib.parse
-from typing import cast
+from typing import Any, Optional, cast
 
 import nanoid
 import pwinput
 from bs4 import BeautifulSoup
 from bs4.element import Tag
-from patchright.async_api import BrowserContext, Page, async_playwright
 from pydantic import BaseModel, Field
+from stagehand import Stagehand
 
-from getgather.distill import Pattern, distill
+from getgather.distill import Pattern
 from getgather.logs import logger
 
 FRIENDLY_CHARS = "23456789abcdefghijkmnpqrstuvwxyz"
@@ -24,7 +24,7 @@ async def sleep(seconds: float):
     await asyncio.sleep(seconds)
 
 
-async def ask(message: str, mask: str | None = None) -> str:
+async def ask(message: str, mask: Optional[str] = None) -> str:
     if mask:
         return pwinput.pwinput(f"{message}: ", mask=mask)
     else:
@@ -32,13 +32,18 @@ async def ask(message: str, mask: str | None = None) -> str:
 
 
 async def click(
-    page: Page, selector: str, timeout: int = 3000, frame_selector: str | None = None
+    page: Any, selector: str, timeout: int = 3000, frame_selector: Optional[str] = None
 ) -> None:
     LOCATOR_ALL_TIMEOUT = 100
+
+    # Access the underlying Playwright page from Stagehand
+    playwright_page = getattr(page, "_page", page)
+
     if frame_selector:
-        locator = page.frame_locator(str(frame_selector)).locator(str(selector))
+        locator = playwright_page.frame_locator(str(frame_selector)).locator(str(selector))
     else:
-        locator = page.locator(str(selector))
+        locator = playwright_page.locator(str(selector))
+
     try:
         elements = await locator.all()
         logger.debug(f'Found {len(elements)} elements for selector "{selector}"')
@@ -76,31 +81,34 @@ class Handle(BaseModel):
     id: str = Field(min_length=1, description="Browser session identifier")
     hostname: str
     location: str
-    context: BrowserContext
-    page: Page
+    stagehand: Stagehand
+    page: Any  # LivePageProxy that acts like StagehandPage
 
     class Config:
         arbitrary_types_allowed = True
 
 
 async def init(location: str = "", hostname: str = "") -> Handle:
-    global playwright_instance, browser_instance
+    global stagehand_instance
 
     id = nanoid.generate(FRIENDLY_CHARS, 6)
     directory = f"data/profiles/{id}"
 
-    if not playwright_instance:
-        playwright_instance = await async_playwright().start()
-        browser_instance = await playwright_instance.chromium.launch(
-            headless=False, channel="chromium"
+    if not stagehand_instance:
+        # Initialize Stagehand with a persistent user data directory
+        stagehand_instance = Stagehand(
+            env="LOCAL",  # Use local environment instead of browserbase
+            headless=False,
+            local_browser_launch_options={"user_data_dir": directory, "headless": False},
         )
+        await stagehand_instance.init()
 
-    context = await playwright_instance.chromium.launch_persistent_context(  # type: ignore
-        directory, headless=False, viewport={"width": 1920, "height": 1080}
+    # Get the page from Stagehand
+    page = stagehand_instance.page
+
+    return Handle(
+        id=id, hostname=hostname, location=location, stagehand=stagehand_instance, page=page
     )
-
-    page = context.pages[0] if context.pages else await context.new_page()
-    return Handle(id=id, hostname=hostname, location=location, context=context, page=page)
 
 
 def load_patterns() -> list[Pattern]:
@@ -113,7 +121,7 @@ def load_patterns() -> list[Pattern]:
     return patterns
 
 
-async def autofill(page: Page, distilled: str, fields: list[str]):
+async def autofill(page: Any, distilled: str, fields: list[str]):
     document = parse(distilled)
     root = document.find("html")
     domain = None
@@ -137,28 +145,34 @@ async def autofill(page: Page, distilled: str, fields: list[str]):
             if value and len(value) > 0:
                 logger.info(f"Using {key} for {field}")
 
+                # Use Stagehand's act method to fill the field
                 if frame_selector:
-                    await page.frame_locator(str(frame_selector)).locator(str(selector)).fill(value)
+                    await page.act(
+                        f"fill the field with selector '{selector}' inside frame '{frame_selector}' with value '{value}'"
+                    )
                 else:
-                    await page.fill(str(selector), value)
+                    await page.act(
+                        f"fill the field with selector '{selector}' with value '{value}'"
+                    )
             else:
                 placeholder = cast(Tag, element).get("placeholder")
                 prompt = str(placeholder) if placeholder else f"Please enter {field}"
                 mask = "*" if field == "password" else None
+                user_input = await ask(prompt, mask)
 
+                # Use Stagehand's act method to fill the field with user input
                 if frame_selector:
-                    await (
-                        page.frame_locator(str(frame_selector))
-                        .locator(str(selector))
-                        .fill(await ask(prompt, mask))
+                    await page.act(
+                        f"fill the field with selector '{selector}' inside frame '{frame_selector}' with value '{user_input}'"
                     )
-
                 else:
-                    await page.fill(str(selector), await ask(prompt, mask))
+                    await page.act(
+                        f"fill the field with selector '{selector}' with value '{user_input}'"
+                    )
             await sleep(0.25)
 
 
-async def autoclick(page: Page, distilled: str):
+async def autoclick(page: Any, distilled: str):
     document = parse(distilled)
     buttons = document.find_all(attrs={"gg-autoclick": True})
 
@@ -171,7 +185,7 @@ async def autoclick(page: Page, distilled: str):
                 await click(page, str(selector), frame_selector=str(frame_selector))
 
 
-async def terminate(page: Page, distilled: str) -> bool:
+async def terminate(page: Any, distilled: str) -> bool:
     document = parse(distilled)
     stops = document.find_all(attrs={"gg-stop": True})
     if len(stops) > 0:
@@ -180,8 +194,7 @@ async def terminate(page: Page, distilled: str) -> bool:
     return False
 
 
-playwright_instance = None
-browser_instance = None
+stagehand_instance: Stagehand | None = None
 
 
 async def list_command():
@@ -193,35 +206,43 @@ async def list_command():
 
 
 async def distill_command(location: str, option: str | None = None):
-    patterns = load_patterns()
+    # patterns = load_patterns()  # TODO: Re-enable when distill is updated for Stagehand
 
     logger.info(f"Distilling {location}")
 
-    async with async_playwright() as p:
+    # Initialize temporary Stagehand instance for distilling
+    stagehand = Stagehand(
+        env="LOCAL", headless=False, local_browser_launch_options={"headless": False}
+    )
+    await stagehand.init()
+
+    try:
+        page = stagehand.page
+        if not page:
+            raise RuntimeError("Stagehand page not available")
+
         if location.startswith("http"):
-            hostname = urllib.parse.urlparse(location).hostname
-            browser = await p.chromium.launch(headless=False, channel="chromium")
-            context = await browser.new_context()
-            page = await context.new_page()
+            # hostname = urllib.parse.urlparse(location).hostname  # TODO: Use when distill is re-enabled
             await page.goto(location)
         else:
-            hostname = option or ""
-            browser = await p.chromium.launch(headless=False, channel="chromium")
-            context = await browser.new_context()
-            page = await context.new_page()
-
+            # hostname = option or ""  # TODO: Use when distill is re-enabled
             with open(location, "r", encoding="utf-8") as f:
                 content = f.read()
             await page.set_content(content)
 
-        match = await distill(hostname, page, patterns)
+        # For now, we'll skip distill functionality as it requires patchright Page
+        # TODO: Update distill function to work with Stagehand
+        print(
+            "Distill functionality temporarily disabled - need to update distill module for Stagehand"
+        )
+        match = None
 
         if match:
             print()
             print(match.distilled)
             print()
-
-        await browser.close()
+    finally:
+        await stagehand.close()
 
 
 async def run_command(location: str):
@@ -229,16 +250,18 @@ async def run_command(location: str):
         location = f"https://{location}"
 
     hostname = urllib.parse.urlparse(location).hostname or ""
-    patterns = load_patterns()
+    # patterns = load_patterns()  # TODO: Re-enable when distill is updated for Stagehand
 
     browser_data = await init(location, hostname)
     browser_id = browser_data.id
-    context = browser_data.context
+    stagehand = browser_data.stagehand
     page = browser_data.page
 
     logger.info(f"Starting browser {browser_id}")
 
     logger.info(f"Navigating to {location}")
+    if not page:
+        raise RuntimeError("Stagehand page not available")
     await page.goto(location)
 
     TICK = 1  # seconds
@@ -253,7 +276,9 @@ async def run_command(location: str):
             logger.info(f"Iteration {iteration + 1} of {max}")
             await sleep(TICK)
 
-            match = await distill(hostname, page, patterns)
+            # TODO: Update distill function to work with Stagehand
+            # match = await distill(hostname, page, patterns)
+            match = None  # Temporarily disabled
             if match:
                 name = match.name
                 distilled = match.distilled
@@ -276,22 +301,35 @@ async def run_command(location: str):
         logger.info(f"Terminating browser {browser_id}")
 
     finally:
-        await context.close()
+        await stagehand.close()
         logger.info("Terminated.")
 
 
-async def inspect_command(id: str, option: str | None = None):
+async def inspect_command(id: str, option: Optional[str] = None):
     directory = f"data/profiles/{id}"
 
-    async with async_playwright() as p:
-        context = await p.chromium.launch_persistent_context(directory, headless=False)
-        page = context.pages[0] if context.pages else await context.new_page()
+    # Use Stagehand with the existing profile directory
+    stagehand = Stagehand(
+        env="LOCAL",
+        headless=False,
+        local_browser_launch_options={"user_data_dir": directory, "headless": False},
+    )
+    await stagehand.init()
+
+    try:
+        page = stagehand.page
+        if not page:
+            raise RuntimeError("Stagehand page not available")
 
         if option and len(option) > 0:
             url = option if option.startswith("http") else f"https://{option}"
             await page.goto(url)
 
-        await context.close()
+        # Keep the browser open for inspection
+        # Note: In a real scenario, you might want to implement a way to keep it open
+        await sleep(1)  # Brief pause before closing
+    finally:
+        await stagehand.close()
 
 
 async def main():

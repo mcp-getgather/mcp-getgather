@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import asyncio
 from contextlib import asynccontextmanager
 from typing import ClassVar
 
 from fastapi import HTTPException
-from patchright.async_api import BrowserContext, Page, Playwright, async_playwright
+from stagehand import Stagehand
 
 from getgather.browser.profile import BrowserProfile
 from getgather.logs import logger
-from getgather.rrweb import rrweb_injector
 
 
 class BrowserStartupError(HTTPException):
@@ -24,8 +22,7 @@ class BrowserSession:
 
     def __init__(self, profile_id: str):
         self.profile: BrowserProfile = BrowserProfile(id=profile_id)
-        self._playwright: Playwright | None = None
-        self._context: BrowserContext | None = None
+        self._stagehand: Stagehand | None = None
 
         self.total_event = 0
 
@@ -37,20 +34,23 @@ class BrowserSession:
             return BrowserSession(profile.id)
 
     @property
-    def context(self) -> BrowserContext:
-        assert self._context is not None, "Browser session not started"
-        return self._context
+    def stagehand(self) -> Stagehand:
+        assert self._stagehand is not None, "Browser session not started"
+        return self._stagehand
 
     @property
-    def playwright(self) -> Playwright:
-        assert self._playwright is not None, "Browser session not started"
-        return self._playwright
+    def context(self):
+        """Get the browser context from Stagehand for compatibility with browser-use."""
+        assert self._stagehand is not None, "Browser session not started"
+        page = self._stagehand.page
+        if page is None:
+            raise RuntimeError("Stagehand page not available")
+        return page.context
 
-    async def page(self) -> Page:
-        # TODO: It's okay for now to return the last page. We may want to track all pages in the future.
-        if not self.context.pages:
-            await self.context.new_page()
-        return self.context.pages[-1]
+    async def page(self):
+        # Stagehand manages pages differently - get the current page
+        assert self._stagehand is not None, "Browser session not started"
+        return self._stagehand.page
 
     async def start(self):
         try:
@@ -65,17 +65,13 @@ class BrowserSession:
                 extra={"profile_id": self.profile.id},
             )
 
-            self._playwright = await async_playwright().start()
-            self._context = await self.profile.launch(
-                profile_id=self.profile.id, browser_type=self.playwright.chromium
-            )
+            self._stagehand = await self.profile.launch(profile_id=self.profile.id)
 
-            page = await self.page()
-            if rrweb_injector.should_inject_for_page(page):
-                await self._context.expose_function("saveEvent", rrweb_injector.save_event)  # type: ignore
-                page.on(
-                    "load", lambda page: asyncio.create_task(rrweb_injector.inject_into_page(page))
-                )
+            # TODO: RRWeb injection needs to be adapted for Stagehand
+            # The current rrweb_injector expects patchright Page type, not Stagehand's page type
+            # page = await self.page()
+            # if rrweb_injector.should_inject_for_page(page):
+            #     pass  # TODO: Implement rrweb injection for Stagehand if needed
 
         except Exception as e:
             logger.error(f"Error starting browser: {e}")
@@ -89,16 +85,14 @@ class BrowserSession:
             },
         )
         try:
-            if self.context.browser:
-                await self.context.browser.close()
+            if self._stagehand:
+                await self._stagehand.close()
         except Exception as e:
-            logger.error(f"Error closing browser. Stopping playwright manually: {e}")
+            logger.error(f"Error closing browser: {e}")
             raise
         finally:
-            await self.playwright.stop()
-
-        # clean up local browser profile after playwright is stopped
-        self.profile.cleanup(self.profile.id)
+            # clean up local browser profile after stagehand is stopped
+            self.profile.cleanup(self.profile.id)
 
         del self._sessions[self.profile.id]
 
