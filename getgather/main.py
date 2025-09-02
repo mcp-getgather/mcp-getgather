@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Awaitable, Callable, Final
 
 import httpx
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import (
     FileResponse,
     HTMLResponse,
@@ -73,6 +73,9 @@ def read_live():
 
 @app.get("/live/{file_path:path}")
 async def proxy_live_files(file_path: str):
+    if settings.multi_user_enabled:
+        raise HTTPException(status_code=404, detail="Live view is disabled for multi-user mode")
+
     # noVNC lite's main web UI
     if file_path == "" or file_path == "old-index.html":
         local_file_path = FRONTEND_DIR / "live.html"

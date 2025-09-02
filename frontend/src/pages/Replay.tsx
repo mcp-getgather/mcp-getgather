@@ -1,9 +1,9 @@
-import { useSearchParams } from "react-router";
 import { RRWebPlayer } from "@/components/rrweb-player";
-import { useState, useEffect } from "react";
 import { ApiService, type RRWebEvent } from "@/lib/api";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router";
 
-export function ReplayPage() {
+export default function Replay() {
   const [searchParams] = useSearchParams();
   const activityId = searchParams.get("id");
   const [events, setEvents] = useState<RRWebEvent[]>([]);

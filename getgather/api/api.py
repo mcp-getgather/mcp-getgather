@@ -4,6 +4,7 @@ from datetime import datetime
 from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
 from fastapi.routing import APIRoute
+from pydantic import BaseModel
 
 from getgather.api.routes.activities.endpoints import router as activities_router
 from getgather.api.routes.auth.endpoints import router as auth_router
@@ -33,6 +34,29 @@ api_app.include_router(activities_router)
 api_app.include_router(brands_router)
 api_app.include_router(auth_router)
 api_app.include_router(link_router)
+
+
+class StationPage(BaseModel):
+    name: str
+    path: str
+    label: str
+
+
+class StationConfig(BaseModel):
+    pages: list[StationPage]
+
+
+@api_app.get("/station")
+def station() -> StationConfig:
+    pages = [
+        StationPage(path="", label="Get Started", name="GetStarted"),
+        StationPage(path="activities", label="Activities", name="Activities"),
+        StationPage(path="replay", label="Replay", name="Replay"),
+        StationPage(path="mcp-docs", label="MCP Docs", name="McpDocs"),
+    ]
+    if not settings.multi_user_enabled:
+        pages.append(StationPage(path="live-view", label="Live View", name="LiveView"))
+    return StationConfig(pages=pages)
 
 
 @api_app.get("/health")

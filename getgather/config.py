@@ -135,5 +135,9 @@ class Settings(BaseSettings):
         """Only supports GitHub for now."""
         return "github"
 
+    @property
+    def multi_user_enabled(self) -> bool:
+        return self.mcp_auth_enabled
+
 
 settings = Settings()

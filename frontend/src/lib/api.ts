@@ -22,6 +22,16 @@ export type RRWebEvent = {
   [key: string]: unknown;
 };
 
+export type StationPage = {
+  path: string;
+  label: string;
+  name: string;
+};
+
+export type StationConfig = {
+  pages: StationPage[];
+};
+
 export class ApiService {
   private static baseUrl = "/api";
 
@@ -43,6 +53,16 @@ export class ApiService {
 
     if (!response.ok) {
       throw new Error(`Failed to fetch recording: ${response.statusText}`);
+    }
+
+    return await response.json();
+  }
+
+  static async getStationConfig(): Promise<StationConfig> {
+    const response = await fetch(`${this.baseUrl}/station`);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch station config: ${response.statusText}`);
     }
 
     return await response.json();

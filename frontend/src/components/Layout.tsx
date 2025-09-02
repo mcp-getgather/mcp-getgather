@@ -1,9 +1,11 @@
+import { useStationConfig } from "@/config";
 import { X } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router";
 
 export default function Layout() {
   const [showBanner, setShowBanner] = useState(true);
+  const { pages } = useStationConfig();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -42,10 +44,9 @@ export default function Layout() {
       <div className="px-6">
         <nav className="w-full">
           <div className="flex gap-4 border-b border-gray-200 mb-8">
-            <NavItem href="/" label="Get Started" />
-            <NavItem href="/live-view" label="Live View" />
-            <NavItem href="/activities" label="Activities" />
-            <NavItem href="/mcp-docs" label="MCP Docs" />
+            {pages.map((page) => (
+              <NavItem key={page.path} href={page.path} label={page.label} />
+            ))}
           </div>
         </nav>
 
