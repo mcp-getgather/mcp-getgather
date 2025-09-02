@@ -13,6 +13,7 @@ from getgather.brand_state import BrandState, brand_state_manager
 from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.logs import logger
+from getgather.mcp.auth import get_auth_user
 from getgather.mcp.auto_import import auto_import
 from getgather.mcp.calendar_utils import calendar_mcp
 from getgather.mcp.registry import BrandMCPBase
@@ -31,6 +32,9 @@ class AuthMiddleware(Middleware):
             return await call_next(context)
 
         logger.info(f"[AuthMiddleware Context]: {context.message}")
+
+        auth_user = get_auth_user()
+        logger.info(f"[AuthMiddleware] auth_user: {auth_user}")
 
         tool = await context.fastmcp_context.fastmcp.get_tool(context.message.name)  # type: ignore
 

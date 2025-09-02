@@ -3,11 +3,7 @@ from bs4.element import Tag
 from patchright.async_api import Locator, Page
 from pydantic import BaseModel
 
-NORMAL = "\033[0m"
-BOLD = "\033[1m"
-YELLOW = "\033[93m"
-GRAY = "\033[90m"
-CHECK = "✓"
+from getgather.logs import logger
 
 
 class Pattern(BaseModel):
@@ -55,10 +51,10 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
 
         if domain and hostname:
             if isinstance(domain, str) and domain.lower() not in hostname.lower():
-                print(f"{GRAY}Skipping {name} due to mismatched domain {domain}{NORMAL}")
+                logger.debug(f"Skipping {name} due to mismatched domain {domain}")
                 continue
 
-        print(f"Checking {name} with priority {priority}")
+        logger.debug(f"Checking {name} with priority {priority}")
 
         found = True
         matches: list[Locator] = []
@@ -76,7 +72,12 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
             if not selector or not isinstance(selector, str):
                 continue
 
-            source = await locate(page.locator(selector))
+            frame_selector = target.get("gg-frame")
+
+            if frame_selector:
+                source = await locate(page.frame_locator(str(frame_selector)).locator(selector))
+            else:
+                source = await locate(page.locator(selector))
 
             if source:
                 if html:
@@ -95,7 +96,7 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
                 matches.append(source)
             else:
                 optional = target.get("gg-optional") is not None
-                print(f"{GRAY}Optional {selector} has no match{NORMAL}")
+                logger.debug(f"Optional {selector} has no match")
                 if not optional:
                     found = False
 
@@ -113,13 +114,13 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
     result = sorted(result, key=lambda x: x.priority)
 
     if len(result) == 0:
-        print("No matches found")
+        logger.debug("No matches found")
         return None
     else:
-        print(f"Number of matches: {len(result)}")
+        logger.debug(f"Number of matches: {len(result)}")
         for item in result:
-            print(f" - {item.name} with priority {item.priority}")
+            logger.debug(f" - {item.name} with priority {item.priority}")
 
         match = result[0]
-        print(f"{YELLOW}{CHECK} Best match: {BOLD}{match.name}{NORMAL}")
+        logger.info(f"✓ Best match: {match.name}")
         return match

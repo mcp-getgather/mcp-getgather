@@ -15,17 +15,7 @@ from patchright.async_api import BrowserContext, Page, async_playwright
 from pydantic import BaseModel, Field
 
 from getgather.distill import Pattern, distill
-
-NORMAL = "\033[0m"
-BOLD = "\033[1m"
-YELLOW = "\033[93m"
-MAGENTA = "\033[35m"
-RED = "\033[91m"
-GREEN = "\033[92m"
-CYAN = "\033[36m"
-
-ARROW = "⇢"
-CROSS = "✘"
+from getgather.logs import logger
 
 FRIENDLY_CHARS = "23456789abcdefghijkmnpqrstuvwxyz"
 
@@ -41,26 +31,32 @@ async def ask(message: str, mask: str | None = None) -> str:
         return input(f"{message}: ")
 
 
-async def click(page: Page, selector: str, timeout: int = 3000) -> None:
+async def click(
+    page: Page, selector: str, timeout: int = 3000, frame_selector: str | None = None
+) -> None:
     LOCATOR_ALL_TIMEOUT = 100
-    locator = page.locator(selector)
+    if frame_selector:
+        locator = page.frame_locator(str(frame_selector)).locator(str(selector))
+    else:
+        locator = page.locator(str(selector))
     try:
         elements = await locator.all()
-        print(f'Found {len(elements)} elements for selector "{selector}"')
+        logger.debug(f'Found {len(elements)} elements for selector "{selector}"')
         for element in elements:
-            print("Checking", element)
+            logger.debug(f"Checking {element}")
             if await element.is_visible():
-                print("Clicking on", element)
+                logger.debug(f"Clicking on {element}")
                 try:
                     await element.click()
                     return
                 except Exception as err:
-                    print(f"Failed to click on {selector} {element}: {err}")
+                    logger.warning(f"Failed to click on {selector} {element}: {err}")
     except Exception as e:
         if timeout > 0 and "TimeoutError" in str(type(e)):
-            print(f"retrying click {selector} {timeout}")
-            await click(page, selector, timeout - LOCATOR_ALL_TIMEOUT)
+            logger.warning(f"retrying click {selector} {timeout}")
+            await click(page, selector, timeout - LOCATOR_ALL_TIMEOUT, frame_selector)
             return
+        logger.error(f"Failed to click on {selector}: {e}")
         raise e
 
 
@@ -127,22 +123,38 @@ async def autofill(page: Page, distilled: str, fields: list[str]):
     for field in fields:
         element = document.find("input", {"type": field})
         selector = None
+        frame_selector = None
+
         if element:
             selector = cast(Tag, element).get("gg-match")
+            frame_selector = cast(Tag, element).get("gg-frame")
 
-        if element and selector:
+        if selector:
             source = f"{domain}_{field}" if domain else field
             key = source.upper()
             value = os.getenv(key)
 
             if value and len(value) > 0:
-                print(f"{CYAN}{ARROW} Using {BOLD}{key}{NORMAL} for {field}{NORMAL}")
-                await page.fill(str(selector), value)
+                logger.info(f"Using {key} for {field}")
+
+                if frame_selector:
+                    await page.frame_locator(str(frame_selector)).locator(str(selector)).fill(value)
+                else:
+                    await page.fill(str(selector), value)
             else:
                 placeholder = cast(Tag, element).get("placeholder")
                 prompt = str(placeholder) if placeholder else f"Please enter {field}"
                 mask = "*" if field == "password" else None
-                await page.fill(str(selector), await ask(prompt, mask))
+
+                if frame_selector:
+                    await (
+                        page.frame_locator(str(frame_selector))
+                        .locator(str(selector))
+                        .fill(await ask(prompt, mask))
+                    )
+
+                else:
+                    await page.fill(str(selector), await ask(prompt, mask))
             await sleep(0.25)
 
 
@@ -154,15 +166,16 @@ async def autoclick(page: Page, distilled: str):
         if isinstance(button, Tag):
             selector = button.get("gg-match")
             if selector:
-                print(f"{CYAN}{ARROW} Auto-clicking {NORMAL}{selector}")
-                await click(page, str(selector))
+                logger.info(f"Auto-clicking {selector}")
+                frame_selector = button.get("gg-frame")
+                await click(page, str(selector), frame_selector=str(frame_selector))
 
 
 async def terminate(page: Page, distilled: str) -> bool:
     document = parse(distilled)
     stops = document.find_all(attrs={"gg-stop": True})
     if len(stops) > 0:
-        print("Found stop elements, terminating session...")
+        logger.info("Found stop elements, terminating session...")
         return True
     return False
 
@@ -176,13 +189,13 @@ async def list_command():
     spec_files = [f for f in spec_files if f.endswith(".html")]
 
     for name in spec_files:
-        print(name.replace("specs/", ""))
+        logger.info(name.replace("specs/", ""))
 
 
 async def distill_command(location: str, option: str | None = None):
     patterns = load_patterns()
 
-    print(f"Distilling {location}")
+    logger.info(f"Distilling {location}")
 
     async with async_playwright() as p:
         if location.startswith("http"):
@@ -204,9 +217,8 @@ async def distill_command(location: str, option: str | None = None):
         match = await distill(hostname, page, patterns)
 
         if match:
-            distilled = match.distilled
             print()
-            print(distilled)
+            print(match.distilled)
             print()
 
         await browser.close()
@@ -224,9 +236,9 @@ async def run_command(location: str):
     context = browser_data.context
     page = browser_data.page
 
-    print(f"Starting browser {browser_id}")
+    logger.info(f"Starting browser {browser_id}")
 
-    print(f"{GREEN}{ARROW} Navigating to {NORMAL}{location}")
+    logger.info(f"Navigating to {location}")
     await page.goto(location)
 
     TICK = 1  # seconds
@@ -237,8 +249,8 @@ async def run_command(location: str):
 
     try:
         for iteration in range(max):
-            print()
-            print(f"{MAGENTA}Iteration {iteration + 1}{NORMAL} of {max}")
+            logger.info("")
+            logger.info(f"Iteration {iteration + 1} of {max}")
             await sleep(TICK)
 
             match = await distill(hostname, page, patterns)
@@ -247,7 +259,7 @@ async def run_command(location: str):
                 distilled = match.distilled
 
                 if distilled == current.get("distilled"):
-                    print(f"Still the same: {name}")
+                    logger.debug(f"Still the same: {name}")
                 else:
                     current = {"name": name, "distilled": distilled}
                     print()
@@ -258,14 +270,14 @@ async def run_command(location: str):
                     if await terminate(page, distilled):
                         break
             else:
-                print(f"{CROSS}{RED} No matched pattern found{NORMAL}")
+                logger.debug(f"No matched pattern found")
 
-        print()
-        print(f"Terminating browser {browser_id}")
+        logger.info("")
+        logger.info(f"Terminating browser {browser_id}")
 
     finally:
         await context.close()
-        print("Terminated.")
+        logger.info("Terminated.")
 
 
 async def inspect_command(id: str, option: str | None = None):
@@ -323,4 +335,4 @@ async def main():
 if __name__ == "__main__":
     result = asyncio.run(main())
     if result == "server":
-        print("TODO: launch MCP server")
+        logger.info("TODO: launch MCP server")
