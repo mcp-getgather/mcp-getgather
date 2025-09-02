@@ -16,8 +16,8 @@
     "preview": "vite preview",
     "check-format": "prettier --check \"**/*.{html,js,jsx,ts,tsx,css,json,md}\"",
     "format": "prettier --write \"**/*.{html,js,jsx,ts,tsx,css,json,md}\"",
-    "schema:api": "wait-on tcp:23456 && openapi-typescript http://localhost:23456/api/openapi.json -o frontend/__generated__/api.d.ts",
-    "watch:schema:api": "nodemon --watch getgather -e py --exec \"npm run schema:api\""
+    "schema:api": "openapi-typescript http://localhost:23456/api/openapi.json -o frontend/__generated__/api.d.ts",
+    "watch:schema:api": "wait-on tcp:23456 && nodemon --watch getgather -e py --exec \"npm run schema:api\""
   },
   "dependencies": {
     "@modelcontextprotocol/inspector": "^0.16.5",
