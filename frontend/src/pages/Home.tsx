@@ -47,7 +47,7 @@ export default function Home() {
       img.src = img.src.replace(/\.svg$/, ".png");
       img.dataset.fallback = "png";
     } else {
-      img.src = "/static/assets/logos/default.svg";
+      img.src = "/__static/assets/logos/default.svg";
       img.onerror = null;
     }
   };
@@ -102,7 +102,7 @@ export default function Home() {
               >
                 <img
                   className="w-12 h-12 object-contain mb-4 rounded-md bg-white"
-                  src={`/static/assets/logos/${brand.id}.svg`}
+                  src={`/__static/assets/logos/${brand.id}.svg`}
                   alt={brand.name}
                   onError={onImageError}
                   data-fallback="svg"
