@@ -1,3 +1,6 @@
+# Generated files
+__generated__/
+
 # Browser profiles
 screenshots/
 data/

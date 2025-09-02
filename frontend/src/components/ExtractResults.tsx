@@ -10,7 +10,7 @@ interface ExtractResultsProps {
 function generateTable(dataArray: Record<string, unknown>[]) {
   if (!dataArray || dataArray.length === 0) return null;
 
-  const headers = Object.keys(dataArray[0]);
+  const headers = Object.keys(dataArray[0] ?? {});
 
   return (
     <div className="overflow-x-auto">
