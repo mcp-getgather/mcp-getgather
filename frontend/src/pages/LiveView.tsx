@@ -8,10 +8,12 @@ export default function LiveView() {
         description="Monitor your getgather operations in real-time"
       />
       <div className="flex-1 min-h-0 overflow-hidden">
-        <iframe
-          src="http://localhost:23456/live/"
-          className="w-full h-[600px] border-0"
-        />
+        <div className="relative w-full max-w-[1920px] mx-auto aspect-video">
+          <iframe
+            src="http://localhost:23456/live/"
+            className="absolute inset-0 h-full w-full border-0"
+          />
+        </div>
       </div>
     </div>
   );
