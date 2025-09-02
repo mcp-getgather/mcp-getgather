@@ -5,6 +5,7 @@ import asyncio
 import os
 import sys
 import urllib.parse
+from glob import glob
 from typing import cast
 
 import nanoid
@@ -64,14 +65,6 @@ async def click(
         raise e
 
 
-def search(directory: str) -> list[str]:
-    results: list[str] = []
-    for root, _, files in os.walk(directory):
-        for file in files:
-            results.append(os.path.join(root, file))
-    return results
-
-
 def parse(html: str):
     return BeautifulSoup(html, "html.parser")
 
@@ -109,11 +102,10 @@ async def init(location: str = "", hostname: str = "") -> Handle:
 
 def load_patterns() -> list[Pattern]:
     patterns: list[Pattern] = []
-    for name in [f for f in search("./getgather/connectors/brand_specs") if f.endswith(".html")]:
+    for name in glob("./getgather/connectors/brand_specs/**/*.html", recursive=True):
         with open(name, "r", encoding="utf-8") as f:
             content = f.read()
-        pattern = parse(content)
-        patterns.append(Pattern(name=name, pattern=pattern))
+        patterns.append(Pattern(name=name, pattern=parse(content)))
     return patterns
 
 
@@ -189,11 +181,11 @@ browser_instance = None
 
 
 async def list_command():
-    spec_files = search("./getgather/connectors/brand_specs")
+    spec_files = glob("./getgather/connectors/brand_specs/**/*", recursive=True)
     spec_files = [f for f in spec_files if f.endswith(".html")]
 
     for name in spec_files:
-        logger.info(name.replace("specs/", ""))
+        logger.info(os.path.basename(name))
 
 
 async def distill_command(location: str, option: str | None = None):
