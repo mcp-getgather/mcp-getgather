@@ -14,8 +14,12 @@ from bs4.element import Tag
 from patchright.async_api import BrowserContext, Page, async_playwright
 from pydantic import BaseModel, Field
 
+from getgather.config import settings
 from getgather.distill import Pattern, distill
 from getgather.logs import logger
+
+_ = settings.LOG_LEVEL
+
 
 FRIENDLY_CHARS = "23456789abcdefghijkmnpqrstuvwxyz"
 
