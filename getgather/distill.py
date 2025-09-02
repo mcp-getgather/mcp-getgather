@@ -1,26 +1,27 @@
-from typing import TypedDict
-
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 from patchright.async_api import Locator, Page
+from pydantic import BaseModel
 
-NORMAL = "\033[0m"
-BOLD = "\033[1m"
-YELLOW = "\033[93m"
-GRAY = "\033[90m"
-CHECK = "✓"
+from getgather.logs import logger
 
 
-class Pattern(TypedDict):
+class Pattern(BaseModel):
     name: str
     pattern: BeautifulSoup
 
+    class Config:
+        arbitrary_types_allowed = True
 
-class Match(TypedDict):
+
+class Match(BaseModel):
     name: str
     priority: int
     distilled: str
     matches: list[Locator]
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 async def locate(locator: Locator) -> Locator | None:
@@ -37,8 +38,8 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
     result: list[Match] = []
 
     for item in patterns:
-        name = item["name"]
-        pattern = item["pattern"]
+        name = item.name
+        pattern = item.pattern
 
         root = pattern.find("html")
         gg_priority = root.get("gg-priority", "-1") if isinstance(root, Tag) else "-1"
@@ -50,10 +51,10 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
 
         if domain and hostname:
             if isinstance(domain, str) and domain.lower() not in hostname.lower():
-                print(f"{GRAY}Skipping {name} due to mismatched domain {domain}{NORMAL}")
+                logger.debug(f"Skipping {name} due to mismatched domain {domain}")
                 continue
 
-        print(f"Checking {name} with priority {priority}")
+        logger.debug(f"Checking {name} with priority {priority}")
 
         found = True
         matches: list[Locator] = []
@@ -95,29 +96,31 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
                 matches.append(source)
             else:
                 optional = target.get("gg-optional") is not None
-                print(f"{GRAY}Optional {selector} has no match{NORMAL}")
+                logger.debug(f"Optional {selector} has no match")
                 if not optional:
                     found = False
 
         if found and len(matches) > 0:
             distilled = str(pattern)
-            result.append({
-                "name": name,
-                "priority": priority,
-                "distilled": distilled,
-                "matches": matches,
-            })
+            result.append(
+                Match(
+                    name=name,
+                    priority=priority,
+                    distilled=distilled,
+                    matches=matches,
+                )
+            )
 
-    result = sorted(result, key=lambda x: x["priority"])
+    result = sorted(result, key=lambda x: x.priority)
 
     if len(result) == 0:
-        print("No matches found")
+        logger.debug("No matches found")
         return None
     else:
-        print(f"Number of matches: {len(result)}")
+        logger.debug(f"Number of matches: {len(result)}")
         for item in result:
-            print(f" - {item['name']} with priority {item['priority']}")
+            logger.debug(f" - {item.name} with priority {item.priority}")
 
         match = result[0]
-        print(f"{YELLOW}{CHECK} Best match: {BOLD}{match['name']}{NORMAL}")
+        logger.info(f"✓ Best match: {match.name}")
         return match
