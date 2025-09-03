@@ -8,13 +8,13 @@ from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools.tool import ToolResult
 from pydantic import BaseModel
 
-from getgather.activity import activity
-from getgather.brand_state import BrandState, brand_state_manager
 from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.logs import logger
+from getgather.mcp.activity import activity
 from getgather.mcp.auth import get_auth_user
 from getgather.mcp.auto_import import auto_import
+from getgather.mcp.brand_state import BrandState, brand_state_manager
 from getgather.mcp.calendar_utils import calendar_mcp
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import auth_hosted_link, poll_status_hosted_link
@@ -34,7 +34,7 @@ class AuthMiddleware(Middleware):
         logger.info(f"[AuthMiddleware Context]: {context.message}")
 
         auth_user = get_auth_user()
-        logger.info(f"[AuthMiddleware] auth_user: {auth_user}")
+        logger.info("[AuthMiddleware] auth_user", extra=auth_user.model_dump())
 
         tool = await context.fastmcp_context.fastmcp.get_tool(context.message.name)  # type: ignore
 
@@ -47,14 +47,15 @@ class AuthMiddleware(Middleware):
         brand_id = context.message.name.split("_")[0]
         context.fastmcp_context.set_state("brand_id", brand_id)
 
-        if "private" not in tool.tags or brand_state_manager.is_brand_connected(brand_id):
+        brand_state = brand_state_manager.get(brand_id)
+        if "private" not in tool.tags or brand_state.is_connected:
             async with activity(
                 brand_id=brand_id,
                 name=context.message.name,
             ):
                 return await call_next(context)
 
-        browser_profile_id = brand_state_manager.get_browser_profile_id(brand_id)
+        browser_profile_id = brand_state.browser_profile_id
         if not browser_profile_id:
             # Create and persist a new profile for the auth flow
             browser_profile = BrowserProfile()

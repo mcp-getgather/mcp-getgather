@@ -1,15 +1,15 @@
 from fastapi import APIRouter, HTTPException
 
-from getgather.activity import Activity, activity_manager
+from getgather.mcp.activity import Activity, activity_manager
 from getgather.rrweb import Recording, rrweb_manager
 
-router = APIRouter(prefix="/activities", tags=["activities"])
+router = APIRouter(prefix="/mcp_activities", tags=["activities"])
 
 
 @router.get("/")
 async def get_activities() -> list[Activity]:
     """Get all activities ordered by start_time descending."""
-    activities = await activity_manager.get_all_activities()
+    activities = activity_manager.get_all()
 
     # Add recording status to each activity
     for activity in activities:
@@ -21,7 +21,7 @@ async def get_activities() -> list[Activity]:
 @router.get("/{activity_id}")
 async def get_activity(activity_id: str) -> Activity:
     """Get a specific activity by ID."""
-    activity = await activity_manager.get_activity(activity_id)
+    activity = activity_manager.get(activity_id)
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
 
@@ -34,7 +34,7 @@ async def get_activity(activity_id: str) -> Activity:
 async def get_recording(activity_id: str) -> Recording:
     """Get rrweb events for a specific activity."""
     # Verify activity exists
-    activity = await activity_manager.get_activity(activity_id)
+    activity = activity_manager.get(activity_id)
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
 

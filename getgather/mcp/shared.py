@@ -8,12 +8,12 @@ from fastmcp.server.dependencies import get_context, get_http_headers
 
 from getgather.api.routes.link.types import HostedLinkTokenRequest
 from getgather.auth_flow import ExtractResult
-from getgather.brand_state import brand_state_manager
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.extract_orchestrator import ExtractOrchestrator
 from getgather.logs import logger
+from getgather.mcp.brand_state import brand_state_manager
 
 
 def _sanitize_headers(headers: dict[str, str]) -> dict[str, str]:
@@ -31,13 +31,14 @@ def _sanitize_headers(headers: dict[str, str]) -> dict[str, str]:
 async def auth_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
     """Auth with a link."""
 
-    if brand_state_manager.is_brand_connected(brand_id):
+    brand_state = brand_state_manager.get(brand_id)
+    if brand_state.is_connected:
         return {
             "status": "FINISHED",
             "message": "Brand already connected.",
         }
 
-    profile_id = brand_state_manager.get_browser_profile_id(brand_id)
+    profile_id = brand_state.browser_profile_id
     logger.info(
         "Creating link for brand", extra={"brand_id": str(brand_id), "profile_id": profile_id}
     )
@@ -137,10 +138,9 @@ async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict
 
             if response_json["status"] == "completed":
                 processing = False
-                brand_state_manager.update_is_connected(
-                    brand_id=BrandIdEnum(response_json["brand_id"]),
-                    is_connected=True,
-                )
+                brand_state = brand_state_manager.get(BrandIdEnum(response_json["brand_id"]))
+                brand_state.is_connected = True
+                brand_state_manager.update(brand_state)
                 logger.info(
                     "[poll_status_hosted_link] Marked brand as connected",
                     extra={"brand_id": response_json.get("brand_id")},
@@ -185,11 +185,8 @@ def with_brand_browser_session(func: Callable[P, Awaitable[T]]) -> Callable[P, A
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         brand_id = get_mcp_brand_id()
 
-        profile_id = (
-            brand_state_manager.get_browser_profile_id(brand_id)
-            if brand_state_manager.is_brand_connected(brand_id)
-            else None
-        )
+        brand_state = brand_state_manager.get(brand_id)
+        profile_id = brand_state.browser_profile_id if brand_state.is_connected else None
         browser_profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
         browser_session = BrowserSession.get(browser_profile)
 

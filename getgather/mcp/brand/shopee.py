@@ -1,10 +1,10 @@
 from typing import Any
 from urllib.parse import quote
 
-from getgather.brand_state import brand_state_manager
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
 from getgather.connectors.spec_models import Schema as SpecSchema
+from getgather.mcp.brand_state import brand_state_manager
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract
 from getgather.parse import parse_html
@@ -24,8 +24,9 @@ async def search_product(
     page_number: int = 1,
 ) -> dict[str, Any]:
     """Search product on shopee."""
-    if brand_state_manager.is_brand_connected(shopee_mcp.brand_id):
-        profile_id = brand_state_manager.get_browser_profile_id(shopee_mcp.brand_id)
+    brand_state = brand_state_manager.get(shopee_mcp.brand_id)
+    if brand_state.is_connected:
+        profile_id = brand_state.browser_profile_id
         profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
     else:
         profile = BrowserProfile()
