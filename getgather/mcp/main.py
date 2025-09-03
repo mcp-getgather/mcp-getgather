@@ -48,19 +48,20 @@ class AuthMiddleware(Middleware):
         context.fastmcp_context.set_state("brand_id", brand_id)
 
         brand_state = brand_state_manager.get(brand_id)
-        if "private" not in tool.tags or brand_state.is_connected:
+        if "private" not in tool.tags or (brand_state and brand_state.is_connected):
             async with activity(
                 brand_id=brand_id,
                 name=context.message.name,
             ):
                 return await call_next(context)
 
-        browser_profile_id = brand_state.browser_profile_id
+        browser_profile_id = brand_state.browser_profile_id if brand_state else None
         if not browser_profile_id:
             # Create and persist a new profile for the auth flow
             browser_profile = BrowserProfile()
             brand_state_manager.add(
                 BrandState(
+                    user_login=auth_user.login,
                     brand_id=BrandIdEnum(brand_id),
                     browser_profile_id=browser_profile.id,
                     is_connected=False,

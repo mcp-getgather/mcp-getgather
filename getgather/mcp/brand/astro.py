@@ -3,12 +3,9 @@ from urllib.parse import quote
 
 from patchright.async_api import Locator, Page
 
-from getgather.browser.profile import BrowserProfile
-from getgather.browser.session import browser_session
 from getgather.connectors.spec_models import Schema as SpecSchema
-from getgather.mcp.brand_state import brand_state_manager
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import extract
+from getgather.mcp.shared import extract, get_mcp_browser_session, with_brand_browser_session
 from getgather.parse import parse_html
 
 astro_mcp = BrandMCPBase(brand_id="astro", name="Astro MCP")
@@ -169,27 +166,18 @@ async def get_purchase_history() -> dict[str, Any]:
 
 
 @astro_mcp.tool
-async def search_product(
-    keyword: str,
-) -> dict[str, Any]:
+@with_brand_browser_session
+async def search_product(keyword: str) -> dict[str, Any]:
     """Search product on astro."""
-    brand_state = brand_state_manager.get(astro_mcp.brand_id)
-    if brand_state.is_connected:
-        profile_id = brand_state.browser_profile_id
-        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
-    else:
-        profile = BrowserProfile()
+    browser_session = get_mcp_browser_session()
+    page = await browser_session.page()
 
-    async with browser_session(profile) as session:
-        page = await session.page()
-        # URL encode the search keyword
-        encoded_keyword = quote(keyword)
-        await page.goto(
-            f"https://www.astronauts.id/search?q={encoded_keyword}", wait_until="commit"
-        )
-        await page.wait_for_selector("div[data-testid='srp-main']")
-        await page.wait_for_timeout(1000)
-        html = await page.locator("div[data-testid='srp-main']").inner_html()
+    # URL encode the search keyword
+    encoded_keyword = quote(keyword)
+    await page.goto(f"https://www.astronauts.id/search?q={encoded_keyword}", wait_until="commit")
+    await page.wait_for_selector("div[data-testid='srp-main']")
+    await page.wait_for_timeout(1000)
+    html = await page.locator("div[data-testid='srp-main']").inner_html()
 
     spec_schema = SpecSchema.model_validate({
         "bundle": "",
@@ -222,16 +210,11 @@ async def search_product(
 
 
 @astro_mcp.tool
-async def get_product_details(
-    product_url: str,
-) -> dict[str, Any]:
+@with_brand_browser_session
+async def get_product_details(product_url: str) -> dict[str, Any]:
     """Get product detail from astro. Get product_url from search_product tool."""
-    brand_state = brand_state_manager.get(astro_mcp.brand_id)
-    if brand_state.is_connected:
-        profile_id = brand_state.browser_profile_id
-        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
-    else:
-        profile = BrowserProfile()
+    browser_session = get_mcp_browser_session()
+    page = await browser_session.page()
 
     # Ensure the product URL is a full URL
     if product_url.startswith("/p/"):
@@ -239,12 +222,11 @@ async def get_product_details(
     else:
         full_url = product_url
 
-    async with browser_session(profile) as session:
-        page = await session.page()
-        await page.goto(full_url, wait_until="commit")
-        await page.wait_for_selector("main.MuiBox-root")
-        await page.wait_for_timeout(1000)
-        html = await page.locator("body").inner_html()
+    await page.goto(full_url, wait_until="commit")
+    await page.goto(full_url, wait_until="commit")
+    await page.wait_for_selector("main.MuiBox-root")
+    await page.wait_for_timeout(1000)
+    html = await page.locator("body").inner_html()
 
     spec_schema = SpecSchema.model_validate({
         "bundle": "",
@@ -277,14 +259,11 @@ async def get_product_details(
 
 
 @astro_mcp.tool(tags={"private"})
-async def add_item_to_cart(
-    product_url: str,
-    quantity: int = 1,
-) -> dict[str, Any]:
+@with_brand_browser_session
+async def add_item_to_cart(product_url: str, quantity: int = 1) -> dict[str, Any]:
     """Add item to cart on astro (add new item or update existing quantity). Get product_url from search_product tool."""
-    brand_state = brand_state_manager.get(astro_mcp.brand_id)
-    profile_id = brand_state.browser_profile_id
-    profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
+    browser_session = get_mcp_browser_session()
+    page = await browser_session.page()
 
     # Ensure the product URL is a full URL
     if product_url.startswith("/p/"):
@@ -292,110 +271,26 @@ async def add_item_to_cart(
     else:
         full_url = product_url
 
-    async with browser_session(profile) as session:
-        page = await session.page()
-        await page.goto(full_url, wait_until="commit")
-        await page.wait_for_selector("main.MuiBox-root")
-        await page.wait_for_timeout(1000)
+    await page.goto(full_url, wait_until="commit")
+    await page.goto(full_url, wait_until="commit")
+    await page.wait_for_selector("main.MuiBox-root")
+    await page.wait_for_timeout(1000)
 
-        # Check if quantity controls already exist (item already in cart) - only in main product section
-        main_product_section = page.locator("div.MuiBox-root.css-19midj6")
-        quantity_controls = main_product_section.locator("div.MuiBox-root.css-1aek3i0")
-        is_already_in_cart = await quantity_controls.is_visible()
+    # Check if quantity controls already exist (item already in cart) - only in main product section
+    main_product_section = page.locator("div.MuiBox-root.css-19midj6")
+    quantity_controls = main_product_section.locator("div.MuiBox-root.css-1aek3i0")
+    is_already_in_cart = await quantity_controls.is_visible()
 
-        if is_already_in_cart:
-            current_quantity_element = quantity_controls.locator("span.MuiTypography-body-small")
-            current_quantity_text = await current_quantity_element.text_content()
-            current_quantity = int(current_quantity_text or "0")
-
-            final_quantity, adjustment_succeeded = await _adjust_quantity_with_detection(
-                quantity_controls, quantity, current_quantity, page, "product"
-            )
-
-            # Wait for backend API call to complete before closing browser
-            await page.wait_for_timeout(1000)
-
-            return _format_quantity_result(
-                quantity,
-                current_quantity,
-                final_quantity,
-                adjustment_succeeded,
-                full_url,
-                "",
-                "product",
-            )
-        else:
-            # Item not in cart, check if add to cart button exists - only in main product section
-            add_to_cart_button = main_product_section.locator("button[data-testid='pdp-atc-btn']")
-            if not await add_to_cart_button.is_visible():
-                return {
-                    "success": False,
-                    "error": "Add to cart button not found or product not available",
-                }
-
-            await add_to_cart_button.click()
-            await page.wait_for_timeout(300)
-
-            await quantity_controls.wait_for(state="visible", timeout=5000)
-
-            final_quantity, adjustment_succeeded = await _adjust_quantity_with_detection(
-                quantity_controls, quantity, 1, page, "product"
-            )
-
-            # Wait for backend API call to complete before closing browser
-            await page.wait_for_timeout(1000)
-
-            return _format_quantity_result(
-                quantity, 0, final_quantity, adjustment_succeeded, full_url, "", "product"
-            )
-
-
-@astro_mcp.tool(tags={"private"})
-async def update_cart_quantity(
-    product_name: str,
-    quantity: int,
-) -> dict[str, Any]:
-    """Update cart item quantity on astro (set quantity to 0 to remove item). Use product name from cart summary."""
-    brand_state = brand_state_manager.get(astro_mcp.brand_id)
-    profile_id = brand_state.browser_profile_id
-    profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
-
-    async with browser_session(profile) as session:
-        page = await session.page()
-        await page.goto("https://www.astronauts.id/cart", wait_until="commit")
-        await page.wait_for_selector("main.MuiBox-root")
-        await page.wait_for_timeout(1000)
-
-        # Find the cart item by product name
-        cart_item_selector = f"//span[contains(@class, 'MuiTypography-body-default') and contains(text(), '{product_name}')]/ancestor::div[contains(@class, 'css-bnftmf')]"
-        cart_item = page.locator(cart_item_selector)
-
-        if not await cart_item.is_visible():
-            return {
-                "success": False,
-                "message": f"Product '{product_name}' not found in cart",
-                "product_name": product_name,
-                "action": "update_failed",
-            }
-
-        quantity_controls = cart_item.locator("div.MuiBox-root.css-1aek3i0")
-        if not await quantity_controls.is_visible():
-            return {
-                "success": False,
-                "message": f"Quantity controls not found for '{product_name}'",
-                "product_name": product_name,
-                "action": "update_failed",
-            }
-
+    if is_already_in_cart:
         current_quantity_element = quantity_controls.locator("span.MuiTypography-body-small")
         current_quantity_text = await current_quantity_element.text_content()
         current_quantity = int(current_quantity_text or "0")
 
         final_quantity, adjustment_succeeded = await _adjust_quantity_with_detection(
-            quantity_controls, quantity, current_quantity, page, "cart"
+            quantity_controls, quantity, current_quantity, page, "product"
         )
 
-        # Wait for update to complete
+        # Wait for backend API call to complete before closing browser
         await page.wait_for_timeout(1000)
 
         return _format_quantity_result(
@@ -403,25 +298,101 @@ async def update_cart_quantity(
             current_quantity,
             final_quantity,
             adjustment_succeeded,
+            full_url,
             "",
-            product_name,
-            "cart",
+            "product",
+        )
+    else:
+        # Item not in cart, check if add to cart button exists - only in main product section
+        add_to_cart_button = main_product_section.locator("button[data-testid='pdp-atc-btn']")
+        if not await add_to_cart_button.is_visible():
+            return {
+                "success": False,
+                "error": "Add to cart button not found or product not available",
+            }
+
+        await add_to_cart_button.click()
+        await page.wait_for_timeout(300)
+
+        await quantity_controls.wait_for(state="visible", timeout=5000)
+
+        final_quantity, adjustment_succeeded = await _adjust_quantity_with_detection(
+            quantity_controls, quantity, 1, page, "product"
+        )
+
+        # Wait for backend API call to complete before closing browser
+        await page.wait_for_timeout(1000)
+
+        return _format_quantity_result(
+            quantity, 0, final_quantity, adjustment_succeeded, full_url, "", "product"
         )
 
 
 @astro_mcp.tool(tags={"private"})
+@with_brand_browser_session
+async def update_cart_quantity(product_name: str, quantity: int) -> dict[str, Any]:
+    """Update cart item quantity on astro (set quantity to 0 to remove item). Use product name from cart summary."""
+    browser_session = get_mcp_browser_session()
+    page = await browser_session.page()
+
+    await page.goto("https://www.astronauts.id/cart", wait_until="commit")
+    await page.wait_for_selector("main.MuiBox-root")
+    await page.wait_for_timeout(1000)
+
+    # Find the cart item by product name
+    cart_item_selector = f"//span[contains(@class, 'MuiTypography-body-default') and contains(text(), '{product_name}')]/ancestor::div[contains(@class, 'css-bnftmf')]"
+    cart_item = page.locator(cart_item_selector)
+
+    if not await cart_item.is_visible():
+        return {
+            "success": False,
+            "message": f"Product '{product_name}' not found in cart",
+            "product_name": product_name,
+            "action": "update_failed",
+        }
+
+    quantity_controls = cart_item.locator("div.MuiBox-root.css-1aek3i0")
+    if not await quantity_controls.is_visible():
+        return {
+            "success": False,
+            "message": f"Quantity controls not found for '{product_name}'",
+            "product_name": product_name,
+            "action": "update_failed",
+        }
+
+    current_quantity_element = quantity_controls.locator("span.MuiTypography-body-small")
+    current_quantity_text = await current_quantity_element.text_content()
+    current_quantity = int(current_quantity_text or "0")
+
+    final_quantity, adjustment_succeeded = await _adjust_quantity_with_detection(
+        quantity_controls, quantity, current_quantity, page, "cart"
+    )
+
+    # Wait for update to complete
+    await page.wait_for_timeout(1000)
+
+    return _format_quantity_result(
+        quantity,
+        current_quantity,
+        final_quantity,
+        adjustment_succeeded,
+        "",
+        product_name,
+        "cart",
+    )
+
+
+@astro_mcp.tool(tags={"private"})
+@with_brand_browser_session
 async def get_cart_summary() -> dict[str, Any]:
     """Get cart summary from astro."""
-    brand_state = brand_state_manager.get(astro_mcp.brand_id)
-    profile_id = brand_state.browser_profile_id
-    profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
+    browser_session = get_mcp_browser_session()
+    page = await browser_session.page()
 
-    async with browser_session(profile) as session:
-        page = await session.page()
-        await page.goto("https://www.astronauts.id/cart", wait_until="commit")
-        await page.wait_for_selector("main.MuiBox-root")
-        await page.wait_for_timeout(1000)
-        html = await page.locator("body").inner_html()
+    await page.goto("https://www.astronauts.id/cart", wait_until="commit")
+    await page.wait_for_selector("main.MuiBox-root")
+    await page.wait_for_timeout(1000)
+    html = await page.locator("body").inner_html()
 
     # Extract available items
     available_items_schema = SpecSchema.model_validate({

@@ -1,6 +1,6 @@
 import threading
 from pathlib import Path
-from typing import Any, Generic, Self, TypeVar
+from typing import Any, Generic, Literal, Self, TypeVar, overload
 
 from pydantic import BaseModel, PrivateAttr, model_validator
 
@@ -66,11 +66,21 @@ class PersistentStore(BaseModel, Generic[T], metaclass=SingletonBaseModelMeta):
             with open(self.file_path, "w") as f:
                 f.write(self.model_dump_json())
 
-    def get(self, key: str) -> T | None:
+    @overload
+    def get(self, key: str) -> T | None: ...
+    @overload
+    def get(self, key: str, *, raise_on_missing: Literal[True]) -> T: ...
+
+    def get(self, key: str, *, raise_on_missing: bool = False) -> T | None:
         if not self._indexes:
             self.load()
         row_key = self.index_key(key)
-        return self._indexes[row_key][1] if row_key in self._indexes else None
+        if row_key in self._indexes:
+            return self._indexes[row_key][1]
+        elif raise_on_missing:
+            raise ValueError(f"Row with key {key} not found")
+        else:
+            return None
 
     def add(self, row: T) -> T:
         if not self._indexes:

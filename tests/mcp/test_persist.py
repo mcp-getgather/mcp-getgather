@@ -8,7 +8,7 @@ from pydantic import BaseModel, ValidationError
 
 from getgather.config import settings
 from getgather.mcp.auth import AuthUser
-from getgather.mcp.persist import PersistentStore, PersistentStoreWithAuth
+from getgather.mcp.persist import ModelWithAuth, PersistentStore, PersistentStoreWithAuth
 
 
 # Test models
@@ -18,7 +18,7 @@ class TestUser(BaseModel):
     email: str
 
 
-class TestUserWithAuth(BaseModel):
+class TestUserWithAuth(ModelWithAuth):
     id: str
     name: str
     email: str
@@ -390,7 +390,7 @@ class TestErrorHandling:
         """Test that auth store validation fails without user_login field."""
 
         class InvalidAuthStore(
-            PersistentStoreWithAuth[TestUser]
+            PersistentStoreWithAuth[TestUser]  # type: ignore
         ):  # TestUser doesn't have user_login
             _row_model = TestUser
             _file_name = "test.json"

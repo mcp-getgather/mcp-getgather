@@ -32,13 +32,13 @@ async def auth_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
     """Auth with a link."""
 
     brand_state = brand_state_manager.get(brand_id)
-    if brand_state.is_connected:
+    if brand_state and brand_state.is_connected:
         return {
             "status": "FINISHED",
             "message": "Brand already connected.",
         }
 
-    profile_id = brand_state.browser_profile_id
+    profile_id = brand_state.browser_profile_id if brand_state else None
     logger.info(
         "Creating link for brand", extra={"brand_id": str(brand_id), "profile_id": profile_id}
     )
@@ -138,7 +138,9 @@ async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict
 
             if response_json["status"] == "completed":
                 processing = False
-                brand_state = brand_state_manager.get(BrandIdEnum(response_json["brand_id"]))
+                brand_state = brand_state_manager.get(
+                    BrandIdEnum(response_json["brand_id"]), raise_on_missing=True
+                )
                 brand_state.is_connected = True
                 brand_state_manager.update(brand_state)
                 logger.info(
@@ -186,7 +188,9 @@ def with_brand_browser_session(func: Callable[P, Awaitable[T]]) -> Callable[P, A
         brand_id = get_mcp_brand_id()
 
         brand_state = brand_state_manager.get(brand_id)
-        profile_id = brand_state.browser_profile_id if brand_state.is_connected else None
+        profile_id = (
+            brand_state.browser_profile_id if brand_state and brand_state.is_connected else None
+        )
         browser_profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
         browser_session = BrowserSession.get(browser_profile)
 
