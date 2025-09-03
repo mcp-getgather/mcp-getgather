@@ -22,12 +22,14 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+    "noUncheckedIndexedAccess": true,
 
     /* Paths */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./frontend/src/*"]
+      "@/*": ["./frontend/src/*"],
+      "@generated/*": ["./frontend/__generated__/*"]
     }
   },
-  "include": ["frontend/src"]
+  "include": ["frontend"]
 }

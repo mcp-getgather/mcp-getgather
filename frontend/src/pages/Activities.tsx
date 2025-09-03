@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -6,38 +7,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Search, RefreshCw, ExternalLink, Play } from "lucide-react";
-import { useState, useEffect } from "react";
+import { $api } from "@/lib/api";
+import { ExternalLink, Play, RefreshCw, Search } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router";
-import { ApiService, type Activity } from "@/lib/api";
 
 export default function Activities() {
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const loadActivities = async () => {
-    try {
-      setLoading(true);
-      const activitiesData = await ApiService.getActivities();
-      setActivities(activitiesData || []);
-      setError(null);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load activities",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, refetch, isLoading, error } = $api.useQuery(
+    "get",
+    "/activities/",
+  );
 
-  useEffect(() => {
-    loadActivities();
-  }, []);
+  if (!data) {
+    return null;
+  }
 
-  const filteredActivities = activities.filter(
+  const filteredActivities = data.filter(
     (activity) =>
       activity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       activity.brand_id.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -86,10 +73,12 @@ export default function Activities() {
           <Button
             size="sm"
             variant="outline"
-            onClick={loadActivities}
-            disabled={loading}
+            onClick={() => refetch()}
+            disabled={isLoading}
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
         </div>
@@ -131,7 +120,7 @@ export default function Activities() {
               </div>
             </CardHeader>
             <CardContent>
-              {loading ? (
+              {isLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
                   <span className="ml-2 text-gray-500">
@@ -141,11 +130,7 @@ export default function Activities() {
               ) : error ? (
                 <div className="text-center py-8">
                   <p className="text-red-600">{error}</p>
-                  <Button
-                    onClick={loadActivities}
-                    variant="outline"
-                    className="mt-2"
-                  >
+                  <Button onClick={refetch} variant="outline" className="mt-2">
                     Retry
                   </Button>
                 </div>
@@ -196,7 +181,7 @@ export default function Activities() {
                         </div>
                         <span className="text-xs text-gray-500">
                           {formatTimestamp(activity.start_time)} (
-                          {formatDuration(activity.execution_time_ms)})
+                          {formatDuration(activity.execution_time_ms ?? null)})
                         </span>
                       </div>
                     </li>
@@ -221,26 +206,26 @@ export default function Activities() {
                 <div className="flex items-center justify-between">
                   <span>Total Activities</span>
                   <span className="text-gray-900 font-medium">
-                    {activities.length}
+                    {data.length}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Completed</span>
                   <span className="text-green-600 font-medium">
-                    {activities.filter((a) => a.end_time).length}
+                    {data.filter((a) => a.end_time).length}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>In Progress</span>
                   <span className="text-yellow-600 font-medium">
-                    {activities.filter((a) => !a.end_time).length}
+                    {data.filter((a) => !a.end_time).length}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Average Duration</span>
                   <span className="text-gray-600">
                     {(() => {
-                      const completedActivities = activities.filter(
+                      const completedActivities = data.filter(
                         (a) => a.execution_time_ms,
                       );
                       if (completedActivities.length === 0) return "N/A";
@@ -264,7 +249,7 @@ export default function Activities() {
             <CardContent>
               <div className="space-y-3 text-sm">
                 {(() => {
-                  const brandCounts = activities.reduce(
+                  const brandCounts = data.reduce(
                     (acc, activity) => {
                       const brand = activity.brand_id || "Unknown";
                       acc[brand] = (acc[brand] || 0) + 1;

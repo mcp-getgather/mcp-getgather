@@ -42,6 +42,6 @@ def health():
     )
 
 
-@api_app.get("/mcp-docs")
+@api_app.get("/docs-mcp")
 async def mcp_docs() -> list[MCPDoc]:
     return await asyncio.gather(*[mcp_app_docs(mcp_app) for mcp_app in create_mcp_apps()])

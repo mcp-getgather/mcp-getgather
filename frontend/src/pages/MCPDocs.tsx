@@ -1,5 +1,7 @@
+import { $api } from "@/lib/api";
 import { ExternalLink, Wrench } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 
 type MCPDoc = {
   name: string;
@@ -9,19 +11,24 @@ type MCPDoc = {
 };
 
 export default function McpDocs() {
-  const [servers, setServers] = useState<MCPDoc[]>([]);
-  useEffect(() => {
-    fetch("/api/mcp-docs")
-      .then((res) => res.json())
-      .then((data) => setServers(data));
-  }, []);
+  return (
+    <ErrorBoundary fallback={<div>Error loading MCP docs</div>}>
+      <Suspense fallback={<div>Loading MCP docs...</div>}>
+        <MCPDocsContent />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
 
-  const groupedServers = servers.reduce(
+function MCPDocsContent() {
+  const { data } = $api.useSuspenseQuery("get", "/docs-mcp");
+
+  const groupedServers = data.reduce(
     (acc, server) => {
       if (!acc[server.type]) {
         acc[server.type] = [];
       }
-      acc[server.type].push(server);
+      acc[server.type]?.push(server);
       return acc;
     },
     {} as Record<string, MCPDoc[]>,
