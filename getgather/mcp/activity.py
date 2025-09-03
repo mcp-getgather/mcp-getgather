@@ -36,13 +36,8 @@ class ActivityManager(PersistentStoreWithAuth[Activity]):
 
     def get_all(self) -> list[Activity]:
         """Get all activities ordered by start_time descending."""
-        user_login = get_auth_user().login
-        self.load()
-        return sorted(
-            filter(lambda a: a.user_login == user_login, self.rows),
-            key=lambda a: a.start_time,
-            reverse=True,
-        )
+        rows = super().get_all()
+        return sorted(rows, key=lambda a: a.start_time, reverse=True)
 
 
 activity_manager = ActivityManager()

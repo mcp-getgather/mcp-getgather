@@ -101,6 +101,10 @@ class PersistentStore(BaseModel, Generic[T], metaclass=SingletonBaseModelMeta):
 
         return row
 
+    def get_all(self) -> list[T]:
+        self.load()
+        return self.rows
+
     def reset(self) -> None:
         self._indexes = {}
         self.rows = []
@@ -110,7 +114,10 @@ class ModelWithAuth(BaseModel):
     user_login: str
 
 
-class PersistentStoreWithAuth(PersistentStore[T]):
+TModelWithAuth = TypeVar("TModelWithAuth", bound=ModelWithAuth)
+
+
+class PersistentStoreWithAuth(PersistentStore[TModelWithAuth]):
     """
     PersistentStore that requires user_login field in the row model.
     Rows are indexed by (user_login, _key_field).
@@ -124,3 +131,8 @@ class PersistentStoreWithAuth(PersistentStore[T]):
     def index_key(self, model_key: str) -> tuple[str, str]:
         # keyed by (user_login, _key_field)
         return (get_auth_user().login, model_key)
+
+    def get_all(self) -> list[TModelWithAuth]:
+        rows = super().get_all()
+        user_login = get_auth_user().login
+        return list(filter(lambda a: a.user_login == user_login, rows))

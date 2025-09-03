@@ -88,8 +88,7 @@ class Settings(BaseSettings):
     @property
     def persistent_store_dir(self) -> Path:
         path = PROJECT_DIR / "data"
-        if not path.exists():
-            path.mkdir(parents=True, exist_ok=True)
+        path.mkdir(parents=True, exist_ok=True)
         return path
 
     @property
