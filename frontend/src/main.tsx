@@ -1,11 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import createFetchClient from "openapi-fetch";
-import createClient from "openapi-react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router";
-
-import type { paths } from "@generated/api";
 
 import Layout from "./components/Layout";
 import "./index.css";
@@ -18,9 +14,6 @@ import McpDocs from "./pages/MCPDocs";
 import NotFound from "./pages/NotFound";
 import { ReplayPage } from "./pages/Replay";
 import Start from "./pages/Start";
-
-const fetchClient = createFetchClient<paths>({ baseUrl: "/api" });
-export const apiClient = createClient(fetchClient);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
