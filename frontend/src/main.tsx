@@ -1,3 +1,5 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router";
@@ -13,23 +15,35 @@ import McpDocs from "./pages/MCPDocs";
 import NotFound from "./pages/NotFound";
 import { ReplayPage } from "./pages/Replay";
 import Start from "./pages/Start";
+<<<<<<< HEAD
+=======
+
+import type { paths } from "@generated/api";
+import createFetchClient from "openapi-fetch";
+import createClient from "openapi-react-query";
+
+const fetchClient = createFetchClient<paths>({ baseUrl: "/api" });
+export const apiClient = createClient(fetchClient);
+>>>>>>> main
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BrowserRouter>
-      <Routes>
-        <Route path="/home" element={<Home />} />
-        <Route path="/link/:linkId" element={<Link />} />
-        <Route path="/start/:brandId" element={<Start />} />
-        <Route path="/" element={<Layout />}>
-          <Route path="" element={<GetStarted />} />
-          <Route path="live-view" element={<LiveView />} />
-          <Route path="activities" element={<Activities />} />
-          <Route path="replay" element={<ReplayPage />} />
-          <Route path="/mcp-docs" element={<McpDocs />} />
-          <Route path="*" element={<NotFound />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <QueryClientProvider client={new QueryClient()}>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/home" element={<Home />} />
+          <Route path="/link/:linkId" element={<Link />} />
+          <Route path="/start/:brandId" element={<Start />} />
+          <Route path="/" element={<Layout />}>
+            <Route path="" element={<GetStarted />} />
+            <Route path="live-view" element={<LiveView />} />
+            <Route path="activities" element={<Activities />} />
+            <Route path="replay" element={<ReplayPage />} />
+            <Route path="/docs-mcp" element={<McpDocs />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
   </StrictMode>,
 );

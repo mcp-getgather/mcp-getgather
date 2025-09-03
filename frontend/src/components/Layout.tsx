@@ -42,7 +42,7 @@ export default function Layout() {
             <NavItem href="/" label="Get Started" />
             <NavItem href="/live-view" label="Live View" />
             <NavItem href="/activities" label="Activities" />
-            <NavItem href="/mcp-docs" label="MCP Docs" />
+            <NavItem href="/docs-mcp" label="MCP Docs" />
           </div>
         </nav>
 

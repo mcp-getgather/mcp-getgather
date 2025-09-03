@@ -164,7 +164,9 @@ async def autoclick(page: Page, distilled: str):
             if selector:
                 logger.info(f"Auto-clicking {selector}")
                 frame_selector = button.get("gg-frame")
-                await click(page, str(selector), frame_selector=str(frame_selector))
+                if isinstance(frame_selector, list):
+                    frame_selector = frame_selector[0] if frame_selector else None
+                await click(page, str(selector), frame_selector=frame_selector)
 
 
 async def terminate(page: Page, distilled: str) -> bool:

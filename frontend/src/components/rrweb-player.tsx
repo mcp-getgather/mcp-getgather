@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import "rrweb-player/dist/style.css";
 
-import { type RRWebEvent } from "@/lib/api";
+export type RRWebEvent = {
+  type: number;
+  data: Record<string, unknown>;
+  timestamp: number;
+  [key: string]: unknown;
+};
 
 // RRWeb player type
 type RRWebPlayerInstance = {

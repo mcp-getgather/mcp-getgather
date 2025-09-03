@@ -1,36 +1,22 @@
 import { ExternalLink, Play, RefreshCw, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { type Activity, ApiService } from "@/lib/api";
+import { $api } from "@/lib/api";
 
 export default function Activities() {
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const loadActivities = async () => {
-    try {
-      setLoading(true);
-      const activitiesData = await ApiService.getActivities();
-      setActivities(activitiesData || []);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load activities");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, refetch, isLoading, error } = $api.useQuery("get", "/activities/");
 
-  useEffect(() => {
-    loadActivities();
-  }, []);
+  if (!data) {
+    return null;
+  }
 
-  const filteredActivities = activities.filter(
+  const filteredActivities = data.filter(
     (activity) =>
       activity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       activity.brand_id.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -76,8 +62,8 @@ export default function Activities() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button size="sm" variant="outline" onClick={loadActivities} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         </div>
@@ -119,7 +105,7 @@ export default function Activities() {
               </div>
             </CardHeader>
             <CardContent>
-              {loading ? (
+              {isLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
                   <span className="ml-2 text-gray-500">Loading activities...</span>
@@ -127,7 +113,7 @@ export default function Activities() {
               ) : error ? (
                 <div className="py-8 text-center">
                   <p className="text-red-600">{error}</p>
-                  <Button onClick={loadActivities} variant="outline" className="mt-2">
+                  <Button onClick={refetch} variant="outline" className="mt-2">
                     Retry
                   </Button>
                 </div>
@@ -174,7 +160,7 @@ export default function Activities() {
                         </div>
                         <span className="text-xs text-gray-500">
                           {formatTimestamp(activity.start_time)} (
-                          {formatDuration(activity.execution_time_ms)})
+                          {formatDuration(activity.execution_time_ms ?? null)})
                         </span>
                       </div>
                     </li>
@@ -196,25 +182,25 @@ export default function Activities() {
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
                   <span>Total Activities</span>
-                  <span className="font-medium text-gray-900">{activities.length}</span>
+                  <span className="font-medium text-gray-900">{data.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Completed</span>
                   <span className="font-medium text-green-600">
-                    {activities.filter((a) => a.end_time).length}
+                    {data.filter((a) => a.end_time).length}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>In Progress</span>
                   <span className="font-medium text-yellow-600">
-                    {activities.filter((a) => !a.end_time).length}
+                    {data.filter((a) => !a.end_time).length}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Average Duration</span>
                   <span className="text-gray-600">
                     {(() => {
-                      const completedActivities = activities.filter((a) => a.execution_time_ms);
+                      const completedActivities = data.filter((a) => a.execution_time_ms);
                       if (completedActivities.length === 0) return "N/A";
                       const avgMs =
                         completedActivities.reduce((sum, a) => sum + a.execution_time_ms!, 0) /
@@ -234,7 +220,7 @@ export default function Activities() {
             <CardContent>
               <div className="space-y-3 text-sm">
                 {(() => {
-                  const brandCounts = activities.reduce(
+                  const brandCounts = data.reduce(
                     (acc, activity) => {
                       const brand = activity.brand_id || "Unknown";
                       acc[brand] = (acc[brand] || 0) + 1;
