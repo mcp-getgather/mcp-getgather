@@ -192,7 +192,7 @@ class TestActivityManager:
             )
         )
         mock_auth_user = AuthUser(login="user_1", sub="user_1")
-        with patch("getgather.mcp.activity.get_auth_user", return_value=mock_auth_user):
+        with patch("getgather.mcp.persist.get_auth_user", return_value=mock_auth_user):
             activities = manager.get_all()
             assert len(activities) == 2
             assert activities[0].user_login == "user_1"
