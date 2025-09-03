@@ -5,6 +5,9 @@ from fastmcp import Context
 from getgather.mcp.agent import run_agent_for_brand
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract
+from getgather.mcp.stagehand_agent import (
+    run_stagehand_agent,
+)
 
 goodreads_mcp = BrandMCPBase(brand_id="goodreads", name="Goodreads MCP")
 
@@ -13,6 +16,18 @@ goodreads_mcp = BrandMCPBase(brand_id="goodreads", name="Goodreads MCP")
 async def get_book_list() -> dict[str, Any]:
     """Get the book list from a user's Goodreads account."""
     return await extract()
+
+
+@goodreads_mcp.tool(tags={"private"})
+async def get_book_list_stagehand() -> dict[str, Any]:
+    """Get the book list from a user's Goodreads account using Stagehand agent."""
+
+    page = await run_stagehand_agent()
+    await page.goto("https://www.goodreads.com")
+    await page.act("Navigate to My Books")
+    books = await page.extract("Extract all book titles and authors")
+
+    return books
 
 
 @goodreads_mcp.tool(tags={"private"})
