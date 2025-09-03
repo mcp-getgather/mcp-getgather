@@ -2,6 +2,8 @@ import { X } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router";
 
+import { liveViewEnabled } from "@/pages/LiveView";
+
 export default function Layout() {
   const [showBanner, setShowBanner] = useState(true);
 
@@ -40,7 +42,7 @@ export default function Layout() {
         <nav className="w-full">
           <div className="mb-8 flex gap-4 border-b border-gray-200">
             <NavItem href="/" label="Get Started" />
-            <NavItem href="/live-view" label="Live View" />
+            {liveViewEnabled() && <NavItem href="/live-view" label="Live View" />}
             <NavItem href="/activities" label="Activities" />
             <NavItem href="/docs-mcp" label="MCP Docs" />
           </div>

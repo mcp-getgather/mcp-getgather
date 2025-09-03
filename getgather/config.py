@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from getgather.logs import logger, setup_logging
@@ -44,6 +44,8 @@ class Settings(BaseSettings):
         "https://cdn.jsdelivr.net/npm/rrweb@2.0.0-alpha.14/dist/record/rrweb-record.min.js"
     )
     RRWEB_MASK_ALL_INPUTS: bool = True
+
+    MULTI_USER_ENABLED: bool = False
 
     SERVER_ORIGIN: str = "http://localhost:23456"
 
@@ -119,16 +121,21 @@ class Settings(BaseSettings):
             logger.warning("SENTRY_DSN is not set, logging will not be captured in Sentry.")
         return v
 
-    @property
-    def mcp_auth_enabled(self) -> bool:
-        enabled = all([
-            self.SERVER_ORIGIN,
-            self.OAUTH_GITHUB_CLIENT_ID,
-            self.OAUTH_GITHUB_CLIENT_SECRET,
-            self.OAUTH_GITHUB_REDIRECT_PATH,
-        ])
-        logger.info(f"MCP auth is {'enabled' if enabled else 'disabled'}.")
-        return enabled
+    @model_validator(mode="after")
+    def validate_multi_user_enabled(self) -> "Settings":
+        if self.MULTI_USER_ENABLED:
+            auth_enabled = all([
+                self.SERVER_ORIGIN,
+                self.OAUTH_GITHUB_CLIENT_ID,
+                self.OAUTH_GITHUB_CLIENT_SECRET,
+                self.OAUTH_GITHUB_REDIRECT_PATH,
+            ])
+            if not auth_enabled:
+                raise ValueError("MCP auth must be enabled in MULTI_USER mode.")
+        logger.info(
+            f"Multi-user mode and MCP auth are {'enabled' if self.MULTI_USER_ENABLED else 'disabled'}."
+        )
+        return self
 
     @property
     def mcp_auth_provider(self) -> str:

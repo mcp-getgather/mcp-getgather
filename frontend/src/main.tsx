@@ -22,6 +22,8 @@ import Start from "./pages/Start";
 const fetchClient = createFetchClient<paths>({ baseUrl: "/api" });
 export const apiClient = createClient(fetchClient);
 
+console.debug(`MULTI_USER_ENABLED: ${import.meta.env.MULTI_USER_ENABLED}`);
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={new QueryClient()}>
@@ -32,7 +34,9 @@ createRoot(document.getElementById("root")!).render(
           <Route path="/start/:brandId" element={<Start />} />
           <Route path="/" element={<Layout />}>
             <Route path="" element={<GetStarted />} />
-            <Route path="live-view" element={<LiveView />} />
+            {import.meta.env.MULTI_USER_ENABLED || (
+              <Route path="live-view" element={<LiveView />} />
+            )}
             <Route path="activities" element={<Activities />} />
             <Route path="replay" element={<ReplayPage />} />
             <Route path="/docs-mcp" element={<McpDocs />} />

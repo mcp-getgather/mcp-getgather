@@ -1,6 +1,9 @@
 # Stage 1: Frontend Builder
 FROM mirror.gcr.io/library/node:22-alpine AS frontend-builder
 
+ARG MULTI_USER_ENABLED=false
+ENV MULTI_USER_ENABLED=${MULTI_USER_ENABLED}
+
 WORKDIR /app
 
 # Copy package files for dependency caching

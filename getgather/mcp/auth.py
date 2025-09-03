@@ -93,7 +93,7 @@ class AuthUser(BaseModel):
 
 def get_auth_user() -> AuthUser:
     """Get the email of the authenticated user, which is common across OAuth providers."""
-    if not settings.mcp_auth_enabled:
+    if not settings.MULTI_USER_ENABLED:
         return AuthUser(sub=LOCAL_USER, login=LOCAL_USER)
 
     token = get_access_token()
