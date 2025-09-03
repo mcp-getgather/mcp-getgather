@@ -2,7 +2,7 @@ import { X } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router";
 
-import { liveViewEnabled } from "@/pages/LiveView";
+import { liveViewEnabled } from "@/pages/config";
 
 export default function Layout() {
   const [showBanner, setShowBanner] = useState(true);

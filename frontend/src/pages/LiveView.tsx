@@ -1,9 +1,5 @@
 import PageHeader from "@/components/PageHeader";
 
-export function liveViewEnabled() {
-  return !import.meta.env.MULTI_USER_ENABLED;
-}
-
 export default function LiveView() {
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-6xl flex-col overflow-hidden px-6">
