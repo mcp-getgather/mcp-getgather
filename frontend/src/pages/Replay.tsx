@@ -14,11 +14,15 @@ export function ReplayPage() {
 }
 
 function ReplayPageContent({ activityId }: { activityId: string }) {
-  const { data, isLoading, error } = $api.useQuery("get", "/activities/{activity_id}/recordings", {
-    params: {
-      path: { activity_id: activityId },
+  const { data, isLoading, error } = $api.useQuery(
+    "get",
+    "/mcp_activities/{activity_id}/recordings",
+    {
+      params: {
+        path: { activity_id: activityId },
+      },
     },
-  });
+  );
 
   if (!data) {
     return null;
