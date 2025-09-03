@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useEffect, useState } from "react";
+
 import type { ExtractResult } from "./BrandForm";
 
 interface ExtractResultsProps {
@@ -18,7 +20,7 @@ function generateTable(dataArray: Record<string, unknown>[]) {
         <thead>
           <tr>
             {headers.map((header) => (
-              <th key={header} className="text-left p-2">
+              <th key={header} className="p-2 text-left">
                 {header}
               </th>
             ))}
@@ -40,11 +42,7 @@ function generateTable(dataArray: Record<string, unknown>[]) {
   );
 }
 
-function BundleContent({
-  bundle,
-}: {
-  bundle: ExtractResult["bundles"][number];
-}) {
+function BundleContent({ bundle }: { bundle: ExtractResult["bundles"][number] }) {
   if (
     bundle.content === null ||
     bundle.content === undefined ||
@@ -65,10 +63,10 @@ function BundleContent({
   if (bundle.parsed && typeof bundle.content === "object") {
     return (
       <div>
-        <div className="text-sm font-medium text-muted-foreground uppercase mb-2">
+        <div className="text-muted-foreground mb-2 text-sm font-medium uppercase">
           Parsed data (non-tabular):
         </div>
-        <pre className="bg-muted p-4 rounded-lg overflow-auto">
+        <pre className="bg-muted overflow-auto rounded-lg p-4">
           <code>{JSON.stringify(bundle.content, null, 2)}</code>
         </pre>
       </div>
@@ -80,10 +78,10 @@ function BundleContent({
       const jsonObject = JSON.parse(bundle.content);
       return (
         <div>
-          <div className="text-sm font-medium text-muted-foreground uppercase mb-2">
+          <div className="text-muted-foreground mb-2 text-sm font-medium uppercase">
             Raw JSON content:
           </div>
-          <pre className="bg-muted p-4 rounded-lg overflow-auto">
+          <pre className="bg-muted overflow-auto rounded-lg p-4">
             <code>{JSON.stringify(jsonObject, null, 2)}</code>
           </pre>
         </div>
@@ -91,11 +89,11 @@ function BundleContent({
     } catch {
       return (
         <div>
-          <div className="text-sm font-medium text-muted-foreground uppercase mb-2">
+          <div className="text-muted-foreground mb-2 text-sm font-medium uppercase">
             Raw HTML/Text content:
           </div>
           <div
-            className="border rounded-lg p-4 overflow-auto"
+            className="overflow-auto rounded-lg border p-4"
             dangerouslySetInnerHTML={{ __html: bundle.content }}
           />
         </div>
@@ -106,10 +104,10 @@ function BundleContent({
   if (typeof bundle.content === "object") {
     return (
       <div>
-        <div className="text-sm font-medium text-muted-foreground uppercase mb-2">
+        <div className="text-muted-foreground mb-2 text-sm font-medium uppercase">
           Raw JSON content:
         </div>
-        <pre className="bg-muted p-4 rounded-lg overflow-auto">
+        <pre className="bg-muted overflow-auto rounded-lg p-4">
           <code>{JSON.stringify(bundle.content, null, 2)}</code>
         </pre>
       </div>
@@ -126,11 +124,7 @@ export default function ExtractResults({ extractResult }: ExtractResultsProps) {
     setActiveTab("0");
   }, [extractResult]);
 
-  if (
-    !extractResult ||
-    !extractResult.bundles ||
-    extractResult.bundles.length === 0
-  ) {
+  if (!extractResult || !extractResult.bundles || extractResult.bundles.length === 0) {
     return null;
   }
 

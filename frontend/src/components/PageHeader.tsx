@@ -10,30 +10,24 @@ interface PageHeaderProps {
   };
 }
 
-export default function PageHeader({
-  title,
-  description,
-  badge,
-}: PageHeaderProps) {
+export default function PageHeader({ title, description, badge }: PageHeaderProps) {
   return (
-    <div className="text-center mb-12">
+    <div className="mb-12 text-center">
       {badge && (
-        <div className="flex justify-center mb-6">
+        <div className="mb-6 flex justify-center">
           <Badge
             variant={badge.variant || "secondary"}
-            className="bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2 text-sm font-medium rounded-full"
+            className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
           >
-            {badge.icon && <badge.icon className="w-4 h-4 mr-2" />}
+            {badge.icon && <badge.icon className="mr-2 h-4 w-4" />}
             {badge.text}
           </Badge>
         </div>
       )}
 
-      <h1 className="text-3xl font-bold text-slate-900 mb-4">{title}</h1>
+      <h1 className="mb-4 text-3xl font-bold text-slate-900">{title}</h1>
 
-      {description && (
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">{description}</p>
-      )}
+      {description && <p className="mx-auto max-w-2xl text-lg text-gray-600">{description}</p>}
     </div>
   );
 }

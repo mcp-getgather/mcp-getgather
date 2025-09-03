@@ -7,21 +7,16 @@ interface EmptyStateProps {
   action?: React.ReactNode;
 }
 
-export default function EmptyState({
-  icon: Icon,
-  title,
-  description,
-  action,
-}: EmptyStateProps) {
+export default function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
   return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <Card className="max-w-md w-full text-center border-0 shadow-lg">
+    <div className="flex min-h-[400px] items-center justify-center">
+      <Card className="w-full max-w-md border-0 text-center shadow-lg">
         <CardContent className="pt-8 pb-6">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Icon className="w-8 h-8 text-gray-500" />
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+            <Icon className="h-8 w-8 text-gray-500" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-3">{title}</h2>
-          <p className="text-gray-600 mb-6">{description}</p>
+          <h2 className="mb-3 text-xl font-semibold text-gray-900">{title}</h2>
+          <p className="mb-6 text-gray-600">{description}</p>
           {action && action}
         </CardContent>
       </Card>

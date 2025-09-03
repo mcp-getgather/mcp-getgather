@@ -1,10 +1,8 @@
-import BrandForm, {
-  type BrandFormHandle,
-  type ExtractResult,
-} from "@/components/BrandForm";
-import ExtractResults from "@/components/ExtractResults";
 import { useRef, useState } from "react";
 import { useParams } from "react-router";
+
+import BrandForm, { type BrandFormHandle, type ExtractResult } from "@/components/BrandForm";
+import ExtractResults from "@/components/ExtractResults";
 
 export default function Start() {
   const { brandId } = useParams<{ brandId: string }>();
