@@ -12,21 +12,21 @@ from getgather.mcp.persist import ModelWithAuth, PersistentStore, PersistentStor
 
 
 # Test models
-class TestUser(BaseModel):
+class ExampleUser(BaseModel):
     id: str
     name: str
     email: str
 
 
-class TestUserWithAuth(ModelWithAuth):
+class ExampleUserWithAuth(ModelWithAuth):
     id: str
     name: str
     email: str
     user_login: str
 
 
-class TestPersistentStore(PersistentStore[TestUser]):
-    _row_model = TestUser
+class ExamplePersistentStore(PersistentStore[ExampleUser]):
+    _row_model = ExampleUser
     _file_name = "test_users.json"
     _key_field = "id"
 
@@ -39,8 +39,8 @@ class TestPersistentStore(PersistentStore[TestUser]):
         return key in self._indexes
 
 
-class TestPersistentStoreWithAuth(PersistentStoreWithAuth[TestUserWithAuth]):
-    _row_model = TestUserWithAuth
+class ExamplePersistentStoreWithAuth(PersistentStoreWithAuth[ExampleUserWithAuth]):
+    _row_model = ExampleUserWithAuth
     _file_name = "test_users_auth.json"
     _key_field = "id"
 
@@ -66,21 +66,21 @@ def clear_singleton_instances():
 
 
 @pytest.fixture
-def store(temp_project_dir: Path) -> TestPersistentStore:
+def store(temp_project_dir: Path) -> ExamplePersistentStore:
     """Create a fresh PersistentStore for each test with isolated storage."""
     # Clear singleton instances to ensure fresh store
     clear_singleton_instances()
 
-    return TestPersistentStore()
+    return ExamplePersistentStore()
 
 
 @pytest.fixture
-def store_with_auth(temp_project_dir: Path) -> TestPersistentStoreWithAuth:
+def store_with_auth(temp_project_dir: Path) -> ExamplePersistentStoreWithAuth:
     """Create a fresh PersistentStore for each test with isolated storage."""
     # Clear singleton instances to ensure fresh store
     clear_singleton_instances()
 
-    return TestPersistentStoreWithAuth()
+    return ExamplePersistentStoreWithAuth()
 
 
 @pytest.fixture
@@ -92,23 +92,23 @@ def mock_auth_user() -> AuthUser:
 class TestPersistentStoreBasic:
     """Test basic PersistentStore functionality."""
 
-    def test_file_path_property(self, store: TestPersistentStore):
+    def test_file_path_property(self, store: ExamplePersistentStore):
         """Test that file_path property returns correct path."""
         expected_path = settings.persistent_store_dir / "test_users.json"
         assert store.file_path == expected_path
 
-    def test_key_extraction(self, store: TestPersistentStore):
+    def test_key_extraction(self, store: ExamplePersistentStore):
         """Test key extraction from model."""
-        user = TestUser(id="123", name="John Doe", email="john@example.com")
+        user = ExampleUser(id="123", name="John Doe", email="john@example.com")
         assert store.row_index_key(user) == "123"
 
-    def test_index_key(self, store: TestPersistentStore):
+    def test_index_key(self, store: ExamplePersistentStore):
         """Test index key generation."""
         assert store.index_key("test-key") == "test-key"
 
-    def test_add_user(self, store: TestPersistentStore):
+    def test_add_user(self, store: ExamplePersistentStore):
         """Test adding a new user."""
-        user = TestUser(id="123", name="John Doe", email="john@example.com")
+        user = ExampleUser(id="123", name="John Doe", email="john@example.com")
 
         result = store.add(user)
 
@@ -118,53 +118,53 @@ class TestPersistentStoreBasic:
         assert store.has_key_in_index("123")
         assert store.get_indexes_count() == 1
 
-    def test_add_duplicate_user_raises_error(self, store: TestPersistentStore):
+    def test_add_duplicate_user_raises_error(self, store: ExamplePersistentStore):
         """Test that adding a duplicate user raises ValueError."""
-        user1 = TestUser(id="123", name="John Doe", email="john@example.com")
-        user2 = TestUser(id="123", name="Jane Doe", email="jane@example.com")
+        user1 = ExampleUser(id="123", name="John Doe", email="john@example.com")
+        user2 = ExampleUser(id="123", name="Jane Doe", email="jane@example.com")
 
         store.add(user1)
 
         with pytest.raises(ValueError, match="Row with key 123 already exists"):
             store.add(user2)
 
-    def test_get_existing_user(self, store: TestPersistentStore):
+    def test_get_existing_user(self, store: ExamplePersistentStore):
         """Test getting an existing user."""
-        user = TestUser(id="123", name="John Doe", email="john@example.com")
+        user = ExampleUser(id="123", name="John Doe", email="john@example.com")
         store.add(user)
 
         result = store.get("123")
 
         assert result == user
 
-    def test_get_nonexistent_user(self, store: TestPersistentStore):
+    def test_get_nonexistent_user(self, store: ExamplePersistentStore):
         """Test getting a nonexistent user returns None."""
         result = store.get("nonexistent")
 
         assert result is None
 
-    def test_update_existing_user(self, store: TestPersistentStore):
+    def test_update_existing_user(self, store: ExamplePersistentStore):
         """Test updating an existing user."""
-        user = TestUser(id="123", name="John Doe", email="john@example.com")
+        user = ExampleUser(id="123", name="John Doe", email="john@example.com")
         store.add(user)
 
-        updated_user = TestUser(id="123", name="John Smith", email="johnsmith@example.com")
+        updated_user = ExampleUser(id="123", name="John Smith", email="johnsmith@example.com")
         result = store.update(updated_user)
 
         assert result == updated_user
         assert store.rows[0] == updated_user
         assert store.has_key_in_index("123")
 
-    def test_update_nonexistent_user_raises_error(self, store: TestPersistentStore):
+    def test_update_nonexistent_user_raises_error(self, store: ExamplePersistentStore):
         """Test that updating a nonexistent user raises ValueError."""
-        user = TestUser(id="nonexistent", name="John Doe", email="john@example.com")
+        user = ExampleUser(id="nonexistent", name="John Doe", email="john@example.com")
 
         with pytest.raises(ValueError, match="Row with key nonexistent not found"):
             store.update(user)
 
-    def test_reset(self, store: TestPersistentStore):
+    def test_reset(self, store: ExamplePersistentStore):
         """Test resetting the store."""
-        user = TestUser(id="123", name="John Doe", email="john@example.com")
+        user = ExampleUser(id="123", name="John Doe", email="john@example.com")
         store.add(user)
 
         store.reset()
@@ -178,20 +178,20 @@ class TestPersistentStoreBasic:
         clear_singleton_instances()
 
         # Create first store and add user
-        store1 = TestPersistentStore()
-        user = TestUser(id="123", name="John Doe", email="john@example.com")
+        store1 = ExamplePersistentStore()
+        user = ExampleUser(id="123", name="John Doe", email="john@example.com")
         store1.add(user)
 
         # Clear singleton instances to simulate new instance
         clear_singleton_instances()
 
         # Create second store and verify user exists
-        store2 = TestPersistentStore()
+        store2 = ExamplePersistentStore()
         result = store2.get("123")
 
         assert result == user
 
-    def test_load_from_empty_file(self, store: TestPersistentStore):
+    def test_load_from_empty_file(self, store: ExamplePersistentStore):
         """Test loading when file doesn't exist."""
         # Should not raise error
         store.load()
@@ -199,14 +199,14 @@ class TestPersistentStoreBasic:
         assert len(store.rows) == 0
         assert store.get_indexes_count() == 0
 
-    def test_concurrent_access(self, store: TestPersistentStore):
+    def test_concurrent_access(self, store: ExamplePersistentStore):
         """Test concurrent access to store."""
         users = [
-            TestUser(id=f"user{i}", name=f"User {i}", email=f"user{i}@example.com")
+            ExampleUser(id=f"user{i}", name=f"User {i}", email=f"user{i}@example.com")
             for i in range(10)
         ]
 
-        def add_user(user: TestUser):
+        def add_user(user: ExampleUser):
             store.add(user)
 
         threads: list[threading.Thread] = [
@@ -228,7 +228,7 @@ class TestPersistentStoreWithAuthBasic:
     """Test basic PersistentStoreWithAuth functionality."""
 
     def test_index_key_with_auth(
-        self, store_with_auth: TestPersistentStoreWithAuth, mock_auth_user: AuthUser
+        self, store_with_auth: ExamplePersistentStoreWithAuth, mock_auth_user: AuthUser
     ):
         """Test index key generation includes user login."""
         with patch("getgather.mcp.persist.get_auth_user", return_value=mock_auth_user):
@@ -237,10 +237,10 @@ class TestPersistentStoreWithAuthBasic:
             assert result == ("testuser@github", "test-key")
 
     def test_key_with_auth(
-        self, store_with_auth: TestPersistentStoreWithAuth, mock_auth_user: AuthUser
+        self, store_with_auth: ExamplePersistentStoreWithAuth, mock_auth_user: AuthUser
     ):
         """Test key extraction includes user login."""
-        user = TestUserWithAuth(
+        user = ExampleUserWithAuth(
             id="123", name="John Doe", email="john@example.com", user_login="testuser@github"
         )
 
@@ -250,10 +250,10 @@ class TestPersistentStoreWithAuthBasic:
             assert result == ("testuser@github", "123")
 
     def test_add_user_with_auth(
-        self, store_with_auth: TestPersistentStoreWithAuth, mock_auth_user: AuthUser
+        self, store_with_auth: ExamplePersistentStoreWithAuth, mock_auth_user: AuthUser
     ):
         """Test adding a user with authentication."""
-        user = TestUserWithAuth(
+        user = ExampleUserWithAuth(
             id="123", name="John Doe", email="john@example.com", user_login="testuser@github"
         )
 
@@ -266,10 +266,10 @@ class TestPersistentStoreWithAuthBasic:
             assert store_with_auth.has_key_in_index(("testuser@github", "123"))
 
     def test_get_user_with_auth(
-        self, store_with_auth: TestPersistentStoreWithAuth, mock_auth_user: AuthUser
+        self, store_with_auth: ExamplePersistentStoreWithAuth, mock_auth_user: AuthUser
     ):
         """Test getting a user with authentication."""
-        user = TestUserWithAuth(
+        user = ExampleUserWithAuth(
             id="123", name="John Doe", email="john@example.com", user_login="testuser@github"
         )
 
@@ -279,12 +279,12 @@ class TestPersistentStoreWithAuthBasic:
 
             assert result == user
 
-    def test_user_isolation_with_auth(self, store_with_auth: TestPersistentStoreWithAuth):
+    def test_user_isolation_with_auth(self, store_with_auth: ExamplePersistentStoreWithAuth):
         """Test that users are isolated by authentication."""
-        user1 = TestUserWithAuth(
+        user1 = ExampleUserWithAuth(
             id="123", name="John Doe", email="john@example.com", user_login="user1@github"
         )
-        user2 = TestUserWithAuth(
+        user2 = ExampleUserWithAuth(
             id="123", name="Jane Doe", email="jane@example.com", user_login="user2@github"
         )
 
@@ -312,17 +312,17 @@ class TestPersistentStoreWithAuthBasic:
             assert result == user2
 
     def test_update_user_with_auth(
-        self, store_with_auth: TestPersistentStoreWithAuth, mock_auth_user: AuthUser
+        self, store_with_auth: ExamplePersistentStoreWithAuth, mock_auth_user: AuthUser
     ):
         """Test updating a user with authentication."""
-        user = TestUserWithAuth(
+        user = ExampleUserWithAuth(
             id="123", name="John Doe", email="john@example.com", user_login="testuser@github"
         )
 
         with patch("getgather.mcp.persist.get_auth_user", return_value=mock_auth_user):
             store_with_auth.add(user)
 
-            updated_user = TestUserWithAuth(
+            updated_user = ExampleUserWithAuth(
                 id="123",
                 name="John Smith",
                 email="johnsmith@example.com",
@@ -342,8 +342,8 @@ class TestSingletonBehavior:
         # Clear singleton instances
         clear_singleton_instances()
 
-        store1 = TestPersistentStore()
-        store2 = TestPersistentStore()
+        store1 = ExamplePersistentStore()
+        store2 = ExamplePersistentStore()
 
         # Should be the same instance
         assert store1 is store2
@@ -353,8 +353,8 @@ class TestSingletonBehavior:
         # Clear singleton instances
         clear_singleton_instances()
 
-        store1 = TestPersistentStoreWithAuth()
-        store2 = TestPersistentStoreWithAuth()
+        store1 = ExamplePersistentStoreWithAuth()
+        store2 = ExamplePersistentStoreWithAuth()
 
         # Should be the same instance
         assert store1 is store2
@@ -364,8 +364,8 @@ class TestSingletonBehavior:
         # Clear singleton instances
         clear_singleton_instances()
 
-        regular_store = TestPersistentStore()
-        auth_store = TestPersistentStoreWithAuth()
+        regular_store = ExamplePersistentStore()
+        auth_store = ExamplePersistentStoreWithAuth()
 
         # Should be different instances
         assert regular_store is not auth_store
@@ -378,8 +378,8 @@ class TestErrorHandling:
     def test_invalid_key_field_validation(self):
         """Test validation fails for invalid key field."""
 
-        class InvalidTestStore(PersistentStore[TestUser]):
-            _row_model = TestUser
+        class InvalidTestStore(PersistentStore[ExampleUser]):
+            _row_model = ExampleUser
             _file_name = "test.json"
             _key_field = "nonexistent_field"  # Invalid field
 
@@ -390,22 +390,22 @@ class TestErrorHandling:
         """Test that auth store validation fails without user_login field."""
 
         class InvalidAuthStore(
-            PersistentStoreWithAuth[TestUser]  # type: ignore
+            PersistentStoreWithAuth[ExampleUser]  # type: ignore
         ):  # TestUser doesn't have user_login
-            _row_model = TestUser
+            _row_model = ExampleUser
             _file_name = "test.json"
             _key_field = "id"
 
         with pytest.raises(ValidationError):
             InvalidAuthStore()
 
-    def test_file_path_creation(self, store: TestPersistentStore):
+    def test_file_path_creation(self, store: ExamplePersistentStore):
         """Test that directory is created if it doesn't exist."""
         # Ensure directory doesn't exist initially
         if store.file_path.parent.exists():
             shutil.rmtree(store.file_path.parent)
 
-        user = TestUser(id="123", name="John Doe", email="john@example.com")
+        user = ExampleUser(id="123", name="John Doe", email="john@example.com")
         store.add(user)
 
         # Directory should be created
@@ -416,12 +416,12 @@ class TestErrorHandling:
 class TestThreadSafety:
     """Test thread safety of persistent stores."""
 
-    def test_concurrent_adds_different_keys(self, store: TestPersistentStore):
+    def test_concurrent_adds_different_keys(self, store: ExamplePersistentStore):
         """Test concurrent adds with different keys."""
 
         def add_users(start_idx: int, count: int):
             for i in range(start_idx, start_idx + count):
-                user = TestUser(id=f"user{i}", name=f"User {i}", email=f"user{i}@example.com")
+                user = ExampleUser(id=f"user{i}", name=f"User {i}", email=f"user{i}@example.com")
                 store.add(user)
 
         threads: list[threading.Thread] = []
@@ -438,14 +438,14 @@ class TestThreadSafety:
         for i in range(50):
             assert store.get(f"user{i}") is not None
 
-    def test_concurrent_updates(self, store: TestPersistentStore):
+    def test_concurrent_updates(self, store: ExamplePersistentStore):
         """Test concurrent updates to the same user."""
         # First add a user
-        user = TestUser(id="123", name="John Doe", email="john@example.com")
+        user = ExampleUser(id="123", name="John Doe", email="john@example.com")
         store.add(user)
 
         def update_user(name_suffix: str):
-            updated_user = TestUser(
+            updated_user = ExampleUser(
                 id="123", name=f"John Doe {name_suffix}", email="john@example.com"
             )
             store.update(updated_user)
