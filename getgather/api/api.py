@@ -29,7 +29,7 @@ api_app = FastAPI(
 )
 
 
-if not settings.mcp_auth_enabled:
+if not settings.MULTI_USER_ENABLED:
     # TODO: client side auth needs to be implemented so that
     # we can enable MCP activities endpoint if MCP auth is enabled
     api_app.include_router(activities_router)
