@@ -62,7 +62,7 @@ class BrandStateManager:
         state = self.get_by_brand_id(BrandIdEnum(brand_id))
         return state.is_connected if state else False
 
-    def get_browser_profile_id(self, brand_id: BrandIdEnum | str) -> str | None:
+    def get_browser_profile_id(self, brand_id: BrandIdEnum) -> str | None:
         """Get the browser profile ID for a brand."""
         state = self.get_by_brand_id(BrandIdEnum(brand_id))
         return state.browser_profile_id if state else None
