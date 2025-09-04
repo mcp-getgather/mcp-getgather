@@ -100,11 +100,11 @@ class TestPersistentStoreBasic:
     def test_key_extraction(self, store: ExamplePersistentStore):
         """Test key extraction from model."""
         user = ExampleUser(id="123", name="John Doe", email="john@example.com")
-        assert store.row_index_key(user) == "123"
+        assert store.row_key_for_retrieval(user) == "123"
 
     def test_index_key(self, store: ExamplePersistentStore):
         """Test index key generation."""
-        assert store.index_key("test-key") == "test-key"
+        assert store.key_for_retrieval("test-key") == "test-key"
 
     def test_add_user(self, store: ExamplePersistentStore):
         """Test adding a new user."""
@@ -232,7 +232,7 @@ class TestPersistentStoreWithAuthBasic:
     ):
         """Test index key generation includes user login."""
         with patch("getgather.mcp.persist.get_auth_user", return_value=mock_auth_user):
-            result = store_with_auth.index_key("test-key")
+            result = store_with_auth.key_for_retrieval("test-key")
 
             assert result == ("testuser@github", "test-key")
 
@@ -245,7 +245,7 @@ class TestPersistentStoreWithAuthBasic:
         )
 
         with patch("getgather.mcp.persist.get_auth_user", return_value=mock_auth_user):
-            result = store_with_auth.row_index_key(user)
+            result = store_with_auth.row_key_for_retrieval(user)
 
             assert result == ("testuser@github", "123")
 
