@@ -12,11 +12,11 @@ from stagehand.schemas import (
     ObserveResult,
 )
 
-from getgather.brand_state import brand_state_manager
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.config import settings
 from getgather.logs import logger
+from getgather.mcp.brand_state import brand_state_manager
 from getgather.mcp.shared import get_mcp_brand_id
 
 
@@ -103,10 +103,9 @@ async def _get_user_data_dir() -> str | None:
         if not brand_id:
             raise ValueError("Brand ID is not set")
 
+        brand_state = brand_state_manager.get(brand_id)
         profile_id = (
-            brand_state_manager.get_browser_profile_id(brand_id)
-            if brand_state_manager.is_brand_connected(brand_id)
-            else None
+            brand_state.browser_profile_id if brand_state and brand_state.is_connected else None
         )
         if not profile_id:
             raise ValueError("Profile ID is not set")
