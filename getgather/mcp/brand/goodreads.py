@@ -19,15 +19,13 @@ async def get_book_list() -> dict[str, Any]:
 
 
 @goodreads_mcp.tool(tags={"private"})
-async def get_book_list_stagehand() -> dict[str, Any]:
-    """Get the book list from a user's Goodreads account using Stagehand agent."""
-
-    page = await run_stagehand_agent()
-    await page.goto("https://www.goodreads.com")
-    await page.act("Navigate to My Books")
-    books = await page.extract("Extract all book titles and authors")
-
-    return books
+async def get_book_recommendation() -> dict[str, Any]:
+    """Get a book recommendation from a user's Goodreads account."""
+    stagehand = await run_stagehand_agent()
+    await stagehand.page.goto("https://www.goodreads.com/recommendations")
+    extract_result = await stagehand.page.extract("Extract all book titles and authors")
+    await stagehand.close()
+    return {"books": extract_result.model_dump()}
 
 
 @goodreads_mcp.tool(tags={"private"})

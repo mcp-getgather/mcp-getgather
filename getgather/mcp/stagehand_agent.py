@@ -1,13 +1,16 @@
-"""
-Stagehand agent implementation for AI-powered browser automation.
-
-This module provides a functional interface for creating and using Stagehand agents
-with the existing getgather browser profile system for session persistence.
-"""
+"""Stagehand agent implementation with browser profile persistence. By default, it uses Playwright to start a browser."""
 
 from typing import Any, Protocol
 
+from pydantic import BaseModel
 from stagehand import Stagehand, default_config
+from stagehand.schemas import (
+    ActResult,
+    ExtractOptions,
+    ExtractResult,
+    ObserveOptions,
+    ObserveResult,
+)
 
 from getgather.brand_state import brand_state_manager
 from getgather.browser.profile import BrowserProfile
@@ -18,26 +21,84 @@ from getgather.mcp.shared import get_mcp_brand_id
 
 
 class StagehandPage(Protocol):
-    """Protocol for StagehandPage interface matching real Stagehand."""
+    """Protocol for page operations."""
 
-    async def goto(self, url: str) -> None:
-        """Navigate to a URL."""
+    async def goto(
+        self,
+        url: str,
+        *,
+        referer: str | None = None,
+        timeout: int | None = None,
+        wait_until: str | None = None,
+    ) -> None:
+        """Navigate to URL with optional referer, timeout, and wait condition."""
         ...
 
-    async def act(self, action_or_result: str, **kwargs: Any) -> Any:
-        """Perform an action based on natural language instruction."""
+    async def act(
+        self,
+        action_or_result: str | ObserveResult | dict[str, Any],
+        **kwargs: Any,
+    ) -> ActResult:
+        """Execute an natural language action or apply a pre-observed action."""
         ...
 
-    async def extract(self, options_or_instruction: str | None = None, **kwargs: Any) -> Any:
-        """Extract data based on natural language instruction."""
+    async def observe(
+        self,
+        options_or_instruction: str | ObserveOptions | None = None,
+        **kwargs: Any,
+    ) -> list[ObserveResult]:
+        """Make an natural language observation of page elements."""
         ...
+
+    async def extract(
+        self,
+        options_or_instruction: str | ExtractOptions | None = None,
+        *,
+        schema: type[BaseModel] | None = None,
+        **kwargs: Any,
+    ) -> ExtractResult:
+        """Extract data from page using natural language."""
+        ...
+
+
+# Currently, we only need the page property and close method
+class StagehandAgent(Protocol):
+    """Minimal interface for Stagehand agent."""
+
+    @property
+    def page(self) -> StagehandPage:
+        """Get current page."""
+        ...
+
+    async def close(self) -> None:
+        """Close agent and cleanup."""
+        ...
+
+
+# This wrapper is used to provide a minimal interface for the Stagehand agent
+class StagehandAgentWrapper:
+    """Minimal wrapper around Stagehand."""
+
+    def __init__(self, stagehand: Stagehand):
+        self._stagehand = stagehand
+
+    @property
+    def page(self) -> StagehandPage:
+        """Get current page or raise if not set."""
+        if not self._stagehand.page:
+            raise ValueError("Page is not set")
+        return self._stagehand.page
+
+    async def close(self) -> None:
+        """Close and cleanup."""
+        await self._stagehand.close()
 
 
 async def _get_user_data_dir() -> str | None:
-    """Get user_data_dir from browser session profile for session persistence."""
+    """Get browser profile directory for session persistence."""
     try:
-        # brand_id = BrandIdEnum("goodreads")
-
+        # the implementation is similar to with_brand_browser_session in shared.py
+        # howerver, it doesn't use the browser session directly, but rather uses stagehand's browser session
         brand_id = get_mcp_brand_id()
         if not brand_id:
             raise ValueError("Brand ID is not set")
@@ -52,7 +113,7 @@ async def _get_user_data_dir() -> str | None:
 
         browser_profile = BrowserProfile(id=profile_id)
         browser_session = BrowserSession.get(browser_profile)
-        # await browser_session.start()
+
         if browser_session and browser_session.profile:
             profile_path = browser_session.profile.profile_dir(browser_session.profile.id)
             user_data_dir = str(profile_path)
@@ -64,7 +125,7 @@ async def _get_user_data_dir() -> str | None:
 
 
 async def _create_stagehand_config() -> Any:
-    """Create Stagehand configuration with browser profile integration."""
+    """Create Stagehand config with profile integration."""
     user_data_dir = await _get_user_data_dir()
 
     # Configure browser launch options
@@ -93,17 +154,13 @@ async def _create_stagehand_config() -> Any:
 
 
 # Core Stagehand Agent Functions
-async def run_stagehand_agent() -> StagehandPage:
-    """Create and return a StagehandPage with AI capabilities.
-
-    This is the main functional interface: () -> StagehandPage
+async def run_stagehand_agent() -> StagehandAgent:
+    """Create and return a minimal StagehandAgent.
 
     Returns:
-        StagehandPage: A configured StagehandPage instance with AI capabilities
-
+        StagehandAgent: Minimal Stagehand interface
     Raises:
         ValueError: If OPENAI_API_KEY is not set
-        RuntimeError: If StagehandPage creation fails
     """
     if not settings.OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY is not set")
@@ -112,11 +169,5 @@ async def run_stagehand_agent() -> StagehandPage:
     config = await _create_stagehand_config()
     stagehand = Stagehand(config=config)
     await stagehand.init()
-
-    # Validate StagehandPage creation
-    stagehand_page = stagehand.page
-    if stagehand_page is None:
-        raise RuntimeError("Failed to create StagehandPage - stagehand.page is None")
-
     logger.info("StagehandPage created successfully")
-    return stagehand_page
+    return StagehandAgentWrapper(stagehand)
