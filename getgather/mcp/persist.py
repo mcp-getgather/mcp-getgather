@@ -42,12 +42,14 @@ class PersistentStore(BaseModel, Generic[T], metaclass=SingletonBaseModelMeta):
     def file_path(self) -> Path:
         return settings.persistent_store_dir / self._file_name
 
-    def index_key(self, model_key: str) -> Any:
-        """Convert a model key to the key used to index the row."""
+    def key_for_retrieval(self, model_key: str) -> Any:
         return model_key
 
-    def row_index_key(self, row: T) -> Any:
-        return self.index_key(getattr(row, self._key_field))
+    def row_key_for_retrieval(self, row: T) -> Any:
+        return self.key_for_retrieval(getattr(row, self._key_field))
+
+    def row_key_for_index(self, row: T) -> Any:
+        return getattr(row, self._key_field)
 
     def load(self):
         with self._lock:
@@ -58,7 +60,7 @@ class PersistentStore(BaseModel, Generic[T], metaclass=SingletonBaseModelMeta):
                 data = self.model_validate_json(f.read())
                 self.rows = data.rows
                 self._indexes = {
-                    self.row_index_key(row): (index, row) for index, row in enumerate(self.rows)
+                    self.row_key_for_index(row): (index, row) for index, row in enumerate(self.rows)
                 }
 
     def save(self) -> None:
@@ -74,7 +76,7 @@ class PersistentStore(BaseModel, Generic[T], metaclass=SingletonBaseModelMeta):
     def get(self, key: str, *, raise_on_missing: bool = False) -> T | None:
         if not self._indexes:
             self.load()
-        row_key = self.index_key(key)
+        row_key = self.key_for_retrieval(key)
         if row_key in self._indexes:
             return self._indexes[row_key][1]
         elif raise_on_missing:
@@ -86,7 +88,7 @@ class PersistentStore(BaseModel, Generic[T], metaclass=SingletonBaseModelMeta):
         if not self._indexes:
             self.load()
 
-        key = self.row_index_key(row)
+        key = self.row_key_for_retrieval(row)
         if key in self._indexes:
             raise ValueError(f"Row with key {key} already exists")
 
@@ -100,7 +102,7 @@ class PersistentStore(BaseModel, Generic[T], metaclass=SingletonBaseModelMeta):
         if not self._indexes:
             self.load()
 
-        key = self.row_index_key(row)
+        key = self.row_key_for_retrieval(row)
         if key not in self._indexes:
             raise ValueError(f"Row with key {key} not found")
 
@@ -138,9 +140,11 @@ class PersistentStoreWithAuth(PersistentStore[TModelWithAuth]):
         assert "user_login" in self._row_model.model_fields
         return self
 
-    def index_key(self, model_key: str) -> tuple[str, str]:
-        # keyed by (user_login, _key_field)
+    def key_for_retrieval(self, model_key: str) -> Any:
         return (get_auth_user().login, model_key)
+
+    def row_key_for_index(self, row: TModelWithAuth) -> Any:
+        return (row.user_login, getattr(row, self._key_field))
 
     def get_all(self) -> list[TModelWithAuth]:
         rows = super().get_all()
