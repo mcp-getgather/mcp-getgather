@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/activities/": {
+    "/mcp_activities/": {
         parameters: {
             query?: never;
             header?: never;
@@ -24,7 +24,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/activities/{activity_id}": {
+    "/mcp_activities/{activity_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -44,7 +44,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/activities/{activity_id}/recordings": {
+    "/mcp_activities/{activity_id}/recordings": {
         parameters: {
             query?: never;
             header?: never;
@@ -229,8 +229,10 @@ export interface components {
          * @description JSON-persisted activity record.
          */
         Activity: {
+            /** User Login */
+            user_login: string;
             /** Id */
-            id: string;
+            id?: string;
             /** Brand Id */
             brand_id: string;
             /** Name */
@@ -242,8 +244,6 @@ export interface components {
             start_time: string;
             /** End Time */
             end_time?: string | null;
-            /** Execution Time Ms */
-            execution_time_ms?: number | null;
             /**
              * Created At
              * Format: date-time
@@ -251,6 +251,8 @@ export interface components {
             created_at?: string;
             /** Has Recording */
             has_recording?: boolean | null;
+            /** Execution Time Ms */
+            readonly execution_time_ms: number | null;
         };
         /**
          * AuthFlowRequest

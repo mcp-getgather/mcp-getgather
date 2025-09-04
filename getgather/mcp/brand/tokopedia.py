@@ -4,7 +4,6 @@ from typing import Any, Literal
 from urllib.parse import quote, urlparse
 
 from getgather.actions import handle_graphql_response
-from getgather.brand_state import brand_state_manager
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
 from getgather.connectors.spec_models import Schema as SpecSchema
@@ -79,22 +78,15 @@ async def search_product(
 
 
 @tokopedia_mcp.tool
-async def get_product_details(
-    product_url: str,
-) -> dict[str, Any]:
+@with_brand_browser_session
+async def get_product_details(product_url: str) -> dict[str, Any]:
     """Get product details from tokopedia. Get product_url from search_product tool."""
-    if brand_state_manager.is_brand_connected(tokopedia_mcp.brand_id):
-        profile_id = brand_state_manager.get_browser_profile_id(tokopedia_mcp.brand_id)
-        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
-    else:
-        profile = BrowserProfile()
-
-    async with browser_session(profile) as session:
-        page = await session.page()
-        await page.goto(product_url, wait_until="commit")
-        await page.wait_for_selector("h1[data-testid='lblPDPDetailProductName']")
-        await page.wait_for_timeout(2000)
-        html = await page.locator("body").inner_html()
+    browser_session = get_mcp_browser_session()
+    page = await browser_session.page()
+    await page.goto(product_url, wait_until="commit")
+    await page.wait_for_selector("h1[data-testid='lblPDPDetailProductName']")
+    await page.wait_for_timeout(2000)
+    html = await page.locator("body").inner_html()
     spec_schema = SpecSchema.model_validate({
         "bundle": "",
         "format": "html",
@@ -132,28 +124,22 @@ async def get_product_details(
 
 
 @tokopedia_mcp.tool
-async def search_shop(
-    keyword: str,
-) -> dict[str, Any]:
+@with_brand_browser_session
+async def search_shop(keyword: str) -> dict[str, Any]:
     """Search shop on tokopedia."""
-    if brand_state_manager.is_brand_connected(tokopedia_mcp.brand_id):
-        profile_id = brand_state_manager.get_browser_profile_id(tokopedia_mcp.brand_id)
-        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
-    else:
-        profile = BrowserProfile()
+    browser_session = get_mcp_browser_session()
+    page = await browser_session.page()
 
-    async with browser_session(profile) as session:
-        page = await session.page()
-        # URL encode the search keyword
-        encoded_keyword = quote(keyword)
-        await page.goto(
-            f"https://www.tokopedia.com/search?st=shop&q={encoded_keyword}", wait_until="commit"
-        )
-        await page.wait_for_selector(
-            "div[data-testid='divShopContainer'] > div:nth-child(1) > div:nth-child(1)"
-        )
-        await page.wait_for_timeout(2000)
-        html = await page.locator("div[data-testid='divShopContainer']").inner_html()
+    # URL encode the search keyword
+    encoded_keyword = quote(keyword)
+    await page.goto(
+        f"https://www.tokopedia.com/search?st=shop&q={encoded_keyword}", wait_until="commit"
+    )
+    await page.wait_for_selector(
+        "div[data-testid='divShopContainer'] > div:nth-child(1) > div:nth-child(1)"
+    )
+    await page.wait_for_timeout(2000)
+    html = await page.locator("div[data-testid='divShopContainer']").inner_html()
     spec_schema = SpecSchema.model_validate({
         "bundle": "",
         "format": "html",
@@ -193,6 +179,7 @@ async def search_shop(
 
 
 @tokopedia_mcp.tool
+@with_brand_browser_session
 async def get_shop_details(
     product_url: str | None = None,
     shop_url: str | None = None,
@@ -242,18 +229,12 @@ async def get_shop_details(
     if not target_url:
         return {"error": "Could not determine valid shop URL"}
 
-    if brand_state_manager.is_brand_connected(tokopedia_mcp.brand_id):
-        profile_id = brand_state_manager.get_browser_profile_id(tokopedia_mcp.brand_id)
-        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
-    else:
-        profile = BrowserProfile()
-
-    async with browser_session(profile) as session:
-        page = await session.page()
-        await page.goto(target_url, wait_until="commit")
-        await page.wait_for_selector("h1[data-testid='shopNameHeader']")
-        await page.wait_for_timeout(2000)
-        html = await page.locator("div#zeus-root").inner_html()
+    browser_session = get_mcp_browser_session()
+    page = await browser_session.page()
+    await page.goto(target_url, wait_until="commit")
+    await page.wait_for_selector("h1[data-testid='shopNameHeader']")
+    await page.wait_for_timeout(2000)
+    html = await page.locator("div#zeus-root").inner_html()
     spec_schema = SpecSchema.model_validate({
         "bundle": "",
         "format": "html",
@@ -401,45 +382,43 @@ async def get_wishlist(page_number: int = 1) -> dict[str, Any]:
 
 
 @tokopedia_mcp.tool(tags={"private"})
+@with_brand_browser_session
 async def add_to_cart(
     product_url: str | list[str],
 ) -> dict[str, Any]:
     """Add a product to cart of a tokopedia."""
 
     logger.info(f"Adding product to cart: {product_url}")
-    profile_id = brand_state_manager.get_browser_profile_id(tokopedia_mcp.brand_id)
-    profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
     product_urls = [product_url] if isinstance(product_url, str) else product_url
 
-    async with browser_session(profile) as session:
-        context = session.context
+    browser_session = get_mcp_browser_session()
 
-        async def search_single_product(product_url: str):
-            page = await context.new_page()
-            await page.goto(product_url, wait_until="commit")
-            await page.wait_for_selector("h1[data-testid='lblPDPDetailProductName']")
-            await page.wait_for_timeout(2000)
-            await page.click("button[data-testid='pdpBtnNormalPrimary']")
+    async def search_single_product(product_url: str):
+        page = await browser_session.page()
+        await page.goto(product_url, wait_until="commit")
+        await page.wait_for_selector("h1[data-testid='lblPDPDetailProductName']")
+        await page.wait_for_timeout(2000)
+        await page.click("button[data-testid='pdpBtnNormalPrimary']")
 
-            locator_success = page.locator("span[data-testid='lblSuccessATC']")
-            locator_too_far = page.locator("h5:has-text('Jarak pengiriman terlalu jauh')")
+        locator_success = page.locator("span[data-testid='lblSuccessATC']")
+        locator_too_far = page.locator("h5:has-text('Jarak pengiriman terlalu jauh')")
 
-            res = None
-            for _ in range(30):  # retry up to 3 seconds
-                if await locator_success.is_visible():
-                    res = {"message": "Product added to cart", "status": "success"}
-                    break
-                elif await locator_too_far.is_visible():
-                    res = {"message": "Jarak pengiriman terlalu jauh", "status": "failed"}
-                    break
-                await page.wait_for_timeout(100)
-            await page.close()
-            return {product_url: res}
+        res = None
+        for _ in range(30):  # retry up to 3 seconds
+            if await locator_success.is_visible():
+                res = {"message": "Product added to cart", "status": "success"}
+                break
+            elif await locator_too_far.is_visible():
+                res = {"message": "Jarak pengiriman terlalu jauh", "status": "failed"}
+                break
+            await page.wait_for_timeout(100)
+        await page.close()
+        return {product_url: res}
 
-        results_list = await asyncio.gather(*[
-            search_single_product(product_url) for product_url in product_urls
-        ])
+    results_list = await asyncio.gather(*[
+        search_single_product(product_url) for product_url in product_urls
+    ])
 
     merged_results: dict[str, Any] = {}
     for r in results_list:
@@ -449,6 +428,7 @@ async def add_to_cart(
 
 
 @tokopedia_mcp.tool(tags={"private"})
+@with_brand_browser_session
 async def action_product_in_cart(
     product_id: str | list[str],
     action: Literal["toggle_checklist", "remove_from_cart"],
@@ -457,32 +437,29 @@ async def action_product_in_cart(
     Action can be toggle_checklist or remove_from_cart."""
 
     logger.info(f"Actioning product in cart: {product_id} with action: {action}")
-    profile_id = brand_state_manager.get_browser_profile_id(tokopedia_mcp.brand_id)
-    profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
 
     product_ids = [product_id] if isinstance(product_id, str) else product_id
 
-    async with browser_session(profile) as session:
-        context = session.context
+    browser_session = get_mcp_browser_session()
 
-        async def toggle_single_product(product_id: str):
-            if action == "toggle_checklist":
-                selector = f"div[data-testid='productInfoAvailable-{product_id}'] span[data-testid='CartListShopProductBox']"
-            else:
-                selector = f"div[data-testid='productInfoAvailable-{product_id}'] svg[data-testid='CartcartBtnDeleteListShopProductBox']"
+    async def toggle_single_product(product_id: str):
+        if action == "toggle_checklist":
+            selector = f"div[data-testid='productInfoAvailable-{product_id}'] span[data-testid='CartListShopProductBox']"
+        else:
+            selector = f"div[data-testid='productInfoAvailable-{product_id}'] svg[data-testid='CartcartBtnDeleteListShopProductBox']"
 
-            page = await context.new_page()
-            await page.goto(f"https://www.tokopedia.com/cart")
-            await page.wait_for_timeout(1000)
-            await page.wait_for_selector(selector)
-            await page.locator(selector).scroll_into_view_if_needed()
-            await page.click(selector)
-            await page.wait_for_timeout(1000)
-            await page.close()
-            return {"message": f"Product {action}ed in cart", "product_id": product_id}
+        page = await browser_session.page()
+        await page.goto(f"https://www.tokopedia.com/cart")
+        await page.wait_for_timeout(1000)
+        await page.wait_for_selector(selector)
+        await page.locator(selector).scroll_into_view_if_needed()
+        await page.click(selector)
+        await page.wait_for_timeout(1000)
+        await page.close()
+        return {"message": f"Product {action}ed in cart", "product_id": product_id}
 
-        results_list = await asyncio.gather(*[
-            toggle_single_product(product_id) for product_id in product_ids
-        ])
+    results_list = await asyncio.gather(*[
+        toggle_single_product(product_id) for product_id in product_ids
+    ])
 
     return {"results": results_list}

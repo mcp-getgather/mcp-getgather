@@ -10,7 +10,7 @@ import { $api } from "@/lib/api";
 export default function Activities() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { data, refetch, isLoading, error } = $api.useQuery("get", "/activities/");
+  const { data, refetch, isLoading, error } = $api.useQuery("get", "/mcp_activities/");
 
   if (!data) {
     return null;

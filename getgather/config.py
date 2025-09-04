@@ -86,11 +86,10 @@ class Settings(BaseSettings):
         return path
 
     @property
-    def database_path(self) -> Path:
-        """Path to SQLite database file in the main data directory."""
-        data_dir = PROJECT_DIR / "data"
-        data_dir.mkdir(parents=True, exist_ok=True)
-        return data_dir / "getgather.db"
+    def persistent_store_dir(self) -> Path:
+        path = PROJECT_DIR / "data"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
     @property
     def db_json_path(self) -> Path:

@@ -30,7 +30,7 @@ class RequireAuthMiddlewareCustom(RequireAuthMiddleware):
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         path = scope.get("path")
-        if path and path.startswith("/mcp"):
+        if path and (path.startswith("/mcp") or path.startswith("/api/mcp")):
             await super().__call__(scope, receive, send)
         else:
             await self.app(scope, receive, send)

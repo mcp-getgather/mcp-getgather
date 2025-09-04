@@ -1,12 +1,9 @@
 from typing import Any
 from urllib.parse import quote
 
-from getgather.brand_state import brand_state_manager
-from getgather.browser.profile import BrowserProfile
-from getgather.browser.session import browser_session
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import extract
+from getgather.mcp.shared import extract, get_mcp_browser_session, with_brand_browser_session
 from getgather.parse import parse_html
 
 shopee_mcp = BrandMCPBase(brand_id="shopee", name="Shopee MCP")
@@ -19,31 +16,23 @@ async def get_purchase_history() -> dict[str, Any]:
 
 
 @shopee_mcp.tool
-async def search_product(
-    keyword: str,
-    page_number: int = 1,
-) -> dict[str, Any]:
+@with_brand_browser_session
+async def search_product(keyword: str, page_number: int = 1) -> dict[str, Any]:
     """Search product on shopee."""
-    if brand_state_manager.is_brand_connected(shopee_mcp.brand_id):
-        profile_id = brand_state_manager.get_browser_profile_id(shopee_mcp.brand_id)
-        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
-    else:
-        profile = BrowserProfile()
+    browser_session = get_mcp_browser_session()
+    page = await browser_session.page()
 
-    async with browser_session(profile) as session:
-        page = await session.page()
-
-        # URL encode the search keyword
-        encoded_keyword = quote(keyword)
-        await page.goto(
-            f"https://shopee.co.id/search?keyword={encoded_keyword}&page={page_number - 1}",
-            wait_until="commit",
-        )
-        await page.wait_for_selector(
-            "ul.shopee-search-item-result__items > li:nth-child(1) > div:nth-child(1)"
-        )
-        await page.wait_for_timeout(1000)
-        html = await page.locator("section.shopee-search-item-result").inner_html()
+    # URL encode the search keyword
+    encoded_keyword = quote(keyword)
+    await page.goto(
+        f"https://shopee.co.id/search?keyword={encoded_keyword}&page={page_number - 1}",
+        wait_until="commit",
+    )
+    await page.wait_for_selector(
+        "ul.shopee-search-item-result__items > li:nth-child(1) > div:nth-child(1)"
+    )
+    await page.wait_for_timeout(1000)
+    html = await page.locator("section.shopee-search-item-result").inner_html()
     spec_schema = SpecSchema.model_validate({
         "bundle": "",
         "format": "html",

@@ -3,9 +3,6 @@ from typing import Any
 
 from patchright.async_api import Page
 
-from getgather.brand_state import brand_state_manager
-from getgather.browser.profile import BrowserProfile
-from getgather.browser.session import browser_session
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract, get_mcp_browser_session, with_brand_browser_session
@@ -21,25 +18,19 @@ async def get_life_list() -> dict[str, Any]:
 
 
 @ebird_mcp.tool
-async def get_explore_species_list(
-    keyword: str,
-) -> dict[str, Any]:
+@with_brand_browser_session
+async def get_explore_species_list(keyword: str) -> dict[str, Any]:
     """Get species list from ebird to be explored."""
-    if brand_state_manager.is_brand_connected(ebird_mcp.brand_id):
-        profile_id = brand_state_manager.get_browser_profile_id(ebird_mcp.brand_id)
-        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
-    else:
-        profile = BrowserProfile()
+    browser_session = get_mcp_browser_session()
+    page = await browser_session.page()
 
-    async with browser_session(profile) as session:
-        page = await session.page()
-        await page.goto("https://ebird.org/explore")
-        await page.wait_for_timeout(1000)
-        await page.type("input#species", keyword)
-        await page.keyboard.press("Enter")
-        await page.wait_for_timeout(1000)
-        await page.wait_for_selector("div#Suggest-dropdown-species")
-        html = await page.locator("div#Suggest-dropdown-species").inner_html()
+    await page.goto("https://ebird.org/explore")
+    await page.wait_for_timeout(1000)
+    await page.type("input#species", keyword)
+    await page.keyboard.press("Enter")
+    await page.wait_for_timeout(1000)
+    await page.wait_for_selector("div#Suggest-dropdown-species")
+    html = await page.locator("div#Suggest-dropdown-species").inner_html()
     spec_schema = SpecSchema.model_validate({
         "bundle": "",
         "format": "html",
@@ -55,34 +46,28 @@ async def get_explore_species_list(
 
 
 @ebird_mcp.tool
-async def explore_species(
-    sci_name: str,
-) -> dict[str, Any]:
+@with_brand_browser_session
+async def explore_species(sci_name: str) -> dict[str, Any]:
     """Explore species on Ebird from get_explore_species_list."""
-    if brand_state_manager.is_brand_connected(ebird_mcp.brand_id):
-        profile_id = brand_state_manager.get_browser_profile_id(ebird_mcp.brand_id)
-        profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
-    else:
-        profile = BrowserProfile()
+    browser_session = get_mcp_browser_session()
+    page = await browser_session.page()
 
-    async with browser_session(profile) as session:
-        page = await session.page()
-        # Navigate to explore and search for the species by scientific name
-        await page.goto("https://ebird.org/explore")
-        await page.wait_for_selector("input#species")
-        await page.fill("input#species", sci_name)
-        await page.keyboard.press("Enter")
-        await page.wait_for_selector("div#Suggest-dropdown-species")
-        await (
-            page.locator("div#Suggest-dropdown-species")
-            .locator("span.Suggestion-text span")
-            .get_by_text(sci_name)
-            .click()
-        )
-        await page.wait_for_load_state("domcontentloaded")
-        species_description_html = await page.locator("div.Hero-content").inner_html()
-        species_identification_html = await page.locator("div.Species-identification").inner_html()
-        species_statistic_html = await page.locator("div.Species-regionalData-stats").inner_html()
+    # Navigate to explore and search for the species by scientific name
+    await page.goto("https://ebird.org/explore")
+    await page.wait_for_selector("input#species")
+    await page.fill("input#species", sci_name)
+    await page.keyboard.press("Enter")
+    await page.wait_for_selector("div#Suggest-dropdown-species")
+    await (
+        page.locator("div#Suggest-dropdown-species")
+        .locator("span.Suggestion-text span")
+        .get_by_text(sci_name)
+        .click()
+    )
+    await page.wait_for_load_state("domcontentloaded")
+    species_description_html = await page.locator("div.Hero-content").inner_html()
+    species_identification_html = await page.locator("div.Species-identification").inner_html()
+    species_statistic_html = await page.locator("div.Species-regionalData-stats").inner_html()
     return {
         "species_description_html": species_description_html,
         "species_identification_html": species_identification_html,
