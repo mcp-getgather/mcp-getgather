@@ -7,12 +7,14 @@ with the existing getgather browser profile system for session persistence.
 
 from typing import Any, Protocol
 
-# BrowserContext import removed - Stagehand creates its own browser instance
 from stagehand import Stagehand, default_config
 
+from getgather.brand_state import brand_state_manager
+from getgather.browser.profile import BrowserProfile
+from getgather.browser.session import BrowserSession
 from getgather.config import settings
 from getgather.logs import logger
-from getgather.mcp.shared import get_mcp_browser_session, with_brand_browser_session
+from getgather.mcp.shared import get_mcp_brand_id
 
 
 class StagehandPage(Protocol):
@@ -31,10 +33,26 @@ class StagehandPage(Protocol):
         ...
 
 
-def _get_user_data_dir() -> str | None:
-    """Get userDataDir from browser session profile for session persistence."""
+async def _get_user_data_dir() -> str | None:
+    """Get user_data_dir from browser session profile for session persistence."""
     try:
-        browser_session = get_mcp_browser_session()
+        # brand_id = BrandIdEnum("goodreads")
+
+        brand_id = get_mcp_brand_id()
+        if not brand_id:
+            raise ValueError("Brand ID is not set")
+
+        profile_id = (
+            brand_state_manager.get_browser_profile_id(brand_id)
+            if brand_state_manager.is_brand_connected(brand_id)
+            else None
+        )
+        if not profile_id:
+            raise ValueError("Profile ID is not set")
+
+        browser_profile = BrowserProfile(id=profile_id)
+        browser_session = BrowserSession.get(browser_profile)
+        # await browser_session.start()
         if browser_session and browser_session.profile:
             profile_path = browser_session.profile.profile_dir(browser_session.profile.id)
             user_data_dir = str(profile_path)
@@ -45,9 +63,9 @@ def _get_user_data_dir() -> str | None:
     return None
 
 
-def _create_stagehand_config() -> Any:
+async def _create_stagehand_config() -> Any:
     """Create Stagehand configuration with browser profile integration."""
-    user_data_dir = _get_user_data_dir()
+    user_data_dir = await _get_user_data_dir()
 
     # Configure browser launch options
     launch_options: dict[str, Any] = {
@@ -62,7 +80,7 @@ def _create_stagehand_config() -> Any:
 
     # Add userDataDir for session persistence if available
     if user_data_dir:
-        launch_options["userDataDir"] = user_data_dir
+        launch_options["user_data_dir"] = user_data_dir
 
     return default_config.model_copy(
         update={
@@ -75,9 +93,6 @@ def _create_stagehand_config() -> Any:
 
 
 # Core Stagehand Agent Functions
-
-
-@with_brand_browser_session
 async def run_stagehand_agent() -> StagehandPage:
     """Create and return a StagehandPage with AI capabilities.
 
@@ -94,7 +109,7 @@ async def run_stagehand_agent() -> StagehandPage:
         raise ValueError("OPENAI_API_KEY is not set")
 
     # Create and initialize Stagehand with integrated configuration
-    config = _create_stagehand_config()
+    config = await _create_stagehand_config()
     stagehand = Stagehand(config=config)
     await stagehand.init()
 
