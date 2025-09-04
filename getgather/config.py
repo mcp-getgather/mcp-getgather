@@ -1,5 +1,8 @@
+import functools
 from pathlib import Path
+from typing import Awaitable, Callable, ParamSpec, TypeVar
 
+from fastapi import HTTPException
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -143,3 +146,21 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+P = ParamSpec("P")
+T = TypeVar("T")
+
+
+def disabled_if_multi_user(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
+    """Disable the route if multi-user is enabled."""
+
+    @functools.wraps(func)
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        if settings.MULTI_USER_ENABLED:
+            raise HTTPException(
+                status_code=404, detail=f"Route {func.__name__} is disabled in multi-user mode."
+            )
+        return await func(*args, **kwargs)
+
+    return wrapper

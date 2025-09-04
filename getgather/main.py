@@ -20,7 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from getgather.api.api import api_app
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
-from getgather.config import settings
+from getgather.config import disabled_if_multi_user, settings
 from getgather.logs import logger
 from getgather.mcp.auth import setup_mcp_auth
 from getgather.mcp.main import create_mcp_apps
@@ -72,10 +72,8 @@ def read_live():
 
 
 @app.get("/live/{file_path:path}")
+@disabled_if_multi_user
 async def proxy_live_files(file_path: str):
-    if settings.MULTI_USER_ENABLED:
-        return Response(status_code=404, content="Live view is disabled in multi-user mode")
-
     # noVNC lite's main web UI
     if file_path == "" or file_path == "old-index.html":
         local_file_path = FRONTEND_DIR / "live.html"
@@ -204,11 +202,9 @@ def inspector_root():
 
 
 @app.get("/inspector/{file_path:path}")
+@disabled_if_multi_user
 async def proxy_inspector(file_path: str):
     """Proxy MCP Inspector service running on localhost:6274."""
-    if settings.MULTI_USER_ENABLED:
-        return Response(status_code=404, content="Inspector is disabled in multi-user mode")
-
     target_url = f"http://localhost:6274/{file_path}"
 
     logger.info(f"Proxying inspector request {file_path} to {target_url}")
