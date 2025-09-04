@@ -73,6 +73,9 @@ def read_live():
 
 @app.get("/live/{file_path:path}")
 async def proxy_live_files(file_path: str):
+    if settings.MULTI_USER_ENABLED:
+        return Response(status_code=404, content="Live view is disabled in multi-user mode")
+
     # noVNC lite's main web UI
     if file_path == "" or file_path == "old-index.html":
         local_file_path = FRONTEND_DIR / "live.html"
@@ -251,7 +254,7 @@ async def proxy_inspector(file_path: str):
 
 app.mount("/api", api_app)
 
-if settings.mcp_auth_enabled:
+if settings.MULTI_USER_ENABLED:
     setup_mcp_auth(app, [mcp_app.route for mcp_app in mcp_apps])
 
 for mcp_app in mcp_apps:

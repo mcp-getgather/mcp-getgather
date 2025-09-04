@@ -14,6 +14,9 @@ import McpDocs from "./pages/MCPDocs";
 import NotFound from "./pages/NotFound";
 import { ReplayPage } from "./pages/Replay";
 import Start from "./pages/Start";
+import { liveViewEnabled } from "./pages/config";
+
+console.debug(`MULTI_USER_ENABLED: ${import.meta.env.MULTI_USER_ENABLED}`);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -25,7 +28,7 @@ createRoot(document.getElementById("root")!).render(
           <Route path="/start/:brandId" element={<Start />} />
           <Route path="/" element={<Layout />}>
             <Route path="" element={<GetStarted />} />
-            <Route path="live-view" element={<LiveView />} />
+            {liveViewEnabled() && <Route path="live-view" element={<LiveView />} />}
             <Route path="activities" element={<Activities />} />
             <Route path="replay" element={<ReplayPage />} />
             <Route path="/docs-mcp" element={<McpDocs />} />
