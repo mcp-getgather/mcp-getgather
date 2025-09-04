@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
+from getgather.config import disabled_if_multi_user
 from getgather.mcp.activity import Activity, activity_manager
 from getgather.rrweb import Recording, rrweb_manager
 
@@ -7,6 +8,7 @@ router = APIRouter(prefix="/mcp_activities", tags=["activities"])
 
 
 @router.get("/")
+@disabled_if_multi_user
 async def get_activities() -> list[Activity]:
     """Get all activities ordered by start_time descending."""
     activities = activity_manager.get_all()
@@ -19,6 +21,7 @@ async def get_activities() -> list[Activity]:
 
 
 @router.get("/{activity_id}")
+@disabled_if_multi_user
 async def get_activity(activity_id: str) -> Activity:
     """Get a specific activity by ID."""
     activity = activity_manager.get(activity_id)
@@ -31,6 +34,7 @@ async def get_activity(activity_id: str) -> Activity:
 
 
 @router.get("/{activity_id}/recordings")
+@disabled_if_multi_user
 async def get_recording(activity_id: str) -> Recording:
     """Get rrweb events for a specific activity."""
     # Verify activity exists
