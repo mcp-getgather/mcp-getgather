@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
 import { $api } from "@/lib/api";
+import { inspectorEnabled } from "@/lib/config";
 
 type MCPDoc = {
   name: string;
@@ -112,7 +113,7 @@ function ServerCard({ server }: { server: MCPDoc }) {
       <div className="p-6">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-xl font-semibold text-slate-800 capitalize">{server.name}</h3>
-          <InspectorLink route={server.route} />
+          {inspectorEnabled() && <InspectorLink route={server.route} />}
         </div>
 
         <div className="mb-4">
