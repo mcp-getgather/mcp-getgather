@@ -14,7 +14,7 @@ from getgather.connectors.spec_loader import BrandIdEnum, load_brand_spec, load_
 from getgather.connectors.spec_models import Column, Schema
 from getgather.logs import logger
 
-TIMEOUT = 1000
+TIMEOUT = 10000
 
 
 class BundleOutput(BaseModel):
