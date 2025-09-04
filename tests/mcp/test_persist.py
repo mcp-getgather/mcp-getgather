@@ -298,6 +298,10 @@ class TestPersistentStoreWithAuthBasic:
         with patch("getgather.mcp.persist.get_auth_user", return_value=mock_user2):
             store_with_auth.add(user2)
 
+        # re-load to rebuild index for more robust testing
+        store_with_auth.reset()
+        store_with_auth.load()
+
         # Both should exist but be isolated
         assert len(store_with_auth.rows) == 2
 
