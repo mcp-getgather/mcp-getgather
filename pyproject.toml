@@ -26,6 +26,7 @@ dependencies = [
   "python-multipart>=0.0.20",
   "pwinput>=1.0.3",
   "fastmcp",
+  "stagehand>=0.5.2",
 ]
 
 [dependency-groups]
