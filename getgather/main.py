@@ -206,6 +206,9 @@ def inspector_root():
 @app.get("/inspector/{file_path:path}")
 async def proxy_inspector(file_path: str):
     """Proxy MCP Inspector service running on localhost:6274."""
+    if settings.MULTI_USER_ENABLED:
+        return Response(status_code=404, content="Inspector is disabled in multi-user mode")
+
     target_url = f"http://localhost:6274/{file_path}"
 
     logger.info(f"Proxying inspector request {file_path} to {target_url}")
