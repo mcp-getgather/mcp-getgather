@@ -16,6 +16,7 @@ from getgather.mcp.auth import get_auth_user
 from getgather.mcp.auto_import import auto_import
 from getgather.mcp.brand_state import BrandState, brand_state_manager
 from getgather.mcp.calendar_utils import calendar_mcp
+from getgather.mcp.nytimes import nytimes_mcp
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import auth_hosted_link, poll_status_hosted_link
 
@@ -154,6 +155,7 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
         mcp.mount(server=brand_mcp, prefix=brand_mcp.brand_id)
 
     mcp.mount(server=calendar_mcp, prefix="calendar")
+    mcp.mount(server=nytimes_mcp, prefix="nytimes")
 
     return mcp.http_app(path="/")
 
