@@ -3,6 +3,7 @@ from functools import cache, cached_property
 from typing import Any, Literal
 
 from fastmcp import Context, FastMCP
+from fastmcp.server.dependencies import get_context
 from fastmcp.server.http import StarletteWithLifespan
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools.tool import ToolResult
@@ -47,7 +48,8 @@ class AuthMiddleware(Middleware):
         brand_id = context.message.name.split("_")[0]
         context.fastmcp_context.set_state("brand_id", brand_id)
 
-        brand_state = brand_state_manager.get(brand_id)
+        mcp_session_id = get_context().session_id
+        brand_state = brand_state_manager.get_by_mcp_session_id(mcp_session_id)
         if "private" not in tool.tags or (brand_state and brand_state.is_connected):
             async with activity(
                 brand_id=brand_id,
@@ -65,6 +67,7 @@ class AuthMiddleware(Middleware):
                     brand_id=BrandIdEnum(brand_id),
                     browser_profile_id=browser_profile.id,
                     is_connected=False,
+                    mcp_session_id=mcp_session_id,
                 )
             )
 
