@@ -28,7 +28,7 @@ class PersistentStore(BaseModel, Generic[T], metaclass=SingletonBaseModelMeta):
     _row_model: type[T] = PrivateAttr()
     _file_name: str = PrivateAttr()
     _key_field: str = PrivateAttr()
-    _indexes: dict[str, tuple[int, T]] = PrivateAttr(default={})  # key -> (row_number, row)
+    _indexes: dict[str, int] = PrivateAttr(default={})  # key -> row_number
     _lock: threading.RLock = PrivateAttr(default_factory=lambda: threading.RLock())
 
     rows: list[T] = []
@@ -60,7 +60,7 @@ class PersistentStore(BaseModel, Generic[T], metaclass=SingletonBaseModelMeta):
                 data = self.model_validate_json(f.read())
                 self.rows = data.rows
                 self._indexes = {
-                    self.row_key_for_index(row): (index, row) for index, row in enumerate(self.rows)
+                    self.row_key_for_index(row): num for num, row in enumerate(self.rows)
                 }
 
     def save(self) -> None:
@@ -78,7 +78,8 @@ class PersistentStore(BaseModel, Generic[T], metaclass=SingletonBaseModelMeta):
             self.load()
         row_key = self.key_for_retrieval(key)
         if row_key in self._indexes:
-            return self._indexes[row_key][1]
+            num = self._indexes[row_key]
+            return self.rows[num]
         elif raise_on_missing:
             raise ValueError(f"Row with key {key} not found")
         else:
@@ -92,7 +93,7 @@ class PersistentStore(BaseModel, Generic[T], metaclass=SingletonBaseModelMeta):
         if key in self._indexes:
             raise ValueError(f"Row with key {key} already exists")
 
-        self._indexes[key] = (len(self.rows), row)
+        self._indexes[key] = len(self.rows)
         self.rows.append(row)
         self.save()
 
@@ -106,9 +107,8 @@ class PersistentStore(BaseModel, Generic[T], metaclass=SingletonBaseModelMeta):
         if key not in self._indexes:
             raise ValueError(f"Row with key {key} not found")
 
-        row_number = self._indexes[key][0]
-        self._indexes[key] = (row_number, row)
-        self.rows[row_number] = row
+        num = self._indexes[key]
+        self.rows[num] = row
         self.save()
 
         return row
