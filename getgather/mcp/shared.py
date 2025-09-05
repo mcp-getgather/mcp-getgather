@@ -185,9 +185,9 @@ def with_brand_browser_session(func: Callable[P, Awaitable[T]]) -> Callable[P, A
 
     @functools.wraps(func)
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-        brand_id = get_mcp_brand_id()
+        mcp_session_id = get_context().session_id
 
-        brand_state = brand_state_manager.get(brand_id)
+        brand_state = brand_state_manager.get_by_mcp_session_id(mcp_session_id)
         profile_id = (
             brand_state.browser_profile_id if brand_state and brand_state.is_connected else None
         )
