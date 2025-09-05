@@ -69,7 +69,7 @@ def setup_mcp_auth(app: FastAPI, mcp_routes: list[str]):
         Middleware(
             RequireAuthMiddlewareCustom,  # verify auth for MCP routes
             getattr(github_auth_provider, "required_scopes", None) or [],
-            github_auth_provider.get_resource_metadata_url(),
+            # github_auth_provider.get_resource_metadata_url(),
         ),
         Middleware(AuthContextMiddleware),  # store the auth user in the context_var
         Middleware(

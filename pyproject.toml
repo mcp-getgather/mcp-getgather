@@ -25,8 +25,8 @@ dependencies = [
   "lxml>=6.0.0",
   "python-multipart>=0.0.20",
   "pwinput>=1.0.3",
-  "fastmcp",
   "stagehand>=0.5.2",
+  "fastmcp>=2.12.2",
 ]
 
 [dependency-groups]
@@ -74,6 +74,3 @@ exclude = ["**/.venv/**"]
 explicit_start = false
 line_length = 120
 whitelines = 1
-
-[tool.uv.sources]
-fastmcp = { git = "https://github.com/jlowin/fastmcp.git", rev = "210e9cc5ca4003a0bcfac73399051a780b67a43a" }
