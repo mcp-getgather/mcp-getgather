@@ -20,13 +20,12 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     GIT_REV: str = ""
 
+    DATA_DIR: str = ""
+
     # Logging
     SENTRY_DSN: str = ""
 
     # Browser Package Settings
-    PROFILES_DIR: str = ""
-    BUNDLES_DIR: str = ""
-    SCREENSHOTS_DIR: str = ""
     HEADLESS: bool = False
     SHOULD_BLOCK_UNWANTED_RESOURCES: bool = False
 
@@ -65,50 +64,41 @@ class Settings(BaseSettings):
         return PROJECT_DIR / "tests" / "connectors" / "brand_specs"
 
     @property
-    def bundles_dir(self) -> Path:
-        return Path(self.BUNDLES_DIR) if self.BUNDLES_DIR else PROJECT_DIR / "data" / "bundles"
-
-    @property
-    def screenshots_dir(self) -> Path:
-        dir = (
-            Path(self.SCREENSHOTS_DIR)
-            if self.SCREENSHOTS_DIR
-            else PROJECT_DIR / "data" / "screenshots"
-        )
-        if not dir.exists():
-            dir.mkdir(parents=True)
-        return dir
-
-    @property
-    def profiles_dir(self) -> Path:
-        path = (
-            Path(self.PROFILES_DIR).resolve()
-            if self.PROFILES_DIR
-            else PROJECT_DIR / "data/profiles"
-        )
-        if not path.exists():
-            path.mkdir(parents=True, exist_ok=True)
-        return path
-
-    @property
-    def persistent_store_dir(self) -> Path:
-        path = PROJECT_DIR / "data"
+    def data_dir(self) -> Path:
+        path = Path(self.DATA_DIR).resolve() if self.DATA_DIR else PROJECT_DIR / "data"
         path.mkdir(parents=True, exist_ok=True)
         return path
 
     @property
-    def db_json_path(self) -> Path:
-        """Path to general database JSON file in the main data directory."""
-        data_dir = PROJECT_DIR / "data"
-        data_dir.mkdir(parents=True, exist_ok=True)
-        return data_dir / "db.json"
+    def bundles_dir(self) -> Path:
+        path = self.data_dir / "bundles"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @property
+    def screenshots_dir(self) -> Path:
+        path = self.data_dir / "screenshots"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @property
+    def profiles_dir(self) -> Path:
+        path = self.data_dir / "profiles"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @property
+    def persistent_store_dir(self) -> Path:
+        path = self.data_dir / "store"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
     @property
     def recordings_dir(self) -> Path:
         """Path to recordings directory for per-activity files."""
-        recordings_dir = PROJECT_DIR / "data" / "recordings"
-        recordings_dir.mkdir(parents=True, exist_ok=True)
-        return recordings_dir
+        path = self.data_dir / "recordings"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
     @field_validator("LOG_LEVEL", mode="after")
     @classmethod
