@@ -1,28 +1,11 @@
 import json
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
 
 from patchright.async_api import BrowserContext, Page
 from pydantic import BaseModel
 
 from getgather.config import settings
-from getgather.logs import logger
-
-
-def _is_csp_domain(domain: str) -> bool:
-    """Check if domain matches any CSP website patterns."""
-    for pattern in settings.CSP_WEBSITES:
-        if pattern.startswith("*."):
-            # Wildcard pattern: *.example.com matches subdomain.example.com
-            base_domain = pattern[2:]
-            if domain.endswith(base_domain):
-                return True
-        else:
-            # Exact or substring match
-            if pattern in domain:
-                return True
-    return False
 
 
 class RRWebInjector:
@@ -46,31 +29,19 @@ class RRWebInjector:
         finally:
             self.events = []
 
-    async def inject_into_page(self, page: Page):
+    async def setup_rrweb(self, context: BrowserContext, page: Page):
+        if not self.enabled:
+            return
+
         await page.add_script_tag(url=self.script_url)
         await page.evaluate(
             "() => { rrwebRecord({ emit(event) { window.saveEvent(event); }, maskAllInputs: true }); }",
             isolated_context=False,
         )
 
-    def should_inject_for_page(self, page: Page) -> bool:
-        """Determine if RRWeb should be injected for this page."""
-        if not self.enabled:
-            return False
-
-        url = page.url
-        if not url or url == "about:blank":
-            return False
-
-        domain = urlparse(url).hostname
-        if not domain:
-            return False
-
-        if _is_csp_domain(domain):
-            logger.info(f"Skipping RRWeb injection for CSP domain: {domain}")
-            return False
-
-        return True
+        if context not in self.injected_contexts:
+            await context.expose_function("saveEvent", rrweb_injector.save_event)  # type: ignore
+            self.injected_contexts.add(context)
 
 
 class Recording(BaseModel):

@@ -56,6 +56,7 @@ class BrowserProfile(FreezableModel):
             headless=settings.HEADLESS,
             viewport=viewport_config,
             proxy=proxy,  # type: ignore[arg-type]
+            bypass_csp=True,
         )
 
     def cleanup(self, profile_id: str):
