@@ -3,7 +3,12 @@
     <h2 gg-match="iframe[title='Universal login'] h2:has-text('Sign in or create an account')">
       Sign in or create an account
     </h2>
-    <input name="email" type="email" gg-match="iframe[title='Universal login'] input[type=email]" placeholder="Email" />
+    <input
+      name="email"
+      type="email"
+      gg-match="iframe[title='Universal login'] input[type=email]"
+      placeholder="Email"
+    />
     <button
       gg-autoclick
       gg-match="iframe[title='Universal login'] button[data-element-name='universal-login-unified-auth-email-continue']"
