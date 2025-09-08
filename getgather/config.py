@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     BROWSER_HTTP_PROXY_PASSWORD: str = ""
 
     # Websites with Content Security Policy
-    CSP_WEBSITES: list[str] = ["*.bbc.com"]
+    CSP_WEBSITES: list[str] = []
 
     # RRWeb Recording Settings
     ENABLE_RRWEB_RECORDING: bool = True
