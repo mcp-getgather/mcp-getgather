@@ -20,7 +20,7 @@ async def get_schedule(ctx: Context) -> dict[str, Any]:
     patterns = load_distillation_patterns(path)
 
     schedule = await run_distillation_loop(SCHEDULE_URL, patterns)
-    parsed_schedule = await parse_schedule(schedule)
+    parsed_schedule = await parse_schedule(str(schedule))
     return {"schedule": parsed_schedule}
 
 
