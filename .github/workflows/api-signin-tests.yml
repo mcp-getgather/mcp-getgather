@@ -1,4 +1,4 @@
-name: API Authentication Tests
+name: API Signin Tests
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  api-auth-tests:
-    name: API Authentication Tests
+  api-signin-tests:
+    name: API Signin Tests
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -39,7 +39,7 @@ jobs:
         run: while ! curl -s 'http://localhost:23456/health' | grep 'OK'; do sleep 1; done
         timeout-minutes: 3
 
-      - name: Install Chromium for API authentication tests
+      - name: Install Chromium for API signin tests
         run: uv run playwright install chromium
 
       - name: Run the ACME Corp test server
@@ -50,8 +50,8 @@ jobs:
         run: while ! curl -s 'http://localhost:5001' | grep 'ACME'; do sleep 1; done
         timeout-minutes: 3
 
-      - name: Run the API authentication tests
-        run: uv run pytest -n 7 -m "api" tests/api/test_auth_api.py
+      - name: Run the API signin tests
+        run: uv run pytest -n 7 -m "api" tests/api/test_signin_api.py
         env:
           DISPLAY: :1
           HOST: http://localhost:23456
