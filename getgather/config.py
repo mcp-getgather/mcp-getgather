@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     BROWSER_HTTP_PROXY_PASSWORD: str = ""
 
     # RRWeb Recording Settings
-    ENABLE_RRWEB_RECORDING: bool = True
+    ENABLE_RRWEB_RECORDING: bool = False
     RRWEB_SCRIPT_URL: str = (
         "https://cdn.jsdelivr.net/npm/rrweb@2.0.0-alpha.14/dist/record/rrweb-record.min.js"
     )

@@ -38,7 +38,10 @@ class RRWebInjector:
             "() => { rrwebRecord({ emit(event) { window.saveEvent(event); }, maskAllInputs: true }); }",
             isolated_context=False,
         )
-        await context.expose_function("saveEvent", rrweb_injector.save_event)  # type: ignore
+
+        if context not in self.injected_contexts:
+            await context.expose_function("saveEvent", rrweb_injector.save_event)  # type: ignore
+            self.injected_contexts.add(context)
 
 
 class Recording(BaseModel):
