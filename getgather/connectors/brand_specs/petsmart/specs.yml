@@ -1,6 +1,6 @@
 name: Petsmart
 
-auth:
+signin:
   fields:
     - name: email_account
       type: email

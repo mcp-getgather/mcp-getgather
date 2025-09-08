@@ -1,6 +1,6 @@
 name: Marriott
 
-auth:
+signin:
   fields:
     - name: email
       type: text

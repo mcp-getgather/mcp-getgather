@@ -1,6 +1,6 @@
 name: Lenspure
 
-auth:
+signin:
   fields:
     - name: email
       type: email

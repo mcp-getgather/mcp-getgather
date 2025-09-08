@@ -1,6 +1,6 @@
 name: Zillow
 
-auth:
+signin:
   fields:
     - name: email
       type: email

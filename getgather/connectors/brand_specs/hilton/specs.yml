@@ -1,6 +1,6 @@
 name: Hilton
 
-auth:
+signin:
   fields:
     - name: username
       type: text

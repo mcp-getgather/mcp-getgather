@@ -1,6 +1,6 @@
 name: Office Depot
 
-auth:
+signin:
   fields:
     - name: dismiss_cookies
       type: autoclick

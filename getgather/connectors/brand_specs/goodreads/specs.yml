@@ -1,5 +1,5 @@
 name: Goodreads
-auth:
+signin:
   fields:
     - name: login
       type: autoclick

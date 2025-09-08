@@ -1,6 +1,6 @@
 name: ThriftBooks
 
-auth:
+signin:
   fields:
     - name: email
       type: text

@@ -1,6 +1,6 @@
 name: Starbucks
 
-auth:
+signin:
   fields:
     - name: email
       type: email

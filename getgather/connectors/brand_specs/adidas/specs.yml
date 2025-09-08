@@ -1,6 +1,6 @@
 name: Adidas
 
-auth:
+signin:
   fields:
     - name: email
       type: email

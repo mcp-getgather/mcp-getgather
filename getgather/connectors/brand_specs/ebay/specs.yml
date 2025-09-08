@@ -1,6 +1,6 @@
 name: Ebay
 
-auth:
+signin:
   fields:
     - name: email
       type: text

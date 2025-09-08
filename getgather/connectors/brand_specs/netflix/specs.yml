@@ -1,6 +1,6 @@
 name: Netflix
 
-auth:
+signin:
   fields:
     - name: email
       type: text

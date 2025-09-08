@@ -1,6 +1,6 @@
 name: Sephora
 
-auth:
+signin:
   fields:
     - name: email
       type: text

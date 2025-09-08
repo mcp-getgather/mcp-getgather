@@ -1,6 +1,6 @@
 name: eBird
 
-auth:
+signin:
   fields:
     - name: username
       type: text

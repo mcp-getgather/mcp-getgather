@@ -1,6 +1,6 @@
 name: AliExpress
 
-auth:
+signin:
   fields:
     - name: click_page_background
       type: autoclick

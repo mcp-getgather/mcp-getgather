@@ -1,6 +1,6 @@
 name: Lululemon
 
-auth:
+signin:
   fields:
     - name: email
       type: email

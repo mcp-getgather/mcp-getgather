@@ -1,6 +1,6 @@
 name: SeatGeek
 
-auth:
+signin:
   fields:
     - name: email
       type: email

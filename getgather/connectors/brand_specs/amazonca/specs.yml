@@ -1,6 +1,6 @@
 name: Amazon CA
 
-auth:
+signin:
   fields:
     - name: signin_click
       type: autoclick

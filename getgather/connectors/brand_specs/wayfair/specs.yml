@@ -1,6 +1,6 @@
 name: Wayfair
 
-auth:
+signin:
   fields:
     - name: email
       type: text

@@ -1,6 +1,6 @@
 name: ACME
 
-auth:
+signin:
   fields:
     - name: email
       type: text

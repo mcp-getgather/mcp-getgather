@@ -71,7 +71,7 @@ TYML = TypeVar("TYML", bound=YMLModel)
 
 
 class SpecModel(BaseModel, Generic[TYML]):
-    """Base model for models used in auth flows."""
+    """Base model for models used in signin flows."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -601,7 +601,7 @@ class Schema(SpecModel[SchemaYML]):
 class BrandSpecYML(YMLModel):
     id: str
     name: str
-    auth: FlowYML
+    signin: FlowYML
     extract: FlowYML | None = None
     parse: list[SchemaYML] = []
 
@@ -609,6 +609,6 @@ class BrandSpecYML(YMLModel):
 class BrandSpec(SpecModel[BrandSpecYML]):
     id: str
     name: str
-    auth: Flow
+    signin: Flow
     extract: Flow | None = None
     parse: list[Schema] = []

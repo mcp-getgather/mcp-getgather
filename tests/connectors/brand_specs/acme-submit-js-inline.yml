@@ -1,6 +1,6 @@
 name: ACME
 
-auth:
+signin:
   fields:
     - name: submit
       type: click

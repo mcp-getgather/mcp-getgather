@@ -1,6 +1,6 @@
 name: Container Store
 
-auth:
+signin:
   fields:
     - name: email
       type: email

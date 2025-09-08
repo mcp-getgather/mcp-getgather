@@ -1,6 +1,6 @@
 name: Shopee
 
-auth:
+signin:
   fields:
 
     - name: login_key

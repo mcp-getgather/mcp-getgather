@@ -1,6 +1,6 @@
 name: Ashley
 
-auth:
+signin:
   fields:
     - name: email
       type: text

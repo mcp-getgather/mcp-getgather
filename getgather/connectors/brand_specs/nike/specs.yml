@@ -1,6 +1,6 @@
 name: Nike
 
-auth:
+signin:
   fields:
     - name: email
       type: text

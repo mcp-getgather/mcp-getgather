@@ -1,6 +1,6 @@
 name: Universal Error Page
 
-auth:
+signin:
   fields:
     - name: signin_button
       type: click

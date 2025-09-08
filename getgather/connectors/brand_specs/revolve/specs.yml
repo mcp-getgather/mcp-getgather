@@ -1,6 +1,6 @@
 name: Revolve
 
-auth:
+signin:
   fields:
     - name: wait-for-modal
       type: wait

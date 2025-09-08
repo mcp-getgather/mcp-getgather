@@ -1,6 +1,6 @@
 name: Gofood
 
-auth:
+signin:
   fields:
     - name: login_button
       type: autoclick

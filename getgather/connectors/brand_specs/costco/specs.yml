@@ -1,6 +1,6 @@
 name: Costco
 
-auth:
+signin:
   fields:
     - name: email
       type: text
