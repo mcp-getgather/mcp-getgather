@@ -37,9 +37,6 @@ class Settings(BaseSettings):
     BROWSER_HTTP_PROXY: str = ""
     BROWSER_HTTP_PROXY_PASSWORD: str = ""
 
-    # Websites with Content Security Policy
-    CSP_WEBSITES: list[str] = []
-
     # RRWeb Recording Settings
     ENABLE_RRWEB_RECORDING: bool = True
     RRWEB_SCRIPT_URL: str = (
