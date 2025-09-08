@@ -1,5 +1,6 @@
 import asyncio
 import functools
+import time
 from typing import Any, Awaitable, Callable, ParamSpec, TypeVar
 
 import httpx
@@ -99,8 +100,19 @@ async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict
     """Poll auth for a hosted link."""
     progress_count = 0
     async with httpx.AsyncClient(follow_redirects=True) as client:
+        timeout_seconds = 120
+        start_time = time.monotonic()
         processing = True
         while processing:
+            if time.monotonic() - start_time >= timeout_seconds:
+                logger.warning(
+                    "[poll_status_hosted_link] Timed out polling link status",
+                    extra={"hosted_link_id": hosted_link_id, "timeout_seconds": timeout_seconds},
+                )
+                return {
+                    "status": "ERROR",
+                    "message": f"Auth timed out after {timeout_seconds} seconds. Please try again.",
+                }
             headers = get_http_headers(include_all=True)
             sanitized = _sanitize_headers(headers)
             host = headers.get("host")
