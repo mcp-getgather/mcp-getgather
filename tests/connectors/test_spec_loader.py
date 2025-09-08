@@ -20,7 +20,7 @@ async def test_load_brand_spec():
         with open(temp_path, "w") as f:
             f.write("""
             name: test_spec
-            auth:
+            signin:
                 steps:
                     - name: test_step
             extract:
