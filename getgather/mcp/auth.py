@@ -2,7 +2,7 @@ from typing import cast
 
 from fastapi import FastAPI
 from fastmcp.server.auth.providers.github import GitHubProvider
-from fastmcp.server.dependencies import get_access_token
+from fastmcp.server.dependencies import get_access_token, get_context, get_http_headers
 from mcp.server.auth.middleware.auth_context import AuthContextMiddleware
 from mcp.server.auth.middleware.bearer_auth import (
     BearerAuthBackend,
@@ -93,6 +93,11 @@ class AuthUser(BaseModel):
 
 def get_auth_user() -> AuthUser:
     """Get the email of the authenticated user, which is common across OAuth providers."""
+    headers = get_http_headers(include_all=True)
+    if headers.get("x-getgather-custom-app"):
+        mcp_session_id = get_context().session_id
+        return AuthUser(sub=mcp_session_id, login=mcp_session_id)
+
     if not settings.MULTI_USER_ENABLED:
         return AuthUser(sub=LOCAL_USER, login=LOCAL_USER)
 
