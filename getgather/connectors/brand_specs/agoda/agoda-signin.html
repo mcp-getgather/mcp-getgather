@@ -1,21 +1,14 @@
 <html gg-domain="agoda" gg-priority="1">
-  <h2
-    gg-frame="iframe[title='Universal login']"
-    gg-match="h2:has-text('Sign in or create an account')"
-  >
-    Sign in or create an account
-  </h2>
-  <input
-    gg-frame="iframe[title='Universal login']"
-    type="email"
-    gg-match="input[type=email]"
-    placeholder="Email"
-  />
-  <button
-    gg-frame="iframe[title='Universal login']"
-    gg-autoclick
-    gg-match="button[data-element-name='universal-login-unified-auth-email-continue']"
-  >
-    Continue
-  </button>
+  <body>
+    <h2 gg-match="iframe[title='Universal login'] h2:has-text('Sign in or create an account')">
+      Sign in or create an account
+    </h2>
+    <input name="email" type="email" gg-match="iframe[title='Universal login'] input[type=email]" placeholder="Email" />
+    <button
+      gg-autoclick
+      gg-match="iframe[title='Universal login'] button[data-element-name='universal-login-unified-auth-email-continue']"
+    >
+      Continue
+    </button>
+  </body>
 </html>

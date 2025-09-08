@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import urllib.parse
 from glob import glob
 from typing import cast
@@ -33,6 +34,16 @@ class Match(BaseModel):
         arbitrary_types_allowed = True
 
 
+def get_selector(input_selector: str | None) -> tuple[str | None, str | None]:
+    pattern = r"^(iframe(?:[^\s]*\[[^\]]+\]|[^\s]+))\s+(.+)$"
+    if not input_selector:
+        return None, None
+    match = re.match(pattern, input_selector)
+    if not match:
+        return None, None
+    return match.group(2), match.group(1)
+
+
 async def ask(message: str, mask: str | None = None) -> str:
     if mask:
         return pwinput.pwinput(f"{message}: ", mask=mask)
@@ -53,8 +64,7 @@ async def autofill(page: Page, distilled: str, fields: list[str]):
         frame_selector = None
 
         if element:
-            selector = cast(Tag, element).get("gg-match")
-            frame_selector = cast(Tag, element).get("gg-frame")
+            selector, frame_selector = get_selector(str(cast(Tag, element).get("gg-match")))
 
         if selector:
             source = f"{domain}_{field}" if domain else field
@@ -130,12 +140,11 @@ async def autoclick(page: Page, distilled: str):
 
     for button in buttons:
         if isinstance(button, Tag):
-            selector = button.get("gg-match")
+            selector, frame_selector = get_selector(str(button.get("gg-match")))
             if selector:
                 logger.info(f"Auto-clicking {selector}")
-                frame_selector = button.get("gg-frame")
                 if isinstance(frame_selector, list):
-                    frame_selector = frame_selector[0] if frame_selector else None
+                    frame_selector = str(frame_selector[0]) if frame_selector else None
                 await click(page, str(selector), frame_selector=frame_selector)
 
 
@@ -190,12 +199,10 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
                 continue
 
             html = target.get("gg-match-html")
-            selector = html if html else target.get("gg-match")
+            selector, frame_selector = get_selector(str(html if html else target.get("gg-match")))
 
-            if not selector or not isinstance(selector, str):
+            if not selector:
                 continue
-
-            frame_selector = target.get("gg-frame")
 
             if frame_selector:
                 source = await locate(page.frame_locator(str(frame_selector)).locator(selector))
