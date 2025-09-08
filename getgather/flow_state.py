@@ -71,7 +71,7 @@ class FlowState(BaseModel):
     # internal states
     browser_profile_id: str | None = pyField(exclude=True, default=None)
     brand_id: BrandIdEnum | None = pyField(exclude=True, default=None)
-    type: Literal["auth", "extract"] = pyField(exclude=True, default="auth")
+    type: Literal["signin", "extract"] = pyField(exclude=True, default="signin")
 
     paused: str | None = pyField(exclude=True, default=None)
     bundle_dir: Path | None = pyField(exclude=True, default=None)
@@ -115,8 +115,8 @@ class FlowState(BaseModel):
     @property
     def flow(self) -> Flow:
         match self.type:
-            case "auth":
-                return self.spec.auth
+            case "signin":
+                return self.spec.signin
             case "extract":
                 assert self.spec.extract, f"Extract flow is not defined for brand {self.brand_id}"
                 return self.spec.extract
@@ -183,7 +183,7 @@ class FlowState(BaseModel):
         *,
         event: Literal["input", "detect_fields", "detect_pages", "prompt", "next_page", "finished"],
     ):
-        if self.type != "auth":
+        if self.type != "signin":
             return
 
         if event == "input" and self.step_index == 0 and self.current_page_spec_name is None:
@@ -217,7 +217,7 @@ class FlowState(BaseModel):
     async def log_records(
         self, *, sentry: bool = False, sentry_scope: sentry_sdk.Scope | None = None
     ):
-        if self.type != "auth":
+        if self.type != "signin":
             return
 
         all_columns = set(key for record in FlowState._state_records_ for key in record.keys())
