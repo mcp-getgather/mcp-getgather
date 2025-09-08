@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import re
 import urllib.parse
@@ -40,8 +41,47 @@ def get_selector(input_selector: str | None) -> tuple[str | None, str | None]:
         return None, None
     match = re.match(pattern, input_selector)
     if not match:
-        return None, None
+        return input_selector, None
     return match.group(2), match.group(1)
+
+
+async def convert(distilled: str):
+    document = BeautifulSoup(distilled, "html.parser")
+    snippet = document.find("script", {"type": "application/json"})
+    if snippet:
+        logger.info(f"Found a data converter.")
+        logger.info(snippet.get_text())
+        try:
+            converter = json.loads(snippet.get_text())
+            logger.info(f"Start converting using {converter}")
+
+            rows = document.select(str(converter.get("rows", "")))
+            logger.info(f"Found {len(rows)} rows")
+            converted: list[dict[str, str]] = []
+            for _, el in enumerate(rows):
+                kv: dict[str, str] = {}
+                for col in converter.get("columns", []):
+                    name = col.get("name")
+                    selector = col.get("selector")
+                    attribute = col.get("attribute")
+                    if not name or not selector:
+                        continue
+                    item = el.select_one(str(selector))
+                    if item:
+                        if attribute:
+                            value = item.get(attribute)
+                            if isinstance(value, list):
+                                value = value[0] if value else None
+                            if isinstance(value, str):
+                                kv[name] = value.strip()
+                        else:
+                            kv[name] = item.get_text(strip=True)
+                if len(kv.keys()) > 0:
+                    converted.append(kv)
+            logger.info(f"Conversion done for {len(converted)} entries.")
+            return converted
+        except Exception as error:
+            logger.error(f"Conversion error: {str(error)}")
 
 
 async def ask(message: str, mask: str | None = None) -> str:
@@ -294,6 +334,9 @@ async def run_distillation_loop(location: str, patterns: list[Pattern], fields: 
                     await autofill(page, current.distilled, fields)
                     await autoclick(page, current.distilled)
                     if await terminate(page, current.distilled):
+                        converted = await convert(current.distilled)
+                        if converted:
+                            return converted
                         break
 
             else:
