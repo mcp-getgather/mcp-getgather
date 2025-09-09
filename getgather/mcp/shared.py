@@ -181,6 +181,30 @@ def get_mcp_brand_id() -> BrandIdEnum:
     return brand_id
 
 
+def get_mcp_browser_profile() -> BrowserProfile | None:
+    """Get browser profile from MCP context if available, with graceful fallback."""
+    try:
+        brand_id = get_mcp_brand_id()
+        if not brand_id:
+            return None
+
+        brand_state = brand_state_manager.get(brand_id)
+        profile_id = (
+            brand_state.browser_profile_id if brand_state and brand_state.is_connected else None
+        )
+
+        if profile_id:
+            logger.info(f"Using existing browser profile {profile_id} for brand {brand_id}")
+            return BrowserProfile(id=profile_id)
+        else:
+            logger.info(f"Creating new browser profile for brand {brand_id}")
+            return BrowserProfile()
+
+    except (ValueError, AttributeError) as e:
+        logger.debug(f"MCP context not available, using default profile: {e}")
+        return None
+
+
 def get_mcp_browser_session() -> BrowserSession:
     session = get_context().get_state("browser_session")
     if not session:
