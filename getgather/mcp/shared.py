@@ -136,6 +136,13 @@ async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict
                 "[poll_status_hosted_link] Response status",
                 extra={"status_code": response.status_code, "url": response.request.url},
             )
+
+            if response.status_code == 404:
+                return {
+                    "status": "ERROR",
+                    "message": f"Link '{hosted_link_id}' not found or expired",
+                }
+
             response_json = response.json()
 
             logger.info(
@@ -148,6 +155,7 @@ async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict
                 },
             )
 
+            # missing this
             if response_json["status"] == "completed":
                 processing = False
                 brand_state = brand_state_manager.get(
