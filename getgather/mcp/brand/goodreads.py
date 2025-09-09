@@ -17,15 +17,10 @@ goodreads_mcp = BrandMCPBase(brand_id="goodreads", name="Goodreads MCP")
 async def get_book_list() -> dict[str, Any]:
     """Get the book list from a user's Goodreads account."""
 
-    path = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "patterns", "goodreads-booklist.html"
-    )
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
 
     books = await run_distillation_loop("https://www.goodreads.com/review/list", patterns)
-
-    print(f">>>>>>>>>>>>> Books: {books}")
-
     return {"books": books}
 
 
