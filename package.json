@@ -7,6 +7,7 @@
     "npm": "10.8.2"
   },
   "scripts": {
+    "postinstall": "npm run build",
     "dev": "concurrently --raw \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "uv run -m uvicorn getgather.main:app --reload --host 127.0.0.1 --port 23456",
     "inspector": "ALLOWED_ORIGINS=http://localhost:5173,http://localhost:6274 npx @modelcontextprotocol/inspector",
