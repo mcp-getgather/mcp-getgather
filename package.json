@@ -7,7 +7,7 @@
     "npm": "10.8.2"
   },
   "scripts": {
-    "postinstall": "npm run build",
+    "predev": "test ! -d getgather/frontend/__assets && npm run build || echo 'Assets directory exists, skipping build'",
     "dev": "concurrently --raw \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "uv run -m uvicorn getgather.main:app --reload --host 127.0.0.1 --port 23456",
     "inspector": "ALLOWED_ORIGINS=http://localhost:5173,http://localhost:6274 npx @modelcontextprotocol/inspector",
@@ -18,7 +18,7 @@
     "check-format": "prettier --check \"**/*.{html,js,jsx,ts,tsx,css,json,md}\"",
     "format": "prettier --write \"**/*.{html,js,jsx,ts,tsx,css,json,md}\"",
     "schema:api": "wait-on tcp:23456 && openapi-typescript http://localhost:23456/api/openapi.json -o frontend/__generated__/api.d.ts",
-    "watch:schema:api": "nodemon --watch getgather -e py --exec \"npm run schema:api\""
+    "watch:schema:api": "chokidar \"getgather/**/*.py\" -c \"npm run schema:api\""
   },
   "dependencies": {
     "@modelcontextprotocol/inspector": "^0.16.5",
@@ -47,12 +47,12 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
+    "chokidar-cli": "^3.0.0",
     "concurrently": "^9.2.0",
     "eslint": "^9.30.1",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
-    "nodemon": "^3.1.10",
     "openapi-typescript": "^7.9.1",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.6.14",
