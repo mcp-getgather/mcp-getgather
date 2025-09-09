@@ -15,7 +15,6 @@ from pydantic import BaseModel
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
 from getgather.logs import logger
-from getgather.mcp.shared import get_mcp_browser_profile
 
 
 class Pattern(BaseModel):
@@ -310,11 +309,8 @@ async def run_distillation_loop(
 
     hostname = urllib.parse.urlparse(location).hostname or ""
 
-    # Use provided profile, or try to get from MCP context, or create new one
-    if browser_profile:
-        profile = browser_profile
-    else:
-        profile = get_mcp_browser_profile() or BrowserProfile()
+    # Use provided profile or create new one
+    profile = browser_profile or BrowserProfile()
 
     async with browser_session(profile) as session:
         page = await session.page()
