@@ -189,6 +189,25 @@ def get_mcp_brand_id() -> BrandIdEnum:
     return brand_id
 
 
+def get_mcp_browser_profile() -> BrowserProfile:
+    """Get browser profile from MCP context if available."""
+    try:
+        brand_id = get_mcp_brand_id()
+        brand_state = brand_state_manager.get(brand_id)
+
+        if not (brand_state and brand_state.is_connected and brand_state.browser_profile_id):
+            raise ValueError("Browser profile is not set")
+
+        logger.info(
+            f"Using existing browser profile {brand_state.browser_profile_id} for brand {brand_id}"
+        )
+        return BrowserProfile(id=brand_state.browser_profile_id)
+
+    except (ValueError, AttributeError) as e:
+        logger.debug(f"MCP context not available: {e}")
+        raise ValueError("Browser profile is not found")
+
+
 def get_mcp_browser_session() -> BrowserSession:
     session = get_context().get_state("browser_session")
     if not session:

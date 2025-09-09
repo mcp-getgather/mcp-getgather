@@ -297,14 +297,21 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
         return match
 
 
-async def run_distillation_loop(location: str, patterns: list[Pattern], fields: list[str] = []):
+async def run_distillation_loop(
+    location: str,
+    patterns: list[Pattern],
+    fields: list[str] = [],
+    browser_profile: BrowserProfile | None = None,
+):
     if len(patterns) == 0:
         logger.error("No distillation patterns provided")
         raise ValueError("No distillation patterns provided")
 
     hostname = urllib.parse.urlparse(location).hostname or ""
 
-    profile = BrowserProfile()
+    # Use provided profile or create new one
+    profile = browser_profile or BrowserProfile()
+
     async with browser_session(profile) as session:
         page = await session.page()
 
