@@ -75,13 +75,13 @@ def get_test_id(test_case: dict[str, str]):
 
 @pytest.mark.api
 @pytest.mark.parametrize("test_case", TEST_CASES, ids=[get_test_id(tc) for tc in TEST_CASES])
-def test_auth_api_flow(test_case: dict[str, str]):
+def test_signin_api_flow(test_case: dict[str, str]):
     brand_id = test_case["test"]
     headers: dict[str, str] = {}
     if API_KEY:
         headers["Authorization"] = f"Bearer {API_KEY}"
 
-    # 1. Start the auth flow
+    # 1. Start the signin flow
     initial_payload = {"extract": True}
     res = requests.post(
         f"{HOST}/api/auth/{brand_id}", json=initial_payload, headers=headers, timeout=120
@@ -177,4 +177,4 @@ def test_auth_api_flow(test_case: dict[str, str]):
 
 
 if __name__ == "__main__":
-    test_auth_api_flow({"test": "acme-email-password-checkbox"})
+    test_signin_api_flow({"test": "acme-email-password-checkbox"})

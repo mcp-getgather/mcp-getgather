@@ -22,18 +22,18 @@ SPECS_WITHOUT_CHOICE = sorted(
 
 @pytest.mark.webui
 @pytest.mark.parametrize("brand_id", SPECS_WITHOUT_CHOICE)
-def test_auth(page: Page, site_url: str, brand_id: str):
-    _run_auth(page, site_url, brand_id)
+def test_signin(page: Page, site_url: str, brand_id: str):
+    _run_signin(page, site_url, brand_id)
 
 
 @pytest.mark.webui
 @pytest.mark.parametrize("brand_id", SPECS_WITH_CHOICE)
 @pytest.mark.parametrize("verification_choice", ["password", "otp"])
-def test_auth_with_choice(page: Page, site_url: str, brand_id: str, verification_choice: str):
-    _run_auth(page, site_url, brand_id, verification_choice=verification_choice)
+def test_signin_with_choice(page: Page, site_url: str, brand_id: str, verification_choice: str):
+    _run_signin(page, site_url, brand_id, verification_choice=verification_choice)
 
 
-def _run_auth(
+def _run_signin(
     page: Page,
     site_url: str,
     brand_id: str,
@@ -62,7 +62,7 @@ def _run_auth(
             if "Connection successful" in content:
                 success = True
                 break
-            elif "Error during authentication" in content:
+            elif "Error during sign in" in content:
                 break
 
         email_input = page.get_by_test_id("input-email")
@@ -109,6 +109,6 @@ def _run_auth(
 
 
 @pytest.mark.webui
-def test_auth_with_wrong_password(page: Page, site_url: str):
+def test_signin_with_wrong_password(page: Page, site_url: str):
     brand_id = "acme-email-then-password"
-    _run_auth(page, site_url, brand_id, passwords=["wrongpassword", VALID_PASSWORD])
+    _run_signin(page, site_url, brand_id, passwords=["wrongpassword", VALID_PASSWORD])
