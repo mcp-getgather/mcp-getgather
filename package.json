@@ -19,9 +19,9 @@
     "frontend:lint": "eslint .",
     "backend:check:format": "uv run ruff check && uv run ruff format --check",
     "backend:format": "uv run ruff format && uv run ruff check --fix",
-    "backend:check:types": "uv run pyright .",
+    "backend:check:type-safety": "uv run pyright .",
     "yaml:check:format": "uv run yamlfix --check $(find . -type f -name '*.yml' -o -name '*.yaml' | grep -v -E '\\.venv/|node_modules/')",
-    "check:all": "npm run frontend:lint && npm run frontend:check:format && npm run backend:check:format && npm run backend:check:types && npm run yaml:check:format",
+    "check:all": "npm run frontend:lint && npm run frontend:check:format && npm run backend:check:format && npm run backend:check:type-safety && npm run yaml:check:format",
     "generate:schema": "wait-on tcp:23456 && openapi-typescript http://localhost:23456/api/openapi.json -o frontend/__generated__/api.d.ts",
     "watch:schema:api": "chokidar \"getgather/**/*.py\" -c \"npm run generate:schema\"",
     "prepare": "husky"
