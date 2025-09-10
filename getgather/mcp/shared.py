@@ -66,11 +66,9 @@ async def auth_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
             extra={"url": url, "host": host, "scheme": scheme, "headers": sanitized},
         )
 
-        response = await client.post(
-            url,
-            headers={"Content-Type": "application/json"},
-            json=request_data.model_dump(),
-        )
+        sanitized["Content-Type"] = "application/json"
+
+        response = await client.post(url, headers=sanitized, json=request_data.model_dump())
 
         response_json = response.json()
         logger.info(
