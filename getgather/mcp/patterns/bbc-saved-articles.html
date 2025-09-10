@@ -6,11 +6,12 @@
     <div gg-stop gg-match-html="[data-testid=saved-items-list-section]"></div>
     <script type="application/json" id="saved-articles">
       {
-        "rows": "[data-testid=wrexham-card]",
+        "rows": "[data-indexcard]",
         "columns": [
           { "name": "title", "selector": "[data-testid=card-headline]" },
           { "name": "url", "selector": "[data-testid=internal-link]", "attribute": "href" },
-          { "name": "summary", "selector": "[data-testid=anchor-inner-wrapper] + div" }
+          { "name": "summary", "selector": "[data-testid=anchor-inner-wrapper] + div" },
+          { "name": "image", "selector": "img", "attribute": "src" }
         ]
       }
     </script>

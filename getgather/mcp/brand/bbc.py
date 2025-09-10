@@ -15,7 +15,7 @@ async def get_bookmarks() -> dict[str, Any]:
     browser_profile = get_mcp_browser_profile()
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
-    saved_articles = await run_distillation_loop(
+    extract_result = await run_distillation_loop(
         "https://www.bbc.com/saved", patterns, browser_profile=browser_profile
     )
-    return {"saved_articles": saved_articles}
+    return {"extract_result": extract_result}
