@@ -6,7 +6,7 @@ from fastmcp import Context
 from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.mcp.agent import run_agent_for_brand
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import extract, get_mcp_browser_profile
+from getgather.mcp.shared import get_mcp_browser_profile
 
 doordash_mcp = BrandMCPBase(brand_id="doordash", name="Doordash MCP")
 
