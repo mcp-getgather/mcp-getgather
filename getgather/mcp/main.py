@@ -147,7 +147,7 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
     mcp.add_middleware(AuthMiddleware())
 
     @mcp.tool(tags={"general_tool"})
-    async def poll_auth(ctx: Context, link_id: str) -> dict[str, Any]: # pyright: ignore[reportUnusedFunction]
+    async def poll_auth(ctx: Context, link_id: str) -> dict[str, Any]:  # pyright: ignore[reportUnusedFunction]
         """Poll auth for a session. Only call this tool if you get the auth link/url."""
         return await poll_status_hosted_link(context=ctx, hosted_link_id=link_id)
 
