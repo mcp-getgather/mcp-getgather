@@ -19,7 +19,7 @@ from getgather.mcp.calendar_utils import calendar_mcp
 from getgather.mcp.espn import espn_mcp
 from getgather.mcp.nytimes import nytimes_mcp
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import auth_hosted_link, poll_status_hosted_link
+from getgather.mcp.shared import auth_hosted_link, check_brand_connected, poll_status_hosted_link
 
 # Ensure calendar MCP is registered by importing its module
 try:
@@ -29,7 +29,8 @@ except Exception as e:
 
 
 class AuthMiddleware(Middleware):
-    async def on_call_tool(self, context: MiddlewareContext[Any], call_next: CallNext[Any, Any]):  # type: ignore
+    # type: ignore
+    async def on_call_tool(self, context: MiddlewareContext[Any], call_next: CallNext[Any, Any]):
         if not context.fastmcp_context:
             return await call_next(context)
 
@@ -38,7 +39,8 @@ class AuthMiddleware(Middleware):
         auth_user = get_auth_user()
         logger.info("[AuthMiddleware] auth_user", extra=auth_user.model_dump())
 
-        tool = await context.fastmcp_context.fastmcp.get_tool(context.message.name)  # type: ignore
+        # type: ignore
+        tool = await context.fastmcp_context.fastmcp.get_tool(context.message.name)
 
         if "general_tool" in tool.tags:
             async with activity(
@@ -50,7 +52,7 @@ class AuthMiddleware(Middleware):
         context.fastmcp_context.set_state("brand_id", brand_id)
 
         brand_state = brand_state_manager.get(brand_id)
-        if "private" not in tool.tags or (brand_state and brand_state.is_connected):
+        if "private" not in tool.tags or (brand_state and await check_brand_connected(brand_id)):
             async with activity(
                 brand_id=brand_id,
                 name=context.message.name,
@@ -66,7 +68,6 @@ class AuthMiddleware(Middleware):
                     user_login=auth_user.login,
                     brand_id=BrandIdEnum(brand_id),
                     browser_profile_id=browser_profile.id,
-                    is_connected=False,
                 )
             )
 
@@ -146,7 +147,8 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
     mcp.add_middleware(AuthMiddleware())
 
     @mcp.tool(tags={"general_tool"})
-    async def poll_auth(ctx: Context, link_id: str) -> dict[str, Any]:  # pyright: ignore[reportUnusedFunction]
+    # pyright: ignore[reportUnusedFunction]
+    async def poll_auth(ctx: Context, link_id: str) -> dict[str, Any]:
         """Poll auth for a session. Only call this tool if you get the auth link/url."""
         return await poll_status_hosted_link(context=ctx, hosted_link_id=link_id)
 
