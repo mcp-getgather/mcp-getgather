@@ -28,11 +28,6 @@ async def auth(
 @router.post("/{brand_id}/{link_id}")
 async def auth_flow_redirect(brand_id: BrandIdEnum, link_id: str | None = None) -> RedirectResponse:
     """Redirect old auth flow endpoint to versioned endpoint."""
-    from icecream import ic
-
-    ic.configureOutput(includeContext=True)
-
-    ic(brand_id, link_id)
     url = f"/api/auth/v1/{brand_id}"
     if link_id:
         url += f"/{link_id}"
