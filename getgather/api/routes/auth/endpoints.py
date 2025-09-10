@@ -10,16 +10,6 @@ from getgather.connectors.spec_loader import BrandIdEnum
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/{brand_id}")
-@router.post("/{brand_id}/{link_id}")
-async def auth_flow_redirect(brand_id: BrandIdEnum, link_id: str | None = None) -> RedirectResponse:
-    """Redirect old auth flow endpoint to versioned endpoint."""
-    url = f"/api/auth/v1/{brand_id}"
-    if link_id:
-        url += f"/{link_id}"
-    return RedirectResponse(url=url, status_code=307)
-
-
 @router.post("/v1/{brand_id}")
 @router.post("/v1/{brand_id}/{link_id}")
 async def auth(
@@ -28,7 +18,27 @@ async def auth(
     link_id: str | None = None,
 ) -> AuthFlowResponse:
     """Start or continue an authentication flow for a connector."""
+    from icecream import ic
+
+    ic.configureOutput(includeContext=True)
+
+    ic(brand_id, link_id)
     if auth_request.location:
         request_info.set(auth_request.location)
 
     return await auth_flow(brand_id, auth_request, link_id)
+
+
+@router.post("/{brand_id}")
+@router.post("/{brand_id}/{link_id}")
+async def auth_flow_redirect(brand_id: BrandIdEnum, link_id: str | None = None) -> RedirectResponse:
+    """Redirect old auth flow endpoint to versioned endpoint."""
+    from icecream import ic
+
+    ic.configureOutput(includeContext=True)
+
+    ic(brand_id, link_id)
+    url = f"/api/auth/v1/{brand_id}"
+    if link_id:
+        url += f"/{link_id}"
+    return RedirectResponse(url=url, status_code=307)

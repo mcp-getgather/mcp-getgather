@@ -85,7 +85,6 @@ export default function Link() {
           }
         }
       } catch (error) {
-        console.log("error", error);
         brandFormRef?.current?.setView("error");
         brandFormRef?.current?.setMessage("Link not found. Please check the URL and try again.");
         console.error("Error fetching link status:", error);
