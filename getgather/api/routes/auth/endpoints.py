@@ -18,11 +18,6 @@ async def auth(
     link_id: str | None = None,
 ) -> AuthFlowResponse:
     """Start or continue an authentication flow for a connector."""
-    from icecream import ic
-
-    ic.configureOutput(includeContext=True)
-
-    ic(brand_id, link_id)
     if auth_request.location:
         request_info.set(auth_request.location)
 
