@@ -197,7 +197,8 @@ const BrandForm = forwardRef<BrandFormHandle, BrandFormProps>(function BrandForm
 
   async function authenticateNext(actionState?: StatePayload) {
     try {
-      const response = await fetch(`/api/auth/v1/${brandId}/${linkId}`, {
+      const url = linkId ? `/api/auth/v1/${brandId}/${linkId}` : `/api/auth/v1/${brandId}`;
+      const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
