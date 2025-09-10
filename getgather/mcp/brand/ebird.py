@@ -1,11 +1,17 @@
+import os
 from datetime import datetime
 from typing import Any
 
 from patchright.async_api import Page
 
 from getgather.connectors.spec_models import Schema as SpecSchema
+from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import extract, get_mcp_browser_session, with_brand_browser_session
+from getgather.mcp.shared import (
+    get_mcp_browser_profile,
+    get_mcp_browser_session,
+    with_brand_browser_session,
+)
 from getgather.parse import parse_html
 
 ebird_mcp = BrandMCPBase(brand_id="ebird", name="Ebird MCP")
@@ -14,7 +20,13 @@ ebird_mcp = BrandMCPBase(brand_id="ebird", name="Ebird MCP")
 @ebird_mcp.tool(tags={"private"})
 async def get_life_list() -> dict[str, Any]:
     """Get life list of a ebird."""
-    return await extract()
+    browser_profile = get_mcp_browser_profile()
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
+    patterns = load_distillation_patterns(path)
+    lifelist = await run_distillation_loop(
+        "https://ebird.org/lifelist", patterns, browser_profile=browser_profile
+    )
+    return {"lifelist": lifelist}
 
 
 @ebird_mcp.tool
