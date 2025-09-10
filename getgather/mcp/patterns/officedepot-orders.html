@@ -1,0 +1,21 @@
+<html gg-domain="officedepot">
+  <head>
+    <title>Officedepot Orders</title>
+  </head>
+  <body>
+    <div gg-stop gg-match-html="div.oh-list"></div>
+    <script type="application/json" id="orders">
+      {
+          "rows": "div.oh-list-section",
+          "columns": [
+              { "name": "order_number", "selector": ".oh-list-order-number a" },
+              { "name": "order_date", "selector": ".oh-list-ordered-date" },
+              { "name": "order_status", "selector": ".oh-list-order-status" },
+              { "name": "total_amount", "selector": ".oh-list-order-total" },
+              { "name": "image_url", "selector": ".oh-list-sku-info img[src]:not([src=""])", "attribute": "src" },
+              { "name": "product_names", "selector": ".oh-list-sku-info img[alt]:not([alt=""])", "attribute": "alt" }
+          ]
+      }
+    </script>
+  </body>
+</html>
