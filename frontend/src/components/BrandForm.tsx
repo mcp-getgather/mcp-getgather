@@ -63,6 +63,7 @@ export type BrandFormHandle = {
 
 type BrandFormProps = {
   brandId?: string;
+  linkId?: string;
   profileId?: string;
   extract?: boolean;
   successMessage?: string;
@@ -89,6 +90,7 @@ const BrandForm = forwardRef<BrandFormHandle, BrandFormProps>(function BrandForm
   {
     onUpdateStatus,
     brandId,
+    linkId,
     onSuccess,
     profileId: profileIdProps,
     extract = false,
@@ -195,7 +197,7 @@ const BrandForm = forwardRef<BrandFormHandle, BrandFormProps>(function BrandForm
 
   async function authenticateNext(actionState?: StatePayload) {
     try {
-      const response = await fetch(`/api/auth/v1/${brandId}`, {
+      const response = await fetch(`/api/auth/v1/${brandId}/${linkId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
