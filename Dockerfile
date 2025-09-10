@@ -1,36 +1,21 @@
-# Stage 1: Frontend Builder
-FROM mirror.gcr.io/library/node:22-alpine AS frontend-builder
+# Stage 1: Combined Builder (Backend + Frontend)
+FROM mirror.gcr.io/library/python:3.13-slim-bookworm AS builder
 
 ARG MULTI_USER_ENABLED=false
 ENV MULTI_USER_ENABLED=${MULTI_USER_ENABLED}
 
-WORKDIR /app
-
-# Copy package files for dependency caching
-COPY package*.json ./
-COPY tsconfig*.json ./
-COPY vite.config.ts ./
-COPY eslint.config.js ./
-
-# Install Node.js dependencies
-RUN npm ci
-
-# Copy frontend source code
-COPY frontend/ ./frontend/
-
-# Build frontend
-RUN npm run build
-
-# Stage 2: Backend Builder
-FROM mirror.gcr.io/library/python:3.13-slim-bookworm AS backend-builder
-
-COPY --from=ghcr.io/astral-sh/uv:0.8.4 /uv /uvx /bin/
-
+# Install build dependencies and Node.js
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
     ca-certificates \
+    gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
+
+# Install uv for Python package management
+COPY --from=ghcr.io/astral-sh/uv:0.8.4 /uv /uvx /bin/
 
 ENV PATH="/root/.local/bin:$PATH"
 
@@ -45,25 +30,45 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Copy only dependency files first for better layer caching
+# Copy Python dependency files first for better layer caching
 COPY pyproject.toml uv.lock* ./
 
-# Install dependencies without workspace members
+# Install Python dependencies without workspace members
 RUN uv sync --no-dev --no-install-workspace
 
-# Install Playwright browsers only for full deployment
-# so it can be copied to the final stage easily.
+# Install Playwright browsers
 ENV PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 RUN $VENV_PATH/bin/patchright install --with-deps chromium
 
-# Now copy the actual source code
+# Copy Node.js dependency files
+COPY package*.json ./
+COPY tsconfig*.json ./
+COPY vite.config.ts ./
+COPY eslint.config.js ./
+
+# Install Node.js dependencies
+RUN npm ci
+
+# Copy backend source code
 COPY getgather /app/getgather
 COPY tests /app/tests
 COPY entrypoint.sh /app/entrypoint.sh
+COPY scripts/extract_openapi.py /app/scripts/
 
 # Install the workspace package
 RUN uv sync --no-dev
+
+# Generate OpenAPI schema and TypeScript types using the installed venv
+RUN mkdir -p frontend/__generated__ && \
+    $VENV_PATH/bin/python scripts/extract_openapi.py > /tmp/openapi.json && \
+    npx openapi-typescript /tmp/openapi.json -o frontend/__generated__/api.d.ts
+
+# Copy frontend source code (excluding generated files that might exist)
+COPY frontend/ ./frontend/
+
+# Build frontend
+RUN npm run build
 
 # Stage 2: Final image
 FROM mirror.gcr.io/library/python:3.13-slim-bookworm
@@ -95,12 +100,11 @@ RUN apt-get install -y \
 
 WORKDIR /app
 
-COPY --from=backend-builder /app/.venv /opt/venv
-COPY --from=backend-builder /app/getgather /app/getgather
-COPY --from=backend-builder /app/tests /app/tests
-COPY --from=backend-builder /app/entrypoint.sh /app/entrypoint.sh
-COPY --from=backend-builder /opt/ms-playwright /opt/ms-playwright
-COPY --from=frontend-builder /app/getgather/frontend /app/getgather/frontend
+COPY --from=builder /app/.venv /opt/venv
+COPY --from=builder /app/getgather /app/getgather
+COPY --from=builder /app/tests /app/tests
+COPY --from=builder /app/entrypoint.sh /app/entrypoint.sh
+COPY --from=builder /opt/ms-playwright /opt/ms-playwright
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONFAULTHANDLER=1 \
