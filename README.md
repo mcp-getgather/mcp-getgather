@@ -85,6 +85,8 @@ Development documentation is located in the [docs](./docs) directory:
 - [Deploying on Fly.io](./docs/deploy_fly.md)
 - [Deploying on Railway](./docs/deploy_railway.md)
 
+Access AI-enhanced documentation for this repository at [deepwiki.com/mcp-getgather/mcp-getgather](https://deepwiki.com/mcp-getgather/mcp-getgather).
+
 ## MCP inspector
 
 The container runs an [MCP inspector](https://github.com/modelcontextprotocol/inspector). It's useful for debugging and listing available tools without a client.
@@ -123,7 +125,3 @@ The proxy service should use hierarchical location-based routing if location inf
 
 - Basic: `profile_id`
 - With location: `profile_id-city_X_state_Y_country_Z`
-
-### Repo file structure
-
-[Diagram](./diagram.md) (generated at [GitDiagram](https://gitdiagram.com/getgather-hub/getgather))
