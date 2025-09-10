@@ -1,5 +1,5 @@
 name: Audible
-auth:
+signin:
   fields:
     - name: sign_in
       type: autoclick

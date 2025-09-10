@@ -48,7 +48,7 @@ async def load_brand_spec(brand: str) -> BrandSpec:
         yaml_data = yaml.load(content, Loader=RegexLoader)
         spec = BrandSpecYML.model_validate({"id": brand, **yaml_data})
         return BrandSpec.from_yml(
-            spec, fields_map=spec.auth.fields_map, pages_map=spec.auth.pages_map
+            spec, fields_map=spec.signin.fields_map, pages_map=spec.signin.pages_map
         )
 
 

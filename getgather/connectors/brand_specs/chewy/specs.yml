@@ -1,6 +1,6 @@
 name: Chewy
 
-auth:
+signin:
   fields:
     - name: email
       type: email

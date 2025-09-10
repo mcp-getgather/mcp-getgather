@@ -1,5 +1,5 @@
 name: Doordash
-auth:
+signin:
   fields:
     - name: email
       type: text

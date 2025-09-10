@@ -1,6 +1,6 @@
 name: Amazon US
 
-auth:
+signin:
   fields:
     - name: signin_click
       type: autoclick

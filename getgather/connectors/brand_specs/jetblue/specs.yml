@@ -1,6 +1,6 @@
 name: Jetblue
 
-auth:
+signin:
   fields:
     - name: email
       type: text

@@ -20,7 +20,7 @@ async def test_load_brand_spec():
         with open(temp_path, "w") as f:
             f.write("""
             name: test_spec
-            auth:
+            signin:
                 steps:
                     - name: test_step
             extract:
@@ -43,10 +43,10 @@ async def test_load_brand_spec():
             assert spec is not None
             assert isinstance(spec, BrandSpec)
             assert spec.name == "test_spec"
-            assert spec.auth is not None
-            assert spec.auth.steps is not None
-            assert len(spec.auth.steps) == 1
-            assert spec.auth.steps[0].name == "test_step"
+            assert spec.signin is not None
+            assert spec.signin.steps is not None
+            assert len(spec.signin.steps) == 1
+            assert spec.signin.steps[0].name == "test_step"
             assert spec.extract is not None
             assert spec.extract.steps is not None
             assert len(spec.extract.steps) == 1

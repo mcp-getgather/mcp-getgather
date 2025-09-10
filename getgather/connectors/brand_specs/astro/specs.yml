@@ -1,6 +1,6 @@
 name: Astro
 
-auth:
+signin:
   fields:
     - name: phone
       type: text

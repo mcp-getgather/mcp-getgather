@@ -1,6 +1,6 @@
 name: Alltrails
 
-auth:
+signin:
   fields:
     - name: email
       type: text

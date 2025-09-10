@@ -1,5 +1,5 @@
 name: Hardcover
-auth:
+signin:
   fields:
     - name: email
       type: text

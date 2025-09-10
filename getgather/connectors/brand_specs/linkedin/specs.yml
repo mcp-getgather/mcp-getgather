@@ -1,6 +1,6 @@
 name: LinkedIn
 
-auth:
+signin:
   fields:
     - name: email
       type: text

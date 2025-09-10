@@ -1,6 +1,6 @@
 name: CNN
 
-auth:
+signin:
   fields:
     - name: email
       type: text
