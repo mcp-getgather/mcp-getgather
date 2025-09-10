@@ -4,8 +4,8 @@ from fastapi import APIRouter
 from fastapi.responses import RedirectResponse
 
 from getgather.api.types import request_info
-from getgather.signin_flow import SigninFlowRequest, SigninFlowResponse, signin_flow
 from getgather.connectors.spec_loader import BrandIdEnum
+from getgather.signin_flow import SigninFlowRequest, SigninFlowResponse, signin_flow
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

@@ -8,13 +8,13 @@ from fastmcp import Context
 from fastmcp.server.dependencies import get_context, get_http_headers
 
 from getgather.api.routes.link.types import HostedLinkTokenRequest
-from getgather.signin_flow import ExtractResult
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.extract_orchestrator import ExtractOrchestrator
 from getgather.logs import logger
 from getgather.mcp.brand_state import brand_state_manager
+from getgather.signin_flow import ExtractResult
 
 
 def _sanitize_headers(headers: dict[str, str]) -> dict[str, str]:
