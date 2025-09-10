@@ -1,4 +1,4 @@
-"""Tests for BBC Tools: login, get_bookmarks."""
+"""Tests for NYTimes Tools: get_bestsellers_list."""
 
 import json
 import os
@@ -7,7 +7,9 @@ import pytest
 from fastmcp import Client
 from mcp.types import TextContent
 
-config = {"mcpServers": {"getgather": {"url": f"{os.environ.get('HOST')}/mcp"}}}
+config = {
+    "mcpServers": {"getgather": {"url": f"{os.environ.get('HOST', 'http://localhost:23456')}/mcp"}}
+}
 
 
 @pytest.mark.mcp
