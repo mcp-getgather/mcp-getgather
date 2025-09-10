@@ -2,14 +2,13 @@ name: Shopee
 
 auth:
   fields:
-
     - name: login_key
       type: text
       prompt: No. Handphone/Username/Email
       selector: input[name="loginKey"]
 
     - name: password
-      type: text
+      type: password
       prompt: Password
       selector: input[name="password"]
 
