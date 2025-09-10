@@ -1,0 +1,18 @@
+<html gg-domain="bbc">
+  <head>
+    <title>BBC Saved Articles</title>
+  </head>
+  <body>
+    <div gg-stop gg-match-html="[data-testid=saved-items-list-section]"></div>
+    <script type="application/json" id="saved-articles">
+      {
+        "rows": "[data-testid=wrexham-card]",
+        "columns": [
+          { "name": "title", "selector": "[data-testid=card-headline]" },
+          { "name": "url", "selector": "[data-testid=internal-link]", "attribute": "href" },
+          { "name": "summary", "selector": "[data-testid=anchor-inner-wrapper] + div" }
+        ]
+      }
+    </script>
+  </body>
+</html>
