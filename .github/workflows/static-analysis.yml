@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  python-coding-style:
+  backend-format:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
@@ -15,9 +15,11 @@ jobs:
       - name: Prepare back-end environment
         uses: ./.github/actions/prepare-backend
 
-      - run: uv run ruff check .
+      - name: Check backend formatting
+        run: uv run ruff check .
 
-      - run: uv run ruff format --check .
+      - name: Check backend code style
+        run: uv run ruff format --check .
 
   frontend-lint:
     runs-on: ubuntu-22.04
@@ -28,7 +30,8 @@ jobs:
       - name: Prepare front-end environment
         uses: ./.github/actions/prepare-frontend
 
-      - run: npm run lint
+      - name: Check frontend linting
+        run: npm run frontend:lint
 
   frontend-format:
     runs-on: ubuntu-22.04
@@ -39,9 +42,10 @@ jobs:
       - name: Prepare front-end environment
         uses: ./.github/actions/prepare-frontend
 
-      - run: npm run check-format
+      - name: Check frontend formatting
+        run: npm run frontend:check:format
 
-  python-type-check:
+  backend-types:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
@@ -50,7 +54,8 @@ jobs:
       - name: Prepare back-end environment
         uses: ./.github/actions/prepare-backend
 
-      - run: uv run pyright .
+      - name: Check backend types
+        run: uv run pyright .
 
   yaml-format:
     runs-on: ubuntu-22.04
@@ -61,4 +66,5 @@ jobs:
       - name: Prepare back-end environment
         uses: ./.github/actions/prepare-backend
 
-      - run: uv run yamlfix --check $(find . -type f -name '*.yml' -o -name '*.yaml' | grep -v -E '\.venv/|node_modules/')
+      - name: Check YAML formatting
+        run: uv run yamlfix --check $(find . -type f -name '*.yml' -o -name '*.yaml' | grep -v -E '\.venv/|node_modules/')
