@@ -6,7 +6,6 @@ class BrandState(ModelWithAuth):
 
     brand_id: str
     browser_profile_id: str
-    is_connected: bool
 
 
 class BrandStateStore(PersistentStoreWithAuth[BrandState]):

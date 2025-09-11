@@ -17,7 +17,7 @@ from getgather.browser.session import BrowserSession
 from getgather.config import settings
 from getgather.logs import logger
 from getgather.mcp.brand_state import brand_state_manager
-from getgather.mcp.shared import get_mcp_brand_id
+from getgather.mcp.shared import check_brand_connected, get_mcp_brand_id
 
 
 class StagehandPage(Protocol):
@@ -105,7 +105,9 @@ async def _get_user_data_dir() -> str | None:
 
         brand_state = brand_state_manager.get(brand_id)
         profile_id = (
-            brand_state.browser_profile_id if brand_state and brand_state.is_connected else None
+            brand_state.browser_profile_id
+            if brand_state and await check_brand_connected(brand_id)
+            else None
         )
         if not profile_id:
             raise ValueError("Profile ID is not set")
