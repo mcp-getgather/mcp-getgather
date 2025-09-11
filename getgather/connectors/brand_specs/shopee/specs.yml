@@ -74,12 +74,3 @@ auth:
       end: true
 
   start: Login Page
-
-extract:
-  steps:
-    - name: Go to orders page
-      url: https://shopee.co.id/user/purchase
-
-    - name: Extract orders
-      bundle: orders.json
-      listen_to_url_stub_json: https://shopee.co.id/api/v4/order/get_all_order_and_checkout_list
