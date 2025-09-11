@@ -34,20 +34,3 @@ signin:
       end: true
 
   start: Sign in page
-
-extract:
-  steps:
-    - name: Go to the profile page
-      url: https://www.alltrails.com/my/profile/
-
-    - name: Wait for the loading
-      timeout: 15
-      wait_for_selector: div[data-test-id="virtuoso-item-list"]
-
-    - name: Extract profile
-      bundle: profile.html
-      slurp_selector: aside
-
-    - name: Extract feed
-      bundle: feed.html
-      slurp_selector: div[data-test-id="virtuoso-item-list"]
