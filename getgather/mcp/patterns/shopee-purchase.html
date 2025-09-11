@@ -1,0 +1,19 @@
+<html gg-domain="shopee">
+  <body>
+    <div gg-stop gg-match-html="main[aria-role='tabpanel']:has-text('chat') > div"></div>
+    <script type="application/json" id="purchase">
+      {
+        "rows": "div.YL_VlX",
+        "columns": [
+          { "name": "store_name", "selector": "div[tabindex='0']:not(:has(svg))" },
+          { "name": "product_name", "selector": "span[tabindex='0']" },
+          { "name": "product_image", "selector": "img", "attribute": "src" },
+          {
+            "name": "total_price",
+            "selector": "div[aria-label*='Total Pesanan']"
+          }
+        ]
+      }
+    </script>
+  </body>
+</html>
