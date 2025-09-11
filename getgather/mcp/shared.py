@@ -8,13 +8,13 @@ from fastmcp import Context
 from fastmcp.server.dependencies import get_context, get_http_headers
 
 from getgather.api.routes.link.types import HostedLinkTokenRequest
-from getgather.auth_flow import ExtractResult
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.extract_orchestrator import ExtractOrchestrator
 from getgather.logs import logger
 from getgather.mcp.brand_state import brand_state_manager
+from getgather.signin_flow import ExtractResult
 
 
 def _sanitize_headers(headers: dict[str, str]) -> dict[str, str]:
@@ -29,7 +29,7 @@ def _sanitize_headers(headers: dict[str, str]) -> dict[str, str]:
     return {k: v for k, v in headers.items() if k.lower() in allowed}
 
 
-async def auth_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
+async def signin_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
     """Auth with a link."""
 
     brand_state = brand_state_manager.get(brand_id)
@@ -55,14 +55,14 @@ async def auth_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
 
         if not base_url:
             logger.warning(
-                "[auth_hosted_link] Missing Host header; defaulting to localhost",
+                "[signin_hosted_link] Missing Host header; defaulting to localhost",
                 extra={"host": host, "scheme": scheme, "headers": sanitized},
             )
             base_url = "http://localhost:23456"
 
         url = f"{base_url}/api/link/create"
         logger.info(
-            "[auth_hosted_link] Creating hosted link",
+            "[signin_hosted_link] Creating hosted link",
             extra={"url": url, "host": host, "scheme": scheme, "headers": sanitized},
         )
 
@@ -72,7 +72,7 @@ async def auth_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
 
         response_json = response.json()
         logger.info(
-            "[auth_hosted_link] Hosted link created successfully",
+            "[signin_hosted_link] Hosted link created successfully",
             extra={
                 "status_code": response.status_code,
                 "request_url": str(response.request.url),
@@ -84,18 +84,18 @@ async def auth_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
     return {
         "url": response_json["hosted_link_url"],
         "link_id": response_json["link_id"],
-        "message": "Continue the auth process in your browser. If you are not redirected, open the link url in your browser.",
+        "message": "Continue the sign in process in your browser. If you are not redirected, open the link url in your browser.",
         "system_message": (
             "Try open the url in a browser with a tool if available."
             " Give the url to the user so the user can open it manually in their browser."
-            " Then call poll_auth tool with the link_id to check if the auth is completed. "
-            " Once the auth is completed successfully, then call this tool again to proceed with the action."
+            " Then call poll_signin tool with the link_id to check if the sign in is completed. "
+            " Once the sign in is completed successfully, then call this tool again to proceed with the action."
         ),
     }
 
 
 async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict[str, Any]:
-    """Poll auth for a hosted link."""
+    """Poll sign in for a hosted link."""
     progress_count = 0
     async with httpx.AsyncClient(follow_redirects=True) as client:
         timeout_seconds = 120
@@ -109,7 +109,7 @@ async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict
                 )
                 return {
                     "status": "ERROR",
-                    "message": f"Auth timed out after {timeout_seconds} seconds. Please try again.",
+                    "message": f"Sign in timed out after {timeout_seconds} seconds. Please try again.",
                 }
             headers = get_http_headers(include_all=True)
             sanitized = _sanitize_headers(headers)
@@ -172,7 +172,7 @@ async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict
             await asyncio.sleep(1)
         return {
             "status": "FINISHED",
-            "message": "Auth completed successfully.",
+            "message": "Sign in completed successfully.",
         }
 
 

@@ -58,11 +58,3 @@ signin:
       fields: [your-account-button]
       end: true
   start: https://session.bbc.com/session?userOrigin=BBCS_BBC&ptrt=https%3A%2F%2Fwww.bbc.com%2F
-
-extract:
-  steps:
-    - name: Go to BBC bookmarks page
-      url: https://middleware.bbcx.api.bbc.com/bookmark
-    - name: Extract bookmarks
-      bundle: bookmarks.json
-      slurp_selector: pre

@@ -20,7 +20,7 @@ from getgather.logs import logger
 _ = settings.LOG_LEVEL
 
 
-PATTERNS_LOCATION = "./getgather/connectors/brand_specs/**/*.html"
+PATTERNS_LOCATION = "./getgather/mcp/patterns/**/*.html"
 
 
 async def list_command():
@@ -64,7 +64,8 @@ async def run_command(location: str):
     if not location.startswith("http"):
         location = f"https://{location}"
 
-    await run_distillation_loop(location, patterns=patterns, fields=fields)
+    result = await run_distillation_loop(location, patterns=patterns, fields=fields)
+    print(result)
 
     logger.info("Terminated.")
 

@@ -19,7 +19,7 @@ from getgather.mcp.calendar_utils import calendar_mcp
 from getgather.mcp.espn import espn_mcp
 from getgather.mcp.nytimes import nytimes_mcp
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import auth_hosted_link, poll_status_hosted_link
+from getgather.mcp.shared import poll_status_hosted_link, signin_hosted_link
 
 # Ensure calendar MCP is registered by importing its module
 try:
@@ -78,7 +78,7 @@ class AuthMiddleware(Middleware):
             name="auth",
             brand_id=brand_id,
         ):
-            result = await auth_hosted_link(brand_id=BrandIdEnum(brand_id))
+            result = await signin_hosted_link(brand_id=BrandIdEnum(brand_id))
             return ToolResult(structured_content=result)
 
 
@@ -146,8 +146,8 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
     mcp.add_middleware(AuthMiddleware())
 
     @mcp.tool(tags={"general_tool"})
-    async def poll_auth(ctx: Context, link_id: str) -> dict[str, Any]:  # pyright: ignore[reportUnusedFunction]
-        """Poll auth for a session. Only call this tool if you get the auth link/url."""
+    async def poll_signin(ctx: Context, link_id: str) -> dict[str, Any]:  # pyright: ignore[reportUnusedFunction]
+        """Poll sign in for a session. Only call this tool if you get the sign in link/url."""
         return await poll_status_hosted_link(context=ctx, hosted_link_id=link_id)
 
     for brand_id in brand_ids:

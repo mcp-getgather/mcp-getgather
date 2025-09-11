@@ -22,8 +22,8 @@ class ProxyError(HTTPException):
         super().__init__(status_code=503, detail=message, headers={"X-No-Retry": "true"})
 
 
-class AuthStatus(StrEnum):
-    """The status of the auth flow."""
+class SigninStatus(StrEnum):
+    """The status of the sign in flow."""
 
     INITIALIZING = "INITIALIZING"
     RUNNING = "RUNNING"
@@ -33,8 +33,8 @@ class AuthStatus(StrEnum):
     ERROR = "ERROR"
 
 
-class AuthOrchestrator:
-    """Manages authentication flows for connectors."""
+class SigninOrchestrator:
+    """Manages sign in flows for connectors."""
 
     def __init__(
         self,
@@ -47,9 +47,9 @@ class AuthOrchestrator:
         self.browser_profile = browser_profile
         self.state = state or FlowState(brand_id=brand_id)
         self.status = (
-            AuthStatus.INITIALIZING
+            SigninStatus.INITIALIZING
             if self.state.current_page_spec_name is None and self.state.step_index == 0
-            else AuthStatus.RUNNING
+            else SigninStatus.RUNNING
         )
 
         # Internal flag to avoid repeatedly updating Sentry user.
@@ -64,9 +64,9 @@ class AuthOrchestrator:
             self._sentry_user_set = True
 
     async def advance(self) -> FlowState:
-        """Start the authentication flow for a connector."""
+        """Start the sign in flow for a connector."""
         logger.info(
-            f"🔥 Starting authentication for {self.brand_id}",
+            f"🔥 Starting sign in for {self.brand_id}",
         )
         try:
             browser_session = BrowserSession.get(self.browser_profile)
@@ -77,7 +77,7 @@ class AuthOrchestrator:
             # Attach user context to Sentry as soon as we have it.
             self._maybe_set_sentry_user()
 
-            if self.status == AuthStatus.INITIALIZING:
+            if self.status == SigninStatus.INITIALIZING:
                 await browser_session.start()
 
             page = await browser_session.page()
@@ -91,8 +91,8 @@ class AuthOrchestrator:
         try:
             while (
                 not self.state.finished
-                and self.status != AuthStatus.NEED_INPUT
-                and self.status != AuthStatus.PAUSED
+                and self.status != SigninStatus.NEED_INPUT
+                and self.status != SigninStatus.PAUSED
             ):
                 await flow_step(page=page, flow_state=self.state)
 
@@ -105,22 +105,22 @@ class AuthOrchestrator:
                         f"✅ Auth flow for {self.brand_id} is complete",
                         extra={"profile_id": self.browser_profile.id},
                     )
-                    self.status = AuthStatus.FINISHED
+                    self.status = SigninStatus.FINISHED
                 # Check if we need user input
                 elif self.state.prompt:
                     logger.info(
                         f"Auth flow for {self.brand_id} needs input",
                         extra={"profile_id": self.browser_profile.id},
                     )
-                    self.status = AuthStatus.NEED_INPUT
+                    self.status = SigninStatus.NEED_INPUT
                 elif self.state.paused:
                     logger.info(
                         f"🕒 Auth flow for {self.brand_id} is paused",
                         extra={"profile_id": self.browser_profile.id},
                     )
-                    self.status = AuthStatus.PAUSED
+                    self.status = SigninStatus.PAUSED
         except Exception as e:
-            self.status = AuthStatus.ERROR
+            self.status = SigninStatus.ERROR
             self.state.error = str(e)
             filename = f"{browser_session.profile.id}_{datetime.now().strftime('%Y%m%d_%H%M')}.png"
             filepath = settings.screenshots_dir / filename
@@ -136,7 +136,7 @@ class AuthOrchestrator:
                     scope=scope,
                     e=e,
                     brand_id=self.brand_id,
-                    error_type="auth_flow_error",
+                    error_type="signin_flow_error",
                     flow_state=self.state.model_dump(),
                     browser_profile_id=browser_session.profile.id,
                     page_content=html,
@@ -154,7 +154,7 @@ class AuthOrchestrator:
 
     async def finalize(self) -> None:
         logger.info(
-            f"🚩 Finalizing auth for {self.brand_id}",
+            f"🚩 Finalizing sign in for {self.brand_id}",
             extra={"profile_id": self.browser_profile.id},
         )
         browser_session = BrowserSession.get(self.browser_profile)
@@ -171,7 +171,7 @@ class AuthOrchestrator:
         url = request.url
 
         try:
-            # Abort requests for images, media, fonts – they are not needed for auth flows.
+            # Abort requests for images, media, fonts – they are not needed for sign in flows.
             if resource_type in ["image", "media", "font"]:
                 await route.abort()
                 return
