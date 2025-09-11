@@ -16,14 +16,6 @@ from starlette.types import Receive, Scope, Send
 
 from getgather.config import settings
 
-ALLOWED_CLIENT_REDIRECT_URIS = [
-    # For Claude Desktop: see https://support.anthropic.com/en/articles/11503834-building-custom-connectors-via-remote-mcp-servers
-    "https://claude.ai/api/mcp/auth_callback",
-    "https://claude.com/api/mcp/auth_callback",
-    "cursor://anysphere.cursor-retrieval/oauth/user-getgather-books/callback",  # For Cursor
-    "http://localhost:*",  # For local development
-]
-
 
 class RequireAuthMiddlewareCustom(RequireAuthMiddleware):
     """Custom RequireAuthMiddleware to require authentication for MCP routes"""
@@ -43,7 +35,6 @@ def setup_mcp_auth(app: FastAPI, mcp_routes: list[str]):
         base_url=settings.SERVER_ORIGIN,
         redirect_path=settings.OAUTH_GITHUB_REDIRECT_PATH,
         required_scopes=["user"],
-        allowed_client_redirect_uris=ALLOWED_CLIENT_REDIRECT_URIS,
     )
 
     # Set up OAuth routes
