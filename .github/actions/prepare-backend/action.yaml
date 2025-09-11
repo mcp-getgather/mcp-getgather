@@ -9,9 +9,9 @@ runs:
     - name: Install the project
       shell: bash
       run: uv sync --all-extras --dev
-    
+
     - name: Generate OpenAPI schema
       shell: bash
-      run: |
+      run: |-
         mkdir -p .github/artifacts
         uv run python extract_openapi.py -o .github/artifacts/openapi.json
