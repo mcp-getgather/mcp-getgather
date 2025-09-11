@@ -11,3 +11,9 @@ runs:
     - name: Install the project
       run: npm ci
       shell: bash
+    
+    - name: Generate TypeScript types from OpenAPI
+      run: |
+        mkdir -p frontend/__generated__
+        npx openapi-typescript .github/artifacts/openapi.json -o frontend/__generated__/api.d.ts
+      shell: bash
