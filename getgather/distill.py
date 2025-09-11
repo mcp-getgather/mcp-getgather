@@ -45,6 +45,15 @@ def get_selector(input_selector: str | None) -> tuple[str | None, str | None]:
     return match.group(2), match.group(1)
 
 
+def extract_value(item: Tag, attribute: str | None = None) -> str:
+    if attribute:
+        value = item.get(attribute)
+        if isinstance(value, list):
+            value = value[0] if value else ""
+        return value.strip() if isinstance(value, str) else ""
+    return item.get_text(strip=True)
+
+
 async def convert(distilled: str):
     document = BeautifulSoup(distilled, "html.parser")
     snippet = document.find("script", {"type": "application/json"})
@@ -57,25 +66,25 @@ async def convert(distilled: str):
 
             rows = document.select(str(converter.get("rows", "")))
             logger.info(f"Found {len(rows)} rows")
-            converted: list[dict[str, str]] = []
+            converted: list[dict[str, str | list[str]]] = []
             for _, el in enumerate(rows):
-                kv: dict[str, str] = {}
+                kv: dict[str, str | list[str]] = {}
                 for col in converter.get("columns", []):
                     name = col.get("name")
                     selector = col.get("selector")
                     attribute = col.get("attribute")
+                    multiple = col.get("multiple")
                     if not name or not selector:
                         continue
+
+                    if multiple:
+                        items = el.select(str(selector))
+                        kv[name] = [extract_value(item, attribute) for item in items]
+                        continue
+
                     item = el.select_one(str(selector))
                     if item:
-                        if attribute:
-                            value = item.get(attribute)
-                            if isinstance(value, list):
-                                value = value[0] if value else None
-                            if isinstance(value, str):
-                                kv[name] = value.strip()
-                        else:
-                            kv[name] = item.get_text(strip=True)
+                        kv[name] = extract_value(item, attribute)
                 if len(kv.keys()) > 0:
                     converted.append(kv)
             logger.info(f"Conversion done for {len(converted)} entries.")
