@@ -14,4 +14,4 @@ runs:
       shell: bash
       run: |-
         mkdir -p .github/artifacts
-        uv run python extract_openapi.py -o .github/artifacts/openapi.json
+        uv run python -m getgather.generate_openapi -o .github/artifacts/openapi.json

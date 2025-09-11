@@ -41,13 +41,12 @@ RUN $VENV_PATH/bin/patchright install --with-deps chromium
 COPY getgather /app/getgather
 COPY tests /app/tests
 COPY entrypoint.sh /app/entrypoint.sh
-COPY extract_openapi.py /app/extract_openapi.py
 
 # Install the workspace package
 RUN uv sync --no-dev
 
 # Generate OpenAPI schema
-RUN $VENV_PATH/bin/python extract_openapi.py -o /tmp/openapi.json
+RUN $VENV_PATH/bin/python -m getgather.generate_openapi -o /tmp/openapi.json
 
 # Stage 2: Frontend Builder
 FROM mirror.gcr.io/library/node:22-alpine AS frontend-builder
