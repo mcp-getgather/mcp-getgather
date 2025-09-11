@@ -7,6 +7,7 @@ from getgather.browser.session import BrowserSession, BrowserStartupError
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.extract_orchestrator import ExtractOrchestrator, ExtractState
 from getgather.flow_state import FlowState
+from getgather.hosted_link_manager import HostedLinkManager
 from getgather.logs import logger
 from getgather.parse import BundleOutput
 from getgather.signin_orchestrator import ProxyError, SigninOrchestrator, SigninStatus
@@ -56,9 +57,14 @@ class SigninFlowResponse(BaseModel):
 async def signin_flow(
     brand_id: BrandIdEnum,
     signin_request: SigninFlowRequest,
+    link_id: str | None = None,
 ) -> SigninFlowResponse:
-    """Start or continue an sign in flow for a connector."""
-    # Validate connector against the enum
+    """Start or continue an authentication flow for a connector."""
+    if link_id:
+        link_data = HostedLinkManager.get_link_data(link_id)
+        if not link_data:
+            raise HTTPException(status_code=404, detail="Link not found")
+
     try:
         # Initialize the auth manager
         if signin_request.profile_id:
