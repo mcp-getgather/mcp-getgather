@@ -43,38 +43,3 @@ signin:
       end: true
 
   start: Redirect to Sign In Page
-
-extract:
-  steps:
-    - name: Go to favorite page
-      url: https://www.zillow.com/myzillow/favorites
-
-    - name: Wait for favorite page to load
-      wait_for_selector: h1:has-text("Saved homes")
-
-    - name: Extract the list of favorites
-      bundle: favorites.html
-      slurp_selector: div#mz-page-template-content
-
-parse:
-  - bundle: favorites.html
-    format: html
-    output: favorites.json
-    row_selector: article[role="group"]
-    columns:
-      - name: price
-        selector: span[data-testid="data-price-row"]
-      - name: address
-        selector: address
-      - name: details
-        selector: span[class*="StyledPropertyCardHomeDetails"]
-      - name: mls_id
-        selector: div[class*="StyledPropertyCardDataArea"]:has-text("MLS ID")
-      - name: status
-        selector: span:has(.list-card-status-icon)
-      - name: image_url
-        selector: div[class*="StyledPropertyCardPhoto"] img[src*="zillowstatic.com"]
-        attribute: src
-      - name: property_url
-        selector: a[href*="/homedetails/"]
-        attribute: href
