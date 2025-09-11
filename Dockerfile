@@ -54,14 +54,14 @@ RUN npm ci
 COPY getgather /app/getgather
 COPY tests /app/tests
 COPY entrypoint.sh /app/entrypoint.sh
-COPY scripts/extract_openapi.py /app/scripts/
+COPY extract_openapi.py /app/extract_openapi.py
 
 # Install the workspace package
 RUN uv sync --no-dev
 
 # Generate OpenAPI schema and TypeScript types using the installed venv
 RUN mkdir -p frontend/__generated__ && \
-    $VENV_PATH/bin/python scripts/extract_openapi.py > /tmp/openapi.json && \
+    $VENV_PATH/bin/python extract_openapi.py -o /tmp/openapi.json && \
     npx openapi-typescript /tmp/openapi.json -o frontend/__generated__/api.d.ts
 
 # Copy frontend source code (excluding generated files that might exist)
