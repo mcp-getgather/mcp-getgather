@@ -53,6 +53,6 @@ Tool for exploring detailed information about a specific bird species on eBird u
 
 These tools are available on the main MCP server (not brand-specific):
 
-### `poll_auth`
+### `poll_signin`
 
-Tool for polling the authentication status of a hosted link session. Used to check if a user has completed the authentication process for a brand. Takes a session ID as input and returns the current authentication status.
+Tool for polling the sign in status of a hosted link session. Used to check if a user has completed the login process for a brand. Takes a session ID as input and returns the current sign in status.
