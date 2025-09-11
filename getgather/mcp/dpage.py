@@ -264,12 +264,13 @@ async def dpage_mcp_tool(initial_url: str, result_key: str) -> dict[str, Any]:
 
     headers = get_http_headers(include_all=True)
     host = headers.get("host")
-    scheme = headers.get("x-forwarded-proto", "https")
-    base_url = f"{scheme}://{host}" if host else None
-
-    if not base_url:
+    if host is None:
         logger.warning("Missing Host header; defaulting to localhost")
         base_url = "http://localhost:23456"
+    else:
+        is_local = "localhost" in host or "127.0.0.1" in host
+        scheme = headers.get("x-forwarded-proto", "http" if is_local else "https")
+        base_url = f"{scheme}://{host}"
 
     url = f"{base_url}/dpage/{id}"
     logger.info(f"Continue with the sign in at {url}", extra={"url": url, "id": id})
