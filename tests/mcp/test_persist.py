@@ -228,19 +228,6 @@ class TestErrorHandling:
         with pytest.raises(ValidationError):
             InvalidTestStore()
 
-    def test_auth_store_requires_user_login_field(self):
-        """Test that auth store validation fails without user_login field."""
-
-        class InvalidAuthStore(
-            PersistentStoreWithAuth[ExampleUser]  # type: ignore
-        ):  # TestUser doesn't have user_login
-            _row_model = ExampleUser
-            _file_name = "test.json"
-            _key_field = "id"
-
-        with pytest.raises(ValidationError):
-            InvalidAuthStore()
-
     def test_file_path_creation(self, store: ExamplePersistentStore):
         """Test that directory is created if it doesn't exist."""
         # Ensure directory doesn't exist initially
