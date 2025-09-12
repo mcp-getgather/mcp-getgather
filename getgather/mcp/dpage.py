@@ -1,10 +1,12 @@
 import asyncio
 import os
 import urllib.parse
+from typing import Any
 
 from bs4 import BeautifulSoup, Tag
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
+from fastmcp.server.dependencies import get_http_headers
 from nanoid import generate
 from patchright.async_api import Page
 
@@ -17,6 +19,7 @@ from getgather.distill import (
     distill,
     get_selector,
     load_distillation_patterns,
+    run_distillation_loop,
     terminate,
 )
 from getgather.logs import logger
@@ -243,3 +246,42 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
         return HTMLResponse(render(str(document.find("body")), options))
 
     raise HTTPException(status_code=503, detail="Timeout reached")
+
+
+async def dpage_mcp_tool(initial_url: str, result_key: str) -> dict[str, Any]:
+    """Generic MCP tool based on distillation"""
+
+    path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
+    patterns = load_distillation_patterns(path)
+
+    # First, try without any interaction as this will work if the user signed in previously
+    result = await run_distillation_loop(initial_url, patterns, interactive=False, timeout=2)
+    if isinstance(result, list):
+        return {result_key: result}
+
+    # If that didn't work, try signing in via distillation
+    id = await dpage_add(location=initial_url)
+
+    headers = get_http_headers(include_all=True)
+    host = headers.get("host")
+    if host is None:
+        logger.warning("Missing Host header; defaulting to localhost")
+        base_url = "http://localhost:23456"
+    else:
+        is_local = "localhost" in host or "127.0.0.1" in host
+        scheme = headers.get("x-forwarded-proto", "http" if is_local else "https")
+        base_url = f"{scheme}://{host}"
+
+    url = f"{base_url}/dpage/{id}"
+    logger.info(f"Continue with the sign in at {url}", extra={"url": url, "id": id})
+    return {
+        "url": url,
+        "message": f"Continue to sign in in your browser at {url}.",
+        "signin_id": id,
+        "system_message": (
+            f"Try open the url {url} in a browser with a tool if available."
+            "Give the url to the user so the user can open it manually in their browser."
+            "Then call check_signin tool with the signin_id to check if the sign in process is completed. "
+            "Once it is completed successfully, then call this tool again to proceed with the action."
+        ),
+    }
