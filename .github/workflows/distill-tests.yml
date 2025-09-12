@@ -24,9 +24,6 @@ jobs:
       - name: Prepare front-end environment
         uses: ./.github/actions/prepare-frontend
 
-      - name: Install Chromium for distillation tests
-        run: uv run playwright install chromium
-
       - name: Run the ACME Corp test server
         run: uv run -m uvicorn tests.acme_corp.acme_corp:app --host 127.0.0.1 --port 5001 > >(tee /dev/stdout) 2> >(tee /dev/stderr
           >&2) &
@@ -34,6 +31,9 @@ jobs:
       - name: Wait for the ACME server to start
         run: while ! curl -s 'http://localhost:5001' | grep 'ACME'; do sleep 1; done
         timeout-minutes: 3
+
+      - name: Install Chromium for Playwright tests
+        run: uv run playwright install chromium
 
       - name: Run the distillation tests
         run: uv run pytest -n 7 -m "distill" tests/distillation/test_distill.py
