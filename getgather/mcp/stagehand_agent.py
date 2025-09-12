@@ -99,8 +99,8 @@ class StagehandAgentWrapper:
         # For now, use the page to perform actions based on the prompt
         if not self._stagehand.page:
             raise ValueError("Page is not initialized")
-        
-        # This is a simple implementation - in practice, you might want to 
+
+        # This is a simple implementation - in practice, you might want to
         # parse the prompt and perform multiple actions
         result: ActResult = await self._stagehand.page.act(prompt)  # type: ignore
         return result
@@ -185,7 +185,7 @@ async def run_stagehand_agent() -> StagehandAgent:
     stagehand = Stagehand(config=config)
     await stagehand.init()
 
-    # For now, we'll use the stagehand instance directly 
+    # For now, we'll use the stagehand instance directly
     # The wrapper will handle the execute method using page operations
     agent = stagehand
 
