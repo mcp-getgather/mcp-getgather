@@ -50,20 +50,19 @@ async def signin_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
         headers = get_http_headers(include_all=True)
         sanitized = _sanitize_headers(headers)
         host = headers.get("host")
-        scheme = headers.get("x-forwarded-proto", "http")
-        base_url = f"{scheme}://{host}" if host else None
+        base_url = f"http://{host}" if host else None
 
         if not base_url:
             logger.warning(
                 "[signin_hosted_link] Missing Host header; defaulting to localhost",
-                extra={"host": host, "scheme": scheme, "headers": sanitized},
+                extra={"host": host, "headers": sanitized},
             )
             base_url = "http://localhost:23456"
 
         url = f"{base_url}/api/link/create"
         logger.info(
             "[signin_hosted_link] Creating hosted link",
-            extra={"url": url, "host": host, "scheme": scheme, "headers": sanitized},
+            extra={"url": url, "host": host, "headers": sanitized},
         )
 
         sanitized["Content-Type"] = "application/json"
@@ -114,19 +113,18 @@ async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict
             headers = get_http_headers(include_all=True)
             sanitized = _sanitize_headers(headers)
             host = headers.get("host")
-            scheme = headers.get("x-forwarded-proto", "http")
-            base_url = f"{scheme}://{host}" if host else None
+            base_url = f"http://{host}" if host else None
             if not base_url:
                 logger.warning(
                     "[poll_status_hosted_link] Missing Host header; defaulting to localhost",
-                    extra={"host": host, "scheme": scheme, "headers": sanitized},
+                    extra={"host": host, "headers": sanitized},
                 )
                 base_url = "http://localhost:23456"
 
             url = f"{base_url}/api/link/status/{hosted_link_id}"
             logger.info(
                 "[poll_status_hosted_link] Polling link status",
-                extra={"url": url, "host": host, "scheme": scheme, "headers": sanitized},
+                extra={"url": url, "host": host, "headers": sanitized},
             )
 
             response = await client.get(url)
