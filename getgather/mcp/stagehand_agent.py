@@ -70,7 +70,7 @@ class StagehandAgent(Protocol):
         """Get current page."""
         ...
 
-    async def execute(self, prompt: str) -> Any:
+    async def execute(self, prompt: str) -> ActResult:
         """Execute a task using natural language prompt."""
         ...
 
@@ -94,7 +94,7 @@ class StagehandAgentWrapper:
             raise ValueError("Page is not set")
         return self._stagehand.page
 
-    async def execute(self, prompt: str) -> Any:
+    async def execute(self, prompt: str) -> ActResult:
         """Execute a task using natural language prompt."""
         # For now, use the page to perform actions based on the prompt
         if not self._stagehand.page:
@@ -102,8 +102,10 @@ class StagehandAgentWrapper:
 
         # This is a simple implementation - in practice, you might want to
         # parse the prompt and perform multiple actions
-        result: ActResult = await self._stagehand.page.act(prompt)  # type: ignore
-        return result
+        # Note: stagehand's act method has partially unknown types from the library
+        page = self._stagehand.page
+        act_result: ActResult = await page.act(prompt)  # type: ignore[misc]
+        return act_result
 
     async def close(self) -> None:
         """Close and cleanup."""
