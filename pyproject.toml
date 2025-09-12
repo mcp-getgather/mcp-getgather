@@ -27,6 +27,7 @@ dependencies = [
   "pwinput>=1.0.3",
   "stagehand>=0.5.2",
   "fastmcp>=2.12.2",
+  "pytest-asyncio>=1.0.0",
 ]
 
 [dependency-groups]
