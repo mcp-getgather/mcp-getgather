@@ -10,46 +10,48 @@ from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import extract
 from getgather.mcp.stagehand_agent import run_stagehand_agent
 
-P = ParamSpec('P')
-T = TypeVar('T')
+P = ParamSpec("P")
+T = TypeVar("T")
 DictReturnType = dict[str, Any]
 
 
 @overload
-def time_execution(func: Callable[P, Awaitable[DictReturnType]]) -> Callable[P, Awaitable[DictReturnType]]:
-    ...
+def time_execution(
+    func: Callable[P, Awaitable[DictReturnType]],
+) -> Callable[P, Awaitable[DictReturnType]]: ...
 
 
 @overload
-def time_execution(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
-    ...
+def time_execution(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]: ...
 
 
 def time_execution(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
     """Decorator to time function execution and log the results."""
+
     @wraps(func)
     async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         start_time = time.time()
         function_name = func.__name__
         logger.info(f"Starting {function_name}")
-        
+
         try:
             result = await func(*args, **kwargs)
             execution_time = time.time() - start_time
             logger.info(f"Completed {function_name} in {execution_time:.2f} seconds")
-            
+
             # Add timing info to result if it's a dict
             if isinstance(result, dict):
                 # Type checker knows this is a dict now
                 result["execution_time_seconds"] = round(execution_time, 2)
-            
+
             return result  # type: ignore[return-value]
         except Exception as e:
             execution_time = time.time() - start_time
             logger.error(f"Failed {function_name} after {execution_time:.2f} seconds: {e}")
             raise
-    
+
     return async_wrapper
+
 
 doordash_mcp = BrandMCPBase(brand_id="doordash", name="Doordash MCP")
 
