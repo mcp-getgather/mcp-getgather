@@ -1,9 +1,10 @@
 """Global browser profile manager for single-user setup."""
 
+from fastmcp.server.dependencies import get_context, get_http_headers
+
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.logs import logger
-from fastmcp.server.dependencies import get_context, get_http_headers
 
 
 class GlobalProfileManager:
