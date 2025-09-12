@@ -1,17 +1,11 @@
-import os
 from typing import Any
 
 from fastmcp import Context
 
 from getgather.connectors.spec_models import Schema as SpecSchema
-from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.mcp.agent import run_agent_for_brand
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import (
-    get_mcp_browser_profile,
-    get_mcp_browser_session,
-    with_brand_browser_session,
-)
+from getgather.mcp.shared import extract, get_mcp_browser_session, with_brand_browser_session
 from getgather.parse import parse_html
 
 amazon_mcp = BrandMCPBase(brand_id="amazon", name="Amazon MCP")
@@ -20,15 +14,7 @@ amazon_mcp = BrandMCPBase(brand_id="amazon", name="Amazon MCP")
 @amazon_mcp.tool(tags={"private"})
 async def get_purchase_history() -> dict[str, Any]:
     """Get purchase/order history of a amazon."""
-    browser_profile = get_mcp_browser_profile()
-    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
-    patterns = load_distillation_patterns(path)
-    purchase_history = await run_distillation_loop(
-        "https://www.amazon.com/your-orders/orders?timeFilter=year-2025",
-        patterns,
-        browser_profile=browser_profile,
-    )
-    return {"purchase_history": purchase_history}
+    return await extract()
 
 
 @amazon_mcp.tool
