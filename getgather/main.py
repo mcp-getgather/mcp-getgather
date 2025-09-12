@@ -23,6 +23,7 @@ from getgather.browser.session import BrowserSession
 from getgather.config import disabled_if_multi_user, settings
 from getgather.logs import logger
 from getgather.mcp.auth import setup_mcp_auth
+from getgather.mcp.dpage import router as dpage_router
 from getgather.mcp.main import create_mcp_apps
 from getgather.startup import startup
 
@@ -251,6 +252,7 @@ async def proxy_inspector(file_path: str):
             return Response(status_code=500, content=f"Internal Server Error: {str(e)}")
 
 
+app.include_router(dpage_router)
 app.mount("/api", api_app)
 
 if settings.MULTI_USER_ENABLED:
