@@ -15,9 +15,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup xvfb for screen 0
-        run: Xvfb :1 -screen 0 1920x1080x24 &
-
       - name: Prepare back-end environment
         uses: ./.github/actions/prepare-backend
 
@@ -30,7 +27,7 @@ jobs:
       - name: Build the front-end
         run: npm run build
 
-      - name: Install Chromium for MCP tests
+      - name: Install Chromium for distillation tests
         run: uv run playwright install chromium
 
       - name: Run the ACME Corp test server
