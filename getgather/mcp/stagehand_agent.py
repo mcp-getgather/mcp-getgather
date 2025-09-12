@@ -83,7 +83,7 @@ class StagehandAgent(Protocol):
 class StagehandAgentWrapper:
     """Minimal wrapper around Stagehand."""
 
-    def __init__(self, stagehand: Stagehand, agent: Any):
+    def __init__(self, stagehand: Stagehand, agent: Any) -> None:
         self._stagehand = stagehand
         self._agent = agent
 
@@ -96,7 +96,14 @@ class StagehandAgentWrapper:
 
     async def execute(self, prompt: str) -> Any:
         """Execute a task using natural language prompt."""
-        return await self._agent.execute(prompt)
+        # For now, use the page to perform actions based on the prompt
+        if not self._stagehand.page:
+            raise ValueError("Page is not initialized")
+        
+        # This is a simple implementation - in practice, you might want to 
+        # parse the prompt and perform multiple actions
+        result: ActResult = await self._stagehand.page.act(prompt)  # type: ignore
+        return result
 
     async def close(self) -> None:
         """Close and cleanup."""
@@ -178,15 +185,9 @@ async def run_stagehand_agent() -> StagehandAgent:
     stagehand = Stagehand(config=config)
     await stagehand.init()
 
-    # Create agent using the correct pattern
-    agent = stagehand.agent({
-        "provider": "anthropic",
-        "model": "claude-sonnet-4-20250514",
-        "instructions": "You are a helpful assistant that can use a web browser.",
-        "options": {
-            "apiKey": settings.OPENAI_API_KEY,
-        },
-    })
+    # For now, we'll use the stagehand instance directly 
+    # The wrapper will handle the execute method using page operations
+    agent = stagehand
 
     logger.info("Stagehand agent created successfully")
     return StagehandAgentWrapper(stagehand, agent)
