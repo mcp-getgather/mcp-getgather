@@ -41,6 +41,8 @@ class Settings(BaseSettings):
     )
     RRWEB_MASK_ALL_INPUTS: bool = True
 
+    SERVER_NAME: str = ""
+
     @property
     def brand_spec_dir(self) -> Path:
         return PROJECT_DIR / "getgather" / "connectors" / "brand_specs"
