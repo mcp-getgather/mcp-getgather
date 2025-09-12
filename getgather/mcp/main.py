@@ -108,7 +108,7 @@ class MCPApp:
 
         # Add general polling tool
         @mcp.tool(tags={"general_tool"})
-        async def poll_signin(context: Context, hosted_link_id: str) -> dict[str, Any]:
+        async def poll_signin(context: Context, hosted_link_id: str) -> dict[str, Any]:  # pyright: ignore[reportUnusedFunction]
             """Poll the status of a hosted link."""
             return await poll_status_hosted_link(context, hosted_link_id)
 
@@ -171,7 +171,7 @@ async def mcp_app_docs(mcp_app: MCPApp) -> MCPDoc:
         tools=[
             MCPToolDoc(
                 name=tool.name,
-                description=tool.description,
+                description=tool.description or "",
             )
             for tool in (await mcp_app.mcp.get_tools()).values()
         ],
