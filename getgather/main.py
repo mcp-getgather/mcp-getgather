@@ -234,8 +234,6 @@ async def proxy_inspector(file_path: str):
                     # Replace absolute asset paths with proxied paths
                     html_content = html_content.replace('src="/', 'src="/inspector/')
                     html_content = html_content.replace('href="/', 'href="/inspector/')
-                    html_content = html_content.replace("src='/", "src='/inspector/")
-                    html_content = html_content.replace("href='/", "href='/inspector/")
                     content = html_content.encode("utf-8")
                 except UnicodeDecodeError:
                     # If decoding fails, leave content unchanged
@@ -277,14 +275,5 @@ async def mcp_slash_redirect_middleware(
 # Everything else is handled by the SPA
 @app.get("/{full_path:path}")
 def frontend_router(full_path: str):
-    # Only serve frontend for paths that don't have file extensions
-    # This allows API routes and static assets to be handled by their respective handlers
-    if "." not in full_path or full_path.endswith(".html"):
-        logger.info(f"Routing {full_path} to frontend")
-        return FileResponse(FRONTEND_DIR / "index.html")
-    else:
-        # For paths with extensions (like .js, .css, .png, etc.), return 404
-        # so they can be handled by static file handlers or return proper 404
-        from fastapi import HTTPException
-
-        raise HTTPException(status_code=404, detail="Not found")
+    logger.info(f"Routing {full_path} to frontend")
+    return FileResponse(FRONTEND_DIR / "index.html")
