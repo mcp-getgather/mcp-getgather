@@ -5,8 +5,8 @@ from fastmcp import Context
 
 from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.mcp.agent import run_agent_for_brand
-from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.profile_manager import global_profile_manager
+from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.stagehand_agent import (
     run_stagehand_agent,
 )

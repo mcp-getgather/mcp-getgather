@@ -2,8 +2,8 @@ import os
 from typing import Any
 
 from getgather.distill import load_distillation_patterns, run_distillation_loop
-from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.profile_manager import global_profile_manager
+from getgather.mcp.registry import BrandMCPBase
 
 zillow_mcp = BrandMCPBase(brand_id="zillow", name="Zillow MCP")
 

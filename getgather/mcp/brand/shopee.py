@@ -4,8 +4,8 @@ from urllib.parse import quote
 
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.distill import load_distillation_patterns, run_distillation_loop
-from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.profile_manager import global_profile_manager
+from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import (
     get_global_browser_session,
     with_global_browser_session,
