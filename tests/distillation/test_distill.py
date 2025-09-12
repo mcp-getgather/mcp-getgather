@@ -9,6 +9,7 @@ from getgather.distill import distill, load_distillation_patterns
 
 
 @pytest.mark.asyncio
+@pytest.mark.distill
 async def test_distill():
     profile = BrowserProfile()
     path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")

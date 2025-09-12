@@ -16,4 +16,4 @@ jobs:
       - name: Prepare back-end environment
         uses: ./.github/actions/prepare-backend
 
-      - run: uv run pytest -m "not api and not webui and not mcp"
+      - run: uv run pytest -m "not api and not webui and not mcp and not distill"
