@@ -43,8 +43,9 @@ class HostedLinkManager:
 
     @classmethod
     def _generate_link_id(cls) -> str:
-        """Generate a link id that encodes the server name and a 6-letter random string."""
-        return f"{settings.SERVER_NAME}{generate(FRIENDLY_CHARS, 6)}"
+        """Generate a unique link id. If server name is set, it will be encoded in the id."""
+        id = generate(FRIENDLY_CHARS, 6)
+        return f"{settings.SERVER_NAME}-{id}" if settings.SERVER_NAME else id
 
     @classmethod
     def create_link(

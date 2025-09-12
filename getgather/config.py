@@ -46,7 +46,7 @@ class Settings(BaseSettings):
 
     MULTI_USER_ENABLED: bool = False
 
-    SERVER_NAME: str = "localhost"
+    SERVER_NAME: str = ""
     SERVER_ORIGIN: str = "http://localhost:23456"
 
     OAUTH_GITHUB_CLIENT_ID: str = ""
