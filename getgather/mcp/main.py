@@ -57,7 +57,7 @@ class AuthMiddleware(Middleware):
         logger.info(
             f"[AuthMiddleware] Tool check: {context.message.name}, private={is_private}, connected={is_connected}, tags={tool.tags}"
         )
-        
+
         if not is_private or is_connected:
             async with activity(brand_id=str(brand_id), name=context.message.name):
                 return await call_next(context)
@@ -99,7 +99,7 @@ class MCPApp:
 
         # Auto-import all brand MCPs first (populates BrandMCPBase.registry)
         auto_import("getgather.mcp.brand")
-        
+
         # Mount brand tools
         for brand_id in self.brand_ids:
             if brand_id in BrandMCPBase.registry:
