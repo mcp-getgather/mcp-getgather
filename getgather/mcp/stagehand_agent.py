@@ -177,7 +177,7 @@ async def run_stagehand_agent() -> StagehandAgent:
     config = await _create_stagehand_config()
     stagehand = Stagehand(config=config)
     await stagehand.init()
-    
+
     # Create agent using the correct pattern
     agent = stagehand.agent({
         "provider": "anthropic",
@@ -187,6 +187,6 @@ async def run_stagehand_agent() -> StagehandAgent:
             "apiKey": settings.OPENAI_API_KEY,
         },
     })
-    
+
     logger.info("Stagehand agent created successfully")
     return StagehandAgentWrapper(stagehand, agent)
