@@ -157,7 +157,7 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
         logger.debug(f"Iteration {iteration + 1} of {max}")
         await asyncio.sleep(TICK)
 
-        match = await distill(None, page, patterns)
+        match = await distill(page.url, page, patterns)
         if not match:
             logger.info("No matched pattern found")
             continue
