@@ -9,7 +9,6 @@ from getgather.distill import distill, load_distillation_patterns
 
 PATTERN_LOCATIONS = {
     "http://localhost:5001/auth/email-and-password": "acme_email_and_password.html",
-    "http://localhost:5001/auth/email-then-password": "acme_email_then_password.html",
 }
 
 
