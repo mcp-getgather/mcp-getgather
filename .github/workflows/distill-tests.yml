@@ -15,11 +15,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup xvfb for screen 0
+        run: Xvfb :1 -screen 0 1920x1080x24 &
+
       - name: Prepare back-end environment
         uses: ./.github/actions/prepare-backend
 
       - name: Install Chromium for Playwright tests
         run: uv run playwright install chromium
+
+      - name: Prepare front-end environment
+        uses: ./.github/actions/prepare-frontend
+
+      - name: Build the front-end
+        run: npm run build
 
       - name: Run the ACME Corp test server
         run: uv run -m uvicorn tests.acme_corp.acme_corp:app --host 127.0.0.1 --port 5001 > >(tee /dev/stdout) 2> >(tee /dev/stderr
