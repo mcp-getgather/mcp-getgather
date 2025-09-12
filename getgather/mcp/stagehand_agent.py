@@ -61,13 +61,17 @@ class StagehandPage(Protocol):
         ...
 
 
-# Currently, we only need the page property and close method
+# Currently, we only need the page property, execute method, and close method
 class StagehandAgent(Protocol):
     """Minimal interface for Stagehand agent."""
 
     @property
     def page(self) -> StagehandPage:
         """Get current page."""
+        ...
+
+    async def execute(self, prompt: str) -> Any:
+        """Execute a task using natural language prompt."""
         ...
 
     async def close(self) -> None:
@@ -79,8 +83,9 @@ class StagehandAgent(Protocol):
 class StagehandAgentWrapper:
     """Minimal wrapper around Stagehand."""
 
-    def __init__(self, stagehand: Stagehand):
+    def __init__(self, stagehand: Stagehand, agent: Any):
         self._stagehand = stagehand
+        self._agent = agent
 
     @property
     def page(self) -> StagehandPage:
@@ -88,6 +93,10 @@ class StagehandAgentWrapper:
         if not self._stagehand.page:
             raise ValueError("Page is not set")
         return self._stagehand.page
+
+    async def execute(self, prompt: str) -> Any:
+        """Execute a task using natural language prompt."""
+        return await self._agent.execute(prompt)
 
     async def close(self) -> None:
         """Close and cleanup."""
@@ -168,5 +177,16 @@ async def run_stagehand_agent() -> StagehandAgent:
     config = await _create_stagehand_config()
     stagehand = Stagehand(config=config)
     await stagehand.init()
-    logger.info("StagehandPage created successfully")
-    return StagehandAgentWrapper(stagehand)
+    
+    # Create agent using the correct pattern
+    agent = stagehand.agent({
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-20250514",
+        "instructions": "You are a helpful assistant that can use a web browser.",
+        "options": {
+            "apiKey": settings.OPENAI_API_KEY,
+        },
+    })
+    
+    logger.info("Stagehand agent created successfully")
+    return StagehandAgentWrapper(stagehand, agent)
