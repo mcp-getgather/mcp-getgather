@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 from nanoid import generate
 
 from getgather.camel_model import CamelModel
+from getgather.config import settings
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.logs import logger
 
@@ -41,6 +42,11 @@ class HostedLinkManager:
     _link_store: ClassVar[dict[str, LinkData]] = {}
 
     @classmethod
+    def _generate_link_id(cls) -> str:
+        """Generate a link id that encodes the server name and a 6-letter random string."""
+        return f"{settings.SERVER_NAME}{generate(FRIENDLY_CHARS, 6)}"
+
+    @classmethod
     def create_link(
         cls,
         brand_id: BrandIdEnum,
@@ -49,7 +55,7 @@ class HostedLinkManager:
         profile_id: str | None = None,
     ) -> dict[str, Any]:
         """Create a new hosted link with the given parameters."""
-        link_id = generate(FRIENDLY_CHARS, 6)
+        link_id = cls._generate_link_id()
         expiration_time = datetime.now(timezone.utc) + timedelta(seconds=url_lifetime_seconds)
         link_data = LinkData(
             brand_id=brand_id,
