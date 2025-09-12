@@ -2,18 +2,18 @@ from typing import Any
 
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import get_mcp_browser_session, with_brand_browser_session
+from getgather.mcp.shared import get_global_browser_session, with_global_browser_session
 from getgather.parse import parse_html
 
 amain_mcp = BrandMCPBase(brand_id="amain", name="Amain MCP")
 
 
 @amain_mcp.tool(tags={"private"})
-@with_brand_browser_session
+@with_global_browser_session
 async def get_cart() -> dict[str, Any]:
     """Get cart of amain."""
 
-    browser_session = get_mcp_browser_session()
+    browser_session = get_global_browser_session()
     page = await browser_session.page()
 
     await page.goto(f"https://www.amainhobbies.com/shopping-cart")

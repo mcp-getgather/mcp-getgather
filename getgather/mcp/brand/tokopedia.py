@@ -9,7 +9,7 @@ from getgather.browser.session import browser_session
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.logs import logger
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import get_mcp_browser_session, with_brand_browser_session
+from getgather.mcp.shared import get_global_browser_session, with_global_browser_session
 from getgather.parse import parse_html
 
 tokopedia_mcp = BrandMCPBase(brand_id="tokopedia", name="Tokopedia MCP")
@@ -78,10 +78,10 @@ async def search_product(
 
 
 @tokopedia_mcp.tool
-@with_brand_browser_session
+@with_global_browser_session
 async def get_product_details(product_url: str) -> dict[str, Any]:
     """Get product details from tokopedia. Get product_url from search_product tool."""
-    browser_session = get_mcp_browser_session()
+    browser_session = get_global_browser_session()
     page = await browser_session.page()
     await page.goto(product_url, wait_until="commit")
     await page.wait_for_selector("h1[data-testid='lblPDPDetailProductName']")
@@ -124,10 +124,10 @@ async def get_product_details(product_url: str) -> dict[str, Any]:
 
 
 @tokopedia_mcp.tool
-@with_brand_browser_session
+@with_global_browser_session
 async def search_shop(keyword: str) -> dict[str, Any]:
     """Search shop on tokopedia."""
-    browser_session = get_mcp_browser_session()
+    browser_session = get_global_browser_session()
     page = await browser_session.page()
 
     # URL encode the search keyword
@@ -179,7 +179,7 @@ async def search_shop(keyword: str) -> dict[str, Any]:
 
 
 @tokopedia_mcp.tool
-@with_brand_browser_session
+@with_global_browser_session
 async def get_shop_details(
     product_url: str | None = None,
     shop_url: str | None = None,
@@ -229,7 +229,7 @@ async def get_shop_details(
     if not target_url:
         return {"error": "Could not determine valid shop URL"}
 
-    browser_session = get_mcp_browser_session()
+    browser_session = get_global_browser_session()
     page = await browser_session.page()
     await page.goto(target_url, wait_until="commit")
     await page.wait_for_selector("h1[data-testid='shopNameHeader']")
@@ -253,14 +253,14 @@ async def get_shop_details(
 
 
 @tokopedia_mcp.tool(tags={"private"})
-@with_brand_browser_session
+@with_global_browser_session
 async def get_purchase_history(
     *,
     page_number: int = 1,
 ) -> dict[str, Any]:
     """Get purchase history of a tokopedia."""
 
-    browser_session = get_mcp_browser_session()
+    browser_session = get_global_browser_session()
     page = await browser_session.page()
     await page.goto(f"https://www.tokopedia.com/order-list?page={page_number}")
     raw_data = await handle_graphql_response(
@@ -303,10 +303,10 @@ async def get_purchase_history(
 
 
 @tokopedia_mcp.tool(tags={"private"})
-@with_brand_browser_session
+@with_global_browser_session
 async def get_cart() -> dict[str, Any]:
     """Get cart of a tokopedia."""
-    browser_session = get_mcp_browser_session()
+    browser_session = get_global_browser_session()
     page = await browser_session.page()
     await page.goto(f"https://www.tokopedia.com/cart")
     raw_data = await handle_graphql_response(
@@ -350,10 +350,10 @@ async def get_cart() -> dict[str, Any]:
 
 
 @tokopedia_mcp.tool(tags={"private"})
-@with_brand_browser_session
+@with_global_browser_session
 async def get_wishlist(page_number: int = 1) -> dict[str, Any]:
     """Get purchase history of a tokopedia."""
-    browser_session = get_mcp_browser_session()
+    browser_session = get_global_browser_session()
     page = await browser_session.page()
     await page.goto(f"https://www.tokopedia.com/wishlist/all?page={page_number}")
     raw_data = await handle_graphql_response(
@@ -382,7 +382,7 @@ async def get_wishlist(page_number: int = 1) -> dict[str, Any]:
 
 
 @tokopedia_mcp.tool(tags={"private"})
-@with_brand_browser_session
+@with_global_browser_session
 async def add_to_cart(
     product_url: str | list[str],
 ) -> dict[str, Any]:
@@ -392,7 +392,7 @@ async def add_to_cart(
 
     product_urls = [product_url] if isinstance(product_url, str) else product_url
 
-    browser_session = get_mcp_browser_session()
+    browser_session = get_global_browser_session()
 
     async def search_single_product(product_url: str):
         page = await browser_session.page()
@@ -428,7 +428,7 @@ async def add_to_cart(
 
 
 @tokopedia_mcp.tool(tags={"private"})
-@with_brand_browser_session
+@with_global_browser_session
 async def action_product_in_cart(
     product_id: str | list[str],
     action: Literal["toggle_checklist", "remove_from_cart"],
@@ -440,7 +440,7 @@ async def action_product_in_cart(
 
     product_ids = [product_id] if isinstance(product_id, str) else product_id
 
-    browser_session = get_mcp_browser_session()
+    browser_session = get_global_browser_session()
 
     async def toggle_single_product(product_id: str):
         if action == "toggle_checklist":

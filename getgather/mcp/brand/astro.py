@@ -5,7 +5,7 @@ from patchright.async_api import Locator, Page
 
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import extract, get_mcp_browser_session, with_brand_browser_session
+from getgather.mcp.shared import extract, get_global_browser_session, with_global_browser_session
 from getgather.parse import parse_html
 
 astro_mcp = BrandMCPBase(brand_id="astro", name="Astro MCP")
@@ -166,10 +166,10 @@ async def get_purchase_history() -> dict[str, Any]:
 
 
 @astro_mcp.tool
-@with_brand_browser_session
+@with_global_browser_session
 async def search_product(keyword: str) -> dict[str, Any]:
     """Search product on astro."""
-    browser_session = get_mcp_browser_session()
+    browser_session = get_global_browser_session()
     page = await browser_session.page()
 
     # URL encode the search keyword
@@ -210,10 +210,10 @@ async def search_product(keyword: str) -> dict[str, Any]:
 
 
 @astro_mcp.tool
-@with_brand_browser_session
+@with_global_browser_session
 async def get_product_details(product_url: str) -> dict[str, Any]:
     """Get product detail from astro. Get product_url from search_product tool."""
-    browser_session = get_mcp_browser_session()
+    browser_session = get_global_browser_session()
     page = await browser_session.page()
 
     # Ensure the product URL is a full URL
@@ -259,10 +259,10 @@ async def get_product_details(product_url: str) -> dict[str, Any]:
 
 
 @astro_mcp.tool(tags={"private"})
-@with_brand_browser_session
+@with_global_browser_session
 async def add_item_to_cart(product_url: str, quantity: int = 1) -> dict[str, Any]:
     """Add item to cart on astro (add new item or update existing quantity). Get product_url from search_product tool."""
-    browser_session = get_mcp_browser_session()
+    browser_session = get_global_browser_session()
     page = await browser_session.page()
 
     # Ensure the product URL is a full URL
@@ -329,10 +329,10 @@ async def add_item_to_cart(product_url: str, quantity: int = 1) -> dict[str, Any
 
 
 @astro_mcp.tool(tags={"private"})
-@with_brand_browser_session
+@with_global_browser_session
 async def update_cart_quantity(product_name: str, quantity: int) -> dict[str, Any]:
     """Update cart item quantity on astro (set quantity to 0 to remove item). Use product name from cart summary."""
-    browser_session = get_mcp_browser_session()
+    browser_session = get_global_browser_session()
     page = await browser_session.page()
 
     await page.goto("https://www.astronauts.id/cart", wait_until="commit")
@@ -383,10 +383,10 @@ async def update_cart_quantity(product_name: str, quantity: int) -> dict[str, An
 
 
 @astro_mcp.tool(tags={"private"})
-@with_brand_browser_session
+@with_global_browser_session
 async def get_cart_summary() -> dict[str, Any]:
     """Get cart summary from astro."""
-    browser_session = get_mcp_browser_session()
+    browser_session = get_global_browser_session()
     page = await browser_session.page()
 
     await page.goto("https://www.astronauts.id/cart", wait_until="commit")

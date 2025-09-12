@@ -12,12 +12,9 @@ from stagehand.schemas import (
     ObserveResult,
 )
 
-from getgather.browser.profile import BrowserProfile
-from getgather.browser.session import BrowserSession
 from getgather.config import settings
 from getgather.logs import logger
-from getgather.mcp.brand_state import brand_state_manager
-from getgather.mcp.shared import get_mcp_brand_id
+from getgather.mcp.profile_manager import global_profile_manager
 
 
 class StagehandPage(Protocol):
@@ -95,32 +92,16 @@ class StagehandAgentWrapper:
 
 
 async def _get_user_data_dir() -> str | None:
-    """Get browser profile directory for session persistence."""
+    """Get browser profile directory for session persistence using global profile."""
     try:
-        # the implementation is similar to with_brand_browser_session in shared.py
-        # howerver, it doesn't use the browser session directly, but rather uses stagehand's browser session
-        brand_id = get_mcp_brand_id()
-        if not brand_id:
-            raise ValueError("Brand ID is not set")
-
-        brand_state = brand_state_manager.get(brand_id)
-        profile_id = (
-            brand_state.browser_profile_id if brand_state and brand_state.is_connected else None
-        )
-        if not profile_id:
-            raise ValueError("Profile ID is not set")
-
-        browser_profile = BrowserProfile(id=profile_id)
-        browser_session = BrowserSession.get(browser_profile)
-
-        if browser_session and browser_session.profile:
-            profile_path = browser_session.profile.profile_dir(browser_session.profile.id)
-            user_data_dir = str(profile_path)
-            logger.info(f"Using userDataDir from browser profile: {user_data_dir}")
-            return user_data_dir
+        profile = global_profile_manager.get_profile()
+        profile_path = profile.profile_dir(profile.id)
+        user_data_dir = str(profile_path)
+        logger.info(f"Using userDataDir from global profile: {user_data_dir}")
+        return user_data_dir
     except Exception as e:
-        logger.warning(f"Could not get userDataDir from browser session: {e}")
-    return None
+        logger.warning(f"Could not get userDataDir from global profile: {e}")
+        return None
 
 
 async def _create_stagehand_config() -> Any:

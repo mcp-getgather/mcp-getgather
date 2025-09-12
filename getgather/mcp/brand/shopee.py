@@ -5,10 +5,10 @@ from urllib.parse import quote
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.mcp.registry import BrandMCPBase
+from getgather.mcp.profile_manager import global_profile_manager
 from getgather.mcp.shared import (
-    get_mcp_browser_profile,
-    get_mcp_browser_session,
-    with_brand_browser_session,
+    get_global_browser_session,
+    with_global_browser_session,
 )
 from getgather.parse import parse_html
 
@@ -18,7 +18,7 @@ shopee_mcp = BrandMCPBase(brand_id="shopee", name="Shopee MCP")
 @shopee_mcp.tool(tags={"private"})
 async def get_purchase_history() -> dict[str, Any]:
     """Get purchase history of a shopee."""
-    browser_profile = get_mcp_browser_profile()
+    browser_profile = global_profile_manager.get_profile()
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
     purchase_history = await run_distillation_loop(
@@ -28,10 +28,10 @@ async def get_purchase_history() -> dict[str, Any]:
 
 
 @shopee_mcp.tool
-@with_brand_browser_session
+@with_global_browser_session
 async def search_product(keyword: str, page_number: int = 1) -> dict[str, Any]:
     """Search product on shopee."""
-    browser_session = get_mcp_browser_session()
+    browser_session = get_global_browser_session()
     page = await browser_session.page()
 
     # URL encode the search keyword

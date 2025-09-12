@@ -1,3 +1,5 @@
+"""Simplified agent functions using global profile manager."""
+
 from typing import Any
 
 from browser_use import Agent, BrowserSession as BrowserUseBrowserSession
@@ -9,11 +11,11 @@ from patchright.async_api import BrowserContext
 
 from getgather.config import settings
 from getgather.logs import logger
-from getgather.mcp.shared import get_mcp_browser_session, with_brand_browser_session
+from getgather.mcp.shared import get_global_browser_session, with_global_browser_session
 
 
 async def run_agent(browser_context: BrowserContext, task: str) -> str | None:
-    # TODO: Add support for non-OpenAI models
+    """Run browser-use agent with given task."""
     if not settings.BROWSER_USE_MODEL or not settings.OPENAI_API_KEY:
         raise ValueError("BROWSER_USE_MODEL or OPENAI_API_KEY is not set")
 
@@ -36,9 +38,10 @@ async def run_agent(browser_context: BrowserContext, task: str) -> str | None:
     return results.final_result()
 
 
-@with_brand_browser_session
+@with_global_browser_session
 async def run_agent_for_brand(task: str) -> dict[str, Any]:
-    browser_session = get_mcp_browser_session()
+    """Run agent using global browser session."""
+    browser_session = get_global_browser_session()
     try:
         logger.info(f"Running agent with task: {task}")
         result = await run_agent(browser_session.context, task)

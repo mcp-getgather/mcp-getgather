@@ -10,6 +10,7 @@ from getgather.api.routes.link.types import (
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.hosted_link_manager import HostedLinkManager, LinkDataUpdate
 from getgather.logs import logger
+from getgather.mcp.connection_manager import connection_manager
 
 router = APIRouter(prefix="/link", tags=["link"])
 
@@ -188,6 +189,14 @@ async def update_hosted_link(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Hosted link '{link_id}' not found for update",
                 )
+
+        # If status became "completed", update connection manager
+        if str(updated_link.status) == "completed":
+            connection_manager.set_connected(updated_link.brand_id, True)
+            logger.info(
+                "[update_hosted_link] Marked brand as connected",
+                extra={"brand_id": str(updated_link.brand_id)},
+            )
 
         logger.info(
             "[update_hosted_link] Successfully updated hosted link",

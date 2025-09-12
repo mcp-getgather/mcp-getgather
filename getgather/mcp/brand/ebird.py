@@ -7,10 +7,10 @@ from patchright.async_api import Page
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.mcp.registry import BrandMCPBase
+from getgather.mcp.profile_manager import global_profile_manager
 from getgather.mcp.shared import (
-    get_mcp_browser_profile,
-    get_mcp_browser_session,
-    with_brand_browser_session,
+    get_global_browser_session,
+    with_global_browser_session,
 )
 from getgather.parse import parse_html
 
@@ -20,7 +20,7 @@ ebird_mcp = BrandMCPBase(brand_id="ebird", name="Ebird MCP")
 @ebird_mcp.tool(tags={"private"})
 async def get_life_list() -> dict[str, Any]:
     """Get life list of a ebird."""
-    browser_profile = get_mcp_browser_profile()
+    browser_profile = global_profile_manager.get_profile()
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
     lifelist = await run_distillation_loop(
@@ -30,10 +30,10 @@ async def get_life_list() -> dict[str, Any]:
 
 
 @ebird_mcp.tool
-@with_brand_browser_session
+@with_global_browser_session
 async def get_explore_species_list(keyword: str) -> dict[str, Any]:
     """Get species list from ebird to be explored."""
-    browser_session = get_mcp_browser_session()
+    browser_session = get_global_browser_session()
     page = await browser_session.page()
 
     await page.goto("https://ebird.org/explore")
@@ -58,10 +58,10 @@ async def get_explore_species_list(keyword: str) -> dict[str, Any]:
 
 
 @ebird_mcp.tool
-@with_brand_browser_session
+@with_global_browser_session
 async def explore_species(sci_name: str) -> dict[str, Any]:
     """Explore species on Ebird from get_explore_species_list."""
-    browser_session = get_mcp_browser_session()
+    browser_session = get_global_browser_session()
     page = await browser_session.page()
 
     # Navigate to explore and search for the species by scientific name
@@ -88,7 +88,7 @@ async def explore_species(sci_name: str) -> dict[str, Any]:
 
 
 @ebird_mcp.tool(tags={"private"})
-@with_brand_browser_session
+@with_global_browser_session
 async def submit_checklist(
     location: str,
     birds: list[str],
@@ -97,7 +97,7 @@ async def submit_checklist(
     distance: str = "1",
 ):
     """Submit checklist to ebird."""
-    session = get_mcp_browser_session()
+    session = get_global_browser_session()
     page = await session.page()
     await page.goto("https://ebird.org/submit")
     await page.wait_for_selector("select#myLocSel")
