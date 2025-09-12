@@ -1,0 +1,11 @@
+<html gg-domain="linkedin">
+  <head>
+    <title>Linkedin Sign In</title>
+  </head>
+  <body>
+    <span gg-optional gg-match="div#error-for-password"></span>
+    <input autofocus name="email" type="email" placeholder="Email" gg-match="input#username" />
+    <input name="password" type="password" placeholder="Password" gg-match="input#password" />
+    <button gg-autoclick gg-match="button[data-litms-control-urn=login-submit]">Sign in</button>
+  </body>
+</html>

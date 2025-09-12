@@ -1,0 +1,23 @@
+<html gg-domain="linkedin">
+  <head>
+    <title>Linkedin Feed</title>
+  </head>
+  <body>
+    <div gg-stop gg-match-html="div.scaffold-finite-scroll__content"></div>
+    <script type="application/json" id="bookshelf">
+      {
+        "rows": ".fie-impression-container",
+        "columns": [
+          { "name": "profile_name", "selector": "span.update-components-actor__title > span" },
+          { "name": "profile_title", "selector": "update-components-actor__description" },
+          {
+            "name": "profile_image",
+            "selector": "img.update-components-actor__avatar-image",
+            "attribute": "src"
+          },
+          { "name": "post", "selector": "div.update-components-text" }
+        ]
+      }
+    </script>
+  </body>
+</html>
