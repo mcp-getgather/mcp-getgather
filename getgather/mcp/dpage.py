@@ -28,20 +28,25 @@ router = APIRouter(prefix="/dpage", tags=["dpage"])
 
 active_pages: dict[str, Page] = {}
 distillation_results: dict[str, list[dict[str, str]]] = {}
+global_browser_profile: BrowserProfile | None = None
 
 
 async def dpage_add(
-    id: str | None = None,
+    browser_profile: BrowserProfile | None = None,
     location: str | None = None,
+    id: str | None = None,
 ):
     if id is None:
         FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
         id = generate(FRIENDLY_CHARS, 8)
 
-    profile = BrowserProfile()
-    session = BrowserSession(profile.id)
+    if browser_profile is None:
+        browser_profile = BrowserProfile()
+
+    session = BrowserSession(browser_profile.id)
+
     await session.start()
-    page = await session.page()
+    page = await session.context.new_page()
 
     if location:
         if not location.startswith("http"):
@@ -54,7 +59,7 @@ async def dpage_add(
 
 async def dpage_close(id: str) -> None:
     if id in active_pages:
-        await active_pages[id].close()
+        # await active_pages[id].close()
         del active_pages[id]
 
 
@@ -254,15 +259,40 @@ async def dpage_mcp_tool(initial_url: str, result_key: str) -> dict[str, Any]:
     path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
 
+    headers = get_http_headers(include_all=True)
+    incognito = headers.get("x-incognito", "0") == "1"
+
+    if incognito:
+        browser_profile = BrowserProfile()
+    else:
+        global global_browser_profile
+        if global_browser_profile is None:
+            logger.info(f"Creating global browser profile...")
+            global_browser_profile = BrowserProfile()
+            session = BrowserSession(global_browser_profile.id)
+            await session.start()
+            logger.debug("Visiting google.com to initialize the profile...")
+
+            # to help troubleshooting
+            debug_page = await session.context.new_page()
+            await debug_page.goto("https://ifconfig.me")
+
+            init_page = await session.context.new_page()
+            await init_page.goto(initial_url)
+            await asyncio.sleep(1)
+
+        browser_profile = global_browser_profile
+
     # First, try without any interaction as this will work if the user signed in previously
-    result = await run_distillation_loop(initial_url, patterns, interactive=False, timeout=2)
+    result = await run_distillation_loop(
+        initial_url, patterns, browser_profile=browser_profile, interactive=False, timeout=2
+    )
     if isinstance(result, list):
         return {result_key: result}
 
     # If that didn't work, try signing in via distillation
-    id = await dpage_add(location=initial_url)
+    id = await dpage_add(browser_profile=browser_profile, location=initial_url)
 
-    headers = get_http_headers(include_all=True)
     host = headers.get("host")
     if host is None:
         logger.warning("Missing Host header; defaulting to localhost")
