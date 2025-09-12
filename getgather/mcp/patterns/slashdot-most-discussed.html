@@ -1,0 +1,18 @@
+<html gg-domain="slashdot">
+  <head>
+    <title>Slashdot: Most Discussed Stories</title>
+  </head>
+  <body>
+    <section gg-stop gg-match-html="section#mostdiscussed-content"></section>
+    <script type="application/json" id="most-discussed">
+      {
+        "rows": "li",
+        "columns": [
+          { "name": "title", "selector": "a" },
+          { "name": "link", "selector": "a", "attribute": "href" },
+          { "name": "count", "selector": "span.cmntcnt" }
+        ]
+      }
+    </script>
+  </body>
+</html>
