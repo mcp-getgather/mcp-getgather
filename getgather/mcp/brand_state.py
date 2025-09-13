@@ -1,7 +1,9 @@
-from getgather.mcp.persist import ModelWithAuth, PersistentStoreWithAuth
+from pydantic import BaseModel
+
+from getgather.mcp.persist import PersistentStore
 
 
-class BrandState(ModelWithAuth):
+class BrandState(BaseModel):
     """JSON-persisted brand state record."""
 
     brand_id: str
@@ -9,7 +11,7 @@ class BrandState(ModelWithAuth):
     is_connected: bool
 
 
-class BrandStateStore(PersistentStoreWithAuth[BrandState]):
+class BrandStateStore(PersistentStore[BrandState]):
     _file_name: str = "brand_states.json"
     _row_model: type[BrandState] = BrandState
     _key_field: str = "brand_id"

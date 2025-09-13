@@ -3,14 +3,13 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import AsyncGenerator
 
-from pydantic import Field, computed_field
+from pydantic import BaseModel, Field, computed_field
 
 from getgather import rrweb
-from getgather.mcp.auth import get_auth_user
-from getgather.mcp.persist import ModelWithAuth, PersistentStoreWithAuth
+from getgather.mcp.persist import PersistentStore
 
 
-class Activity(ModelWithAuth):
+class Activity(BaseModel):
     """JSON-persisted activity record."""
 
     id: str = Field(default_factory=lambda: uuid.uuid4().hex)
@@ -29,7 +28,7 @@ class Activity(ModelWithAuth):
         return int((self.end_time - self.start_time).total_seconds() * 1000)
 
 
-class ActivityManager(PersistentStoreWithAuth[Activity]):
+class ActivityManager(PersistentStore[Activity]):
     _file_name: str = "activities.json"
     _row_model: type[Activity] = Activity
     _key_field: str = "id"
@@ -46,10 +45,7 @@ activity_manager = ActivityManager()
 @asynccontextmanager
 async def activity(name: str, brand_id: str = "") -> AsyncGenerator[str, None]:
     """Context manager for tracking activity."""
-    user_login = get_auth_user().login
-    activity = Activity(
-        brand_id=brand_id, name=name, start_time=datetime.now(UTC), user_login=user_login
-    )
+    activity = Activity(brand_id=brand_id, name=name, start_time=datetime.now(UTC))
     activity_manager.add(activity)
     try:
         yield activity.id
