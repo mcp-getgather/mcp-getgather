@@ -1,11 +1,13 @@
+import os
 from typing import Any, cast
 from urllib.parse import quote
 
 from patchright.async_api import Locator, Page
 
 from getgather.connectors.spec_models import Schema as SpecSchema
+from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import extract, get_mcp_browser_session, with_brand_browser_session
+from getgather.mcp.shared import extract, get_mcp_browser_session, get_mcp_browser_profile, with_brand_browser_session
 from getgather.parse import parse_html
 
 astro_mcp = BrandMCPBase(brand_id="astro", name="Astro MCP")
@@ -161,8 +163,17 @@ def _format_quantity_result(
 
 @astro_mcp.tool(tags={"private"})
 async def get_purchase_history() -> dict[str, Any]:
-    """Get astro purchase history."""
-    return await extract()
+    """Get astro purchase history using distillation."""
+    browser_profile = get_mcp_browser_profile()
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
+    patterns = load_distillation_patterns(path)
+    extract_result = await run_distillation_loop(
+        "https://www.astronauts.id/order/history",
+        patterns,
+        browser_profile=browser_profile,
+        interactive=False  # Since we're already authenticated
+    )
+    return {"extract_result": extract_result}
 
 
 @astro_mcp.tool
