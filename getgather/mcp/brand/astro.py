@@ -8,9 +8,8 @@ from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import (
-    extract,
-    get_mcp_browser_session,
     get_mcp_browser_profile,
+    get_mcp_browser_session,
     with_brand_browser_session,
 )
 from getgather.parse import parse_html
