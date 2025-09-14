@@ -7,7 +7,12 @@ from patchright.async_api import Locator, Page
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import extract, get_mcp_browser_session, get_mcp_browser_profile, with_brand_browser_session
+from getgather.mcp.shared import (
+    extract,
+    get_mcp_browser_session,
+    get_mcp_browser_profile,
+    with_brand_browser_session,
+)
 from getgather.parse import parse_html
 
 astro_mcp = BrandMCPBase(brand_id="astro", name="Astro MCP")
@@ -171,7 +176,7 @@ async def get_purchase_history() -> dict[str, Any]:
         "https://www.astronauts.id/order/history",
         patterns,
         browser_profile=browser_profile,
-        interactive=False  # Since we're already authenticated
+        interactive=False,  # Since we're already authenticated
     )
     return {"extract_result": extract_result}
 
