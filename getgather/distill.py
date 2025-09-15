@@ -313,7 +313,7 @@ async def run_distillation_loop(
     browser_profile: BrowserProfile | None = None,
     timeout: int = 15,
     interactive: bool = True,
-) -> str | list[dict[str, str]] | None:
+) -> str | list[dict[str, str | list[str]]] | None:
     if len(patterns) == 0:
         logger.error("No distillation patterns provided")
         raise ValueError("No distillation patterns provided")
