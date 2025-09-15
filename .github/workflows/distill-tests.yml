@@ -1,0 +1,46 @@
+name: Distillation Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  distillation-tests:
+    name: Distillation Tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup xvfb and export DISPLAY
+        run: |
+          Xvfb :1 -screen 0 1920x1080x24 &
+          echo "DISPLAY=:1" >> $GITHUB_ENV
+
+      - name: Prepare back-end environment
+        uses: ./.github/actions/prepare-backend
+
+      - name: Install Patchright and Chromium
+        run: uv run patchright install chromium
+
+      - name: Prepare front-end environment
+        uses: ./.github/actions/prepare-frontend
+
+      - name: Build the front-end
+        run: npm run build
+
+      - name: Install Chromium for distillation tests
+        run: uv run playwright install chromium
+
+      - name: Run the ACME Corp test server
+        run: uv run -m uvicorn tests.acme_corp.acme_corp:app --host 127.0.0.1 --port 5001 > >(tee /dev/stdout) 2> >(tee /dev/stderr
+          >&2) &
+
+      - name: Wait for the ACME server to start
+        run: while ! curl -s 'http://localhost:5001' | grep 'ACME'; do sleep 1; done
+        timeout-minutes: 3
+
+      - name: Run the distillation tests
+        run: uv run pytest -n 7 -m "distill" tests/distillation/test_distill.py
