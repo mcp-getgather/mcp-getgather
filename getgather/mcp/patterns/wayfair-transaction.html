@@ -1,0 +1,30 @@
+<html gg-domain="wayfair">
+  <body>
+    <div>
+      <div gg-stop gg-match-html="div[data-enzyme-id='myOrdersLayout']"></div>
+    </div>
+    <script type="application/json" id="purchase">
+      {
+        "rows": "div[data-enzyme-id*='orderGroup_']",
+        "columns": [
+          { "name": "order_date_and_store", "selector": "p[data-enzyme-id='orderDateAndStore']" },
+          { "name": "total_price", "selector": "span[data-enzyme-id='orderTotalPrice']" },
+          { "name": "total_item", "selector": "span[data-enzyme-id='orderItemCount']" },
+          {
+            "name": "delivery_date",
+            "selector": "div[data-enzyme-id='orderItemListProductCardDate']"
+          },
+          {
+            "name": "product",
+            "selector": "a[data-enzyme-id='productCardLink']"
+          },
+          {
+            "name": "image_url",
+            "selector": "img",
+            "attribute": "src"
+          }
+        ]
+      }
+    </script>
+  </body>
+</html>

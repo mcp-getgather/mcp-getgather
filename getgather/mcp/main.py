@@ -14,12 +14,14 @@ from getgather.logs import logger
 from getgather.mcp.activity import activity
 from getgather.mcp.auth import get_auth_user
 from getgather.mcp.auto_import import auto_import
+from getgather.mcp.bbc import bbc_mcp
 from getgather.mcp.brand_state import BrandState, brand_state_manager
 from getgather.mcp.calendar_utils import calendar_mcp
+from getgather.mcp.dpage import dpage_check
 from getgather.mcp.espn import espn_mcp
 from getgather.mcp.nytimes import nytimes_mcp
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import auth_hosted_link, poll_status_hosted_link
+from getgather.mcp.shared import poll_status_hosted_link, signin_hosted_link
 
 # Ensure calendar MCP is registered by importing its module
 try:
@@ -78,7 +80,7 @@ class AuthMiddleware(Middleware):
             name="auth",
             brand_id=brand_id,
         ):
-            result = await auth_hosted_link(brand_id=BrandIdEnum(brand_id))
+            result = await signin_hosted_link(brand_id=BrandIdEnum(brand_id))
             return ToolResult(structured_content=result)
 
 
@@ -146,9 +148,23 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
     mcp.add_middleware(AuthMiddleware())
 
     @mcp.tool(tags={"general_tool"})
-    async def poll_auth(ctx: Context, link_id: str) -> dict[str, Any]:  # pyright: ignore[reportUnusedFunction]
-        """Poll auth for a session. Only call this tool if you get the auth link/url."""
+    async def poll_signin(ctx: Context, link_id: str) -> dict[str, Any]:  # pyright: ignore[reportUnusedFunction]
+        """Poll sign in for a session. Only call this tool if you get the sign in link/url."""
         return await poll_status_hosted_link(context=ctx, hosted_link_id=link_id)
+
+    @mcp.tool(tags={"general_tool"})
+    async def check_signin(ctx: Context, signin_id: str) -> dict[str, Any]:  # pyright: ignore[reportUnusedFunction]
+        result = await dpage_check(id=signin_id)
+        if result is None:
+            return {
+                "status": "ERROR",
+                "message": "Sign in not completed within the time limit. Please try again.",
+            }
+        return {
+            "status": "SUCCESS",
+            "message": "Sign in completed successfully.",
+            "result": result,
+        }
 
     for brand_id in brand_ids:
         brand_mcp = BrandMCPBase.registry[brand_id]
@@ -158,6 +174,8 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
     mcp.mount(server=calendar_mcp, prefix="calendar")
     mcp.mount(server=nytimes_mcp, prefix="nytimes")
     mcp.mount(server=espn_mcp, prefix="espn")
+
+    mcp.mount(server=bbc_mcp, prefix="bbc")
 
     return mcp.http_app(path="/")
 

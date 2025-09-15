@@ -311,7 +311,9 @@ async def run_distillation_loop(
     patterns: list[Pattern],
     fields: list[str] = [],
     browser_profile: BrowserProfile | None = None,
-):
+    timeout: int = 15,
+    interactive: bool = True,
+) -> str | list[dict[str, str]] | None:
     if len(patterns) == 0:
         logger.error("No distillation patterns provided")
         raise ValueError("No distillation patterns provided")
@@ -329,8 +331,7 @@ async def run_distillation_loop(
         await page.goto(location)
 
         TICK = 1  # seconds
-        TIMEOUT = 15  # seconds
-        max = TIMEOUT // TICK
+        max = timeout // TICK
 
         current = Match(name="", priority=-1, distilled="", matches=[])
 
@@ -347,8 +348,9 @@ async def run_distillation_loop(
                     current = match
                     print()
                     print(current.distilled)
-                    await autofill(page, current.distilled, fields)
-                    await autoclick(page, current.distilled)
+                    if interactive:
+                        await autofill(page, current.distilled, fields)
+                        await autoclick(page, current.distilled)
                     if await terminate(page, current.distilled):
                         converted = await convert(current.distilled)
                         if converted:

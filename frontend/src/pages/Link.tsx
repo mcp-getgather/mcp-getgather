@@ -97,6 +97,7 @@ export default function Link() {
   return (
     <BrandForm
       brandId={linkData?.brand_id}
+      linkId={linkId}
       profileId={linkData?.profile_id}
       onUpdateStatus={handleUpdateLinkStatus}
       ref={brandFormRef}
