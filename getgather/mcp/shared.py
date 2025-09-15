@@ -3,11 +3,9 @@ import functools
 import time
 from typing import Any, Awaitable, Callable, ParamSpec, TypeVar
 
-import httpx
 from fastmcp import Context
 from fastmcp.server.dependencies import get_context, get_http_headers
 
-from getgather.api.routes.link.types import HostedLinkTokenRequest
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
 from getgather.connectors.spec_loader import BrandIdEnum
@@ -16,18 +14,6 @@ from getgather.hosted_link_manager import HostedLinkManager
 from getgather.logs import logger
 from getgather.mcp.brand_state import brand_state_manager
 from getgather.signin_flow import ExtractResult
-
-
-def _sanitize_headers(headers: dict[str, str]) -> dict[str, str]:
-    allowed = {
-        "host",
-        "x-forwarded-proto",
-        "x-forwarded-host",
-        "x-forwarded-port",
-        "x-original-host",
-        "x-scheme",
-    }
-    return {k: v for k, v in headers.items() if k.lower() in allowed}
 
 
 async def signin_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
@@ -45,46 +31,33 @@ async def signin_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
         "Creating link for brand", extra={"brand_id": str(brand_id), "profile_id": profile_id}
     )
 
-    request_data = HostedLinkTokenRequest(brand_id=str(brand_id), profile_id=profile_id)
+    link_data = HostedLinkManager.create_link(
+        brand_id=brand_id,
+        redirect_url="",
+        url_lifetime_seconds=900,
+        profile_id=profile_id,
+    )
+    link_id = link_data["link_id"]
 
-    async with httpx.AsyncClient(follow_redirects=True) as client:
-        headers = get_http_headers(include_all=True)
-        sanitized = _sanitize_headers(headers)
-        host = headers.get("host")
-        scheme = headers.get("x-forwarded-proto", "http")
-        base_url = f"{scheme}://{host}" if host else None
+    headers = get_http_headers(include_all=True)
+    host = headers.get("host")
+    scheme = headers.get("x-forwarded-proto", "http")
+    base_url = f"{scheme}://{host}".rstrip("/")
+    hosted_link_url = f"{base_url}/link/{link_id}"
 
-        if not base_url:
-            logger.warning(
-                "[signin_hosted_link] Missing Host header; defaulting to localhost",
-                extra={"host": host, "scheme": scheme, "headers": sanitized},
-            )
-            base_url = "http://localhost:23456"
-
-        url = f"{base_url}/api/link/create"
-        logger.info(
-            "[signin_hosted_link] Creating hosted link",
-            extra={"url": url, "host": host, "scheme": scheme, "headers": sanitized},
-        )
-
-        sanitized["Content-Type"] = "application/json"
-
-        response = await client.post(url, headers=sanitized, json=request_data.model_dump())
-
-        response_json = response.json()
-        logger.info(
-            "[signin_hosted_link] Hosted link created successfully",
-            extra={
-                "status_code": response.status_code,
-                "request_url": str(response.request.url),
-                "link_id": response_json.get("link_id"),
-                "hosted_link_url": response_json.get("hosted_link_url"),
-            },
-        )
+    logger.info(
+        "[create_hosted_link] Successfully created hosted link",
+        extra={
+            "link_id": link_id,
+            "hosted_link_url": hosted_link_url,
+            "host": host,
+            "profile_id": profile_id,
+        },
+    )
 
     return {
-        "url": response_json["hosted_link_url"],
-        "link_id": response_json["link_id"],
+        "url": hosted_link_url,
+        "link_id": link_id,
         "message": "Continue the sign in process in your browser. If you are not redirected, open the link url in your browser.",
         "system_message": (
             "Try open the url in a browser with a tool if available."
