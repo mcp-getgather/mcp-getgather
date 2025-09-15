@@ -187,6 +187,7 @@ parse:
   - bundle: orders.html
     format: html
     output: orders.json
+    extraction_method: python_parser
     row_selector: li.order-card__list
     columns:
       - name: order_date

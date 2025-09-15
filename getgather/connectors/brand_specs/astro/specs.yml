@@ -35,7 +35,7 @@ extract:
       url: https://www.astronauts.id/order/history
 
     - name: Wait for orders to load
-      wait_for_selector: div.MuiGrid-container
+      wait_for_selector: div.MuiGrid-item.css-1928xuh
 
     - name: Extract past orders
       bundle: orders.html
@@ -45,6 +45,7 @@ parse:
   - bundle: orders.html
     format: html
     output: orders.json
+    extraction_method: python_parser
     row_selector: div.MuiGrid-item.css-1928xuh
     columns:
       - name: order_status

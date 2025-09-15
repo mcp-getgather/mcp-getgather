@@ -53,6 +53,7 @@ parse:
   - bundle: books.html
     format: html
     output: books.json
+    extraction_method: python_parser
     row_selector: div div:has(> a:has(img))
     columns:
       - name: cover

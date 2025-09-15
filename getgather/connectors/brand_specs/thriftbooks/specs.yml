@@ -40,6 +40,7 @@ parse:
   - bundle: order-summary.html
     format: html
     output: order-summary.json
+    extraction_method: python_parser
     row_selector: .AccountOrderSummary-orderRow
     columns:
       - name: order_number

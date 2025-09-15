@@ -107,6 +107,7 @@ parse:
   - bundle: online-orders.html
     format: html
     output: online-orders.json
+    extraction_method: python_parser
     row_selector: div.sse-order
     columns:
       - name: product

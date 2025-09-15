@@ -143,6 +143,7 @@ async def search_purchase_history(keyword: str) -> dict[str, Any]:
         "format": "html",
         "output": "",
         "row_selector": "div.a-section.a-spacing-large.a-spacing-top-large",
+        "extraction_method": "python_parser",
         "columns": [
             {
                 "name": "product_name",
@@ -172,8 +173,6 @@ async def add_to_cart(ctx: Context, product_url: str, quantity: int = 1) -> dict
     Args:
         product_url: The Amazon product URL or path
         quantity: Number of items to add (default: 1)
-        variant_name: Optional variant name (e.g., "Medium", "Blue", "32GB") to select
-        buying_option: Which buying option to use - "regular" for Amazon.com or "local_delivery" for Fresh/Local (default: "regular")
     """
     task = (
         "Following the instructions below to add a product to the Amazon cart:\n"

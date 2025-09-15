@@ -64,6 +64,7 @@ parse:
   - bundle: favorites.html
     format: html
     output: favorites.json
+    extraction_method: python_parser
     row_selector: li[data-testid^="item-"]
     columns:
       - name: name

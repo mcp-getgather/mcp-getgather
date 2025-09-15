@@ -64,6 +64,7 @@ parse:
   - bundle: books.html
     format: html
     output: books.json
+    extraction_method: python_parser
     row_selector: tr.review
     columns:
       - name: cover

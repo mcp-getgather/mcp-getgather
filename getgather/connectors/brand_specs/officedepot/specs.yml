@@ -121,6 +121,7 @@ parse:
   - bundle: orders.html
     format: html
     output: orders.json
+    extraction_method: python_parser
     row_selector: section.oh-list-section
     columns:
       - name: order_number

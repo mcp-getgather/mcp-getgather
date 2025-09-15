@@ -51,6 +51,7 @@ parse:
   - bundle: feed.html
     format: html
     output: feed.json
+    extraction_method: python_parser
     row_selector: .fie-impression-container
     columns:
       - name: name
