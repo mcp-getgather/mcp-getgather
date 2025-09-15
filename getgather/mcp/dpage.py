@@ -27,7 +27,7 @@ from getgather.logs import logger
 router = APIRouter(prefix="/dpage", tags=["dpage"])
 
 active_pages: dict[str, Page] = {}
-distillation_results: dict[str, list[dict[str, str]]] = {}
+distillation_results: dict[str, list[dict[str, str | list[str]]]] = {}
 global_browser_profile: BrowserProfile | None = None
 
 
