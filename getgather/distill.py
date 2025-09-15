@@ -73,11 +73,11 @@ async def convert(distilled: str):
                     name = col.get("name")
                     selector = col.get("selector")
                     attribute = col.get("attribute")
-                    multiple = col.get("multiple")
+                    kind = col.get("kind")
                     if not name or not selector:
                         continue
 
-                    if multiple:
+                    if kind == "list":
                         items = el.select(str(selector))
                         kv[name] = [extract_value(item, attribute) for item in items]
                         continue
