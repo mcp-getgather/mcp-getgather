@@ -28,6 +28,7 @@ router = APIRouter(prefix="/dpage", tags=["dpage"])
 
 active_pages: dict[str, Page] = {}
 distillation_results: dict[str, list[dict[str, str]]] = {}
+initial_urls: dict[str, str] = {}
 global_browser_profile: BrowserProfile | None = None
 
 
@@ -52,6 +53,7 @@ async def dpage_add(
         if not location.startswith("http"):
             location = f"https://{location}"
         await page.goto(location)
+        initial_urls[id] = location
 
     active_pages[id] = page
     return id
@@ -185,6 +187,10 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
         names: list[str] = []
         document = BeautifulSoup(distilled, "html.parser")
         inputs = document.find_all("input")
+        is_redirect = document.find_all(attrs={"gg-redirect": True})
+        if is_redirect:
+            await page.goto(initial_urls[id])
+            continue
 
         for input in inputs:
             if isinstance(input, Tag):
