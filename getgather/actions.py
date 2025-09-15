@@ -86,27 +86,33 @@ async def is_visible(locator: Locator) -> bool:
 
 async def handle_click(
     page: Frame | Page,
-    selector: str,
+    selector_or_field: str | Field,
     download_filename: str | None,
     bundle_dir: Path | None,
     timeout: int = 3000,
 ):
-    logger.info(f"📝 Clicking {selector}...")
+    logger.info(f"📝 Clicking {selector_or_field}...")
     async with try_download(page, download_filename, bundle_dir):  # type: ignore
         try:
-            button = await get_first_visible(page.locator(selector))
-            logger.debug(f"🔘 Button {selector} is {'visible' if button else 'not visible'}")
+            if isinstance(selector_or_field, Field):
+                locator = selector_or_field.locator(page)
+            else:
+                locator = page.locator(selector_or_field)
+            button = await get_first_visible(locator)
+            logger.debug(
+                f"🔘 Button {selector_or_field} is {'visible' if button else 'not visible'}"
+            )
             if button:
-                logger.debug(f"🔘 Clicking {selector}...")
+                logger.debug(f"🔘 Clicking {selector_or_field}...")
                 await button.click()
-                logger.debug(f"🔘 Clicked {selector}")
+                logger.debug(f"🔘 Clicked {selector_or_field}")
         except TimeoutError as e:
             if timeout > 0:
                 timeout -= LOCATOR_ALL_TIMEOUT
                 logger.info(
-                    f"⏳ Locator {selector} not found {e}, retrying with {timeout} ms timeout..."
+                    f"⏳ Locator {selector_or_field} not found {e}, retrying with {timeout} ms timeout..."
                 )
-                await handle_click(page, selector, download_filename, bundle_dir, timeout)
+                await handle_click(page, selector_or_field, download_filename, bundle_dir, timeout)
             else:
                 raise
         except Exception:

@@ -187,7 +187,7 @@ async def _handle_fields(fld: Field, current_frame: Frame | Page, flow_state: Fl
     if fld.type == "click" or fld.type == "autoclick":
         if not fld.selector:
             raise ValueError(f"⚠️ No selector provided for click field '{fld.name}'")
-        await handle_click(current_frame, fld.selector, None, flow_state.bundle_dir)
+        await handle_click(current_frame, fld, None, flow_state.bundle_dir)
     elif fld.needs_multi_fill:
         await handle_fill_multi(current_frame, fld, value)
     elif fld.needs_single_fill:
@@ -377,7 +377,7 @@ async def flow_step(*, page: Page, flow_state: FlowState) -> FlowState:
                 if field.selector:
                     await handle_click(
                         current_page,
-                        field.selector,
+                        field,
                         step.download_filename,
                         flow_state.bundle_dir,
                         timeout,
