@@ -1,28 +1,8 @@
-# Stage 1: Frontend Builder
-FROM mirror.gcr.io/library/node:22-alpine AS frontend-builder
+# Stage 1: Backend Builder
+FROM mirror.gcr.io/library/python:3.13-slim-bookworm AS backend-builder
 
 ARG MULTI_USER_ENABLED=false
 ENV MULTI_USER_ENABLED=${MULTI_USER_ENABLED}
-
-WORKDIR /app
-
-# Copy package files for dependency caching
-COPY package*.json ./
-COPY tsconfig*.json ./
-COPY vite.config.ts ./
-COPY eslint.config.js ./
-
-# Install Node.js dependencies
-RUN npm ci
-
-# Copy frontend source code
-COPY frontend/ ./frontend/
-
-# Build frontend
-RUN npm run build
-
-# Stage 2: Backend Builder
-FROM mirror.gcr.io/library/python:3.13-slim-bookworm AS backend-builder
 
 COPY --from=ghcr.io/astral-sh/uv:0.8.4 /uv /uvx /bin/
 
@@ -65,7 +45,37 @@ COPY entrypoint.sh /app/entrypoint.sh
 # Install the workspace package
 RUN uv sync --no-dev
 
-# Stage 2: Final image
+# Generate OpenAPI schema
+RUN $VENV_PATH/bin/python -m getgather.generate_openapi -o /tmp/openapi.json
+
+# Stage 2: Frontend Builder
+FROM mirror.gcr.io/library/node:22-alpine AS frontend-builder
+
+WORKDIR /app
+
+# Copy package files for dependency caching
+COPY package*.json ./
+COPY tsconfig*.json ./
+COPY vite.config.ts ./
+COPY eslint.config.js ./
+
+# Install Node.js dependencies
+RUN npm ci
+
+# Copy OpenAPI schema from backend builder
+COPY --from=backend-builder /tmp/openapi.json /tmp/openapi.json
+
+# Generate TypeScript types from OpenAPI
+RUN mkdir -p frontend/__generated__ && \
+    npx openapi-typescript /tmp/openapi.json -o frontend/__generated__/api.d.ts
+
+# Copy frontend source code
+COPY frontend/ ./frontend/
+
+# Build frontend
+RUN npm run build
+
+# Stage 3: Final image
 FROM mirror.gcr.io/library/python:3.13-slim-bookworm
 
 RUN apt-get update && apt-get install -y curl gnupg \
