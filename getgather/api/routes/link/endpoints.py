@@ -1,97 +1,12 @@
-from typing import Annotated
-
 from fastapi import APIRouter, HTTPException, Request, status
 
 from getgather.api.routes.link.types import (
-    HostedLinkTokenRequest,
-    HostedLinkTokenResponse,
     TokenLookupResponse,
 )
-from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.hosted_link_manager import HostedLinkManager, LinkDataUpdate
 from getgather.logs import logger
 
 router = APIRouter(prefix="/link", tags=["link"])
-
-
-@router.post("/create", response_model=HostedLinkTokenResponse)
-async def create_hosted_link(
-    request: Request,
-    hosted_link_request: Annotated[
-        HostedLinkTokenRequest, "Request data for creating a hosted link."
-    ],
-) -> HostedLinkTokenResponse:
-    relevant_headers = {
-        "host": request.headers.get("host"),
-        "x-forwarded-host": request.headers.get("x-forwarded-host"),
-        "x-forwarded-proto": request.headers.get("x-forwarded-proto"),
-        "x-forwarded-port": request.headers.get("x-forwarded-port"),
-        "user-agent": request.headers.get("user-agent"),
-    }
-
-    logger.info(
-        "[create_hosted_link] Creating hosted link",
-        extra={
-            "brand_id": hosted_link_request.brand_id,
-            "request_url": str(request.url),
-            "headers": relevant_headers,
-        },
-    )
-
-    try:
-        redirect_url = hosted_link_request.redirect_url or ""
-
-        link_data = HostedLinkManager.create_link(
-            brand_id=BrandIdEnum(hosted_link_request.brand_id),
-            redirect_url=redirect_url,
-            url_lifetime_seconds=hosted_link_request.url_lifetime_seconds,
-            profile_id=hosted_link_request.profile_id,
-        )
-        link_id = link_data["link_id"]
-        expiration = link_data["expiration"]
-        profile_id = link_data["profile_id"]
-
-        # URL construction
-        original_scheme = request.url.scheme
-        original_host = request.headers.get("host")
-        forwarded_proto = request.headers.get("x-forwarded-proto")
-        forwarded_host = request.headers.get("x-forwarded-host")
-
-        scheme = forwarded_proto or original_scheme
-        host = forwarded_host or original_host
-        base_url = f"{scheme}://{host}".rstrip("/")
-        hosted_link_url = f"{base_url}/link/{link_id}"
-        response = HostedLinkTokenResponse(
-            link_id=link_id,
-            profile_id=profile_id,
-            hosted_link_url=hosted_link_url,
-            expiration=expiration,
-        )
-
-        logger.info(
-            "[create_hosted_link] Successfully created hosted link",
-            extra={
-                "link_id": link_id,
-                "profile_id": profile_id,
-                "redirect_url": redirect_url,
-                "hosted_link_url": hosted_link_url,
-                "original_scheme": original_scheme,
-                "original_host": original_host,
-                "forwarded_proto": forwarded_proto,
-                "forwarded_host": forwarded_host,
-                "final_scheme": scheme,
-                "final_host": host,
-            },
-        )
-        return response
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("Error creating hosted link", extra={"error": str(e)}, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error while creating hosted link",
-        )
 
 
 @router.get("/status/{link_id}", response_model=TokenLookupResponse)
