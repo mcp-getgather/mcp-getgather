@@ -15,6 +15,7 @@ PATTERN_LOCATIONS = {
     "http://localhost:5001": "acme_home_page.html",
     "http://localhost:5001/auth/email-and-password": "acme_email_and_password.html",
     "http://localhost:5001/auth/email-then-password": "acme_email_and_password.html",
+    "http://localhost:5001/universal-error-test": "acme_universal_error_test.html",
 }
 
 
