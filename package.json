@@ -13,6 +13,7 @@
     "inspector": "ALLOWED_ORIGINS=http://localhost:5173,http://localhost:6274 npx @modelcontextprotocol/inspector",
     "dev:frontend": "concurrently --raw \"npm run watch:schema:api\" \"vite\"",
     "build": "npm run generate:schema && tsc -b && vite build",
+    "build:ci": "tsc -b && vite build",
     "preview": "vite preview",
     "frontend:check:format": "prettier --check \"**/*.{html,js,jsx,ts,tsx,css,json,md}\"",
     "frontend:format": "prettier --write \"**/*.{html,js,jsx,ts,tsx,css,json,md}\"",
