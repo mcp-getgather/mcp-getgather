@@ -8,7 +8,7 @@
   },
   "scripts": {
     "predev": "test ! -d getgather/frontend/__assets && npm run build || echo 'Assets directory exists, skipping build'",
-    "dev": "concurrently --raw \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev": "npm run generate:schema && concurrently --raw \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "uv run -m uvicorn getgather.main:app --reload --host 127.0.0.1 --port 23456",
     "inspector": "ALLOWED_ORIGINS=http://localhost:5173,http://localhost:6274 npx @modelcontextprotocol/inspector",
     "dev:frontend": "concurrently --raw \"npm run watch:schema:api\" \"vite\"",
@@ -22,7 +22,7 @@
     "backend:check:type-safety": "uv run pyright .",
     "yaml:check:format": "uv run yamlfix --check $(find . -type f -name '*.yml' -o -name '*.yaml' | grep -v -E '\\.venv/|node_modules/')",
     "check:all": "npm run frontend:lint && npm run frontend:check:format && npm run backend:check:format && npm run backend:check:type-safety && npm run yaml:check:format",
-    "generate:schema": "wait-on tcp:23456 && openapi-typescript http://localhost:23456/api/openapi.json -o frontend/__generated__/api.d.ts",
+    "generate:schema": "mkdir -p frontend/__generated__ && uv run python -m getgather.generate_openapi -o frontend/__generated__/openapi.json && openapi-typescript frontend/__generated__/openapi.json -o frontend/__generated__/api.d.ts",
     "watch:schema:api": "chokidar \"getgather/**/*.py\" -c \"npm run generate:schema\"",
     "prepare": "husky"
   },
