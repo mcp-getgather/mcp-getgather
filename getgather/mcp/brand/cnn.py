@@ -3,7 +3,7 @@ from typing import Any
 
 from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import extract, get_mcp_browser_profile
+from getgather.mcp.shared import get_mcp_browser_profile
 
 cnn_mcp = BrandMCPBase(brand_id="cnn", name="CNN MCP")
 
