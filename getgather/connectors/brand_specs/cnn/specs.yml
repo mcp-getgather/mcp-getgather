@@ -43,16 +43,3 @@ signin:
       end: true
 
   start: https://edition.cnn.com/account/log-in
-
-extract:
-  steps:
-    - name: Go to the newsletter list
-      url: https://www.cnn.com/newsletters
-
-    - name: Wait for the loading
-      timeout: 5
-      wait_for_selector: section li[data-newsletter-id]:nth-child(1)
-
-    - name: Extract the list of subscribed newsletters
-      bundle: subscriptions.html
-      slurp_selector: li[data-subscription-status=subscribed]
