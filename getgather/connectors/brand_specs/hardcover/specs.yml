@@ -36,31 +36,3 @@ signin:
       fields: [welcome]
       end: true
   start: https://hardcover.app/login
-extract:
-  steps:
-    - name: Go to homepage
-      url: https://hardcover.app
-    - name: Go to Profile
-      fields: [avatar]
-    - name: Go to Books
-      wait_for_url: !regex https://hardcover.app/@.*
-      fields: [books]
-    - name: Extract the list of books
-      wait_for_url: !regex https://hardcover.app/@.*/books
-      bundle: books.html
-      slurp_selector: nav + div
-parse:
-  - bundle: books.html
-    format: html
-    output: books.json
-    row_selector: div div:has(> a:has(img))
-    columns:
-      - name: cover
-        selector: a img
-        attribute: src
-      - name: title
-        selector: a img
-        attribute: alt
-      - name: url
-        selector: a
-        attribute: href
