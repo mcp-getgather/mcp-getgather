@@ -36,8 +36,8 @@ signin:
       fields: [agree_to_terms]
     - name: Email form
       fields:
-        required: [agree_to_terms, email, password, submit]
-        optional: [message_error]
+        required: [email, password, submit]
+        optional: [agree_to_terms, message_error]
     - name: Home address
       fields: [home_page]
       end: true
