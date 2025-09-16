@@ -125,6 +125,9 @@ class PageSpecDetector:
 
 
 async def _detect_field(field: Field, page: Page):
+    if not field.should_be_visible:
+        return True
+
     locator = field.locator(page)
     return await is_visible(locator=locator) if locator else True
 

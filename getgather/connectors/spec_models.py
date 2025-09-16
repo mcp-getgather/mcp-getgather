@@ -254,7 +254,7 @@ class Field(SpecModel[FieldYML]):
 
     def locator(self, page: Page | Frame) -> Locator:
         if not self.selector:
-            raise ValueError("Field does not have a selector")
+            raise ValueError(f"Field {self.name} does not have a selector")
 
         if isinstance(page, Page) and self.iframe_selector:  # detect field inside iframe
             iframe: FrameLocator = page.frame_locator(self.iframe_selector)
@@ -265,6 +265,10 @@ class Field(SpecModel[FieldYML]):
         if self.exact_text:
             locator = locator.filter(has_text=re.compile(f"^{self.exact_text}$"))
         return locator
+
+    @property
+    def should_be_visible(self) -> bool:
+        return self.type != "navigate"
 
 
 class GraphQLListenerYML(YMLModel):
