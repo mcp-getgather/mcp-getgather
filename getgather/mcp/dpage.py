@@ -206,6 +206,7 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                             logger.info(f"Using form data {name}")
                             names.append(name_str)
                             input["value"] = value
+                            current.distilled = str(document)
                             if frame_selector:
                                 await (
                                     page.frame_locator(str(frame_selector))
