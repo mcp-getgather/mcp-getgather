@@ -129,7 +129,7 @@ async def _detect_field(field: Field, page: Page):
         return True
 
     locator = field.locator(page)
-    return await is_visible(locator=locator) if locator else True
+    return await is_visible(locator=locator)
 
 
 async def _detect_fields(fields: list[Field], page: Page) -> dict[str, bool]:
