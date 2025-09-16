@@ -28,6 +28,17 @@ signin:
     - name: cart
       type: wait
       selector: div.navigation-header-cart
+    - name: continue_button
+      type: autoclick
+      selector: button:has-text("Continue shopping")
+    - name: otp
+      type: text
+      prompt: OTP
+      selector: input#auth-mfa-otpcode
+    - name: otp_submit
+      type: click
+      prompt: Sign In
+      selector: input#auth-signin-button
   pages:
     - name: Go to Sign in page
       fields: [sign_in]
@@ -35,6 +46,8 @@ signin:
       fields: [email, email_continue]
     - name: Fill in password
       fields: [password, remember_me, sign_in_submit]
+    - name: Fill OTP
+      fields: [otp, otp_submit]
     - name: Confirm sign in
       fields: [cart]
       end: true
