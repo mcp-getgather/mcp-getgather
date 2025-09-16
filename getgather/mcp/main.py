@@ -177,7 +177,7 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
 
 class MCPToolDoc(BaseModel):
     name: str
-    description: str
+    description: str | None = None
 
 
 class MCPDoc(BaseModel):
