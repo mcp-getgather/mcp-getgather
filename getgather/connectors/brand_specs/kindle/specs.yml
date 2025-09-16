@@ -16,33 +16,23 @@ signin:
     - name: content_page_title
       type: wait
       selector: div#content-page-title
+    - name: otp
+      type: text
+      prompt: OTP
+      label: h1:has-text("Two-Step Verification") + p
+      selector: input[id="auth-mfa-otpcode"]
+
+    - name: otp_submit
+      type: click
+      prompt: Submit
+      selector: input[id="auth-signin-button"]
+
   pages:
     - name: Sign in page
       fields: [email, password, sign_in]
+    - name: OTP page
+      fields: [otp, otp_submit]
     - name: Content page
       fields: [content_page_title]
       end: true
   start: https://www.amazon.com/hz/mycd/digital-console/contentlist/booksAll/dateDsc/
-extract:
-  steps:
-    - name: Go to Content page
-      url: https://www.amazon.com/hz/mycd/digital-console/contentlist/booksAll/dateDsc/
-    - name: Extract the list of books
-      bundle: books.html
-      slurp_selector: div#CONTENT_LIST
-parse:
-  - bundle: books.html
-    format: html
-    output: books.json
-    row_selector: td > div
-    columns:
-      - name: cover
-        selector: div[id^=content-image-] img
-        attribute: src
-      - name: title
-        selector: div[id^=content-title-]
-      - name: author
-        selector: div[id^=content-author-]
-      - name: url
-        selector: div[id^=content-title-]
-        function: extract_url
