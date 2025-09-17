@@ -1,11 +1,14 @@
-<html gg-domain="quince">
+<html gg-domain="quince" gg-priority="3">
   <head>
     <title>Quince Sign In</title>
   </head>
   <body>
-    <input type="email" name="email" gg-match="input[type=email]" placeholder="Email Address" />
-    <button gg-autoclick gg-match="button[type=submit], button[form], button:has-text('Continue')">
-      Continue
-    </button>
+    <input
+      type="email"
+      name="username"
+      gg-match="input[type=email][name=username]"
+      placeholder="Email"
+    />
+    <button gg-autoclick gg-match="button[form='login-form-A-Initial']">Continue</button>
   </body>
 </html>
