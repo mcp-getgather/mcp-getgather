@@ -43,8 +43,6 @@ async def test_distill(location: str):
 
         match = await distill(hostname, page, patterns)
         assert match, "No match found when one was expected."
-        print(match)
-        print(match.name)
         assert match.name.endswith(DISTILL_PATTERN_LOCATIONS[location]), (
             "Incorrect match name found."
         )
