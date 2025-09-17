@@ -4,6 +4,11 @@
   </head>
   <body>
     <input type="email" name="email" gg-match="input[type=email]" placeholder="Email Address" />
-    <button gg-autoclick gg-match="button[type=submit]">Sign In</button>
+    <button
+      gg-autoclick
+      gg-match="button[type=submit], button[form], button:contains('Continue'), button:contains('Sign In')"
+    >
+      Continue
+    </button>
   </body>
 </html>
