@@ -19,7 +19,7 @@ async def get_book_list() -> dict[str, Any]:
     """Get the book list from a user's Goodreads account."""
 
     browser_profile = get_mcp_browser_profile()
-    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "goodreads/*.html")
     patterns = load_distillation_patterns(path)
     books = await run_distillation_loop(
         "https://www.goodreads.com/review/list", patterns, browser_profile=browser_profile

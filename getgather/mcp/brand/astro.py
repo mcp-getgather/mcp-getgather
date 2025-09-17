@@ -169,7 +169,7 @@ def _format_quantity_result(
 async def get_purchase_history() -> dict[str, Any]:
     """Get astro purchase history using distillation."""
     browser_profile = get_mcp_browser_profile()
-    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "astro/*.html")
     patterns = load_distillation_patterns(path)
     extract_result = await run_distillation_loop(
         "https://www.astronauts.id/order/history",

@@ -12,7 +12,7 @@ gofood_mcp = BrandMCPBase(brand_id="gofood", name="Gofood MCP")
 async def get_purchase_history() -> dict[str, Any]:
     """Get gofood purchase history."""
     browser_profile = get_mcp_browser_profile()
-    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "gofood/*.html")
     patterns = load_distillation_patterns(path)
     purchases = await run_distillation_loop(
         "https://gofood.co.id/en/orders", patterns, browser_profile=browser_profile
