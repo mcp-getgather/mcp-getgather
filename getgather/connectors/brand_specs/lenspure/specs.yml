@@ -63,7 +63,6 @@ parse:
   - bundle: orders.html
     format: html
     output: orders.json
-    extraction_method: python_parser
 
     # in lenspure, parse product_name is quite complicated, product_name is on separated row
     # tr.order: order-date, order-status, order-total

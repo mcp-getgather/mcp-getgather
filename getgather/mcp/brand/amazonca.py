@@ -143,6 +143,7 @@ async def search_purchase_history(keyword: str) -> dict[str, Any]:
         "format": "html",
         "output": "",
         "row_selector": "div.a-section.a-spacing-large.a-spacing-top-large",
+        "extraction_method": "python_parser",
         "columns": [
             {
                 "name": "product_name",

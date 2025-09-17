@@ -43,7 +43,6 @@ parse:
   - bundle: orders.html
     format: html
     output: orders.json
-    extraction_method: python_parser
     row_selector: div[data-testid="OrdersCompletedSection"]
     columns:
       - name: restaurant

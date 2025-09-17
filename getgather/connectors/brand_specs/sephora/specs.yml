@@ -63,7 +63,6 @@ parse:
   - bundle: orders.html
     format: html
     output: orders.json
-    extraction_method: python_parser
     row_selector: div[data-at="purchase_history_item"]
     columns:
       - name: price
