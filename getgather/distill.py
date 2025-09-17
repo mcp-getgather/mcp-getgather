@@ -107,6 +107,8 @@ async def autofill(page: Page, distilled: str):
     if root:
         domain = cast(Tag, root).get("gg-domain")
 
+    processed: list[str] = []
+
     for element in document.find_all("input", {"type": True}):
         if not isinstance(element, Tag):
             continue
@@ -152,6 +154,51 @@ async def autofill(page: Page, distilled: str):
                     await page.fill(str(selector), user_input)
                 element["value"] = user_input
             await asyncio.sleep(0.25)
+        elif input_type == "radio":
+            if not name:
+                logger.warning(f"There is no name for radio button with id {element.get('id')}!")
+                continue
+            if name in processed:
+                continue
+            processed.append(str(name))
+
+            choices: list[dict[str, str]] = []
+            print()
+            radio_buttons = document.find_all("input", {"type": "radio"})
+            for button in radio_buttons:
+                if not isinstance(button, Tag):
+                    continue
+                if button.get("name") != name:
+                    continue
+                button_id = button.get("id")
+                label_element = (
+                    document.find("label", {"for": str(button_id)}) if button_id else None
+                )
+                label = label_element.get_text() if label_element else None
+                choice_id = str(button_id) if button_id else ""
+                choice_label = label or str(button_id) if button_id else ""
+                choices.append({"id": choice_id, "label": choice_label})
+                print(f" {len(choices)}. {choice_label}")
+
+            choice = 0
+            while choice < 1 or choice > len(choices):
+                answer = await ask(f"Your choice (1-{len(choices)})")
+                try:
+                    choice = int(answer)
+                except ValueError:
+                    choice = 0
+
+            logger.info(f"Choosing {choices[choice - 1]['label']}")
+            print()
+
+            selected_choice = choices[choice - 1]
+            radio = document.find("input", {"type": "radio", "id": selected_choice["id"]})
+            if radio and isinstance(radio, Tag):
+                selector, frame_selector = get_selector(str(radio.get("gg-match")))
+                if frame_selector:
+                    await page.frame_locator(str(frame_selector)).locator(str(selector)).check()
+                else:
+                    await page.check(str(selector))
 
     return str(document)
 
