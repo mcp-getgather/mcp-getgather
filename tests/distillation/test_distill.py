@@ -52,12 +52,9 @@ async def test_distillation_loop():
     patterns = load_distillation_patterns(path)
     assert patterns, "No patterns found to begin matching."
 
-    fields = ["email", "password"]
-
     result = await run_distillation_loop(
         location="http://localhost:5001/auth/email-and-password",
         patterns=patterns,
-        fields=fields,
         browser_profile=profile,
         timeout=30,
         interactive=True,
