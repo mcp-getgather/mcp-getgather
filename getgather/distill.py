@@ -339,7 +339,9 @@ async def run_distillation_loop(
 
         logger.info(f"Starting browser {profile.id}")
         logger.info(f"Navigating to {location}")
-        await page.goto(location, timeout=60000)  # 60 seconds timeout
+        await page.goto(
+            location,
+        )
 
         TICK = 1  # seconds
         max = timeout // TICK
