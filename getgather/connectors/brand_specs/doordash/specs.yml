@@ -35,6 +35,8 @@ signin:
       type: text_multi
       prompt: 6-digit one time code
       selector: input[type="number"]
+      expect_nav: true
+      url: https://www.doordash.com/orders
   pages:
     - name: Email page
       fields: [email, email_continue]
