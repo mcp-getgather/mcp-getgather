@@ -86,33 +86,51 @@ async def is_visible(locator: Locator) -> bool:
 
 async def handle_click(
     page: Frame | Page,
-    selector_or_field: str | Field,
+    *,
+    selector: str | None = None,
+    field: Field | None = None,
     download_filename: str | None,
     bundle_dir: Path | None,
     timeout: int = 3000,
 ):
-    logger.info(f"📝 Clicking {selector_or_field}...")
+    if field and selector:
+        raise ValueError("Only one of field or selector should be provided for click")
+
     async with try_download(page, download_filename, bundle_dir):  # type: ignore
+        name = ""
+
         try:
-            if isinstance(selector_or_field, Field):
-                locator = selector_or_field.locator(page)
+            if field:
+                locator = field.locator(page)
+            elif selector:
+                locator = page.locator(selector)
             else:
-                locator = page.locator(selector_or_field)
+                raise ValueError("No selector or field provided for click")
+
+            name = field.name if field else selector
+            logger.info(f"📝 Clicking {name}...")
+
             button = await get_first_visible(locator)
-            logger.debug(
-                f"🔘 Button {selector_or_field} is {'visible' if button else 'not visible'}"
-            )
+
+            logger.debug(f"🔘 Button {name} is {'visible' if button else 'not visible'}")
             if button:
-                logger.debug(f"🔘 Clicking {selector_or_field}...")
+                logger.debug(f"🔘 Clicking {name}...")
                 await button.click()
-                logger.debug(f"🔘 Clicked {selector_or_field}")
+                logger.debug(f"🔘 Clicked {name}")
         except TimeoutError as e:
             if timeout > 0:
                 timeout -= LOCATOR_ALL_TIMEOUT
                 logger.info(
-                    f"⏳ Locator {selector_or_field} not found {e}, retrying with {timeout} ms timeout..."
+                    f"⏳ Locator {name} not found {e}, retrying with {timeout} ms timeout..."
                 )
-                await handle_click(page, selector_or_field, download_filename, bundle_dir, timeout)
+                await handle_click(
+                    page,
+                    selector=selector,
+                    field=field,
+                    download_filename=download_filename,
+                    bundle_dir=bundle_dir,
+                    timeout=timeout,
+                )
             else:
                 raise
         except Exception:

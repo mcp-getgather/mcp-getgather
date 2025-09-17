@@ -187,7 +187,9 @@ async def _handle_fields(fld: Field, current_frame: Frame | Page, flow_state: Fl
     if fld.type == "click" or fld.type == "autoclick":
         if not fld.selector:
             raise ValueError(f"⚠️ No selector provided for click field '{fld.name}'")
-        await handle_click(current_frame, fld, None, flow_state.bundle_dir)
+        await handle_click(
+            current_frame, field=fld, download_filename=None, bundle_dir=flow_state.bundle_dir
+        )
     elif fld.needs_multi_fill:
         await handle_fill_multi(current_frame, fld, value)
     elif fld.needs_single_fill:
@@ -377,10 +379,10 @@ async def flow_step(*, page: Page, flow_state: FlowState) -> FlowState:
                 if field.selector:
                     await handle_click(
                         current_page,
-                        field,
-                        step.download_filename,
-                        flow_state.bundle_dir,
-                        timeout,
+                        field=field,
+                        download_filename=step.download_filename,
+                        bundle_dir=flow_state.bundle_dir,
+                        timeout=timeout,
                     )
                 else:
                     raise ValueError(f"⚠️ No selector provided for {field.name}")
@@ -400,10 +402,10 @@ async def flow_step(*, page: Page, flow_state: FlowState) -> FlowState:
     if step.click:
         await handle_click(
             current_page,
-            step.click,
-            step.download_filename,
-            flow_state.bundle_dir,
-            timeout,
+            selector=step.click,
+            download_filename=step.download_filename,
+            bundle_dir=flow_state.bundle_dir,
+            timeout=timeout,
         )
 
     if step.press:
