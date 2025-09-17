@@ -8,8 +8,8 @@ signin:
       selector: body
     - name: email
       type: text
-      prompt: Email or phone number
-      selector: input[label="Email or phone number"]
+      prompt: Email
+      selector: input[label="Email"]
     - name: email_continue
       type: click
       selector: button[type="button"]:has-text("Continue")
