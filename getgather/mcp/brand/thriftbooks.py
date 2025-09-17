@@ -9,7 +9,7 @@ thriftbooks_mcp = BrandMCPBase(brand_id="thriftbooks", name="Thriftbooks MCP")
 
 
 @thriftbooks_mcp.tool(tags={"private"})
-async def get_feed() -> dict[str, Any]:
+async def get_order_history() -> dict[str, Any]:
     """Get order history of thriftbooks."""
     browser_profile = get_mcp_browser_profile()
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
