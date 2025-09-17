@@ -45,6 +45,15 @@ def get_selector(input_selector: str | None) -> tuple[str | None, str | None]:
     return match.group(2), match.group(1)
 
 
+def extract_value(item: Tag, attribute: str | None = None) -> str:
+    if attribute:
+        value = item.get(attribute)
+        if isinstance(value, list):
+            value = value[0] if value else ""
+        return value.strip() if isinstance(value, str) else ""
+    return item.get_text(strip=True)
+
+
 async def convert(distilled: str):
     document = BeautifulSoup(distilled, "html.parser")
     snippet = document.find("script", {"type": "application/json"})
@@ -57,25 +66,25 @@ async def convert(distilled: str):
 
             rows = document.select(str(converter.get("rows", "")))
             logger.info(f"Found {len(rows)} rows")
-            converted: list[dict[str, str]] = []
+            converted: list[dict[str, str | list[str]]] = []
             for _, el in enumerate(rows):
-                kv: dict[str, str] = {}
+                kv: dict[str, str | list[str]] = {}
                 for col in converter.get("columns", []):
                     name = col.get("name")
                     selector = col.get("selector")
                     attribute = col.get("attribute")
+                    kind = col.get("kind")
                     if not name or not selector:
                         continue
+
+                    if kind == "list":
+                        items = el.select(str(selector))
+                        kv[name] = [extract_value(item, attribute) for item in items]
+                        continue
+
                     item = el.select_one(str(selector))
                     if item:
-                        if attribute:
-                            value = item.get(attribute)
-                            if isinstance(value, list):
-                                value = value[0] if value else None
-                            if isinstance(value, str):
-                                kv[name] = value.strip()
-                        else:
-                            kv[name] = item.get_text(strip=True)
+                        kv[name] = extract_value(item, attribute)
                 if len(kv.keys()) > 0:
                     converted.append(kv)
             logger.info(f"Conversion done for {len(converted)} entries.")
@@ -91,48 +100,60 @@ async def ask(message: str, mask: str | None = None) -> str:
         return input(f"{message}: ")
 
 
-async def autofill(page: Page, distilled: str, fields: list[str]):
+async def autofill(page: Page, distilled: str):
     document = BeautifulSoup(distilled, "html.parser")
     root = document.find("html")
     domain = None
     if root:
         domain = cast(Tag, root).get("gg-domain")
 
-    for field in fields:
-        element = document.find("input", {"type": field})
-        selector = None
-        frame_selector = None
+    for element in document.find_all("input", {"type": True}):
+        if not isinstance(element, Tag):
+            continue
 
-        if element:
-            selector, frame_selector = get_selector(str(cast(Tag, element).get("gg-match")))
+        input_type = element.get("type")
+        name = element.get("name")
 
-        if selector:
+        if not name or (isinstance(name, str) and len(name) == 0):
+            logger.warning(f"There is an input (of type {input_type}) without a name!")
+
+        selector, frame_selector = get_selector(str(element.get("gg-match", "")))
+        if not selector:
+            logger.warning(f"There is an input (of type {input_type}) without a selector!")
+            continue
+
+        if input_type in ["email", "tel", "text", "password"]:
+            field = name or input_type
+            logger.debug(f"Autofilling type={input_type} name={name}...")
+
             source = f"{domain}_{field}" if domain else field
-            key = source.upper()
+            key = str(source).upper()
             value = os.getenv(key)
 
             if value and len(value) > 0:
                 logger.info(f"Using {key} for {field}")
-
                 if frame_selector:
                     await page.frame_locator(str(frame_selector)).locator(str(selector)).fill(value)
                 else:
                     await page.fill(str(selector), value)
+                element["value"] = value
             else:
-                placeholder = cast(Tag, element).get("placeholder")
+                placeholder = element.get("placeholder")
                 prompt = str(placeholder) if placeholder else f"Please enter {field}"
-                mask = "*" if field == "password" else None
-
+                mask = "*" if input_type == "password" else None
+                user_input = await ask(prompt, mask)
                 if frame_selector:
                     await (
                         page.frame_locator(str(frame_selector))
                         .locator(str(selector))
-                        .fill(await ask(prompt, mask))
+                        .fill(user_input)
                     )
-
                 else:
-                    await page.fill(str(selector), await ask(prompt, mask))
+                    await page.fill(str(selector), user_input)
+                element["value"] = user_input
             await asyncio.sleep(0.25)
+
+    return str(document)
 
 
 async def locate(locator: Locator) -> Locator | None:
@@ -300,11 +321,10 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
 async def run_distillation_loop(
     location: str,
     patterns: list[Pattern],
-    fields: list[str] = [],
     browser_profile: BrowserProfile | None = None,
     timeout: int = 15,
     interactive: bool = True,
-) -> str | list[dict[str, str]] | None:
+) -> str | list[dict[str, str | list[str]]] | None:
     if len(patterns) == 0:
         logger.error("No distillation patterns provided")
         raise ValueError("No distillation patterns provided")
@@ -336,14 +356,18 @@ async def run_distillation_loop(
                 if match.distilled == current.distilled:
                     logger.debug(f"Still the same: {match.name}")
                 else:
-                    current = match
-                    print()
-                    print(current.distilled)
+                    distilled = match.distilled
                     if interactive:
-                        await autofill(page, current.distilled, fields)
-                        await autoclick(page, current.distilled)
-                    if await terminate(page, current.distilled):
-                        converted = await convert(current.distilled)
+                        distilled = await autofill(page, distilled)
+
+                    current = match
+                    current.distilled = distilled
+                    print()
+                    print(distilled)
+                    if interactive:
+                        await autoclick(page, distilled)
+                    if await terminate(page, distilled):
+                        converted = await convert(distilled)
                         if converted:
                             return converted
                         break

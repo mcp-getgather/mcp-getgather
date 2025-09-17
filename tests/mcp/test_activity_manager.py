@@ -1,13 +1,11 @@
 import asyncio
 from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from pytest import MonkeyPatch
 
 from getgather.mcp.activity import Activity, ActivityManager, activity, activity_manager
-from getgather.mcp.auth import AuthUser
 
 
 @pytest.fixture
@@ -29,11 +27,7 @@ class TestActivityManager:
         name = "test-activity"
         start_time = datetime.now(UTC)
 
-        activity_id = manager.add(
-            Activity(
-                user_login="user@localhost", brand_id=brand_id, name=name, start_time=start_time
-            )
-        ).id
+        activity_id = manager.add(Activity(brand_id=brand_id, name=name, start_time=start_time)).id
 
         assert isinstance(activity_id, str)
         assert len(activity_id) == 32  # UUID hex format
@@ -50,30 +44,9 @@ class TestActivityManager:
         """Test that multiple activities get unique UUIDs."""
         start_time = datetime.now(UTC)
 
-        id1 = manager.add(
-            Activity(
-                user_login="user@localhost",
-                brand_id="brand1",
-                name="activity1",
-                start_time=start_time,
-            )
-        ).id
-        id2 = manager.add(
-            Activity(
-                user_login="user@localhost",
-                brand_id="brand2",
-                name="activity2",
-                start_time=start_time,
-            )
-        ).id
-        id3 = manager.add(
-            Activity(
-                user_login="user@localhost",
-                brand_id="brand3",
-                name="activity3",
-                start_time=start_time,
-            )
-        ).id
+        id1 = manager.add(Activity(brand_id="brand1", name="activity1", start_time=start_time)).id
+        id2 = manager.add(Activity(brand_id="brand2", name="activity2", start_time=start_time)).id
+        id3 = manager.add(Activity(brand_id="brand3", name="activity3", start_time=start_time)).id
 
         # All IDs should be unique UUID hex strings
         assert isinstance(id1, str) and len(id1) == 32
@@ -86,9 +59,7 @@ class TestActivityManager:
         """Test updating activity end time and execution time calculation."""
         start_time = datetime.now(UTC)
         activity_id = manager.add(
-            Activity(
-                user_login="user@localhost", brand_id="brand1", name="test", start_time=start_time
-            )
+            Activity(brand_id="brand1", name="test", start_time=start_time)
         ).id
 
         # Simulate some time passing
@@ -97,7 +68,6 @@ class TestActivityManager:
         manager.update(
             Activity(
                 id=activity_id,
-                user_login="user@localhost",
                 brand_id="brand1",
                 name="test",
                 start_time=start_time,
@@ -120,7 +90,6 @@ class TestActivityManager:
             manager.update(
                 Activity(
                     id="nonexistent-id",
-                    user_login="user@localhost",
                     brand_id="brand1",
                     name="test",
                     start_time=datetime.now(UTC),
@@ -149,19 +118,9 @@ class TestActivityManager:
         await asyncio.sleep(0.001)
         start_time3 = datetime.now(UTC)
 
-        user_login = "user@localhost"
-
-        id1 = manager.add(
-            Activity(user_login=user_login, brand_id="brand1", name="first", start_time=start_time1)
-        ).id
-        id2 = manager.add(
-            Activity(
-                user_login=user_login, brand_id="brand2", name="second", start_time=start_time2
-            )
-        ).id
-        id3 = manager.add(
-            Activity(user_login=user_login, brand_id="brand3", name="third", start_time=start_time3)
-        ).id
+        id1 = manager.add(Activity(brand_id="brand1", name="first", start_time=start_time1)).id
+        id2 = manager.add(Activity(brand_id="brand2", name="second", start_time=start_time2)).id
+        id3 = manager.add(Activity(brand_id="brand3", name="third", start_time=start_time3)).id
 
         activities = manager.get_all()
         assert len(activities) == 3
@@ -172,33 +131,6 @@ class TestActivityManager:
         assert activities[2].id == id1  # first (oldest)
 
     @pytest.mark.asyncio
-    async def test_get_all_activities_filtered_by_user_login(
-        self, manager: ActivityManager
-    ) -> None:
-        """Test getting all activities filtered by user login."""
-        manager.add(
-            Activity(
-                user_login="user_1", brand_id="brand1", name="first", start_time=datetime.now(UTC)
-            )
-        )
-        manager.add(
-            Activity(
-                user_login="user_2", brand_id="brand2", name="second", start_time=datetime.now(UTC)
-            )
-        )
-        manager.add(
-            Activity(
-                user_login="user_1", brand_id="brand3", name="third", start_time=datetime.now(UTC)
-            )
-        )
-        mock_auth_user = AuthUser(login="user_1", sub="user_1")
-        with patch("getgather.mcp.persist.get_auth_user", return_value=mock_auth_user):
-            activities = manager.get_all()
-            assert len(activities) == 2
-            assert activities[0].user_login == "user_1"
-            assert activities[1].user_login == "user_1"
-
-    @pytest.mark.asyncio
     async def test_json_persistence(self, manager: ActivityManager) -> None:
         """Test that activities persist across manager instances."""
         start_time = datetime.now(UTC)
@@ -206,7 +138,6 @@ class TestActivityManager:
         # Create activity with first manager instance
         activity_id = manager.add(
             Activity(
-                user_login="user@localhost",
                 brand_id="test-brand",
                 name="test-activity",
                 start_time=start_time,
@@ -229,7 +160,6 @@ class TestActivityManager:
         start_time = datetime.now(UTC)
         activity_id = manager.add(
             Activity(
-                user_login="user@localhost",
                 brand_id="test-brand",
                 name="test-activity",
                 start_time=start_time,

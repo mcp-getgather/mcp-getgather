@@ -27,7 +27,7 @@ from getgather.logs import logger
 router = APIRouter(prefix="/dpage", tags=["dpage"])
 
 active_pages: dict[str, Page] = {}
-distillation_results: dict[str, list[dict[str, str]]] = {}
+distillation_results: dict[str, list[dict[str, str | list[str]]]] = {}
 global_browser_profile: BrowserProfile | None = None
 
 
@@ -206,6 +206,7 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                             logger.info(f"Using form data {name}")
                             names.append(name_str)
                             input["value"] = value
+                            current.distilled = str(document)
                             if frame_selector:
                                 await (
                                     page.frame_locator(str(frame_selector))

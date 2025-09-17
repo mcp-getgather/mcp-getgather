@@ -59,12 +59,11 @@ async def distill_command(location: str, option: str | None = None):
 
 async def run_command(location: str):
     patterns = load_distillation_patterns(PATTERNS_LOCATION)
-    fields = ["email", "tel", "text", "password"]
 
     if not location.startswith("http"):
         location = f"https://{location}"
 
-    result = await run_distillation_loop(location, patterns=patterns, fields=fields)
+    result = await run_distillation_loop(location, patterns=patterns)
     print(result)
 
     logger.info("Terminated.")

@@ -1,9 +1,6 @@
-import functools
 from pathlib import Path
-from typing import Awaitable, Callable, ParamSpec, TypeVar
 
-from fastapi import HTTPException
-from pydantic import field_validator, model_validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from getgather.logs import logger, setup_logging
@@ -44,14 +41,7 @@ class Settings(BaseSettings):
     )
     RRWEB_MASK_ALL_INPUTS: bool = True
 
-    MULTI_USER_ENABLED: bool = False
-
     SERVER_NAME: str = ""
-    SERVER_ORIGIN: str = "http://localhost:23456"
-
-    OAUTH_GITHUB_CLIENT_ID: str = ""
-    OAUTH_GITHUB_CLIENT_SECRET: str = ""
-    OAUTH_GITHUB_REDIRECT_PATH: str = "/auth/github/callback"
 
     @property
     def brand_spec_dir(self) -> Path:
@@ -111,44 +101,5 @@ class Settings(BaseSettings):
             logger.warning("SENTRY_DSN is not set, logging will not be captured in Sentry.")
         return v
 
-    @model_validator(mode="after")
-    def validate_multi_user_enabled(self) -> "Settings":
-        if self.MULTI_USER_ENABLED:
-            auth_enabled = all([
-                self.SERVER_ORIGIN,
-                self.OAUTH_GITHUB_CLIENT_ID,
-                self.OAUTH_GITHUB_CLIENT_SECRET,
-                self.OAUTH_GITHUB_REDIRECT_PATH,
-            ])
-            if not auth_enabled:
-                raise ValueError("MCP auth must be enabled in MULTI_USER mode.")
-        logger.info(
-            f"Multi-user mode and MCP auth are {'enabled' if self.MULTI_USER_ENABLED else 'disabled'}."
-        )
-        return self
-
-    @property
-    def mcp_auth_provider(self) -> str:
-        """Only supports GitHub for now."""
-        return "github"
-
 
 settings = Settings()
-
-
-P = ParamSpec("P")
-T = TypeVar("T")
-
-
-def disabled_if_multi_user(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
-    """Disable the route if multi-user is enabled."""
-
-    @functools.wraps(func)
-    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-        if settings.MULTI_USER_ENABLED:
-            raise HTTPException(
-                status_code=404, detail=f"Route {func.__name__} is disabled in multi-user mode."
-            )
-        return await func(*args, **kwargs)
-
-    return wrapper

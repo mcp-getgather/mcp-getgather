@@ -1,14 +1,12 @@
 import shutil
 import threading
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from pydantic import BaseModel, ValidationError
 
 from getgather.config import settings
-from getgather.mcp.auth import AuthUser
-from getgather.mcp.persist import ModelWithAuth, PersistentStore, PersistentStoreWithAuth
+from getgather.mcp.persist import PersistentStore
 
 
 # Test models
@@ -16,13 +14,6 @@ class ExampleUser(BaseModel):
     id: str
     name: str
     email: str
-
-
-class ExampleUserWithAuth(ModelWithAuth):
-    id: str
-    name: str
-    email: str
-    user_login: str
 
 
 class ExamplePersistentStore(PersistentStore[ExampleUser]):
@@ -39,30 +30,12 @@ class ExamplePersistentStore(PersistentStore[ExampleUser]):
         return key in self._indexes
 
 
-class ExamplePersistentStoreWithAuth(PersistentStoreWithAuth[ExampleUserWithAuth]):
-    _row_model = ExampleUserWithAuth
-    _file_name = "test_users_auth.json"
-    _key_field = "id"
-
-    def get_indexes_count(self) -> int:
-        """Helper method to get index count for testing."""
-        return len(self._indexes)
-
-    def has_key_in_index(self, key: tuple[str, str] | str) -> bool:
-        """Helper method to check if key exists in index for testing."""
-        return key in self._indexes
-
-
 def clear_singleton_instances():
     """Helper function to clear singleton instances for testing."""
     # Access the class-level _instances dict directly using getattr to avoid protected access warnings
     instances_dict = getattr(PersistentStore, "_instances", None)
     if instances_dict is not None:
         instances_dict.clear()
-
-    auth_instances_dict = getattr(PersistentStoreWithAuth, "_instances", None)
-    if auth_instances_dict is not None:
-        auth_instances_dict.clear()
 
 
 @pytest.fixture
@@ -72,21 +45,6 @@ def store(temp_project_dir: Path) -> ExamplePersistentStore:
     clear_singleton_instances()
 
     return ExamplePersistentStore()
-
-
-@pytest.fixture
-def store_with_auth(temp_project_dir: Path) -> ExamplePersistentStoreWithAuth:
-    """Create a fresh PersistentStore for each test with isolated storage."""
-    # Clear singleton instances to ensure fresh store
-    clear_singleton_instances()
-
-    return ExamplePersistentStoreWithAuth()
-
-
-@pytest.fixture
-def mock_auth_user() -> AuthUser:
-    """Mock authenticated user for testing."""
-    return AuthUser(sub="test@github", login="testuser@github", email="test@example.com")
 
 
 class TestPersistentStoreBasic:
@@ -224,120 +182,6 @@ class TestPersistentStoreBasic:
             assert store.get(f"user{i}") is not None
 
 
-class TestPersistentStoreWithAuthBasic:
-    """Test basic PersistentStoreWithAuth functionality."""
-
-    def test_index_key_with_auth(
-        self, store_with_auth: ExamplePersistentStoreWithAuth, mock_auth_user: AuthUser
-    ):
-        """Test index key generation includes user login."""
-        with patch("getgather.mcp.persist.get_auth_user", return_value=mock_auth_user):
-            result = store_with_auth.key_for_retrieval("test-key")
-
-            assert result == ("testuser@github", "test-key")
-
-    def test_key_with_auth(
-        self, store_with_auth: ExamplePersistentStoreWithAuth, mock_auth_user: AuthUser
-    ):
-        """Test key extraction includes user login."""
-        user = ExampleUserWithAuth(
-            id="123", name="John Doe", email="john@example.com", user_login="testuser@github"
-        )
-
-        with patch("getgather.mcp.persist.get_auth_user", return_value=mock_auth_user):
-            result = store_with_auth.row_key_for_retrieval(user)
-
-            assert result == ("testuser@github", "123")
-
-    def test_add_user_with_auth(
-        self, store_with_auth: ExamplePersistentStoreWithAuth, mock_auth_user: AuthUser
-    ):
-        """Test adding a user with authentication."""
-        user = ExampleUserWithAuth(
-            id="123", name="John Doe", email="john@example.com", user_login="testuser@github"
-        )
-
-        with patch("getgather.mcp.persist.get_auth_user", return_value=mock_auth_user):
-            result = store_with_auth.add(user)
-
-            assert result == user
-            assert len(store_with_auth.rows) == 1
-            assert store_with_auth.rows[0] == user
-            assert store_with_auth.has_key_in_index(("testuser@github", "123"))
-
-    def test_get_user_with_auth(
-        self, store_with_auth: ExamplePersistentStoreWithAuth, mock_auth_user: AuthUser
-    ):
-        """Test getting a user with authentication."""
-        user = ExampleUserWithAuth(
-            id="123", name="John Doe", email="john@example.com", user_login="testuser@github"
-        )
-
-        with patch("getgather.mcp.persist.get_auth_user", return_value=mock_auth_user):
-            store_with_auth.add(user)
-            result = store_with_auth.get("123")
-
-            assert result == user
-
-    def test_user_isolation_with_auth(self, store_with_auth: ExamplePersistentStoreWithAuth):
-        """Test that users are isolated by authentication."""
-        user1 = ExampleUserWithAuth(
-            id="123", name="John Doe", email="john@example.com", user_login="user1@github"
-        )
-        user2 = ExampleUserWithAuth(
-            id="123", name="Jane Doe", email="jane@example.com", user_login="user2@github"
-        )
-
-        # Add user1 as user1@github
-        mock_user1 = AuthUser(sub="user1@github", login="user1@github", email="user1@example.com")
-        with patch("getgather.mcp.persist.get_auth_user", return_value=mock_user1):
-            store_with_auth.add(user1)
-
-        # Add user2 as user2@github (same ID but different auth user)
-        mock_user2 = AuthUser(sub="user2@github", login="user2@github", email="user2@example.com")
-        with patch("getgather.mcp.persist.get_auth_user", return_value=mock_user2):
-            store_with_auth.add(user2)
-
-        # re-load to rebuild index for more robust testing
-        store_with_auth.reset()
-        store_with_auth.load()
-
-        # Both should exist but be isolated
-        assert len(store_with_auth.rows) == 2
-
-        # Verify isolation: user1 can only see their own data
-        with patch("getgather.mcp.persist.get_auth_user", return_value=mock_user1):
-            result = store_with_auth.get("123")
-            assert result == user1
-
-        # user2 can only see their own data
-        with patch("getgather.mcp.persist.get_auth_user", return_value=mock_user2):
-            result = store_with_auth.get("123")
-            assert result == user2
-
-    def test_update_user_with_auth(
-        self, store_with_auth: ExamplePersistentStoreWithAuth, mock_auth_user: AuthUser
-    ):
-        """Test updating a user with authentication."""
-        user = ExampleUserWithAuth(
-            id="123", name="John Doe", email="john@example.com", user_login="testuser@github"
-        )
-
-        with patch("getgather.mcp.persist.get_auth_user", return_value=mock_auth_user):
-            store_with_auth.add(user)
-
-            updated_user = ExampleUserWithAuth(
-                id="123",
-                name="John Smith",
-                email="johnsmith@example.com",
-                user_login="testuser@github",
-            )
-            result = store_with_auth.update(updated_user)
-
-            assert result == updated_user
-            assert store_with_auth.get("123") == updated_user
-
-
 class TestSingletonBehavior:
     """Test singleton behavior of persistent stores."""
 
@@ -352,28 +196,22 @@ class TestSingletonBehavior:
         # Should be the same instance
         assert store1 is store2
 
-    def test_singleton_behavior_with_auth(self, temp_project_dir: Path):
-        """Test that auth stores behave as singletons."""
-        # Clear singleton instances
-        clear_singleton_instances()
-
-        store1 = ExamplePersistentStoreWithAuth()
-        store2 = ExamplePersistentStoreWithAuth()
-
-        # Should be the same instance
-        assert store1 is store2
-
     def test_different_store_types_are_separate_singletons(self, temp_project_dir: Path):
         """Test that different store types maintain separate singleton instances."""
         # Clear singleton instances
         clear_singleton_instances()
 
-        regular_store = ExamplePersistentStore()
-        auth_store = ExamplePersistentStoreWithAuth()
+        class AnotherExamplePersistentStore(PersistentStore[ExampleUser]):
+            _row_model = ExampleUser
+            _file_name = "test_users_another.json"
+            _key_field = "id"
+
+        store = ExamplePersistentStore()
+        auth_store = AnotherExamplePersistentStore()
 
         # Should be different instances
-        assert regular_store is not auth_store
-        assert type(regular_store) != type(auth_store)
+        assert store is not auth_store
+        assert type(store) != type(auth_store)
 
 
 class TestErrorHandling:
@@ -389,19 +227,6 @@ class TestErrorHandling:
 
         with pytest.raises(ValidationError):
             InvalidTestStore()
-
-    def test_auth_store_requires_user_login_field(self):
-        """Test that auth store validation fails without user_login field."""
-
-        class InvalidAuthStore(
-            PersistentStoreWithAuth[ExampleUser]  # type: ignore
-        ):  # TestUser doesn't have user_login
-            _row_model = ExampleUser
-            _file_name = "test.json"
-            _key_field = "id"
-
-        with pytest.raises(ValidationError):
-            InvalidAuthStore()
 
     def test_file_path_creation(self, store: ExamplePersistentStore):
         """Test that directory is created if it doesn't exist."""

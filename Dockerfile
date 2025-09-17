@@ -73,7 +73,7 @@ RUN mkdir -p frontend/__generated__ && \
 COPY frontend/ ./frontend/
 
 # Build frontend
-RUN npm run build
+RUN npm run build:ci
 
 # Stage 3: Final image
 FROM mirror.gcr.io/library/python:3.13-slim-bookworm

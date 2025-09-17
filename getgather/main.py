@@ -20,9 +20,8 @@ from fastapi.staticfiles import StaticFiles
 from getgather.api.api import api_app
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
-from getgather.config import disabled_if_multi_user, settings
+from getgather.config import settings
 from getgather.logs import logger
-from getgather.mcp.auth import setup_mcp_auth
 from getgather.mcp.dpage import router as dpage_router
 from getgather.mcp.main import create_mcp_apps
 from getgather.startup import startup
@@ -59,12 +58,10 @@ app = FastAPI(
 
 
 STATIC_ASSETS_DIR = Path(__file__).parent / "static" / "assets"
-BUILD_ASSETS_DIR = Path(__file__).parent / "frontend" / "__assets"
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 
 
 app.mount("/__static/assets", StaticFiles(directory=STATIC_ASSETS_DIR), name="assets")
-app.mount("/__assets", StaticFiles(directory=BUILD_ASSETS_DIR), name="__assets")
 
 
 @app.get("/live")
@@ -73,7 +70,6 @@ def read_live():
 
 
 @app.get("/live/{file_path:path}")
-@disabled_if_multi_user
 async def proxy_live_files(file_path: str):
     # noVNC lite's main web UI
     if file_path == "" or file_path == "old-index.html":
@@ -203,7 +199,6 @@ def inspector_root():
 
 
 @app.get("/inspector/{file_path:path}")
-@disabled_if_multi_user
 async def proxy_inspector(file_path: str):
     """Proxy MCP Inspector service running on localhost:6274."""
     target_url = f"http://localhost:6274/{file_path}"
@@ -252,9 +247,6 @@ async def proxy_inspector(file_path: str):
 
 app.include_router(dpage_router)
 app.mount("/api", api_app)
-
-if settings.MULTI_USER_ENABLED:
-    setup_mcp_auth(app, [mcp_app.route for mcp_app in mcp_apps])
 
 for mcp_app in mcp_apps:
     app.mount(mcp_app.route, mcp_app.app)
