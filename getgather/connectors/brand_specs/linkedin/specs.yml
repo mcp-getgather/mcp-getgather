@@ -46,16 +46,3 @@ extract:
     - name: Extract posts
       bundle: feed.html
       slurp_selector: div.scaffold-finite-scroll__content
-
-parse:
-  - bundle: feed.html
-    format: html
-    output: feed.json
-    row_selector: .fie-impression-container
-    columns:
-      - name: name
-        selector: a > span > span > span > span
-      - name: post
-        selector: .wXiqUCwYhtSgrBQWnlBCASTHLOdnCCErtWUh
-        # I cannot make it work using nth-child, 
-        # so for now just using this magic selector, that I know will break in the future
