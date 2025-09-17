@@ -1,0 +1,26 @@
+<html gg-domain="astronauts.id" gg-priority="1">
+  <head>
+    <title>Astro Orders</title>
+  </head>
+  <body>
+    <div gg-stop gg-match-html="div.MuiGrid-container"></div>
+    <script type="application/json">
+      {
+        "rows": "div.MuiGrid-item.css-1928xuh",
+        "columns": [
+          { "name": "order_status", "selector": "h3.MuiTypography-headline-tiny" },
+          {
+            "name": "order_date",
+            "selector": "div.css-0 span.MuiTypography-paragraph-tiny:first-child"
+          },
+          {
+            "name": "product_count",
+            "selector": "div.css-0 span.MuiTypography-paragraph-tiny:last-child"
+          },
+          { "name": "product_image", "selector": "div.css-lld82g img", "attribute": "src" },
+          { "name": "product_id", "selector": "div.css-lld82g img", "attribute": "alt" }
+        ]
+      }
+    </script>
+  </body>
+</html>
