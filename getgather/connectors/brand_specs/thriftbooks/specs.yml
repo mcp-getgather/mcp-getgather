@@ -17,8 +17,8 @@ signin:
   pages:
     - name: Login page
       fields: [email, password, submit]
-    - name: Account page
-      url: https://www.thriftbooks.com/account/personalinfo/
+    - name: Home page
+      url: https://www.thriftbooks.com/
       end: true
 
   start: https://www.thriftbooks.com/account/login/
