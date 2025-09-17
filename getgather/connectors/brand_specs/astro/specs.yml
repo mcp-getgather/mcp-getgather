@@ -28,34 +28,3 @@ signin:
       url: https://www.astronauts.id
       end: true
   start: Log in
-
-extract:
-  steps:
-    - name: Go to order history
-      url: https://www.astronauts.id/order/history
-
-    - name: Wait for orders to load
-      wait_for_selector: div.MuiGrid-container
-
-    - name: Extract past orders
-      bundle: orders.html
-      slurp_selector: div.MuiGrid-container
-
-parse:
-  - bundle: orders.html
-    format: html
-    output: orders.json
-    row_selector: div.MuiGrid-item.css-1928xuh
-    columns:
-      - name: order_status
-        selector: h3.MuiTypography-headline-tiny
-      - name: order_date
-        selector: div.css-0 span.MuiTypography-paragraph-tiny:first-child
-      - name: product_count
-        selector: div.css-0 span.MuiTypography-paragraph-tiny:last-child
-      - name: product_image
-        selector: div.css-lld82g img
-        attribute: src
-      - name: product_id
-        selector: div.css-lld82g img
-        attribute: alt

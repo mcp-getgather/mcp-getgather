@@ -5,7 +5,6 @@ from typing import Any, Generic, Literal, Self, TypeVar, overload
 from pydantic import BaseModel, PrivateAttr, model_validator
 
 from getgather.config import settings
-from getgather.mcp.auth import get_auth_user
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -120,33 +119,3 @@ class PersistentStore(BaseModel, Generic[T], metaclass=SingletonBaseModelMeta):
     def reset(self) -> None:
         self._indexes = {}
         self.rows = []
-
-
-class ModelWithAuth(BaseModel):
-    user_login: str
-
-
-TModelWithAuth = TypeVar("TModelWithAuth", bound=ModelWithAuth)
-
-
-class PersistentStoreWithAuth(PersistentStore[TModelWithAuth]):
-    """
-    PersistentStore that requires user_login field in the row model.
-    Rows are indexed by (user_login, _key_field).
-    """
-
-    @model_validator(mode="after")
-    def validate_auth(self) -> Self:
-        assert "user_login" in self._row_model.model_fields
-        return self
-
-    def key_for_retrieval(self, model_key: str) -> Any:
-        return (get_auth_user().login, model_key)
-
-    def row_key_for_index(self, row: TModelWithAuth) -> Any:
-        return (row.user_login, getattr(row, self._key_field))
-
-    def get_all(self) -> list[TModelWithAuth]:
-        rows = super().get_all()
-        user_login = get_auth_user().login
-        return list(filter(lambda a: a.user_login == user_login, rows))
