@@ -5,17 +5,18 @@ from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import get_mcp_browser_profile
 
-cnn_mcp = BrandMCPBase(brand_id="cnn", name="CNN MCP")
+linkedin_mcp = BrandMCPBase(brand_id="linkedin", name="Linkedin MCP")
 
 
-@cnn_mcp.tool(tags={"private"})
-async def get_newsletter() -> dict[str, Any]:
-    """Get newsletter of cnn."""
-
+@linkedin_mcp.tool(tags={"private"})
+async def get_feed() -> dict[str, Any]:
+    """Get feed of Linkedin."""
     browser_profile = get_mcp_browser_profile()
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
-    newsletter = await run_distillation_loop(
-        "https://www.cnn.com/newsletters", patterns, browser_profile=browser_profile
+    feed = await run_distillation_loop(
+        "https://www.linkedin.com/feed/",
+        patterns,
+        browser_profile=browser_profile,
     )
-    return {"newsletter": newsletter}
+    return {"feed": feed}
