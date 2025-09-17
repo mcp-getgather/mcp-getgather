@@ -22,31 +22,3 @@ signin:
       end: true
 
   start: https://www.thriftbooks.com/account/login/
-
-extract:
-  steps:
-    - name: Go to the order summary page
-      url: https://www.thriftbooks.com/account/ordersummary/
-
-    - name: Wait for the loading
-      timeout: 5
-      wait_for_selector: .AccountDetails-content
-
-    - name: Extract the list of orders
-      bundle: order-summary.html
-      slurp_selector: .AccountOrderSummary
-
-parse:
-  - bundle: order-summary.html
-    format: html
-    output: order-summary.json
-    row_selector: .AccountOrderSummary-orderRow
-    columns:
-      - name: order_number
-        selector: .AccountOrderSummary-orderNumber .AccountOrderSummary-orderData
-      - name: order_date
-        selector: .AccountOrderSummary-orderDate .AccountOrderSummary-orderData
-      - name: order_num_items
-        selector: .AccountOrderSummary-orderNumItems .AccountOrderSummary-orderData
-      - name: order_price
-        selector: .AccountOrderSummary-orderPrice .AccountOrderSummary-orderData
