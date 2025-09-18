@@ -83,6 +83,7 @@ signin:
 
     - name: Fill in the username
       fields: [username, username_submit]
+
     - name: Username not found
       fields: [wait_header_create_account, close_dialog_register, username, username_submit]
 
@@ -93,7 +94,8 @@ signin:
       fields: [header_sign_in, password, password_submit]
 
     - name: Skip verifying phone
-      fields: [wait_bind_phone, wait_bind_phone_code, wait_sms_subscribe, skip_registering_phone_number]
+      fields:
+        [wait_bind_phone, wait_bind_phone_code, wait_sms_subscribe, skip_registering_phone_number]
 
     - name: Home
       url: https://us.shein.com/
@@ -106,15 +108,3 @@ signin:
       fields: [wait_otp_header, otp_input, otp_submit]
 
   start: Login
-
-extract:
-  steps:
-    - name: Go to orders page
-      url: https://us.shein.com/user/orders/list
-
-    - name: Wait for the orders page to load
-      wait_for_selector: div.page-title h1:has-text("My Orders")
-
-    - name: Extract the orders
-      bundle: order.html
-      slurp_selector: div.order-list-container
