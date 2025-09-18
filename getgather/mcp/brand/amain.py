@@ -3,7 +3,7 @@ from typing import Any
 
 from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import get_mcp_browser_profile, with_brand_browser_session
+from getgather.mcp.shared import get_mcp_browser_profile
 
 amain_mcp = BrandMCPBase(brand_id="amain", name="Amain MCP")
 
