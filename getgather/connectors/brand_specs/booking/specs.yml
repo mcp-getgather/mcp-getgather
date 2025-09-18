@@ -40,16 +40,3 @@ signin:
       end: true
 
   start: https://account.booking.com/sign-in
-
-extract:
-  steps:
-    - name: Go to the trips page
-      url: https://secure.booking.com/mytrips.html
-
-    - name: Wait for the trips page
-      timeout: 15
-      wait_for_selector: div#past
-
-    - name: Extract past trips
-      bundle: trips.html
-      slurp_selector: div#past
