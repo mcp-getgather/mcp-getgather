@@ -61,13 +61,17 @@ class StagehandPage(Protocol):
         ...
 
 
-# Currently, we only need the page property and close method
+# Currently, we only need the page property, execute method, and close method
 class StagehandAgent(Protocol):
     """Minimal interface for Stagehand agent."""
 
     @property
     def page(self) -> StagehandPage:
         """Get current page."""
+        ...
+
+    async def execute(self, prompt: str) -> ActResult:
+        """Execute a task using natural language prompt."""
         ...
 
     async def close(self) -> None:
@@ -79,8 +83,9 @@ class StagehandAgent(Protocol):
 class StagehandAgentWrapper:
     """Minimal wrapper around Stagehand."""
 
-    def __init__(self, stagehand: Stagehand):
+    def __init__(self, stagehand: Stagehand, agent: Any) -> None:
         self._stagehand = stagehand
+        self._agent = agent
 
     @property
     def page(self) -> StagehandPage:
@@ -88,6 +93,19 @@ class StagehandAgentWrapper:
         if not self._stagehand.page:
             raise ValueError("Page is not set")
         return self._stagehand.page
+
+    async def execute(self, prompt: str) -> ActResult:
+        """Execute a task using natural language prompt."""
+        # For now, use the page to perform actions based on the prompt
+        if not self._stagehand.page:
+            raise ValueError("Page is not initialized")
+
+        # This is a simple implementation - in practice, you might want to
+        # parse the prompt and perform multiple actions
+        # Note: stagehand's act method has partially unknown types from the library
+        page = self._stagehand.page
+        act_result: ActResult = await page.act(prompt)  # type: ignore[misc]
+        return act_result
 
     async def close(self) -> None:
         """Close and cleanup."""
@@ -168,5 +186,10 @@ async def run_stagehand_agent() -> StagehandAgent:
     config = await _create_stagehand_config()
     stagehand = Stagehand(config=config)
     await stagehand.init()
-    logger.info("StagehandPage created successfully")
-    return StagehandAgentWrapper(stagehand)
+
+    # For now, we'll use the stagehand instance directly
+    # The wrapper will handle the execute method using page operations
+    agent = stagehand
+
+    logger.info("Stagehand agent created successfully")
+    return StagehandAgentWrapper(stagehand, agent)
