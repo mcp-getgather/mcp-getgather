@@ -1,0 +1,19 @@
+<html gg-domain="bestbuy">
+  <head>
+    <title>Best Buy Verification Code</title>
+  </head>
+  <body>
+    <p gg-optional gg-match="h1"></p>
+    <p gg-optional gg-match="div[role=alert]"></p>
+    <p gg-optional gg-match="form div.text-center"></p>
+    <input
+      autofocus
+      name="verificationCode"
+      type="text"
+      inputmode="numeric"
+      placeholder="Verification Code"
+      gg-match="input#verificationCode"
+    />
+    <button gg-autoclick gg-match="button[type=submit]">Confirm</button>
+  </body>
+</html>
