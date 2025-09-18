@@ -19,4 +19,39 @@ async def get_order_history() -> dict[str, Any]:
         patterns,
         browser_profile=browser_profile,
     )
-    return {"purchase_history": purchase_history}
+
+    final_purchase_history: list[dict[str, Any]] = []
+
+    if purchase_history and isinstance(purchase_history, list) and len(purchase_history) > 0:
+        for i in range(len(purchase_history)):
+            purchase = purchase_history[i]
+            order_date_and_store = str(purchase["order_date_and_store"])
+            # NOTE: sometimes the order_id is not returned, so we need to use the order_date_and_store to get the order_id
+            order_id = order_date_and_store.split("#")[1]
+
+            invoice_history = await run_distillation_loop(
+                f"https://www.wayfair.com/v/account/order/details?order_id={order_id}",
+                patterns,
+                browser_profile=browser_profile,
+            )
+
+            if invoice_history and isinstance(invoice_history, list) and len(invoice_history) > 0:
+                final_purchase_history.append({
+                    "order_id": order_id,
+                    "order_date_and_store": order_date_and_store,
+                    "total_price": purchase["total_price"],
+                    "total_item": purchase["total_item"],
+                    "delivery_date": purchase["delivery_date"],
+                    "details": invoice_history,
+                })
+            else:
+                final_purchase_history.append({
+                    "order_id": order_id,
+                    "order_date_and_store": order_date_and_store,
+                    "total_price": purchase["total_price"],
+                    "total_item": purchase["total_item"],
+                    "delivery_date": purchase["delivery_date"],
+                    "details": [],
+                })
+
+    return {"purchase_history": final_purchase_history}
