@@ -94,8 +94,7 @@ signin:
       fields: [header_sign_in, password, password_submit]
 
     - name: Skip verifying phone
-      fields:
-        [wait_bind_phone, wait_bind_phone_code, wait_sms_subscribe, skip_registering_phone_number]
+      fields: [wait_bind_phone, wait_bind_phone_code, wait_sms_subscribe, skip_registering_phone_number]
 
     - name: Home
       url: https://us.shein.com/
