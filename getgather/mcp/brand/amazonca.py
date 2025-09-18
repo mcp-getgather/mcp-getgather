@@ -1,11 +1,18 @@
+import os
+from datetime import datetime
 from typing import Any
 
 from fastmcp import Context
 
 from getgather.connectors.spec_models import Schema as SpecSchema
+from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.mcp.agent import run_agent_for_brand
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import extract, get_mcp_browser_session, with_brand_browser_session
+from getgather.mcp.shared import (
+    get_mcp_browser_profile,
+    get_mcp_browser_session,
+    with_brand_browser_session,
+)
 from getgather.parse import parse_html
 
 amazonca_mcp = BrandMCPBase(brand_id="amazonca", name="Amazon CA MCP")
@@ -14,7 +21,17 @@ amazonca_mcp = BrandMCPBase(brand_id="amazonca", name="Amazon CA MCP")
 @amazonca_mcp.tool(tags={"private"})
 async def get_purchase_history() -> dict[str, Any]:
     """Get purchase/order history of a amazon ca."""
-    return await extract()
+
+    browser_profile = get_mcp_browser_profile()
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")  # pyright: ignore[reportUnknownMemberType]
+    patterns = load_distillation_patterns(path)
+    current_year = datetime.now().year
+    purchases = await run_distillation_loop(
+        f"https://www.amazon.ca/your-orders/orders?timeFilter=year-{current_year}",
+        patterns,
+        browser_profile=browser_profile,
+    )
+    return {"purchases": purchases}
 
 
 @amazonca_mcp.tool
