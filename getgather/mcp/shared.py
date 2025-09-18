@@ -40,7 +40,9 @@ async def signin_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
     link_id = link_data["link_id"]
 
     headers = get_http_headers(include_all=True)
-    host = headers.get("host")
+    print(headers.get("x-forwarded-host"))
+    print(headers.get("host"))
+    host = headers.get("x-forwarded-host") or headers.get("host")
     scheme = headers.get("x-forwarded-proto", "http")
     base_url = f"{scheme}://{host}".rstrip("/")
     hosted_link_url = f"{base_url}/link/{link_id}"
