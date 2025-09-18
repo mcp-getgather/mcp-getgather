@@ -22,6 +22,7 @@ SIGN_IN_PATTERN_ENDPOINTS = [
     "http://localhost:5001/auth/email-and-password",
     "http://localhost:5001/auth/email-and-password-checkbox",
     "http://localhost:5001/auth/email-then-password",
+    "http://localhost:5001/auth/email-then-otp",
 ]
 
 
