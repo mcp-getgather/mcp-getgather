@@ -23,7 +23,7 @@ async def get_purchase_history() -> dict[str, Any]:
     """Get purchase/order history of a amazon ca."""
 
     browser_profile = get_mcp_browser_profile()
-    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")  # pyright: ignore[reportUnknownMemberType]
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
     current_year = datetime.now().year
     purchases = await run_distillation_loop(
