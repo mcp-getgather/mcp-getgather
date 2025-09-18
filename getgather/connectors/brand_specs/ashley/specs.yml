@@ -31,17 +31,8 @@ signin:
       url: https://www.ashleyfurniture.com/account
       end: true
 
+    - name: Home Page
+      url: https://www.ashleyfurniture.com
+      end: true
+
   start: Login Page
-
-extract:
-  steps:
-    - name: Go to the order summary page
-      url: https://www.ashleyfurniture.com/orders
-
-    - name: Wait for the loading
-      timeout: 10
-      wait_for_selector: .order-history
-
-    - name: Extract the list of orders
-      bundle: orders.html
-      slurp_selector: .order-history
