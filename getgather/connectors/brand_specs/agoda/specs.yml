@@ -50,13 +50,3 @@ signin:
       url: https://www.agoda.com/account/profile.html
       end: true
   start: Signin
-extract:
-  steps:
-    - name: Go to profile
-      url: https://www.agoda.com/account/profile.html
-    - name: Wait for profile to load
-      timeout: 5
-      wait_for_selector: div[id=mmb-account-page]
-    - name: Extract the profile information
-      bundle: profile.html
-      slurp_selector: section[id=user-details]
