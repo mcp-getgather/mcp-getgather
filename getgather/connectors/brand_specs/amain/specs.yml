@@ -24,7 +24,7 @@ signin:
       type: wait
       selector: div._content-container._section
     - name: allow_cookies_button
-      type: click
+      type: autoclick
       prompt: Allow cookies
       selector: button#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll
 
@@ -32,8 +32,8 @@ signin:
     - name: Sign in page
       url: https://www.amainhobbies.com/account/login
       fields:
-        required: [email, password, allow_cookies_button, submit]
-        optional: [message_error]
+        required: [email, password, submit]
+        optional: [allow_cookies_button, message_error]
 
     - name: Signed in homepage
       fields: [wait_home_content]

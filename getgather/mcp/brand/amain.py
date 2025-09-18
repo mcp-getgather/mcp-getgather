@@ -1,35 +1,22 @@
+import os
 from typing import Any
 
-from getgather.connectors.spec_models import Schema as SpecSchema
+from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import get_mcp_browser_session, with_brand_browser_session
-from getgather.parse import parse_html
+from getgather.mcp.shared import get_mcp_browser_profile, with_brand_browser_session
 
 amain_mcp = BrandMCPBase(brand_id="amain", name="Amain MCP")
 
 
 @amain_mcp.tool(tags={"private"})
-@with_brand_browser_session
 async def get_cart() -> dict[str, Any]:
     """Get cart of amain."""
-
-    browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
-
-    await page.goto(f"https://www.amainhobbies.com/shopping-cart")
-    await page.wait_for_selector("div.product-list")
-    await page.wait_for_timeout(1000)
-    html = await page.locator("div.product-list").inner_html()
-    spec_schema = SpecSchema.model_validate({
-        "bundle": "",
-        "format": "html",
-        "output": "",
-        "row_selector": "div.product",
-        "columns": [
-            {"name": "description", "selector": "div.description"},
-            {"name": "qty", "selector": "div.quantity"},
-            {"name": "total_price", "selector": "div.total"},
-        ],
-    })
-    result = await parse_html(brand_id=amain_mcp.brand_id, html_content=html, schema=spec_schema)
-    return {"cart_data": result.content}
+    browser_profile = get_mcp_browser_profile()
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
+    patterns = load_distillation_patterns(path)
+    cart = await run_distillation_loop(
+        "https://www.amainhobbies.com/shopping-cart",
+        patterns,
+        browser_profile=browser_profile,
+    )
+    return {"cart": cart}
