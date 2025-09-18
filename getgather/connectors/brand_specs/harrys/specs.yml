@@ -56,16 +56,3 @@ signin:
       end: true
 
   start: Home page
-
-extract:
-  steps:
-    - name: Go to the order history
-      url: https://www.harrys.com/en/profile/orders
-
-    - name: Wait for the loading
-      timeout: 10
-      wait_for_selector: main#mainContent section:nth-of-type(2)
-
-    - name: Extract the list of orders
-      bundle: orders.html
-      slurp_selector: main#mainContent section:nth-of-type(2)
