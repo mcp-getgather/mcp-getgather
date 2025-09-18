@@ -47,3 +47,5 @@ jobs:
         env:
           ACME_EMAIL_AND_PASSWORD_EMAIL: joe@example.com
           ACME_EMAIL_AND_PASSWORD_PASSWORD: trustno1
+          ACME_EMAIL_THEN_PASSWORD_EMAIL: joe@example.com
+          ACME_EMAIL_THEN_PASSWORD_PASSWORD: trustno1
