@@ -54,16 +54,3 @@ signin:
       fields: [home_page]
       end: true
   start: Go to Ebay website
-
-extract:
-  steps:
-    - name: Go to the order history
-      url: https://www.ebay.com/mye/myebay/purchase
-
-    - name: Wait for the loading
-      timeout: 5
-      wait_for_selector: h2:has-text("Purchases")
-
-    - name: Extract the list of online orders
-      bundle: online-orders.html
-      slurp_selector: div#container-1-anchor
