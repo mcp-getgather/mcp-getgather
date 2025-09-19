@@ -38,13 +38,10 @@ async def get_invoice_details(order_id: str) -> dict[str, Any]:
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
     
-    invoice_history = await run_distillation_loop(
+    invoice_details = await run_distillation_loop(
         f"https://www.wayfair.com/v/account/order/details?order_id={order_id}",
         patterns,
         browser_profile=browser_profile,
     )
     
-    if invoice_history and isinstance(invoice_history, list) and len(invoice_history) > 0:
-        return {"invoice_details": invoice_history}
-    else:
-        return {"invoice_details": []}
+    return {"invoice_details": invoice_details}
