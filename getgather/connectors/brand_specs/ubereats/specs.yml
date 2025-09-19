@@ -95,28 +95,3 @@ signin:
       end: true
 
   start: https://auth.uber.com/v2/
-
-extract:
-  steps:
-    - name: Go to orders page
-      url: https://www.ubereats.com/orders
-
-    - name: Extract orders
-      fields: [past_orders_title]
-      timeout: 20
-      bundle: orders.html
-      slurp_selector: main#main-content
-
-parse:
-  - bundle: orders.html
-    format: html
-    output: orders.json
-    row_selector: div:has(> a > figure)
-    columns:
-      - name: restaurant
-        selector: a[data-baseweb="link"]
-      - name: restaurant_url
-        selector: a[data-baseweb="link"]
-        attribute: href
-      - name: items
-        selector: ul

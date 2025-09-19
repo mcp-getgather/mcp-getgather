@@ -1,0 +1,28 @@
+<html gg-domain="ubereats">
+  <body>
+    <div>
+      <div gg-match="div:has-text('Past Orders')"></div>
+      <div gg-stop gg-match-html="main#main-content"></div>
+    </div>
+    <script type="application/json" id="orders">
+      {
+        "rows": "div:has(> a > figure)",
+        "columns": [
+          {
+            "name": "restaurant",
+            "selector": "a[data-baseweb='link']"
+          },
+          {
+            "name": "restaurant_url",
+            "selector": "a[data-baseweb='link']",
+            "attribute": "href"
+          },
+          {
+            "name": "items",
+            "selector": "ul"
+          }
+        ]
+      }
+    </script>
+  </body>
+</html>
