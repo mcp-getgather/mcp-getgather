@@ -195,7 +195,7 @@ async def mcp_app_docs(mcp_app: MCPApp) -> MCPDoc:
         tools=[
             MCPToolDoc(
                 name=tool.name,
-                description=tool.description,
+                description=tool.description or "No description provided",
             )
             for tool in (await mcp_app.app.state.fastmcp_server.get_tools()).values()
         ],
