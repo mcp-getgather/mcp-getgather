@@ -1,0 +1,18 @@
+<html gg-domain="bedbathandbeyond">
+  <head>
+    <title>Bed Bath and Beyond Sign In</title>
+  </head>
+  <body>
+    <input type="email" gg-match="input[id=login-email]" placeholder="Email" name="email" />
+    <input
+      type="password"
+      gg-match="input[id=login-password]"
+      placeholder="Password"
+      name="password"
+    />
+    <button gg-autoclick gg-match="form[id=login-form] button[type=submit]">Sign in</button>
+    <p gg-optional gg-match="div.gq:has-text('Email and/or password incorrect')">
+      Email and/or password incorrect. Please try again.
+    </p>
+  </body>
+</html>
