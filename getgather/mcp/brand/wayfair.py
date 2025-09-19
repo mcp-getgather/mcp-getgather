@@ -29,7 +29,6 @@ async def get_order_history() -> dict[str, Any]:
             purchase["order_id"] = order_id
 
     return {"purchase_history": purchase_history}
-    # return {"purchase_history":[{"order_id":"4325262636","order_date_and_store":"Ordered On: June 4, 2025Wayfair Order #4325262636","total_price":"Total Price: $96.23","total_item":"(2 items)","delivery_date":"Last Package Delivered: Saturday, June 07","product_names":"18 Pack Acoustic Wall Panels 11.8 x 11.8 x 0.4 inch Self-Adhesive Black (Set of 18)","image_urls":"https://assets.wfcdn.com/im/39604481/resize-h85-w85%5Ecompr-r85/3426/342697647/default_name.jpg"}]}
 
 
 @wayfair_mcp.tool(tags={"private"})
