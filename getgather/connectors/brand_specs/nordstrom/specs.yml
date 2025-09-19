@@ -124,12 +124,11 @@ signin:
       end: true
 
   start: https://www.nordstrom.com/signin
+# extract:
+#   steps:
+#     - name: Go to Nordstrom orders page
+#       url: https://www.nordstrom.com/my-account?count=100&page=1&range=all
 
-extract:
-  steps:
-    - name: Go to Nordstrom orders page
-      url: https://www.nordstrom.com/my-account?count=100&page=1&range=all
-
-    - name: Extract the orders
-      bundle: orders.json
-      listen_to_url_stub_json: https://www.nordstrom.com/api/shoppers/
+#     - name: Extract the orders
+#       bundle: orders.json
+#       listen_to_url_stub_json: https://www.nordstrom.com/api/shoppers/
