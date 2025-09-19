@@ -32,23 +32,4 @@ auth:
       url: https://www.doordash.com/orders
       end: true
   start: https://www.doordash.com/orders
-extract:
-  steps:
-    - name: Go to orders page
-      url: https://www.doordash.com/orders
-    - name: Extract the orders
-      bundle: orders.html
-      slurp_selector: div[data-testid="OrdersV2"]
-parse:
-  - bundle: orders.html
-    format: html
-    output: orders.json
-    row_selector: div[data-testid="OrdersCompletedSection"]
-    columns:
-      - name: restaurant
-        selector: a[href^="/store/"]
-      - name: restaurant_url
-        selector: a[href^="/store/"]
-        attribute: href
-      - name: description
-        selector: div.order-detail-body-wrapper div div div
+
