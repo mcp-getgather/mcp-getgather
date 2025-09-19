@@ -3,13 +3,17 @@ set -e
 
 # Start Xvfb display server
 export DISPLAY=:99
+export XAUTHORITY=/tmp/xauth99
+rm -f "$XAUTHORITY"; touch "$XAUTHORITY"
+xauth -f "$XAUTHORITY" add :99 . "$(mcookie)"
 echo "Starting Xvfb on DISPLAY=$DISPLAY..."
-Xvfb :99 -screen 0 1920x1080x24 >/dev/null 2>&1 &
-
-# Wait for Xvfb to start
+Xvfb :99 -screen 0 1920x1080x24 -nolisten tcp -auth "$XAUTHORITY" >/dev/null 2>&1 &
+# Wait for Xvfb socket to appear
 while [ ! -e /tmp/.X11-unix/X99 ]; do
   sleep 0.1
 done
+# wait until the server really answers (not just the socket exists)
+for i in $(seq 1 100); do xdpyinfo >/dev/null 2>&1 && break; sleep 0.1; done
 echo "Xvfb running on DISPLAY=$DISPLAY"
 
 echo "Starting JWM (Joe's Window Manager)"
