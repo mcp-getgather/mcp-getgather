@@ -151,7 +151,9 @@ async def autofill(page: Page, distilled: str):
                 else:
                     await page.fill(str(selector), user_input)
                 element["value"] = user_input
-            await asyncio.sleep(0.25)
+
+            # Give SPA time to react to input changes
+            await asyncio.sleep(0.5)
 
     return str(document)
 
@@ -318,6 +320,20 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
         return match
 
 
+async def get_form_state(matches: list[Locator]) -> str:
+    """Get simple form state - just visible elements and their values."""
+    state: list[str] = []
+    for locator in matches:
+        try:
+            if await locator.is_visible():
+                value = await locator.input_value() or await locator.text_content() or ""
+                state.append(f"{str(locator)}={value.strip()}")
+        except Exception as e:
+            logger.debug(f"Error getting form state: {e}")
+            continue
+    return "|".join(sorted(state))
+
+
 async def run_distillation_loop(
     location: str,
     patterns: list[Pattern],
@@ -347,6 +363,7 @@ async def run_distillation_loop(
         max = timeout // TICK
 
         current = Match(name="", priority=-1, distilled="", matches=[])
+        current_state = ""
 
         for iteration in range(max):
             logger.info("")
@@ -355,21 +372,26 @@ async def run_distillation_loop(
 
             match = await distill(hostname, page, patterns)
             if match:
-                if match.distilled == current.distilled:
-                    logger.debug(f"Still the same: {match.name}")
-                else:
-                    distilled = match.distilled
-                    if interactive:
-                        distilled = await autofill(page, distilled)
+                # Simple state comparison
+                new_state = await get_form_state(match.matches)
+                if new_state == current_state:
+                    logger.debug(f"No changes detected in {match.name}")
+                    continue
 
-                    current = match
-                    current.distilled = distilled
-                    print()
-                    print(distilled)
-                    if interactive:
-                        await autoclick(page, distilled)
-                        # Give the page time to respond to clicks before next iteration
-                        await asyncio.sleep(2.0)
+                logger.info(f"Form state changed in {match.name}")
+                current_state = new_state
+                distilled = match.distilled
+                if interactive:
+                    distilled = await autofill(page, distilled)
+
+                current = match
+                current.distilled = distilled
+                print()
+                print(distilled)
+                if interactive:
+                    await autoclick(page, distilled)
+                    # Give the page time to respond to clicks before next iteration
+                    await asyncio.sleep(2.0)
                     if await terminate(page, distilled):
                         converted = await convert(distilled)
                         if converted:
