@@ -386,7 +386,9 @@ async def run_distillation_loop(
 
         logger.info(f"Starting browser {profile.id}")
         logger.info(f"Navigating to {location}")
-        await page.goto(location)
+        await page.goto(
+            location,
+        )
 
         TICK = 1  # seconds
         max = timeout // TICK
@@ -413,6 +415,8 @@ async def run_distillation_loop(
                     print(distilled)
                     if interactive:
                         await autoclick(page, distilled)
+                        # Give the page time to respond to clicks before next iteration
+                        await asyncio.sleep(2.0)
                     if await terminate(page, distilled):
                         converted = await convert(distilled)
                         if converted:
