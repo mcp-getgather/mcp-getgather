@@ -60,10 +60,10 @@ async def signin_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
         "link_id": link_id,
         "message": "Continue the sign in process in your browser. If you are not redirected, open the link url in your browser.",
         "system_message": (
-            "Try open the url in a browser with a tool if available."
+            " Try open the url in a browser with a tool if available."
             " Give the url to the user so the user can open it manually in their browser."
-            " Then call poll_signin tool with the link_id to check if the sign in is completed. "
-            " Once the sign in is completed successfully, then call this tool again to proceed with the action."
+            " Then call poll_signin tool with the link_id to check if the sign in is completed."
+            " Once the sign in is completed successfully, then call this tool again WITHOUT any parameters (no 'properties' argument) to proceed with the action."
         ),
     }
 
