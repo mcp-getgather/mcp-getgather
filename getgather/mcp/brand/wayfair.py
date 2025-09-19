@@ -29,19 +29,31 @@ async def get_order_history() -> dict[str, Any]:
             purchase["order_id"] = order_id
 
     return {"purchase_history": purchase_history}
+    # return {"purchase_history":[{"order_id":"4325262636","order_date_and_store":"Ordered On: June 4, 2025Wayfair Order #4325262636","total_price":"Total Price: $96.23","total_item":"(2 items)","delivery_date":"Last Package Delivered: Saturday, June 07","product_names":"18 Pack Acoustic Wall Panels 11.8 x 11.8 x 0.4 inch Self-Adhesive Black (Set of 18)","image_urls":"https://assets.wfcdn.com/im/39604481/resize-h85-w85%5Ecompr-r85/3426/342697647/default_name.jpg"}]}
 
 
 @wayfair_mcp.tool(tags={"private"})
-async def get_invoice_details(order_id: str) -> dict[str, Any]:
-    """Get invoice details for a specific Wayfair order."""
+async def get_order_history_details(order_id: str) -> dict[str, Any]:
+    """Get order history details for a specific Wayfair order."""
     browser_profile = get_mcp_browser_profile()
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
-    
-    invoice_details = await run_distillation_loop(
+
+    purchase_history_details = await run_distillation_loop(
         f"https://www.wayfair.com/v/account/order/details?order_id={order_id}",
         patterns,
         browser_profile=browser_profile,
     )
-    
-    return {"invoice_details": invoice_details}
+
+    # Edit image URLs to use higher resolution
+    if purchase_history_details and isinstance(purchase_history_details, list):
+        for item in purchase_history_details:
+            if "image_url" in item:
+                image_url = item["image_url"]
+                if isinstance(image_url, str):
+                    # Replace dimensions to get higher resolution images
+                    image_url = image_url.replace("-h100", "-h500")
+                    image_url = image_url.replace("-w100", "-w500")
+                    item["image_url"] = image_url
+
+    return {"purchase_history_details": purchase_history_details}
