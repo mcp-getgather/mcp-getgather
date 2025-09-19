@@ -139,14 +139,3 @@ signin:
       end: true
 
   start: Login Page
-
-extract:
-  steps:
-    - name: Go to orders page
-      url: https://shop.lululemon.com/account/purchase-history
-
-    - name: Extract the order history
-      bundle: order.json
-      graphql:
-        endpoint: https://shop.lululemon.com/api/graphql
-        operation: getPurchaseHistory
