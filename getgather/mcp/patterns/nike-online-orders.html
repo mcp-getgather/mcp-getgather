@@ -1,0 +1,13 @@
+<html gg-domain="nike">
+  <body>
+    <div>
+      <div gg-stop gg-match-html="div[data-testid='orders']"></div>
+    </div>
+    <script type="application/json" id="online_orders">
+      {
+        "rows": "div.sse-order",
+        "columns": [{ "name": "product", "selector": "h2[data-testid='productNameLink-headline']" }]
+      }
+    </script>
+  </body>
+</html>
