@@ -52,15 +52,3 @@ signin:
       end: true
 
   start: https://www.hilton.com/en/hilton-honors/guest/activity/
-
-extract:
-  steps:
-    - name: Go to the account activity page
-      url: https://www.hilton.com/en/hilton-honors/guest/activity/
-
-    - name: Wait for the loading
-      wait_for_selector: div[data-testid^=past-row]
-
-    - name: Extract the list of activities
-      bundle: activities.html
-      slurp_selector: div[data-testid^=past-row]
