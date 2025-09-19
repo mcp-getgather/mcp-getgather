@@ -32,4 +32,3 @@ auth:
       url: https://www.doordash.com/orders
       end: true
   start: https://www.doordash.com/orders
-
