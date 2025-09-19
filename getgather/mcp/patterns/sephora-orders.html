@@ -1,0 +1,18 @@
+<html gg-domain="sephora">
+  <body>
+    <div gg-stop gg-match-html="div[data-at='purchase_history_item']"></div>
+    <script type="application/json" id="orders">
+      {
+        "rows": "div[data-at='purchase_history_item']",
+        "columns": [
+          { "name": "price", "selector": "span[data-at='sku_item_price_list']" },
+          { "name": "brand", "selector": "span[data-at='sku_item_brand']" },
+          { "name": "product_name", "selector": "span[data-at='sku_item_name']" },
+          { "name": "item_number", "selector": "div[data-at='size_and_item_number']" },
+          { "name": "item_variant", "selector": "span[data-at='item_variation_type']" },
+          { "name": "image_url", "selector": "picture img", "attribute": "src" }
+        ]
+      }
+    </script>
+  </body>
+</html>
