@@ -1,0 +1,30 @@
+<html gg-domain="hardcover" gg-priority="1">
+  <body>
+    <div>
+      <div gg-match="div#navigation a.text-gray-600:has-text('Books')"></div>
+      <div gg-stop gg-match-html="nav + div"></div>
+    </div>
+    <script type="application/json" id="books">
+      {
+        "rows": "div div:has(> a:has(img))",
+        "columns": [
+          {
+            "name": "cover",
+            "selector": "a img",
+            "attribute": "src"
+          },
+          {
+            "name": "title",
+            "selector": "a img",
+            "attribute": "alt"
+          },
+          {
+            "name": "url",
+            "selector": "a",
+            "attribute": "href"
+          }
+        ]
+      }
+    </script>
+  </body>
+</html>
