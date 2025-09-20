@@ -1,10 +1,11 @@
 from typing import Any
 
-from fastmcp import Context, FastMCP
+from fastmcp import Context
 
 from getgather.mcp.dpage import dpage_mcp_tool
+from getgather.mcp.registry import GatherMCP
 
-nytimes_mcp = FastMCP[Context](name="NYTimes MCP")
+nytimes_mcp = GatherMCP(brand_id="nytimes", name="NYTimes MCP")
 
 
 @nytimes_mcp.tool
