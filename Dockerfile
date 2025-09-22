@@ -124,7 +124,5 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 EXPOSE 23456
 # port for VNC server
 EXPOSE 5900
-# port for MCP inspector server
-EXPOSE 6277
 
 ENTRYPOINT ["/app/entrypoint.sh"]
