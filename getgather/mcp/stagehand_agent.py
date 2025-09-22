@@ -3,7 +3,7 @@
 from typing import Any, Protocol
 
 from pydantic import BaseModel
-from stagehand import Stagehand, default_config
+from stagehand import Agent, Stagehand, default_config
 from stagehand.schemas import (
     ActResult,
     ExtractOptions,
@@ -11,6 +11,7 @@ from stagehand.schemas import (
     ObserveOptions,
     ObserveResult,
 )
+from stagehand.types.agent import AgentConfig, AgentResult
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
@@ -61,13 +62,17 @@ class StagehandPage(Protocol):
         ...
 
 
-# Currently, we only need the page property and close method
+# Currently, we only need the page property, execute method, and close method
 class StagehandAgent(Protocol):
     """Minimal interface for Stagehand agent."""
 
     @property
     def page(self) -> StagehandPage:
         """Get current page."""
+        ...
+
+    async def execute(self, prompt: str) -> AgentResult:
+        """Execute a task using natural language prompt."""
         ...
 
     async def close(self) -> None:
@@ -79,8 +84,9 @@ class StagehandAgent(Protocol):
 class StagehandAgentWrapper:
     """Minimal wrapper around Stagehand."""
 
-    def __init__(self, stagehand: Stagehand):
+    def __init__(self, stagehand: Stagehand, agent: Any) -> None:
         self._stagehand = stagehand
+        self._agent = agent
 
     @property
     def page(self) -> StagehandPage:
@@ -88,6 +94,10 @@ class StagehandAgentWrapper:
         if not self._stagehand.page:
             raise ValueError("Page is not set")
         return self._stagehand.page
+
+    async def execute(self, prompt: str) -> AgentResult:
+        """Execute a task using natural language prompt."""
+        return await self._agent.execute(prompt)
 
     async def close(self) -> None:
         """Close and cleanup."""
@@ -136,6 +146,7 @@ async def _create_stagehand_config() -> Any:
             "--disable-blink-features=AutomationControlled",
             "--disable-extensions",
         ],
+        "user_data_dir": user_data_dir,
     }
 
     # Add userDataDir for session persistence if available
@@ -153,6 +164,8 @@ async def _create_stagehand_config() -> Any:
 
 
 # Core Stagehand Agent Functions
+
+
 async def run_stagehand_agent() -> StagehandAgent:
     """Create and return a minimal StagehandAgent.
 
@@ -168,5 +181,17 @@ async def run_stagehand_agent() -> StagehandAgent:
     config = await _create_stagehand_config()
     stagehand = Stagehand(config=config)
     await stagehand.init()
-    logger.info("StagehandPage created successfully")
-    return StagehandAgentWrapper(stagehand)
+
+    # For now, we'll use the stagehand instance directly
+    # The wrapper will handle the execute method using page operations
+    model_dict = AgentConfig(
+        model="computer-use-preview",
+        instructions="You are a helpful assistant that can use a web browser.",
+        options={
+            "apiKey": settings.OPENAI_API_KEY,
+        },
+    ).model_dump()
+    agent: Agent = stagehand.agent(**model_dict)  # type: ignore
+
+    logger.info("Stagehand agent created successfully")
+    return StagehandAgentWrapper(stagehand, agent)
