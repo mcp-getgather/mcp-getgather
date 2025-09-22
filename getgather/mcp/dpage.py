@@ -307,6 +307,15 @@ async def dpage_mcp_tool(initial_url: str, result_key: str) -> dict[str, Any]:
             await debug_page.goto("https://ifconfig.me")
 
             init_page = await session.context.new_page()
+            await init_page.route(
+                "**/*",
+                lambda route: asyncio.create_task(
+                    route.abort()
+                    if route.request.resource_type in ["image", "media", "font"]
+                    else route.continue_()
+                ),
+            )
+
             await init_page.goto(initial_url)
             await asyncio.sleep(1)
 
