@@ -1,10 +1,11 @@
 from typing import Any
 
-from fastmcp import Context, FastMCP
+from fastmcp import Context
 
 from getgather.mcp.dpage import dpage_mcp_tool
+from getgather.mcp.registry import GatherMCP
 
-bbc_mcp = FastMCP[Context](name="BBC MCP")
+bbc_mcp = GatherMCP(brand_id="bbc", name="BBC MCP")
 
 
 @bbc_mcp.tool
