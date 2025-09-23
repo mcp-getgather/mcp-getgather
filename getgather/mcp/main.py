@@ -80,7 +80,7 @@ CATEGORY_BUNDLES: dict[str, list[str]] = {
     "food": ["doordash", "ubereats"],
     "books": ["audible", "goodreads", "kindle", "hardcover"],
     "shopping": ["amazon", "shopee", "tokopedia"],
-    "media": ["bbc"],
+    "media": [],
 }
 
 # For MCP tools based on distillation
