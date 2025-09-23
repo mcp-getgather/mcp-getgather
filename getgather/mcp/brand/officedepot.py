@@ -15,14 +15,14 @@ async def get_order_history() -> dict[str, Any]:
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
 
-    order_history = await run_distillation_loop(
+    purchase_history = await run_distillation_loop(
         # `https://www.officedepot.com/orderhistory/orderHistoryListSet.do` only shows the last 3 months of orders
         "https://www.officedepot.com/orderhistory/orderHistoryListSet.do?ordersInMonths=0&orderType=ALL&orderStatus=A",
         patterns,
         browser_profile=browser_profile,
     )
 
-    return {"order_history": order_history}
+    return {"purchase_history": purchase_history}
 
 
 @officedepot_mcp.tool(tags={"private"})
@@ -32,10 +32,10 @@ async def get_order_history_details(order_number: str) -> dict[str, Any]:
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
 
-    order_details = await run_distillation_loop(
+    purchase_history_details = await run_distillation_loop(
         f"https://www.officedepot.com/orderhistory/orderHistoryDetail.do?id={order_number}",
         patterns,
         browser_profile=browser_profile,
     )
 
-    return {"order_details": order_details}
+    return {"purchase_history_details": purchase_history_details}
