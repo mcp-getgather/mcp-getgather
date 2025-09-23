@@ -47,6 +47,7 @@ async def get_order_history_details(order_id: str) -> dict[str, Any]:
     # Edit image URLs to use higher resolution
     if purchase_history_details and isinstance(purchase_history_details, list):
         for item in purchase_history_details:
+            item["order_id"] = order_id
             if "image_url" in item:
                 image_url = item["image_url"]
                 if isinstance(image_url, str):
