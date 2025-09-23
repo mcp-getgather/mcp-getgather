@@ -47,3 +47,5 @@ jobs:
           HOST: http://localhost:23456
           BBC_EMAIL: ${{ secrets.BBC_EMAIL }}
           BBC_PASSWORD: ${{ secrets.BBC_PASSWORD }}
+          BROWSER_HTTP_PROXY: ${{ secrets.BROWSER_HTTP_PROXY }}
+          BROWSER_HTTP_PROXY_PASSWORD: ${{ secrets.BROWSER_HTTP_PROXY_PASSWORD }}
