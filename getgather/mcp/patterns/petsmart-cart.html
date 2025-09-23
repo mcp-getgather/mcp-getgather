@@ -1,4 +1,4 @@
-<html gg-domain="petsmart">
+<html gg-domain="petsmart" priority="1">
   <body>
     <div>
       <div gg-stop gg-match-html="div.cart-items"></div>
@@ -12,13 +12,17 @@
             "selector": "[data-testid='details-test__product-name-link']"
           },
           {
-            "name": "price",
+            "name": "sale_price",
             "selector": "div.sparky-c-price--sale"
           },
           {
-            "name": "original_price",
+            "name": "before_sale_price",
             "selector": "div.sparky-c-price--disabled"
           },
+          {
+            "name": "normal_price",
+            "selector": "div.sparky-c-price"
+          }
           {
             "name": "product_image",
             "selector": "img.sparky-c-image details__image",
