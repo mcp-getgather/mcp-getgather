@@ -35,6 +35,8 @@ jobs:
         run: uv run -m uvicorn getgather.main:app --host 127.0.0.1 --port 23456 &
         env:
           DISPLAY: :1
+          BROWSER_HTTP_PROXY: ${{ secrets.BROWSER_HTTP_PROXY }}
+          BROWSER_HTTP_PROXY_PASSWORD: ${{ secrets.BROWSER_HTTP_PROXY_PASSWORD }}
 
       - name: Wait for the API server to start
         run: while ! curl -s 'http://localhost:23456/health' | grep 'OK'; do sleep 1; done
@@ -47,5 +49,3 @@ jobs:
           HOST: http://localhost:23456
           BBC_EMAIL: ${{ secrets.BBC_EMAIL }}
           BBC_PASSWORD: ${{ secrets.BBC_PASSWORD }}
-          BROWSER_HTTP_PROXY: ${{ secrets.BROWSER_HTTP_PROXY }}
-          BROWSER_HTTP_PROXY_PASSWORD: ${{ secrets.BROWSER_HTTP_PROXY_PASSWORD }}
