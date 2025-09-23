@@ -89,25 +89,3 @@ signin:
       fields: [homepage]
       end: true
   start: https://www.nike.com/register
-
-extract:
-  steps:
-    - name: Go to the order history
-      url: https://www.nike.com/orders
-
-    - name: Wait for the loading
-      timeout: 10
-      wait_for_selector: div[data-testid="orders"]
-
-    - name: Extract the list of online orders
-      bundle: online-orders.html
-      slurp_selector: div[data-testid="orders"]
-
-parse:
-  - bundle: online-orders.html
-    format: html
-    output: online-orders.json
-    row_selector: div.sse-order
-    columns:
-      - name: product
-        selector: h2[data-testid="productNameLink-headline"]

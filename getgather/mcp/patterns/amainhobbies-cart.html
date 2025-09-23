@@ -1,5 +1,24 @@
 <html gg-domain="amainhobbies" gg-priority="1">
   <body>
     <div gg-stop gg-match-html="div.product-list"></div>
+    <script type="application/json" id="carts">
+      {
+        "rows": "div.product",
+        "columns": [
+          {
+            "name": "description",
+            "selector": "div.description"
+          },
+          {
+            "name": "qty",
+            "selector": "div.quantity"
+          },
+          {
+            "name": "total_price",
+            "selector": "div.total"
+          }
+        ]
+      }
+    </script>
   </body>
 </html>

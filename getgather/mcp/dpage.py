@@ -199,6 +199,34 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                     if input_type == "checkbox":
                         names.append(str(name) if name is not None else "checkbox")
                         logger.info(f"Handling {selector} using autoclick")
+                    elif input_type == "radio":
+                        if name is not None:
+                            name_str = str(name)
+                            value = fields.get(name_str)
+                            if not value or len(value) == 0:
+                                logger.warning(f"No form data found for radio button group {name}")
+                                continue
+                            radio = document.find("input", {"type": "radio", "id": str(value)})
+                            if not radio or not isinstance(radio, Tag):
+                                logger.warning(f"No radio button found with id {value}")
+                                continue
+                            logger.info(f"Handling radio button group {name}")
+                            logger.info(f"Using form data {name}={value}")
+                            radio_selector, radio_frame_selector = get_selector(
+                                str(radio.get("gg-match"))
+                            )
+                            if radio_frame_selector:
+                                await (
+                                    page.frame_locator(str(radio_frame_selector))
+                                    .locator(str(radio_selector))
+                                    .check()
+                                )
+                            else:
+                                await page.check(str(radio_selector))
+                            radio["checked"] = "checked"
+                            current.distilled = str(document)
+                            names.append(str(input.get("id")) if input.get("id") else "radio")
+                            await asyncio.sleep(0.25)
                     elif name is not None:
                         name_str = str(name)
                         value = fields.get(name_str)
@@ -206,6 +234,7 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                             logger.info(f"Using form data {name}")
                             names.append(name_str)
                             input["value"] = value
+                            current.distilled = str(document)
                             if frame_selector:
                                 await (
                                     page.frame_locator(str(frame_selector))
@@ -278,6 +307,15 @@ async def dpage_mcp_tool(initial_url: str, result_key: str) -> dict[str, Any]:
             await debug_page.goto("https://ifconfig.me")
 
             init_page = await session.context.new_page()
+            await init_page.route(
+                "**/*",
+                lambda route: asyncio.create_task(
+                    route.abort()
+                    if route.request.resource_type in ["image", "media", "font"]
+                    else route.continue_()
+                ),
+            )
+
             await init_page.goto(initial_url)
             await asyncio.sleep(1)
 

@@ -50,31 +50,3 @@ signin:
       message: Got captcha.
       end: true
   start: Sign in
-extract:
-  steps:
-    - name: Go to the books list
-      url: https://www.goodreads.com/review/list/
-    - name: Wait for the loading
-      timeout: 9
-      wait_for_selector: form#perPageForm
-    - name: Extract the list of books
-      bundle: books.html
-      slurp_selector: div.myBooksPage
-parse:
-  - bundle: books.html
-    format: html
-    output: books.json
-    row_selector: tr.review
-    columns:
-      - name: cover
-        selector: td.cover img
-        attribute: src
-      - name: title
-        selector: td.title > div > a
-      - name: author
-        selector: td.author > div > a
-      - name: rating
-        selector: td.avg_rating > div
-      - name: url
-        selector: td.cover a
-        attribute: href

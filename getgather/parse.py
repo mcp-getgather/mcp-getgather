@@ -317,7 +317,7 @@ async def _extract_data_from_page(
         List of dictionaries containing extracted data
     """
     has_custom_functions = any(col.function is not None for col in schema.columns)
-    extraction_method = getattr(schema, "extraction_method", "locator")
+    extraction_method = getattr(schema, "extraction_method", "python_parser")
 
     if has_custom_functions:
         extraction_method = "locator"  # Force locator method for custom functions
@@ -391,7 +391,7 @@ async def parse_html(
     elif html_content:
         # Check if we can extract directly from HTML
         has_custom_functions = any(col.function is not None for col in schema.columns)
-        extraction_method = getattr(schema, "extraction_method", "locator")
+        extraction_method = getattr(schema, "extraction_method", "python_parser")
 
         if has_custom_functions or extraction_method != "python_parser":
             # Need a browser for extraction

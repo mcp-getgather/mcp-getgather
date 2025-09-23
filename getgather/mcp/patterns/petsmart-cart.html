@@ -1,0 +1,31 @@
+<html gg-domain="petsmart">
+  <body>
+    <div>
+      <div gg-stop gg-match-html="div.cart-items"></div>
+    </div>
+    <script type="application/json" id="orders">
+      {
+        "rows": "div.cart-item",
+        "columns": [
+          {
+            "name": "product_name",
+            "selector": "[data-testid='details-test__product-name-link']"
+          },
+          {
+            "name": "price",
+            "selector": "div.sparky-c-price--sale"
+          },
+          {
+            "name": "original_price",
+            "selector": "div.sparky-c-price--disabled"
+          },
+          {
+            "name": "product_image",
+            "selector": "img.sparky-c-image details__image",
+            "attribute": "src"
+          }
+        ]
+      }
+    </script>
+  </body>
+</html>

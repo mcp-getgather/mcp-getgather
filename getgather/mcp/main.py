@@ -12,15 +12,11 @@ from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.logs import logger
 from getgather.mcp.activity import activity
-from getgather.mcp.auth import get_auth_user
 from getgather.mcp.auto_import import auto_import
-from getgather.mcp.bbc import bbc_mcp
 from getgather.mcp.brand_state import BrandState, brand_state_manager
 from getgather.mcp.calendar_utils import calendar_mcp
 from getgather.mcp.dpage import dpage_check
-from getgather.mcp.espn import espn_mcp
-from getgather.mcp.nytimes import nytimes_mcp
-from getgather.mcp.registry import BrandMCPBase
+from getgather.mcp.registry import BrandMCPBase, GatherMCP
 from getgather.mcp.shared import poll_status_hosted_link, signin_hosted_link
 
 # Ensure calendar MCP is registered by importing its module
@@ -36,9 +32,6 @@ class AuthMiddleware(Middleware):
             return await call_next(context)
 
         logger.info(f"[AuthMiddleware Context]: {context.message}")
-
-        auth_user = get_auth_user()
-        logger.info("[AuthMiddleware] auth_user", extra=auth_user.model_dump())
 
         tool = await context.fastmcp_context.fastmcp.get_tool(context.message.name)  # type: ignore
 
@@ -65,7 +58,6 @@ class AuthMiddleware(Middleware):
             browser_profile = BrowserProfile()
             brand_state_manager.add(
                 BrandState(
-                    user_login=auth_user.login,
                     brand_id=BrandIdEnum(brand_id),
                     browser_profile_id=browser_profile.id,
                     is_connected=False,
@@ -88,6 +80,12 @@ CATEGORY_BUNDLES: dict[str, list[str]] = {
     "food": ["doordash", "ubereats"],
     "books": ["audible", "goodreads", "kindle", "hardcover"],
     "shopping": ["amazon", "shopee", "tokopedia"],
+    "media": ["bbc"],
+}
+
+# For MCP tools based on distillation
+MCP_BUNDLES: dict[str, list[str]] = {
+    "media": ["bbc", "espn", "nytimes"],
 }
 
 
@@ -96,7 +94,7 @@ class MCPApp:
     name: str
     type: Literal["brand", "category", "all"]
     route: str
-    brand_ids: list[BrandIdEnum]
+    brand_ids: list[BrandIdEnum | str]
 
     @cached_property
     def app(self) -> StarletteWithLifespan:
@@ -108,15 +106,23 @@ def create_mcp_apps() -> list[MCPApp]:
     # Discover and import all brand MCP modules (registers into BrandMCPBase.registry)
     auto_import("getgather.mcp.brand")
 
+    auto_import("getgather.mcp")  # Import distillation-based MCPs
+
     apps: list[MCPApp] = []
     apps.append(
         MCPApp(
             name="all",
             type="all",
             route="/mcp",
-            brand_ids=list(BrandMCPBase.registry.keys()),
+            brand_ids=list(BrandMCPBase.registry.keys())
+            + [
+                brand_id
+                for brand_id in GatherMCP.registry.keys()
+                if brand_id not in [b.value for b in BrandMCPBase.registry.keys()]
+            ],
         )
     )
+    # Add individual brand MCPs from BrandMCPBase registry
     apps.extend([
         MCPApp(
             name=brand_id.value,
@@ -126,12 +132,24 @@ def create_mcp_apps() -> list[MCPApp]:
         )
         for brand_id in BrandMCPBase.registry.keys()
     ])
+    # Add individual brand MCPs from GatherMCP registry
+    apps.extend([
+        MCPApp(
+            name=brand_id,
+            type="brand",
+            route=f"/mcp-{brand_id}",
+            brand_ids=[brand_id],
+        )
+        for brand_id in GatherMCP.registry.keys()
+        if brand_id not in [b.value for b in BrandMCPBase.registry.keys()]
+    ])
     apps.extend([
         MCPApp(
             name=category,
             type="category",
             route=f"/mcp-{category}",
-            brand_ids=[BrandIdEnum(brand_id) for brand_id in brand_ids],
+            brand_ids=[BrandIdEnum(brand_id) for brand_id in brand_ids]
+            + MCP_BUNDLES.get(category, []),
         )
         for category, brand_ids in CATEGORY_BUNDLES.items()
     ])
@@ -139,7 +157,7 @@ def create_mcp_apps() -> list[MCPApp]:
     return apps
 
 
-def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
+def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum | str]):
     """Create and return the MCP ASGI app.
 
     This performs plugin discovery/registration and mounts brand MCPs.
@@ -167,15 +185,23 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
         }
 
     for brand_id in brand_ids:
-        brand_mcp = BrandMCPBase.registry[brand_id]
-        logger.info(f"Mounting {brand_mcp.name} to MCP bundle {bundle_name}")
-        mcp.mount(server=brand_mcp, prefix=brand_mcp.brand_id)
+        brand_id_str = brand_id.value if isinstance(brand_id, BrandIdEnum) else brand_id
+        brand_id_enum = brand_id if isinstance(brand_id, BrandIdEnum) else None
+
+        # Try BrandMCPBase registry first (if it's a BrandIdEnum)
+        if brand_id_enum and brand_id_enum in BrandMCPBase.registry:
+            brand_mcp = BrandMCPBase.registry[brand_id_enum]
+            logger.info(f"Mounting {brand_mcp.name} to MCP bundle {bundle_name}")
+            mcp.mount(server=brand_mcp, prefix=brand_mcp.brand_id)
+        # Try GatherMCP registry (for string brand IDs)
+        elif brand_id_str in GatherMCP.registry:
+            gather_mcp = GatherMCP.registry[brand_id_str]
+            logger.info(
+                f"Mounting {gather_mcp.name} (distillation-based) to MCP bundle {bundle_name}"
+            )
+            mcp.mount(server=gather_mcp, prefix=gather_mcp.brand_id)
 
     mcp.mount(server=calendar_mcp, prefix="calendar")
-    mcp.mount(server=nytimes_mcp, prefix="nytimes")
-    mcp.mount(server=espn_mcp, prefix="espn")
-
-    mcp.mount(server=bbc_mcp, prefix="bbc")
 
     return mcp.http_app(path="/")
 
@@ -200,7 +226,7 @@ async def mcp_app_docs(mcp_app: MCPApp) -> MCPDoc:
         tools=[
             MCPToolDoc(
                 name=tool.name,
-                description=tool.description,
+                description=tool.description or "No description provided",
             )
             for tool in (await mcp_app.app.state.fastmcp_server.get_tools()).values()
         ],

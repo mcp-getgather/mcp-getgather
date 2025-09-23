@@ -1,10 +1,11 @@
 from typing import Any
 
-from fastmcp import Context, FastMCP
+from fastmcp import Context
 
 from getgather.mcp.dpage import dpage_mcp_tool
+from getgather.mcp.registry import GatherMCP
 
-espn_mcp = FastMCP[Context](name="ESPN MCP")
+espn_mcp = GatherMCP(brand_id="espn", name="ESPN MCP")
 
 
 @espn_mcp.tool

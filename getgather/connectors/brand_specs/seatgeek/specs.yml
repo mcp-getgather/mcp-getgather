@@ -96,15 +96,3 @@ signin:
       end: true
 
   start: Redirect to Sign in
-
-extract:
-  steps:
-    - name: Go to the SeatGeek tickets page
-      url: https://seatgeek.com/account/tickets
-
-    - name: Wait
-      sleep: 2
-
-    - name: Extract tickets
-      bundle: tickets.html
-      slurp_selector: div[class^=EventTicketList__MyTicketsWrapper]

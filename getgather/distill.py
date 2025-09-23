@@ -100,48 +100,107 @@ async def ask(message: str, mask: str | None = None) -> str:
         return input(f"{message}: ")
 
 
-async def autofill(page: Page, distilled: str, fields: list[str]):
+async def autofill(page: Page, distilled: str):
     document = BeautifulSoup(distilled, "html.parser")
     root = document.find("html")
     domain = None
     if root:
         domain = cast(Tag, root).get("gg-domain")
 
-    for field in fields:
-        element = document.find("input", {"type": field})
-        selector = None
-        frame_selector = None
+    processed: list[str] = []
 
-        if element:
-            selector, frame_selector = get_selector(str(cast(Tag, element).get("gg-match")))
+    for element in document.find_all("input", {"type": True}):
+        if not isinstance(element, Tag):
+            continue
 
-        if selector:
+        input_type = element.get("type")
+        name = element.get("name")
+
+        if not name or (isinstance(name, str) and len(name) == 0):
+            logger.warning(f"There is an input (of type {input_type}) without a name!")
+
+        selector, frame_selector = get_selector(str(element.get("gg-match", "")))
+        if not selector:
+            logger.warning(f"There is an input (of type {input_type}) without a selector!")
+            continue
+
+        if input_type in ["email", "tel", "text", "password"]:
+            field = name or input_type
+            logger.debug(f"Autofilling type={input_type} name={name}...")
+
             source = f"{domain}_{field}" if domain else field
-            key = source.upper()
+            key = str(source).upper()
             value = os.getenv(key)
 
             if value and len(value) > 0:
                 logger.info(f"Using {key} for {field}")
-
                 if frame_selector:
                     await page.frame_locator(str(frame_selector)).locator(str(selector)).fill(value)
                 else:
                     await page.fill(str(selector), value)
+                element["value"] = value
             else:
-                placeholder = cast(Tag, element).get("placeholder")
+                placeholder = element.get("placeholder")
                 prompt = str(placeholder) if placeholder else f"Please enter {field}"
-                mask = "*" if field == "password" else None
-
+                mask = "*" if input_type == "password" else None
+                user_input = await ask(prompt, mask)
                 if frame_selector:
                     await (
                         page.frame_locator(str(frame_selector))
                         .locator(str(selector))
-                        .fill(await ask(prompt, mask))
+                        .fill(user_input)
                     )
-
                 else:
-                    await page.fill(str(selector), await ask(prompt, mask))
+                    await page.fill(str(selector), user_input)
+                element["value"] = user_input
             await asyncio.sleep(0.25)
+        elif input_type == "radio":
+            if not name:
+                logger.warning(f"There is no name for radio button with id {element.get('id')}!")
+                continue
+            if name in processed:
+                continue
+            processed.append(str(name))
+
+            choices: list[dict[str, str]] = []
+            print()
+            radio_buttons = document.find_all("input", {"type": "radio"})
+            for button in radio_buttons:
+                if not isinstance(button, Tag):
+                    continue
+                if button.get("name") != name:
+                    continue
+                button_id = button.get("id")
+                label_element = (
+                    document.find("label", {"for": str(button_id)}) if button_id else None
+                )
+                label = label_element.get_text() if label_element else None
+                choice_id = str(button_id) if button_id else ""
+                choice_label = label or str(button_id) if button_id else ""
+                choices.append({"id": choice_id, "label": choice_label})
+                print(f" {len(choices)}. {choice_label}")
+
+            choice = 0
+            while choice < 1 or choice > len(choices):
+                answer = await ask(f"Your choice (1-{len(choices)})")
+                try:
+                    choice = int(answer)
+                except ValueError:
+                    choice = 0
+
+            logger.info(f"Choosing {choices[choice - 1]['label']}")
+            print()
+
+            selected_choice = choices[choice - 1]
+            radio = document.find("input", {"type": "radio", "id": selected_choice["id"]})
+            if radio and isinstance(radio, Tag):
+                selector, frame_selector = get_selector(str(radio.get("gg-match")))
+                if frame_selector:
+                    await page.frame_locator(str(frame_selector)).locator(str(selector)).check()
+                else:
+                    await page.check(str(selector))
+
+    return str(document)
 
 
 async def locate(locator: Locator) -> Locator | None:
@@ -300,7 +359,7 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
         logger.debug(f"Number of matches: {len(result)}")
         for item in result:
             logger.debug(f" - {item.name} with priority {item.priority}")
-
+        print("RESULT", result)
         match = result[0]
         logger.info(f"✓ Best match: {match.name}")
         return match
@@ -309,7 +368,6 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
 async def run_distillation_loop(
     location: str,
     patterns: list[Pattern],
-    fields: list[str] = [],
     browser_profile: BrowserProfile | None = None,
     timeout: int = 15,
     interactive: bool = True,
@@ -345,14 +403,18 @@ async def run_distillation_loop(
                 if match.distilled == current.distilled:
                     logger.debug(f"Still the same: {match.name}")
                 else:
-                    current = match
-                    print()
-                    print(current.distilled)
+                    distilled = match.distilled
                     if interactive:
-                        await autofill(page, current.distilled, fields)
-                        await autoclick(page, current.distilled)
-                    if await terminate(page, current.distilled):
-                        converted = await convert(current.distilled)
+                        distilled = await autofill(page, distilled)
+
+                    current = match
+                    current.distilled = distilled
+                    print()
+                    print(distilled)
+                    if interactive:
+                        await autoclick(page, distilled)
+                    if await terminate(page, distilled):
+                        converted = await convert(distilled)
                         if converted:
                             return converted
                         break

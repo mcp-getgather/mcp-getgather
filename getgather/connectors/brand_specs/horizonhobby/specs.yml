@@ -63,16 +63,3 @@ signin:
       end: true
 
   start: Sign in page
-
-extract:
-  steps:
-    - name: Go to the order history
-      url: https://www.horizonhobby.com/orders
-
-    - name: Wait for the loading
-      timeout: 5
-      wait_for_selector: h1:has-text("Order History")
-
-    - name: Extract the list of online orders
-      bundle: online-orders.html
-      slurp_selector: div#maincontent
