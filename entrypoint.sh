@@ -41,18 +41,5 @@ mkdir -p /run/dbus
 dbus-daemon --system --fork
 echo "D-BUS daemon started with pid: $(cat /run/dbus/pid)"
 
-# start mcp inspector
-if [ -z "$MCP_INSPECTOR_DISABLED" ] || [ ! "$MCP_INSPECTOR_DISABLED" = "true" ]; then
-  if [ -z $MCP_PROXY_AUTH_TOKEN ]; then
-    export MCP_PROXY_AUTH_TOKEN=getgather
-  fi
-  echo "Starting MCP inspector..."
-  HOST=0.0.0.0 ALLOWED_ORIGINS=http://localhost:23456 \
-    MCP_AUTO_OPEN_ENABLED=false MCP_PROXY_AUTH_TOKEN=$MCP_PROXY_AUTH_TOKEN \
-    npx @modelcontextprotocol/inspector &
-else
-  echo "MCP inspector disabled"
-fi
-
 # Start FastAPI server
 /opt/venv/bin/python -m uvicorn getgather.main:app --host 0.0.0.0 --port 23456 --proxy-headers --forwarded-allow-ips="*"

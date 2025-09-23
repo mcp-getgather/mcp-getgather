@@ -78,10 +78,7 @@ RUN npm run build:ci
 # Stage 3: Final image
 FROM mirror.gcr.io/library/python:3.13-slim-bookworm
 
-RUN apt-get update && apt-get install -y curl gnupg \
-    && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
-
-RUN apt-get install -y \
+RUN apt-get update && apt-get install -y \
     xvfb \
     xauth \
     libnss3 \
@@ -99,7 +96,6 @@ RUN apt-get install -y \
     x11-apps \
     dbus \
     dbus-x11 \
-    nodejs \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
@@ -124,7 +120,5 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 EXPOSE 23456
 # port for VNC server
 EXPOSE 5900
-# port for MCP inspector server
-EXPOSE 6277
 
 ENTRYPOINT ["/app/entrypoint.sh"]
