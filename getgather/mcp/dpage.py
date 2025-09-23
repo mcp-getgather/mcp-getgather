@@ -24,6 +24,7 @@ from getgather.distill import (
     terminate,
 )
 from getgather.logs import logger
+from getgather.mcp.html_renderer import render_form
 
 router = APIRouter(prefix="/dpage", tags=["dpage"])
 
@@ -90,32 +91,14 @@ async def dpage_check(id: str):
 
 
 def render(content: str, options: dict[str, str] | None = None) -> str:
+    """Render HTML template with content and options."""
     if options is None:
         options = {}
 
     title = options.get("title", "GetGather")
     action = options.get("action", "")
 
-    return f"""<!doctype html>
-<html data-theme=light>
-  <head>
-    <title>{title}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-  </head>
-  <body>
-    <main class="container">
-      <section>
-        <h2>{title}</h2>
-        <articles>
-        <form method="POST" action="{action}">
-        {content}
-        </form>
-        </articles>
-      </section>
-    </main>
-  </body>
-</html>"""
+    return render_form(content, title, action)
 
 
 # Since the browser can't redirect from GET to POST,
