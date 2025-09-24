@@ -1,22 +1,14 @@
-import os
 from typing import Any
 
-from getgather.distill import load_distillation_patterns, run_distillation_loop
-from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import get_mcp_browser_profile
+from fastmcp import Context
 
-petsmart_mcp = BrandMCPBase(brand_id="petsmart", name="Petsmart MCP")
+from getgather.mcp.dpage import dpage_mcp_tool
+from getgather.mcp.registry import GatherMCP
+
+petsmart_mcp = GatherMCP(brand_id="petsmart", name="Petsmart MCP")
 
 
-@petsmart_mcp.tool(tags={"private"})
-async def get_cart() -> dict[str, Any]:
-    """Get cart of petsmart."""
-    browser_profile = get_mcp_browser_profile()
-    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
-    patterns = load_distillation_patterns(path)
-    cart = await run_distillation_loop(
-        "https://www.petsmart.com/cart/",
-        patterns,
-        browser_profile=browser_profile,
-    )
-    return {"cart": cart}
+@petsmart_mcp.tool
+async def get_cart(ctx: Context) -> dict[str, Any]:
+    """Get the list of items in the cart from Petsmart"""
+    return await dpage_mcp_tool("https://www.petsmart.com/cart/", "petsmart_cart")
