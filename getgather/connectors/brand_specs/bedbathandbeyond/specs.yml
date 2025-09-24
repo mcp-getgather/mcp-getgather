@@ -42,16 +42,3 @@ signin:
       end: true
 
   start: Login Page
-
-extract:
-  steps:
-    - name: Go to Favorites List
-      url: https://www.bedbathandbeyond.com/profile/me/lists
-
-    - name: Wait for the Favorites page to load
-      timeout: 10
-      wait_for_selector: nav h2:has-text("My Lists")
-
-    - name: Extract the list of favorites
-      bundle: favorites.html
-      slurp_selector: div[class*="Lists_lists"]
