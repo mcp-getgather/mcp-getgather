@@ -271,7 +271,7 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                 logger.info("Finished!")
                 converted = await convert(distilled)
                 await dpage_close(id)
-                if converted:
+                if converted is not None:
                     print(converted)
                     distillation_results[id] = converted
                 return HTMLResponse(render(FINISHED_MSG, options))
@@ -341,7 +341,8 @@ async def dpage_mcp_tool(initial_url: str, result_key: str) -> dict[str, Any]:
         logger.warning("Missing Host header; defaulting to localhost")
         base_url = "http://localhost:23456"
     else:
-        scheme = headers.get("x-forwarded-proto", "https")
+        is_local = "localhost" in host or "127.0.0.1" in host
+        scheme = headers.get("x-forwarded-proto", "http" if is_local else "https")
         base_url = f"{scheme}://{host}"
 
     url = f"{base_url}/dpage/{id}"

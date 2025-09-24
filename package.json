@@ -21,6 +21,7 @@
     "backend:format": "uv run ruff format && uv run ruff check --fix",
     "backend:check:type-safety": "uv run pyright .",
     "yaml:check:format": "uv run yamlfix --check $(find . -type f -name '*.yml' -o -name '*.yaml' | grep -v -E '\\.venv/|node_modules/')",
+    "yaml:format": "uv run yamlfix $(find . -type f -name '*.yml' -o -name '*.yaml' | grep -v -E '\\.venv/|node_modules/')",
     "check:all": "npm run frontend:lint && npm run frontend:check:format && npm run backend:check:format && npm run backend:check:type-safety && npm run yaml:check:format",
     "generate:schema": "mkdir -p frontend/__generated__ && uv run python -m getgather.generate_openapi -o frontend/__generated__/openapi.json && openapi-typescript frontend/__generated__/openapi.json -o frontend/__generated__/api.d.ts",
     "watch:schema:api": "chokidar \"getgather/**/*.py\" -c \"npm run generate:schema\"",
