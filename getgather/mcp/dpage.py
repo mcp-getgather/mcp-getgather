@@ -1,4 +1,5 @@
 import asyncio
+import ipaddress
 import os
 import urllib.parse
 from asyncio import Task
@@ -294,6 +295,15 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
     raise HTTPException(status_code=503, detail="Timeout reached")
 
 
+def is_local_address(host: str) -> bool:
+    hostname = host.split(":")[0].lower().strip()
+    try:
+        ip = ipaddress.ip_address(hostname)
+        return ip.is_loopback
+    except ValueError:
+        return hostname in ("localhost", "127.0.0.1")
+
+
 async def dpage_mcp_tool(initial_url: str, result_key: str) -> dict[str, Any]:
     """Generic MCP tool based on distillation"""
 
@@ -341,7 +351,8 @@ async def dpage_mcp_tool(initial_url: str, result_key: str) -> dict[str, Any]:
         logger.warning("Missing Host header; defaulting to localhost")
         base_url = "http://localhost:23456"
     else:
-        scheme = headers.get("x-forwarded-proto", "https")
+        default_scheme = "http" if is_local_address(host) else "https"
+        scheme = headers.get("x-forwarded-proto", default_scheme)
         base_url = f"{scheme}://{host}"
 
     url = f"{base_url}/dpage/{id}"
