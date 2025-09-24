@@ -38,4 +38,8 @@ async def get_order_history_details(order_number: str) -> dict[str, Any]:
         browser_profile=browser_profile,
     )
 
+    if purchase_history_details and isinstance(purchase_history_details, list):
+        for item in purchase_history_details:
+            item["order_number"] = order_number
+
     return {"purchase_history_details": purchase_history_details}
