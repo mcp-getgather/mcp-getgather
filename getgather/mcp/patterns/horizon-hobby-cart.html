@@ -1,0 +1,27 @@
+<html gg-domain="horizonhobby" gg-priority="2">
+  <head>
+    <title>Horizon Hobby Cart</title>
+  </head>
+  <body>
+    <div gg-match="div[data-test='account-dropdown'] button[aria-label='My Account']"></div>
+    <div gg-match="div[data-test='cart-order-summary']"></div>
+    <div gg-stop gg-match-html="main"></div>
+    <script type="application/json" id="carts">
+      {
+        "rows": "div[data-test*='cart-product-line-item']",
+        "columns": [
+          { "name": "alert", "selector": "div.alert__root" },
+          {
+            "name": "product_image_url",
+            "selector": "img[data-test='product-image']",
+            "attribute": "src"
+          },
+          { "name": "product_name", "selector": "div > a[title] > p" },
+          { "name": "product_url", "selector": "div > a[title]", "attribute": "href" },
+          { "name": "product_price", "selector": "p:contains('Each:') + span" },
+          { "name": "product_price_original", "selector": "p:contains('Each:') + span + span" }
+        ]
+      }
+    </script>
+  </body>
+</html>
