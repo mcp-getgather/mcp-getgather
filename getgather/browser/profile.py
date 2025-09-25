@@ -55,13 +55,15 @@ class BrowserProfile(FreezableModel):
         # Get viewport configuration from parent class
         viewport_config = self.get_viewport_config()
 
-        return await browser_type.launch_persistent_context(
+        context = await browser_type.launch_persistent_context(
             user_data_dir=str(self.profile_dir(profile_id)),
             headless=settings.HEADLESS,
             viewport=viewport_config,
             proxy=proxy,  # type: ignore[arg-type]
             bypass_csp=True,
         )
+        context.set_default_timeout(settings.BROWSER_TIMEOUT)
+        return context
 
     def cleanup(self, profile_id: str):
         user_data_dir = self.profile_dir(profile_id)
