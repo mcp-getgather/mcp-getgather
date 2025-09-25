@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     BROWSER_USE_MODEL: str = "o4-mini"
     OPENAI_API_KEY: str = ""
 
+    BROWSER_TIMEOUT: int = 30_000
+
     # Proxy Settings
     BROWSER_HTTP_PROXY: str = ""
     BROWSER_HTTP_PROXY_PASSWORD: str = ""
