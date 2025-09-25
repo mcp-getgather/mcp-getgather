@@ -1,5 +1,28 @@
 <html gg-domain="booking">
+  <head>
+    <title>Bookings &amp; Trips</title>
+  </head>
   <body>
     <div gg-stop gg-match-html="div#past"></div>
+    <script type="application/json" id="past_trips">
+      {
+        "rows": "div#past a[href*='mytrips.html']",
+        "columns": [
+          {
+            "name": "destination",
+            "selector": "div[class*='e7addce19e']"
+          },
+          {
+            "name": "dates",
+            "selector": "span"
+          },
+          {
+            "name": "trip_url",
+            "selector": "",
+            "attribute": "href"
+          }
+        ]
+      }
+    </script>
   </body>
 </html>
