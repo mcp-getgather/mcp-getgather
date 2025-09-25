@@ -1,9 +1,6 @@
 # Stage 1: Backend Builder
 FROM mirror.gcr.io/library/python:3.13-slim-bookworm AS backend-builder
 
-ARG MULTI_USER_ENABLED=false
-ENV MULTI_USER_ENABLED=${MULTI_USER_ENABLED}
-
 COPY --from=ghcr.io/astral-sh/uv:0.8.4 /uv /uvx /bin/
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -116,8 +113,11 @@ ENV PYTHONUNBUFFERED=1 \
 ENV PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
 
+ARG PORT=23456
+ENV PORT=${PORT}
+
 # port for FastAPI server
-EXPOSE 23456
+EXPOSE ${PORT}
 # port for VNC server
 EXPOSE 5900
 
