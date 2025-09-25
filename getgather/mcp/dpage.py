@@ -64,7 +64,7 @@ async def dpage_add(
     if location:
         if not location.startswith("http"):
             location = f"https://{location}"
-        await page.goto(location)
+        await page.goto(location, timeout=120_000)
 
     active_pages[id] = page
     return id
@@ -326,12 +326,12 @@ async def dpage_mcp_tool(initial_url: str, result_key: str) -> dict[str, Any]:
 
             # to help troubleshooting
             debug_page = await session.context.new_page()
-            await debug_page.goto("https://ifconfig.me")
+            await debug_page.goto("https://ifconfig.me", timeout=120_000)
 
             init_page = await session.context.new_page()
             await init_page.route("**/*", block_unwanted_resources)
 
-            await init_page.goto(initial_url)
+            await init_page.goto(initial_url, timeout=120_000)
             await asyncio.sleep(1)
 
         browser_profile = global_browser_profile
