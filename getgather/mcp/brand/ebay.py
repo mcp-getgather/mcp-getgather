@@ -1,22 +1,15 @@
-import os
 from typing import Any
 
-from getgather.distill import load_distillation_patterns, run_distillation_loop
-from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import get_mcp_browser_profile
+from fastmcp import Context
 
-ebay_mcp = BrandMCPBase(brand_id="ebay", name="Ebay MCP")
+from getgather.mcp.dpage import dpage_mcp_tool
+from getgather.mcp.registry import GatherMCP
+
+ebay_mcp = GatherMCP(brand_id="ebay", name="Ebay MCP")
 
 
-@ebay_mcp.tool(tags={"private"})
-async def get_order_history() -> dict[str, Any]:
-    """Get order history of ebay."""
-    browser_profile = get_mcp_browser_profile()
-    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
-    patterns = load_distillation_patterns(path)
-    order_history = await run_distillation_loop(
-        "https://www.ebay.com/mye/myebay/purchase",
-        patterns,
-        browser_profile=browser_profile,
-    )
-    return {"order_history": order_history}
+@ebay_mcp.tool
+async def get_cart(ctx: Context) -> dict[str, Any]:
+    """Get the list of items in the cart from Ebay"""
+
+    return await dpage_mcp_tool("https://cart.ebay.com/", "ebay_cart")
