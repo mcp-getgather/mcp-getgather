@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     )
     RRWEB_MASK_ALL_INPUTS: bool = True
 
-    SERVER_NAME: str = ""
+    HOSTNAME: str = ""
 
     @property
     def brand_spec_dir(self) -> Path:
