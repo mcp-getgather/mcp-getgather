@@ -39,7 +39,7 @@ def block_unwanted_resources(route: Route) -> Task[None]:
 
 
 active_pages: dict[str, Page] = {}
-distillation_results: dict[str, list[dict[str, str | list[str]]]] = {}
+distillation_results: dict[str, str | list[dict[str, str | list[str]]]] = {}
 global_browser_profile: BrowserProfile | None = None
 
 
@@ -275,6 +275,9 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                 if converted:
                     print(converted)
                     distillation_results[id] = converted
+                else:
+                    logger.info("No conversion found")
+                    distillation_results[id] = distilled
                 return HTMLResponse(render(FINISHED_MSG, options))
 
             logger.info("All form fields are filled")
