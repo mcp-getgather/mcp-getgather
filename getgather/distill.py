@@ -35,6 +35,9 @@ class Match(BaseModel):
         arbitrary_types_allowed = True
 
 
+ConversionResult = list[dict[str, str | list[str]]]
+
+
 def get_selector(input_selector: str | None) -> tuple[str | None, str | None]:
     pattern = r"^(iframe(?:[^\s]*\[[^\]]+\]|[^\s]+))\s+(.+)$"
     if not input_selector:
@@ -66,7 +69,7 @@ async def convert(distilled: str):
 
             rows = document.select(str(converter.get("rows", "")))
             logger.info(f"Found {len(rows)} rows")
-            converted: list[dict[str, str | list[str]]] = []
+            converted: ConversionResult = []
             for _, el in enumerate(rows):
                 kv: dict[str, str | list[str]] = {}
                 for col in converter.get("columns", []):
@@ -371,7 +374,7 @@ async def run_distillation_loop(
     browser_profile: BrowserProfile | None = None,
     timeout: int = 15,
     interactive: bool = True,
-) -> str | list[dict[str, str | list[str]]] | None:
+) -> dict[str, str | ConversionResult | None | bool]:
     if len(patterns) == 0:
         logger.error("No distillation patterns provided")
         raise ValueError("No distillation patterns provided")
@@ -415,11 +418,9 @@ async def run_distillation_loop(
                         await autoclick(page, distilled)
                     if await terminate(page, distilled):
                         converted = await convert(distilled)
-                        if converted:
-                            return converted
-                        break
+                        return {"terminated": True, "result": converted if converted else distilled}
 
             else:
                 logger.debug(f"No matched pattern found")
 
-        return current.distilled
+        return {"terminated": False, "result": current.distilled}
