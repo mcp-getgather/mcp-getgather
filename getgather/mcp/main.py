@@ -1,13 +1,16 @@
+import json
 from dataclasses import dataclass
 from functools import cache, cached_property
 from typing import Any, Literal
 
 from fastmcp import Context, FastMCP
+from fastmcp.server.dependencies import get_http_headers
 from fastmcp.server.http import StarletteWithLifespan
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools.tool import ToolResult
 from pydantic import BaseModel
 
+from getgather.api.types import RequestInfo, request_info
 from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.logs import logger
@@ -32,6 +35,15 @@ class AuthMiddleware(Middleware):
             return await call_next(context)
 
         logger.info(f"[AuthMiddleware Context]: {context.message}")
+
+        headers = get_http_headers(include_all=True)
+        location = headers.get("x-location", None)
+        if location is not None:
+            try:
+                location_data = json.loads(location)
+                request_info.set(RequestInfo(**location_data))
+            except json.JSONDecodeError:
+                logger.warning(f"Failed to parse x-location header as JSON, {location}")
 
         tool = await context.fastmcp_context.fastmcp.get_tool(context.message.name)  # type: ignore
 
