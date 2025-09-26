@@ -4,6 +4,11 @@ This module provides proxy configuration for external proxy service integration
 with hierarchical location support (city, state, country).
 """
 
+import re
+from urllib.parse import urlsplit
+
+from patchright.async_api import ProxySettings
+
 from getgather.api.types import RequestInfo
 from getgather.config import settings
 from getgather.logs import logger
@@ -11,7 +16,7 @@ from getgather.logs import logger
 
 async def setup_proxy(
     profile_id: str, request_info: RequestInfo | None = None
-) -> dict[str, str] | None:
+) -> ProxySettings | None:
     """Setup proxy configuration using external proxy service.
 
     The proxy service supports hierarchical location targeting by encoding
@@ -28,12 +33,23 @@ async def setup_proxy(
         None: If no proxy is configured
     """
     # Check if proxy service is configured
-    if not settings.BROWSER_HTTP_PROXY or not settings.BROWSER_HTTP_PROXY_PASSWORD:
-        logger.info(
-            "No proxy configured (BROWSER_HTTP_PROXY and BROWSER_HTTP_PROXY_PASSWORD not set)"
-        )
+    if not settings.BROWSER_PROXY:
         return None
 
+    proxy = urlsplit(settings.BROWSER_PROXY)
+    if not proxy.password:
+        raise ValueError("BROWSER_PROXY must contain a password")
+    if not proxy.scheme:
+        raise ValueError("BROWSER_PROXY must contain a scheme")
+
+    proxy_url = re.sub("://.*@", "://", settings.BROWSER_PROXY)
+    logger.info(f"Setting up proxy service {proxy_url}")
+
+    username = proxy.username or get_proxy_username(profile_id, request_info)
+    return ProxySettings(server=proxy_url, username=username, password=proxy.password)
+
+
+def get_proxy_username(profile_id: str, request_info: RequestInfo | None = None) -> str:
     # Use profile ID as base username
     username = profile_id
 
@@ -79,9 +95,4 @@ async def setup_proxy(
     else:
         logger.info(f"Using proxy service with profile '{profile_id}' and default settings")
 
-    # Return proxy configuration for the service
-    return {
-        "server": settings.BROWSER_HTTP_PROXY,
-        "username": username,
-        "password": settings.BROWSER_HTTP_PROXY_PASSWORD,
-    }
+    return username

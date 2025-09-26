@@ -33,8 +33,7 @@ class Settings(BaseSettings):
     BROWSER_TIMEOUT: int = 30_000
 
     # Proxy Settings
-    BROWSER_HTTP_PROXY: str = ""
-    BROWSER_HTTP_PROXY_PASSWORD: str = ""
+    BROWSER_PROXY: str = ""
 
     # RRWeb Recording Settings
     ENABLE_RRWEB_RECORDING: bool = False
