@@ -112,6 +112,7 @@ ENV PYTHONUNBUFFERED=1 \
 # Set Playwright-specific environment variables only for full deployment
 ENV PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
+ENV DISPLAY=:99
 
 ARG PORT=23456
 ENV PORT=${PORT}
