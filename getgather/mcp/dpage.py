@@ -39,7 +39,7 @@ def block_unwanted_resources(route: Route) -> Task[None]:
 
 
 active_pages: dict[str, Page] = {}
-distillation_results: dict[str, list[dict[str, str | list[str]]]] = {}
+distillation_results: dict[str, str | list[dict[str, str | list[str]]]] = {}
 global_browser_profile: BrowserProfile | None = None
 
 
@@ -275,6 +275,9 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                 if converted:
                     print(converted)
                     distillation_results[id] = converted
+                else:
+                    logger.info("No conversion found")
+                    distillation_results[id] = distilled
                 return HTMLResponse(render(FINISHED_MSG, options))
 
             logger.info("All form fields are filled")
@@ -337,11 +340,11 @@ async def dpage_mcp_tool(initial_url: str, result_key: str) -> dict[str, Any]:
         browser_profile = global_browser_profile
 
     # First, try without any interaction as this will work if the user signed in previously
-    result = await run_distillation_loop(
+    distillation_result = await run_distillation_loop(
         initial_url, patterns, browser_profile=browser_profile, interactive=False, timeout=2
     )
-    if isinstance(result, list):
-        return {result_key: result}
+    if distillation_result["terminated"]:
+        return {result_key: distillation_result["result"]}
 
     # If that didn't work, try signing in via distillation
     id = await dpage_add(browser_profile=browser_profile, location=initial_url)
