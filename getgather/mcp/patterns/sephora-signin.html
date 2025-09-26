@@ -1,0 +1,30 @@
+<html gg-domain="sephora" priority="1">
+  <body>
+    <p gg-optional gg-match="p[data-at='sign_in_error']"></p>
+    <input
+      type="text"
+      name="username"
+      gg-match="input#signin_username"
+      placeholder="Email Address"
+    />
+    <input
+      type="password"
+      name="password"
+      gg-match="input#signin_password"
+      placeholder="Password"
+    />
+    <input
+      gg-autoclick
+      name="stay_signed_in"
+      type="checkbox"
+      gg-match="span[data-at='stay_signed_in_label']"
+      style="display: none"
+    />
+    <button
+      gg-autoclick
+      gg-match="button[data-at='sign_in_button']:has-text('Sign In'):not([disabled])"
+    >
+      Sign In
+    </button>
+  </body>
+</html>
