@@ -307,7 +307,7 @@ def is_local_address(host: str) -> bool:
         return hostname in ("localhost", "127.0.0.1")
 
 
-async def dpage_mcp_tool(initial_url: str, result_key: str) -> dict[str, Any]:
+async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) -> dict[str, Any]:
     """Generic MCP tool based on distillation"""
 
     path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
@@ -341,7 +341,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str) -> dict[str, Any]:
 
     # First, try without any interaction as this will work if the user signed in previously
     distillation_result = await run_distillation_loop(
-        initial_url, patterns, browser_profile=browser_profile, interactive=False, timeout=2
+        initial_url, patterns, browser_profile=browser_profile, interactive=False, timeout=timeout
     )
     if distillation_result["terminated"]:
         return {result_key: distillation_result["result"]}
