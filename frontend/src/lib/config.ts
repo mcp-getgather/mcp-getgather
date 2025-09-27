@@ -9,7 +9,3 @@ export function activitiesEnabled() {
 export function replayEnabled() {
   return !import.meta.env.MULTI_USER_ENABLED;
 }
-
-export function inspectorEnabled() {
-  return !import.meta.env.MULTI_USER_ENABLED;
-}
