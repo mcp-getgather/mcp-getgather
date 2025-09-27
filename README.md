@@ -87,22 +87,6 @@ Development documentation is located in the [docs](./docs) directory:
 
 Access AI-enhanced documentation for this repository at [deepwiki.com/mcp-getgather/mcp-getgather](https://deepwiki.com/mcp-getgather/mcp-getgather).
 
-## MCP inspector
-
-The container runs an [MCP inspector](https://github.com/modelcontextprotocol/inspector). It's useful for debugging and listing available tools without a client.
-
-Run docker container with additional port 6277
-
-```bash
-docker run -p 23456:23456 -p 6277:6277 ghcr.io/mcp-getgather/mcp-getgather
-```
-
-Open [inspector url](http://localhost:6274/?MCP_PROXY_AUTH_TOKEN=getgather&transport=streamable-http&serverUrl=http://localhost:23456/mcp) in your browser.
-
-The default `MCP_PROXY_AUTH_TOKEN` is `getgather`. You can change it by running the container with `--env MCP_PROXY_AUTH_TOKEN=SOME_TOKEN`.
-
-The inspector can be disabled with `--env MCP_INSPECTOR_DISABLED=true`.
-
 ## Build and run locally
 
 After cloning the repo:
