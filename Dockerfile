@@ -76,8 +76,7 @@ RUN npm run build:ci
 FROM mirror.gcr.io/library/python:3.13-slim-bookworm
 
 RUN apt-get update && apt-get install -y \
-    xvfb \
-    xauth \
+    tigervnc-standalone-server \
     libnss3 \
     libatk-bridge2.0-0 \
     libgtk-3-0 \
