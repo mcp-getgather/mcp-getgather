@@ -8,7 +8,7 @@ export DBUS_SESSION_BUS_ADDRESS=""
 export USER=root
 
 echo "Starting TigerVNC server on DISPLAY=$DISPLAY..."
-Xvnc ${DISPLAY} -geometry 1920x1080 -depth 24 -rfbport 5900 -SecurityTypes None &
+Xvnc -alwaysshared ${DISPLAY} -geometry 1920x1080 -depth 24 -rfbport 5900 -SecurityTypes None &
 sleep 2
 echo "TigerVNC server running on DISPLAY=$DISPLAY"
 
