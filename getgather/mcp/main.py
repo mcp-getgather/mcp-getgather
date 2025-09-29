@@ -10,7 +10,7 @@ from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools.tool import ToolResult
 from pydantic import BaseModel
 
-from getgather.api.types import RequestInfo, request_info
+from getgather.api.types import ProxyInfo, proxy_info
 from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.logs import logger
@@ -37,11 +37,15 @@ class AuthMiddleware(Middleware):
         logger.info(f"[AuthMiddleware Context]: {context.message}")
 
         headers = get_http_headers(include_all=True)
+        browser_proxy = headers.get("x-browser-proxy", None)
+        if browser_proxy is not None:
+            proxy_info.set(ProxyInfo(browser_proxy=browser_proxy))
+
         location = headers.get("x-location", None)
         if location is not None:
             try:
                 location_data = json.loads(location)
-                request_info.set(RequestInfo(**location_data))
+                proxy_info.set(ProxyInfo(**location_data))
             except json.JSONDecodeError:
                 logger.warning(f"Failed to parse x-location header as JSON, {location}")
 

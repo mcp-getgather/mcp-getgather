@@ -9,14 +9,12 @@ from urllib.parse import urlsplit
 
 from patchright.async_api import ProxySettings
 
-from getgather.api.types import RequestInfo
+from getgather.api.types import ProxyInfo
 from getgather.config import settings
 from getgather.logs import logger
 
 
-async def setup_proxy(
-    profile_id: str, request_info: RequestInfo | None = None
-) -> ProxySettings | None:
+async def setup_proxy(profile_id: str, proxy_info: ProxyInfo | None = None) -> ProxySettings | None:
     """Setup proxy configuration using external proxy service.
 
     The proxy service supports hierarchical location targeting by encoding
@@ -26,60 +24,71 @@ async def setup_proxy(
 
     Args:
         profile_id: Profile ID to use as base proxy username
-        request_info: Optional request information containing location data
+        proxy_info: Optional proxy information containing location data and proxy URL
 
     Returns:
         dict: Proxy configuration with server, username and password
         None: If no proxy is configured
     """
-    # Check if proxy service is configured
-    if not settings.BROWSER_PROXY:
+
+    if proxy_info and proxy_info.browser_proxy == "":
+        logger.info(f"No proxy provided from proxy_info, skipping proxy setup")
         return None
 
-    proxy = urlsplit(settings.BROWSER_PROXY)
+    browser_proxy = (
+        proxy_info.browser_proxy
+        if proxy_info and proxy_info.browser_proxy
+        else settings.BROWSER_PROXY
+    )
+
+    # Check if proxy service is configured
+    if not browser_proxy:
+        return None
+
+    proxy = urlsplit(browser_proxy)
     if not proxy.password:
         raise ValueError("BROWSER_PROXY must contain a password")
     if not proxy.scheme:
         raise ValueError("BROWSER_PROXY must contain a scheme")
 
-    proxy_url = re.sub("://.*@", "://", settings.BROWSER_PROXY)
+    proxy_url = re.sub("://.*@", "://", browser_proxy)
     logger.info(f"Setting up proxy service {proxy_url}")
 
-    username = proxy.username or get_proxy_username(profile_id, request_info)
+    username = proxy.username or get_proxy_username(profile_id, proxy_info)
     return ProxySettings(server=proxy_url, username=username, password=proxy.password)
 
 
-def get_proxy_username(profile_id: str, request_info: RequestInfo | None = None) -> str:
+def get_proxy_username(profile_id: str, proxy_info: ProxyInfo | None = None) -> str:
     # Use profile ID as base username
     username = profile_id
 
-    if request_info and (
-        request_info.country or request_info.state or request_info.city or request_info.postal_code
+    if proxy_info and (
+        proxy_info.country or proxy_info.state or proxy_info.city or proxy_info.postal_code
     ):
-        # Log the incoming request_info for debugging
+        # Log the incoming proxy_info for debugging
         logger.info(
-            f"RequestInfo received - city: {request_info.city}, "
-            f"postal_code: {request_info.postal_code}, "
-            f"state: {request_info.state}, country: {request_info.country}"
+            f"ProxyInfo received - city: {proxy_info.city}, "
+            f"postal_code: {proxy_info.postal_code}, "
+            f"state: {proxy_info.state}, country: {proxy_info.country}"
         )
         # Build hierarchical location string for proxy service
         location_parts: list[str] = []
 
         # Add city if available
-        if request_info.city:
-            location_parts.extend(["city", request_info.city.lower().replace(" ", "_")])
+        if proxy_info.city:
+            location_parts.extend(["city", proxy_info.city.lower().replace(" ", "_")])
 
         # Add postal code if available
-        if request_info.postal_code:
-            location_parts.extend(["postalcode", request_info.postal_code])
+        if proxy_info.postal_code:
+            location_parts.extend(["postalcode", proxy_info.postal_code])
 
         # Add state if available (mainly for US)
-        if request_info.state:
-            location_parts.extend(["state", request_info.state.lower().replace(" ", "_")])
+        if proxy_info.state:
+            location_parts.extend(["state", proxy_info.state.lower().replace(" ", "_")])
 
         # Add country if available
-        if request_info.country:
-            location_parts.extend(["country", request_info.country.lower()])
+        if proxy_info.country:
+            location_parts.extend(["country", proxy_info.country.lower()])
 
         if location_parts:
             # Format: profile_id-city_losangeles_postalcode_90001_state_california_country_us

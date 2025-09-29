@@ -10,7 +10,7 @@ from nanoid import generate
 from patchright.async_api import BrowserType, ViewportSize
 from pydantic import ConfigDict, Field, model_validator
 
-from getgather.api.types import request_info
+from getgather.api.types import proxy_info
 from getgather.browser.freezable_model import FreezableModel
 from getgather.browser.proxy import setup_proxy
 from getgather.config import settings
@@ -50,7 +50,7 @@ class BrowserProfile(FreezableModel):
         )
 
         # Setup proxy if configured
-        proxy = await setup_proxy(profile_id, request_info.get())
+        proxy = await setup_proxy(profile_id, proxy_info.get())
 
         # Get viewport configuration from parent class
         viewport_config = self.get_viewport_config()
