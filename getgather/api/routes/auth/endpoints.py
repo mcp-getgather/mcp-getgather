@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter
 from fastapi.responses import RedirectResponse
 
-from getgather.api.types import request_info
+from getgather.api.types import proxy_info
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.signin_flow import SigninFlowRequest, SigninFlowResponse, signin_flow
 
@@ -19,7 +19,7 @@ async def auth(
 ) -> SigninFlowResponse:
     """Start or continue an authentication flow for a connector."""
     if signin_request.location:
-        request_info.set(signin_request.location)
+        proxy_info.set(signin_request.location)
 
     return await signin_flow(brand_id, signin_request, link_id)
 

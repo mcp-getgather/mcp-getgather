@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
 
-from getgather.api.types import RequestInfo
+from getgather.api.types import ProxyInfo
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession, BrowserStartupError
 from getgather.connectors.spec_loader import BrandIdEnum
@@ -24,7 +24,7 @@ class SigninFlowRequest(BaseModel):
         default=True,
         description="Whether to extract the data after the auth flow is complete.",
     )
-    location: RequestInfo | None = Field(
+    location: ProxyInfo | None = Field(
         description="The location for the client making the request.",
         default=None,
     )
