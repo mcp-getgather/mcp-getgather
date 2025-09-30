@@ -54,7 +54,7 @@ Your running terminal will proceed to build and deploy the app using the Dockerf
 
 #### 7. Set Environment Variables and Build Arguments
 
-You should consider adding any build arguments and environment variables (see also [`.env.template`](../.env.template) and [``](build args)) to the `[env]` section of the `fly.toml` file. For more information on what each variable is used for, please see the main [README](../README.md).
+You should consider adding any build arguments and environment variables (see also [`.env.template`](../.env.template) and the [build args](https://fly.io/docs/reference/configuration/#specify-docker-build-arguments) documentation) to the `[env]` section of the `fly.toml` file. For more information on what each variable is used for, please see the main [README](../README.md).
 
 ```toml
 [build.args]
