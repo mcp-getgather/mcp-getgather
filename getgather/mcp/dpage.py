@@ -341,9 +341,14 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
     # First, try without any interaction as this will work if the user signed in previously
     distillation_result = await run_distillation_loop(
-        initial_url, patterns, browser_profile=browser_profile, interactive=False, timeout=timeout
+        initial_url,
+        patterns,
+        browser_profile=browser_profile,
+        interactive=False,
+        timeout=timeout,
+        with_terminate_flag=True,
     )
-    if distillation_result["terminated"]:
+    if isinstance(distillation_result, dict) and distillation_result["terminated"]:
         return {result_key: distillation_result["result"]}
 
     # If that didn't work, try signing in via distillation
