@@ -374,7 +374,8 @@ async def run_distillation_loop(
     browser_profile: BrowserProfile | None = None,
     timeout: int = 15,
     interactive: bool = True,
-) -> dict[str, str | ConversionResult | None | bool]:
+    with_terminate_flag: bool = False,
+) -> dict[str, str | ConversionResult | None | bool] | str | ConversionResult:
     if len(patterns) == 0:
         logger.error("No distillation patterns provided")
         raise ValueError("No distillation patterns provided")
@@ -418,9 +419,18 @@ async def run_distillation_loop(
                         await autoclick(page, distilled)
                     if await terminate(page, distilled):
                         converted = await convert(distilled)
-                        return {"terminated": True, "result": converted if converted else distilled}
+                        if with_terminate_flag:
+                            return {
+                                "terminated": True,
+                                "result": converted if converted else distilled,
+                            }
+                        else:
+                            return converted if converted else distilled
 
             else:
                 logger.debug(f"No matched pattern found")
 
-        return {"terminated": False, "result": current.distilled}
+        if with_terminate_flag:
+            return {"terminated": False, "result": current.distilled}
+        else:
+            return current.distilled
