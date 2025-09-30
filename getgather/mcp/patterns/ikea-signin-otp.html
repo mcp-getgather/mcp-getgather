@@ -1,0 +1,26 @@
+<html gg-domain="ikea">
+  <head>
+    <title>Ikea Signin</title>
+  </head>
+  <body>
+    <span gg-optional gg-match="span.form-field__message"></span>
+    <input
+      autofocus
+      name="otc"
+      type="text"
+      inputmode="numeric"
+      placeholder="OTP"
+      gg-match="input#otc-verification"
+    />
+    <input
+      gg-autoclick
+      name="remember-me"
+      type="checkbox"
+      gg-match="input#remember-me"
+      style="display: none"
+    />
+    <button gg-autoclick gg-match="button:has-text('Continue'):not(:has(.btn__loader))">
+      Continue
+    </button>
+  </body>
+</html>
