@@ -81,17 +81,17 @@ async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict
                 extra={"hosted_link_id": hosted_link_id, "timeout_seconds": timeout_seconds},
             )
             return {
-                "status": "ERROR",
+                "status": "TIMEOUT",
                 "message": f"Auth timed out after {timeout_seconds} seconds. Please try again.",
             }
 
         link_data = HostedLinkManager.get_link_data(hosted_link_id)
-        if not link_data:
+        if not link_data or link_data.status == "expired":
             logger.warning(
                 "[get_hosted_link] Link not found", extra={"hosted_link_id": hosted_link_id}
             )
             return {
-                "status": "ERROR",
+                "status": "EXPIRED" if link_data else "NOT_FOUND",
                 "message": f"Link '{hosted_link_id}' not found or expired",
             }
 
