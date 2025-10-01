@@ -63,6 +63,14 @@ For Claude Desktop:
 }
 ```
 
+For Codex CLI, use a [`~/.codex/config.toml`](https://github.com/openai/codex/blob/main/docs/config.md#mcp_servers) file:
+
+```toml
+[mcp_servers.getgather]
+command = "npx"
+args = ["mcp-remote", "http://127.0.0.1:23456/mcp", "--allow-http"]
+```
+
 #### (Optional) Enable url opener tool
 
 Choose one of the following options if you'd like the MCP clients to automatically open the authentication link in a browser.
