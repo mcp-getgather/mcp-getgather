@@ -38,6 +38,7 @@ RUN $VENV_PATH/bin/patchright install --with-deps chromium
 COPY getgather /app/getgather
 COPY tests /app/tests
 COPY entrypoint.sh /app/entrypoint.sh
+COPY .jwmrc /app/.jwmrc
 
 # Install the workspace package
 RUN uv sync --no-dev
@@ -89,6 +90,7 @@ RUN apt-get update && apt-get install -y \
     libvulkan1 \
     x11vnc \
     jwm \
+    xterm \
     x11-apps \
     dbus \
     dbus-x11 \
@@ -101,6 +103,7 @@ COPY --from=backend-builder /app/.venv /opt/venv
 COPY --from=backend-builder /app/getgather /app/getgather
 COPY --from=backend-builder /app/tests /app/tests
 COPY --from=backend-builder /app/entrypoint.sh /app/entrypoint.sh
+COPY --from=backend-builder /app/.jwmrc /app/.jwmrc
 COPY --from=backend-builder /opt/ms-playwright /opt/ms-playwright
 COPY --from=frontend-builder /app/getgather/frontend /app/getgather/frontend
 
