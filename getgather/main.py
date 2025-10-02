@@ -221,16 +221,7 @@ def frontend_router(full_path: str):
 
 
 bearer = HTTPBearer(auto_error=False)
-AUTH_SKIP_PATHS = {
-    "/health",
-    "/extended-health",
-    "/docs",
-    "/redoc",
-    "/openapi.json",
-    "/live",
-    "/websockify",
-    "/__static",
-}
+AUTH_SKIP_PATHS = {"/health", "/extended-health", "/docs", "/redoc", "/openapi.json", "/__static"}
 
 
 @app.middleware("http")
