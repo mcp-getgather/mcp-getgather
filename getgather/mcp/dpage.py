@@ -8,7 +8,6 @@ from typing import Any
 from bs4 import BeautifulSoup, Tag
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from fastmcp import settings
 from fastmcp.server.dependencies import get_http_headers
 from nanoid import generate
 from patchright.async_api import Page, Route
