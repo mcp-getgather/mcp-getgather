@@ -14,6 +14,7 @@ from patchright.async_api import Page, Route
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
+from getgather.config import settings
 from getgather.distill import (
     Match,
     autoclick,
@@ -51,6 +52,8 @@ async def dpage_add(
     if id is None:
         FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
         id = generate(FRIENDLY_CHARS, 8)
+        if settings.HOSTNAME:
+            id = f"{settings.HOSTNAME}-{id}"
 
     if browser_profile is None:
         browser_profile = BrowserProfile()
