@@ -1,11 +1,19 @@
 from pathlib import Path
+from typing import TYPE_CHECKING
 
+from dotenv import load_dotenv
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from getgather.logs import logger, setup_logging
 
+if TYPE_CHECKING:
+    from getgather.browser.proxy_builder import ProxyConfig
+
 PROJECT_DIR = Path(__file__).resolve().parent.parent
+
+# Load .env file into os.environ so PROXY_* variables are accessible
+load_dotenv(PROJECT_DIR / ".env")
 
 
 class Settings(BaseSettings):
@@ -32,9 +40,9 @@ class Settings(BaseSettings):
 
     BROWSER_TIMEOUT: int = 30_000
 
-    # Proxy Settings
-    BROWSER_HTTP_PROXY: str = ""
-    BROWSER_HTTP_PROXY_PASSWORD: str = ""
+    # Default Proxy Type (optional - e.g., "proxy-0", "proxy-1")
+    # If not set, no proxy will be used unless specified via x-proxy-type header
+    DEFAULT_PROXY_TYPE: str = ""
 
     # RRWeb Recording Settings
     ENABLE_RRWEB_RECORDING: bool = False
@@ -104,6 +112,29 @@ class Settings(BaseSettings):
         if not v:
             logger.warning("SENTRY_DSN is not set, logging will not be captured in Sentry.")
         return v
+
+    _proxy_configs_cache: dict[str, "ProxyConfig"] | None = None
+
+    @property
+    def proxy_configs(self) -> dict[str, "ProxyConfig"]:
+        """Load proxy configurations from environment variables (cached).
+
+        Returns:
+            dict: Mapping of proxy identifiers (e.g., 'proxy-0') to ProxyConfig objects
+        """
+        # Return cached configs if already loaded
+        if self._proxy_configs_cache is not None:
+            return self._proxy_configs_cache
+
+        # Import here to avoid circular dependency
+        # Get all environment variables
+        import os
+
+        from getgather.browser.proxy_builder import load_proxy_configs_from_env
+
+        # Load and cache
+        self._proxy_configs_cache = load_proxy_configs_from_env(dict(os.environ))
+        return self._proxy_configs_cache
 
 
 settings = Settings()
