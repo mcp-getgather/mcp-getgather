@@ -45,6 +45,8 @@ class Settings(BaseSettings):
 
     HOSTNAME: str = ""
 
+    AUTH_BEARER_TOKEN: str = ""
+
     @property
     def brand_spec_dir(self) -> Path:
         return PROJECT_DIR / "getgather" / "connectors" / "brand_specs"
