@@ -3,7 +3,7 @@ import ipaddress
 import os
 import urllib.parse
 from asyncio import Task
-from typing import Any
+from typing import Any, Final
 
 from bs4 import BeautifulSoup, Tag
 from fastapi import APIRouter, HTTPException, Request
@@ -80,8 +80,8 @@ async def dpage_close(id: str) -> None:
 
 
 async def dpage_check(id: str):
-    TICK = 1  # seconds
-    TIMEOUT = 120  # seconds
+    TICK: Final = 1  # seconds
+    TIMEOUT: Final = 120  # seconds
     max = TIMEOUT // TICK
 
     for iteration in range(max):
@@ -172,8 +172,8 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
     logger.info(f"Continuing distillation for page {id}...")
     logger.debug(f"Available distillation patterns: {len(patterns)}")
 
-    TICK = 1  # seconds
-    TIMEOUT = 15  # seconds
+    TICK: Final = 1  # seconds
+    TIMEOUT: Final = 15  # seconds
     max = TIMEOUT // TICK
 
     current = Match(name="", priority=-1, distilled="", matches=[])
