@@ -45,8 +45,6 @@ jobs:
       - name: Run the distillation tests
         run: uv run pytest -n 7 -m "distill" tests/distillation/test_distill.py
         env:
-          ACME_EMAIL_AND_PASSWORD_EMAIL: joe@example.com
-          ACME_EMAIL_AND_PASSWORD_PASSWORD: trustno1
-          ACME_EMAIL_THEN_PASSWORD_EMAIL: joe@example.com
-          ACME_EMAIL_THEN_PASSWORD_PASSWORD: trustno1
-          ACME_OTP_OTP: 123456
+          ACME_EMAIL: joe@example.com
+          ACME_PASSWORD: trustno1
+          ACME_OTP: 123456
