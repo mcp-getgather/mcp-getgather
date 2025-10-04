@@ -213,8 +213,22 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
 
                 if selector:
                     if input_type == "checkbox":
-                        names.append(str(name) if name is not None else "checkbox")
-                        logger.info(f"Handling {selector} using autoclick")
+                        if not name:
+                            logger.warning(f"No name for the checkbox {selector}")
+                            continue
+                        value = fields.get(str(name))
+                        checked = value and len(str(value)) > 0
+                        names.append(str(name))
+                        logger.info(f"Status of checkbox {name}={checked}")
+                        if checked:
+                            if frame_selector:
+                                await (
+                                    page.frame_locator(str(frame_selector))
+                                    .locator(str(selector))
+                                    .check()
+                                )
+                            else:
+                                await page.check(str(selector))
                     elif input_type == "radio":
                         if name is not None:
                             name_str = str(name)
