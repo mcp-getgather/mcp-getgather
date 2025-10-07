@@ -81,9 +81,7 @@ async def setup_proxy(
                 f"Using proxy service with username '{username_base}' without specific location"
             )
     else:
-        logger.info(
-            f"Using proxy service with username '{username_base}' and default settings"
-        )
+        logger.info(f"Using proxy service with username '{username_base}' and default settings")
 
     # Return proxy configuration for the service
     return {
