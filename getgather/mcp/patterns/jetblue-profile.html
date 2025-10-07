@@ -1,0 +1,27 @@
+<html gg-domain="jetblue" priority="1">
+  <body>
+    <div>
+      <div gg-match="div[data-qaid='firstName']"></div>
+      <div gg-stop gg-match-html="jb-flyout-inner"></div>
+    </div>
+    <script type="application/json" id="profile">
+      {
+        "rows": "dot-header-signed-in-dialog",
+        "columns": [
+          {
+            "name": "profile_name",
+            "selector": "div[data-qaid='firstName']"
+          },
+          {
+            "name": "tiles",
+            "selector": "div:has-text('Tiles') + div"
+          },
+          {
+            "name": "points",
+            "selector": "div:has-text('Points') + div"
+          }
+        ]
+      }
+    </script>
+  </body>
+</html>
