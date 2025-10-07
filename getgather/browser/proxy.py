@@ -37,7 +37,7 @@ async def setup_proxy(
     # Determine base username (custom header overrides profile ID when provided)
     username_base = profile_id
     if request_info and request_info.custom_proxy_username:
-        username_base = request_info.custom_proxy_username
+        username_base = request_info.custom_proxy_username + "-" + username_base
 
     username = username_base
 
