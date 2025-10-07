@@ -131,10 +131,15 @@ class ProxyConfig:
         if not request_info:
             return values
 
+        country = None
         if request_info.country:
-            values["country"] = request_info.country.lower()
-        if request_info.state:
+            country = request_info.country.lower()
+            values["country"] = country
+
+        # Only include state for US requests (state-us_{state} format)
+        if request_info.state and country == "us":
             values["state"] = request_info.state.lower().replace(" ", "_")
+
         if request_info.city:
             values["city"] = request_info.city.lower().replace(" ", "_")
         if request_info.postal_code:
