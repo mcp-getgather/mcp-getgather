@@ -5,7 +5,9 @@ environment variable templates, supporting multiple proxy providers with differe
 URL formats and parameter naming conventions.
 """
 
+import re
 from typing import Any
+from urllib.parse import urlparse
 
 from getgather.api.types import RequestInfo
 from getgather.logs import logger
@@ -16,30 +18,56 @@ class ProxyConfig:
 
     def __init__(
         self,
-        proxy_type: str,
         url: str | None = None,
-        base_username: str | None = None,
         params_template: str | None = None,
-        password: str | None = None,
     ):
         """Initialize proxy configuration.
 
         Args:
-            proxy_type: Type identifier (e.g., 'none', 'proxy-1', 'proxy-2')
-            url: Proxy server URL (e.g., 'http://proxy.io:7777')
-            base_username: Static base username (e.g., 'user-mcp')
-            params_template: Dynamic parameters with placeholders (e.g., 'cc-{country}-sessid-{session_id}')
-            password: Proxy password
+            url: Proxy URL with credentials (e.g., 'http://user:pass@proxy.example.com:8888')
+            params_template: Dynamic parameters with placeholders (e.g., 'country-{country}-sessionid-{session_id}')
         """
-        self.proxy_type = proxy_type
-        self.url = url
-        self.base_username = base_username
         self.params_template = params_template
-        self.password = password
 
-    def is_none(self) -> bool:
-        """Check if this is a 'no proxy' configuration."""
-        return self.proxy_type == "none"
+        # Parse URL to extract username, password, and server
+        self.base_username: str | None = None
+        self.password: str | None = None
+        self.server: str | None = None
+        self.masked_url: str | None = None  # URL with credentials masked for logging
+
+        if url:
+            self._parse_url(url)
+
+    def _parse_url(self, url: str) -> None:
+        """Parse URL to extract base username, password, and server.
+
+        Args:
+            url: Full URL with credentials (e.g., 'user:pass@host:port' or 'http://user:pass@host:port')
+        """
+        # Add scheme if not present to help urlparse
+        url_to_parse = url
+        if "://" not in url:
+            url_to_parse = f"http://{url}"
+
+        # Create masked version for logging (mask credentials once)
+        self.masked_url = re.sub(r"://[^@]+@", "://***@", url_to_parse)
+
+        parsed = urlparse(url_to_parse)
+
+        # Extract username and password from URL
+        if parsed.username:
+            self.base_username = parsed.username
+        if parsed.password:
+            self.password = parsed.password
+
+        # Reconstruct server URL without credentials
+        if parsed.hostname:
+            scheme = parsed.scheme or "http"
+            port = f":{parsed.port}" if parsed.port else ""
+            self.server = f"{scheme}://{parsed.hostname}{port}"
+        else:
+            logger.warning(f"Could not parse hostname from URL: {self.masked_url}")
+            self.server = url
 
     def build(
         self, profile_id: str, request_info: RequestInfo | None = None
@@ -52,14 +80,10 @@ class ProxyConfig:
 
         Returns:
             dict: Proxy configuration with server, username, password
-            None: If proxy type is 'none' or configuration is invalid
+            None: If no server configured
         """
-        if self.is_none():
-            logger.info("Proxy type is 'none', skipping proxy configuration")
-            return None
-
-        if not self.url:
-            logger.warning("Proxy configuration incomplete: no URL provided")
+        if not self.server:
+            logger.info("No proxy server configured, skipping proxy")
             return None
 
         # Build username from base + params
@@ -77,7 +101,7 @@ class ProxyConfig:
             logger.info(f"Built proxy username: {username}")
 
         result = {
-            "server": self.url,
+            "server": self.server,
         }
         if username:
             result["username"] = username
@@ -85,7 +109,7 @@ class ProxyConfig:
             result["password"] = self.password
 
         logger.info(
-            f"Built proxy config - server: {self.url}, username: {username}, "
+            f"Built proxy config - server: {self.server}, username: {username}, "
             f"has_password: {bool(self.password)}"
         )
         return result
@@ -142,8 +166,6 @@ class ProxyConfig:
         current = template
 
         # Find all placeholders in order
-        import re
-
         placeholders: list[str] = re.findall(r"\{([^}]+)\}", template)
 
         for placeholder in placeholders:
@@ -171,6 +193,13 @@ class ProxyConfig:
 def load_proxy_configs_from_env(env_dict: dict[str, str]) -> dict[str, ProxyConfig]:
     """Load all proxy configurations from environment variables.
 
+    Expected format:
+        PROXY_0_URL=http://user:pass@proxy.example.com:8888
+        PROXY_0_PARAMS_TEMPLATE=country-{country}-sessionid-{session_id}
+
+        PROXY_1_URL=http://user2:pass2@proxy2.example.com:8000
+        PROXY_1_PARAMS_TEMPLATE=session-{session_id}-state-{state}
+
     Args:
         env_dict: Environment variables dictionary
 
@@ -179,36 +208,30 @@ def load_proxy_configs_from_env(env_dict: dict[str, str]) -> dict[str, ProxyConf
     """
     configs: dict[str, ProxyConfig] = {}
 
-    # Find all proxy indices
+    # Find all proxy indices by looking for PROXY_X_URL
     indices: set[int] = set()
     for key in env_dict.keys():
-        if key.startswith("PROXY_") and "_TYPE" in key:
-            # Extract index from PROXY_{INDEX}_TYPE
+        if key.startswith("PROXY_") and "_URL" in key:
+            # Extract index from PROXY_{INDEX}_URL
             parts = key.split("_")
             if len(parts) >= 2 and parts[1].isdigit():
                 indices.add(int(parts[1]))
 
     # Load configuration for each index
     for idx in sorted(indices):
-        proxy_type = env_dict.get(f"PROXY_{idx}_TYPE")
-        if not proxy_type:
+        url = env_dict.get(f"PROXY_{idx}_URL")
+        if not url:
             continue
 
-        url = env_dict.get(f"PROXY_{idx}_URL")
-        base_username = env_dict.get(f"PROXY_{idx}_BASE_USERNAME")
         params_template = env_dict.get(f"PROXY_{idx}_PARAMS_TEMPLATE")
-        password = env_dict.get(f"PROXY_{idx}_PASSWORD")
 
         config = ProxyConfig(
-            proxy_type=proxy_type,
             url=url,
-            base_username=base_username,
             params_template=params_template,
-            password=password,
         )
 
         proxy_key = f"proxy-{idx}"
         configs[proxy_key] = config
-        logger.info(f"Loaded proxy configuration for {proxy_key}: type={proxy_type}")
+        logger.info(f"Loaded proxy configuration for {proxy_key}: url={config.masked_url}")
 
     return configs
