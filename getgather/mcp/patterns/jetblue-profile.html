@@ -1,4 +1,4 @@
-<html gg-domain="jetblue" priority="1">
+<html gg-domain="jetblue" gg-priority="1">
   <body>
     <div>
       <div gg-match="div[data-qaid='firstName']"></div>
@@ -14,11 +14,11 @@
           },
           {
             "name": "tiles",
-            "selector": "div:has-text('Tiles') + div"
+            "selector": "div > div > div:nth-of-type(2) > div:nth-of-type(1) span"
           },
           {
             "name": "points",
-            "selector": "div:has-text('Points') + div"
+            "selector": "div > div > div:nth-of-type(2) > div:nth-of-type(3) span"
           }
         ]
       }
