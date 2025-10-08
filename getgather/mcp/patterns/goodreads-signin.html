@@ -8,12 +8,12 @@
     <input autofocus name="email" type="email" placeholder="Email" gg-match="input[type=email]" />
     <input name="password" type="password" placeholder="Password" gg-match="input[type=password]" />
     <input
-      gg-autoclick
       name="remember"
       type="checkbox"
+      checked
       gg-match="input[name=rememberMe]"
       style="display: none"
     />
-    <button gg-autoclick gg-match="input[type=submit]">Sign in</button>
+    <button type="submit" gg-autoclick gg-match="input[type=submit]">Sign in</button>
   </body>
 </html>

@@ -14,13 +14,14 @@
       placeholder="Password"
     />
     <input
-      gg-autoclick
       name="stay_signed_in"
       type="checkbox"
+      checked
       gg-match="span[data-at='stay_signed_in_label']"
       style="display: none"
     />
     <button
+      type="submit"
       gg-autoclick
       gg-match="button[data-at='sign_in_button']:has-text('Sign In'):not([disabled])"
     >
