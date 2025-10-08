@@ -12,4 +12,3 @@ async def get_order_history() -> dict[str, Any]:
     return await dpage_mcp_tool(
         "https://www.thriftbooks.com/account/ordersummary/", "thriftbooks_order_history"
     )
-    return {"order_summary": order_summary}
