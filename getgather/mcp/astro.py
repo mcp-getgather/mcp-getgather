@@ -1,20 +1,19 @@
-import os
 from typing import Any, cast
 from urllib.parse import quote
 
 from patchright.async_api import Locator, Page
 
+from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
-from getgather.distill import load_distillation_patterns, run_distillation_loop
-from getgather.mcp.registry import BrandMCPBase
+from getgather.mcp.dpage import dpage_mcp_tool
+from getgather.mcp.registry import GatherMCP
 from getgather.mcp.shared import (
-    get_mcp_browser_profile,
     get_mcp_browser_session,
     with_brand_browser_session,
 )
 from getgather.parse import parse_html
 
-astro_mcp = BrandMCPBase(brand_id="astro", name="Astro MCP")
+astro_mcp = GatherMCP(brand_id="astro", name="Astro MCP")
 
 
 async def _adjust_quantity_with_detection(
@@ -165,18 +164,10 @@ def _format_quantity_result(
     }
 
 
-@astro_mcp.tool(tags={"private"})
+@astro_mcp.tool
 async def get_purchase_history() -> dict[str, Any]:
     """Get astro purchase history using distillation."""
-    browser_profile = get_mcp_browser_profile()
-    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
-    patterns = load_distillation_patterns(path)
-    extract_result = await run_distillation_loop(
-        "https://www.astronauts.id/order/history",
-        patterns,
-        browser_profile=browser_profile,
-    )
-    return {"extract_result": extract_result}
+    return await dpage_mcp_tool("https://www.astronauts.id/order/history", "astro_purchase_history")
 
 
 @astro_mcp.tool
@@ -219,7 +210,7 @@ async def search_product(keyword: str) -> dict[str, Any]:
             {"name": "stock_status", "selector": "span.MuiTypography-caption-tiny.css-1lb2yr7"},
         ],
     })
-    result = await parse_html(brand_id=astro_mcp.brand_id, html_content=html, schema=spec_schema)
+    result = await parse_html(brand_id=BrandIdEnum("astro"), html_content=html, schema=spec_schema)
     return {"product_list": result.content}
 
 
@@ -263,7 +254,7 @@ async def get_product_details(product_url: str) -> dict[str, Any]:
             {"name": "add_to_cart_available", "selector": "button[data-testid='pdp-atc-btn']"},
         ],
     })
-    result = await parse_html(brand_id=astro_mcp.brand_id, html_content=html, schema=spec_schema)
+    result = await parse_html(brand_id=BrandIdEnum("astro"), html_content=html, schema=spec_schema)
 
     product_details: dict[str, Any] = (
         result.content[0] if result.content and len(result.content) > 0 else {}
@@ -440,7 +431,7 @@ async def get_cart_summary() -> dict[str, Any]:
     })
 
     available_items_result = await parse_html(
-        brand_id=astro_mcp.brand_id, html_content=html, schema=available_items_schema
+        brand_id=BrandIdEnum("astro"), html_content=html, schema=available_items_schema
     )
 
     # Extract unavailable items
@@ -463,7 +454,7 @@ async def get_cart_summary() -> dict[str, Any]:
     })
 
     unavailable_items_result = await parse_html(
-        brand_id=astro_mcp.brand_id, html_content=html, schema=unavailable_items_schema
+        brand_id=BrandIdEnum("astro"), html_content=html, schema=unavailable_items_schema
     )
 
     # Extract totals
@@ -489,7 +480,7 @@ async def get_cart_summary() -> dict[str, Any]:
     })
 
     summary_result = await parse_html(
-        brand_id=astro_mcp.brand_id, html_content=html, schema=summary_schema
+        brand_id=BrandIdEnum("astro"), html_content=html, schema=summary_schema
     )
 
     # Extract final total
@@ -508,7 +499,7 @@ async def get_cart_summary() -> dict[str, Any]:
     })
 
     total_result = await parse_html(
-        brand_id=astro_mcp.brand_id, html_content=html, schema=total_schema
+        brand_id=BrandIdEnum("astro"), html_content=html, schema=total_schema
     )
 
     # Process available items
