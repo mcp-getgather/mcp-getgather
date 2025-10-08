@@ -1,0 +1,23 @@
+<html gg-domain="hardcover" gg-priority="1">
+  <body>
+    <div>
+      <p gg-optional gg-match="form p.text-red-600"></p>
+      <input
+        autofocus
+        placeholder="Email"
+        name="email"
+        type="email"
+        gg-match="form input[type='email']"
+      />
+      <input
+        placeholder="Password"
+        name="password"
+        type="password"
+        gg-match="form input[type='password']"
+      />
+      <button gg-autoclick type="submit" gg-match="form button[type='submit']:not(:has(svg))">
+        Sign in
+      </button>
+    </div>
+  </body>
+</html>
