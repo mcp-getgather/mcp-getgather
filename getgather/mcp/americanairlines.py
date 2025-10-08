@@ -1,4 +1,3 @@
-from re import 
 from typing import Any
 
 from getgather.mcp.dpage import dpage_mcp_tool
