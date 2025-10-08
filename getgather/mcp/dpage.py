@@ -67,7 +67,7 @@ async def dpage_add(
     if location:
         if not location.startswith("http"):
             location = f"https://{location}"
-        await page.goto(location)
+        await page.goto(location, timeout=300000)
 
     active_pages[id] = page
     return id
