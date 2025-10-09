@@ -202,6 +202,20 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
         document = BeautifulSoup(distilled, "html.parser")
         inputs = document.find_all("input")
 
+        title_element = document.find("title")
+        title = title_element.get_text() if title_element is not None else "GetGather"
+        action = f"/dpage/{id}"
+        options = {"title": title, "action": action}
+
+        if await terminate(page, distilled):
+            logger.info("Finished!")
+            converted = await convert(distilled)
+            await dpage_close(id)
+            if converted:
+                print(converted)
+                distillation_results[id] = converted
+            return HTMLResponse(render(FINISHED_MSG, options))
+
         for input in inputs:
             if isinstance(input, Tag):
                 gg_match = input.get("gg-match")
@@ -278,39 +292,17 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                         else:
                             logger.info(f"No form data found for {name}")
 
-        title_element = document.find("title")
-        title = title_element.get_text() if title_element is not None else "GetGather"
-        action = f"/dpage/{id}"
-        options = {"title": title, "action": action}
+        await autoclick(page, distilled, "[gg-autoclick]:not(button)")
 
-        if len(inputs) == len(names):
-            await autoclick(page, distilled)
-            if await terminate(page, distilled):
-                logger.info("Finished!")
-                converted = await convert(distilled)
-                await dpage_close(id)
-                if converted:
-                    print(converted)
-                    distillation_results[id] = converted
-                else:
-                    logger.info("No conversion found")
-                    distillation_results[id] = distilled
-                return HTMLResponse(render(FINISHED_MSG, options))
+        SUBMIT_BUTTON = "button[gg-autoclick], button[type=submit]"
+        if document.select(SUBMIT_BUTTON):
+            if len(names) > 0 and len(inputs) == len(names):
+                logger.info("Submitting form, all fields are filled...")
+                await autoclick(page, distilled, SUBMIT_BUTTON)
+                continue
 
-            logger.info("All form fields are filled")
-            continue
-
-        if await terminate(page, distilled):
-            converted = await convert(distilled)
-            await dpage_close(id)
-            if converted:
-                print(converted)
-                distillation_results[id] = converted
-            return HTMLResponse(render(FINISHED_MSG, options))
-        else:
             logger.info("Not all form fields are filled")
-
-        return HTMLResponse(render(str(document.find("body")), options))
+            return HTMLResponse(render(str(document.find("body")), options))
 
     raise HTTPException(status_code=503, detail="Timeout reached")
 
