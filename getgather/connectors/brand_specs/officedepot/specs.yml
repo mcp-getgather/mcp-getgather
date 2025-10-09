@@ -71,7 +71,7 @@ signin:
       label: div.od-callout-description p
     - name: welcome-text
       type: wait
-      selector: div.od-container:has-text("Welcome")
+      selector: div[data-auid="Header_OdDropdown_Account"]
 
   pages:
     - name: Log in
@@ -104,18 +104,6 @@ signin:
       fields: [welcome-text]
       end: true
   start: Log in
-
-extract:
-  steps:
-    - name: Go to orders
-      url: https://www.officedepot.com/orderhistory/orderHistoryList.do
-
-    - name: Wait a bit
-      sleep: 3
-
-    - name: Extract past orders
-      bundle: orders.html
-      slurp_selector: div.oh-list
 
 parse:
   - bundle: orders.html
