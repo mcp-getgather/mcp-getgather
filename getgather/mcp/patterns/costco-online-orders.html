@@ -1,0 +1,60 @@
+<html gg-domain="costco">
+  <body>
+    <div
+      gg-stop
+      gg-match-html="div[role='tabpanel'][id='simple-tabpanel-0']:not([hidden])"
+      gg-wait="a[automation-id='OnlineOrdersViewOrchangeOrder']"
+    ></div>
+    <script type="application/json" id="orders">
+      {
+        "rows": "div:has(> div > div > div > a[automation-id='OnlineOrdersViewOrchangeOrder'])",
+        "columns": [
+          {
+            "name": "order_number",
+            "selector": "a[id^='orderNumber_']"
+          },
+          {
+            "name": "order_date",
+            "selector": "div[id^='orderDate_']"
+          },
+          {
+            "name": "total",
+            "selector": "div[automation-id='totalOutput'] div:last-child"
+          },
+          {
+            "name": "view_details_link",
+            "selector": "a[automation-id='OnlineOrdersViewOrchangeOrder'][aria-describedby]",
+            "attribute": "href"
+          },
+          {
+            "name": "buy_again_link",
+            "selector": "a[automation-id='OnlineOrdersBuyAgain']",
+            "attribute": "href"
+          },
+          {
+            "name": "return_link",
+            "selector": "a[automation-id='OnlineOrdersReturnOrreplace']",
+            "attribute": "href"
+          },
+          {
+            "name": "product_name",
+            "selector": "a[href*='product.']"
+          },
+          {
+            "name": "product_image",
+            "selector": "img[src*='bfasset.costco-static.com']",
+            "attribute": "src"
+          },
+          {
+            "name": "delivery_status",
+            "selector": "div:-soup-contains('Delivered on')"
+          },
+          {
+            "name": "tracking_number",
+            "selector": "a[href*='shipmenttracking']"
+          }
+        ]
+      }
+    </script>
+  </body>
+</html>
