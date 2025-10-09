@@ -417,15 +417,10 @@ async def run_distillation_loop(
                     logger.debug(f"Still the same: {match.name}")
                 else:
                     distilled = match.distilled
-                    if interactive:
-                        distilled = await autofill(page, distilled)
-
                     current = match
-                    current.distilled = distilled
                     print()
                     print(distilled)
-                    if interactive:
-                        await autoclick(page, distilled)
+
                     if await terminate(page, distilled):
                         converted = await convert(distilled)
                         if with_terminate_flag:
@@ -435,6 +430,11 @@ async def run_distillation_loop(
                             }
                         else:
                             return converted if converted else distilled
+
+                    if interactive:
+                        distilled = await autofill(page, distilled)
+                        await autoclick(page, distilled)
+                        current.distilled = distilled
 
             else:
                 logger.debug(f"No matched pattern found")
