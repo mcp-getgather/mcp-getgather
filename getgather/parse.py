@@ -25,7 +25,7 @@ class BundleOutput(BaseModel):
 
 
 async def parse(
-    brand_id: BrandIdEnum,
+    brand_id: BrandIdEnum | str,
     *,
     bundle: str | None = None,
     bundle_dir: Path | None = None,
@@ -53,7 +53,8 @@ async def parse(
             f"Either bundle_dir or b64_content must be provided, but not both. \nbundle_dir:{bundle_dir} \nb64_content:{b64_content[:200] if b64_content else 'None'}"
         )
 
-    spec = await load_brand_spec(brand_id)
+    brand_id_str = str(brand_id)
+    spec = await load_brand_spec(brand_id_str)
     if not spec.parse:
         raise ValueError(f"No parse steps defined for {brand_id}!")
 
@@ -92,7 +93,7 @@ async def parse(
 
 async def _parse_by_format(
     *,
-    brand_id: BrandIdEnum,
+    brand_id: BrandIdEnum | str,
     schema: Schema,
     bundle_dir: Path | None = None,
     content: str | None = None,
@@ -106,19 +107,20 @@ async def _parse_by_format(
             raise ValueError(f"Format '{schema.format}' is not supported for parsing")
 
 
-async def _get_value(brand_id: BrandIdEnum, column: Column, element: Locator) -> str | None:
+async def _get_value(brand_id: BrandIdEnum | str, column: Column, element: Locator) -> str | None:
     """Extract value from an element based on column configuration."""
     if column.attribute is not None:
         return await element.get_attribute(column.attribute)
     elif column.function is not None:
-        functions = load_custom_functions(brand_id)
+        brand_id_enum = brand_id if isinstance(brand_id, BrandIdEnum) else BrandIdEnum(brand_id)
+        functions = load_custom_functions(brand_id_enum)
         return await functions.extract_url(element)
     else:
         return await element.inner_text()
 
 
 async def _extract_data_with_locators(
-    brand_id: BrandIdEnum,
+    brand_id: BrandIdEnum | str,
     schema: Schema,
     page: Page,
 ) -> list[dict[str, str | list[str]]]:
@@ -159,7 +161,7 @@ async def _extract_data_with_locators(
 
 
 async def _extract_data_with_evaluator(
-    brand_id: BrandIdEnum,
+    brand_id: BrandIdEnum | str,
     schema: Schema,
     page: Page,
 ) -> list[dict[str, Any]]:
@@ -239,7 +241,7 @@ async def _extract_data_with_evaluator(
 
 
 async def _extract_data_with_python_parser(
-    brand_id: BrandIdEnum,
+    brand_id: BrandIdEnum | str,
     schema: Schema,
     html_content: str,
     page: Page | None = None,
@@ -297,7 +299,7 @@ async def _extract_data_with_python_parser(
 
 
 async def _extract_data_from_page(
-    brand_id: BrandIdEnum,
+    brand_id: BrandIdEnum | str,
     schema: Schema,
     page: Page,
 ) -> list[dict[str, str | list[str]]]:
@@ -339,7 +341,7 @@ async def _extract_data_from_page(
 
 
 async def parse_html(
-    brand_id: BrandIdEnum,
+    brand_id: BrandIdEnum | str,
     schema: Schema,
     *,
     bundle_dir: Path | None = None,
