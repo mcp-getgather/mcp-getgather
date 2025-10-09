@@ -210,7 +210,7 @@ async def search_product(keyword: str) -> dict[str, Any]:
             {"name": "stock_status", "selector": "span.MuiTypography-caption-tiny.css-1lb2yr7"},
         ],
     })
-    result = await parse_html(brand_id=BrandIdEnum("astro"), html_content=html, schema=spec_schema)
+    result = await parse_html(brand_id="astro", html_content=html, schema=spec_schema)
     return {"product_list": result.content}
 
 
@@ -254,7 +254,7 @@ async def get_product_details(product_url: str) -> dict[str, Any]:
             {"name": "add_to_cart_available", "selector": "button[data-testid='pdp-atc-btn']"},
         ],
     })
-    result = await parse_html(brand_id=BrandIdEnum("astro"), html_content=html, schema=spec_schema)
+    result = await parse_html(brand_id="astro", html_content=html, schema=spec_schema)
 
     product_details: dict[str, Any] = (
         result.content[0] if result.content and len(result.content) > 0 else {}
@@ -263,7 +263,7 @@ async def get_product_details(product_url: str) -> dict[str, Any]:
     return {"product_details": product_details}
 
 
-@astro_mcp.tool(tags={"private"})
+@astro_mcp.tool
 @with_brand_browser_session
 async def add_item_to_cart(product_url: str, quantity: int = 1) -> dict[str, Any]:
     """Add item to cart on astro (add new item or update existing quantity). Get product_url from search_product tool."""
@@ -333,7 +333,7 @@ async def add_item_to_cart(product_url: str, quantity: int = 1) -> dict[str, Any
         )
 
 
-@astro_mcp.tool(tags={"private"})
+@astro_mcp.tool
 @with_brand_browser_session
 async def update_cart_quantity(product_name: str, quantity: int) -> dict[str, Any]:
     """Update cart item quantity on astro (set quantity to 0 to remove item). Use product name from cart summary."""
@@ -387,7 +387,7 @@ async def update_cart_quantity(product_name: str, quantity: int) -> dict[str, An
     )
 
 
-@astro_mcp.tool(tags={"private"})
+@astro_mcp.tool
 @with_brand_browser_session
 async def get_cart_summary() -> dict[str, Any]:
     """Get cart summary from astro."""
