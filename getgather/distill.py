@@ -254,18 +254,14 @@ async def click(
         raise e
 
 
-async def autoclick(page: Page, distilled: str):
+async def autoclick(page: Page, distilled: str, expr: str):
     document = BeautifulSoup(distilled, "html.parser")
-    buttons = document.find_all(attrs={"gg-autoclick": True})
-
-    for button in buttons:
-        if isinstance(button, Tag):
-            selector, frame_selector = get_selector(str(button.get("gg-match")))
-            if selector:
-                logger.info(f"Auto-clicking {selector}")
-                if isinstance(frame_selector, list):
-                    frame_selector = str(frame_selector[0]) if frame_selector else None
-                await click(page, str(selector), frame_selector=frame_selector)
+    elements = document.select(expr)
+    for el in elements:
+        selector, frame_selector = get_selector(str(el.get("gg-match")))
+        if selector:
+            logger.info(f"Clicking {selector}")
+            await click(page, str(selector), frame_selector=frame_selector)
 
 
 async def terminate(page: Page, distilled: str) -> bool:
@@ -433,7 +429,10 @@ async def run_distillation_loop(
 
                     if interactive:
                         distilled = await autofill(page, distilled)
-                        await autoclick(page, distilled)
+                        await autoclick(page, distilled, "[gg-autoclick]:not(button)")
+                        await autoclick(
+                            page, distilled, "button[gg-autoclick], button[type=submit]"
+                        )
                         current.distilled = distilled
 
             else:
