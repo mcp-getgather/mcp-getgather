@@ -1,13 +1,8 @@
 <html gg-domain="adidas">
-  <head>
-    <title>Adidas Sign In</title>
-  </head>
   <body>
     <p gg-optional gg-match="div#email--error"></p>
     <p gg-optional gg-match="p._error_tbedu_60"></p>
-    <input autofocus name="email" type="email" gg-match="input#email" placeholder="Email Address" />
-    <button type="submit" gg-match="button#two-step-form-button:not([disabled]) span">
-      Continue
-    </button>
+    <input type="email" gg-match="input#email" placeholder="Email Address" />
+    <button type="submit" gg-autoclick gg-match="button#two-step-form-button">Continue</button>
   </body>
 </html>
