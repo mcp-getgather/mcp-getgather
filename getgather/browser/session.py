@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from patchright.async_api import BrowserContext, Page, Playwright, async_playwright
 
 from getgather.browser.profile import BrowserProfile
+from getgather.browser.resource_blocker import configure_context
 from getgather.logs import logger
 from getgather.rrweb import rrweb_injector
 
@@ -69,6 +70,8 @@ class BrowserSession:
             self._context = await self.profile.launch(
                 profile_id=self.profile.id, browser_type=self.playwright.chromium
             )
+
+            await configure_context(self._context)
 
             page = await self.page()
             page.on(

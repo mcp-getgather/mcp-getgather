@@ -2,7 +2,6 @@ import asyncio
 import ipaddress
 import os
 import urllib.parse
-from asyncio import Task
 from typing import Any
 
 from bs4 import BeautifulSoup, Tag
@@ -10,7 +9,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastmcp.server.dependencies import get_http_headers
 from nanoid import generate
-from patchright.async_api import Page, Route
+from patchright.async_api import Page
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
@@ -28,15 +27,6 @@ from getgather.distill import (
 from getgather.logs import logger
 
 router = APIRouter(prefix="/dpage", tags=["dpage"])
-
-
-def block_unwanted_resources(route: Route) -> Task[None]:
-    """Block images, media (videos), and fonts"""
-    return asyncio.create_task(
-        route.abort()
-        if route.request.resource_type in ["image", "media", "font"]
-        else route.continue_()
-    )
 
 
 active_pages: dict[str, Page] = {}
@@ -62,7 +52,6 @@ async def dpage_add(
 
     await session.start()
     page = await session.context.new_page()
-    await page.route("**/*", block_unwanted_resources)
 
     if location:
         if not location.startswith("http"):
@@ -342,7 +331,6 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
             await debug_page.goto("https://ifconfig.me")
 
             init_page = await session.context.new_page()
-            await init_page.route("**/*", block_unwanted_resources)
 
             await init_page.goto(initial_url)
             await asyncio.sleep(1)
