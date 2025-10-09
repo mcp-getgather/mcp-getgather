@@ -295,13 +295,15 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                         else:
                             logger.info(f"No form data found for {name}")
 
-        if len(inputs) == len(names):
-            await autoclick(page, distilled)
-            logger.info("All form fields are filled")
-            continue
-
-        logger.warning("Not all form fields are filled")
-        return HTMLResponse(render(str(document.find("body")), options))
+        await autoclick(page, distilled, "[gg-autoclick]:not(button)")
+        SUBMIT_BUTTON = "button[gg-autoclick], button[type=submit]"
+        if document.select(SUBMIT_BUTTON):
+            if len(names) > 0 and len(inputs) == len(names):
+                logger.info("Submitting form, all fields are filled...")
+                await autoclick(page, distilled, SUBMIT_BUTTON)
+                continue
+            logger.warning("Not all form fields are filled")
+            return HTMLResponse(render(str(document.find("body")), options))
 
     raise HTTPException(status_code=503, detail="Timeout reached")
 
