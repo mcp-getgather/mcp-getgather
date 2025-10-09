@@ -48,8 +48,7 @@ async def search_product(keyword: str, page_number: int = 1) -> dict[str, Any]:
                 "name": "product_name",
                 "selector": "a[class='contents'] > div > div:nth-child(2) > div:nth-child(1) > div:nth-child(1)",
             },
-            {"name": "product_url",
-                "selector": "a[class='contents']", "attribute": "href"},
+            {"name": "product_url", "selector": "a[class='contents']", "attribute": "href"},
             {
                 "name": "price",
                 "selector": "a[class='contents'] > div > div:nth-child(2) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1)",
@@ -60,5 +59,7 @@ async def search_product(keyword: str, page_number: int = 1) -> dict[str, Any]:
             },
         ],
     })
-    result = await parse_html(brand_id=BrandIdEnum("tokopedia"), html_content=html, schema=spec_schema)
+    result = await parse_html(
+        brand_id=BrandIdEnum("tokopedia"), html_content=html, schema=spec_schema
+    )
     return {"product_list": result.content}
