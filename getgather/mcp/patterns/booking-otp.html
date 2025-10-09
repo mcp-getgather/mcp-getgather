@@ -1,0 +1,10 @@
+<html gg-domain="booking" gg-priority="1">
+  <head>
+    <title>Verify your email address</title>
+  </head>
+  <body>
+    <p gg-optional gg-match="span.error-block:has-text('The code is incorrect')"></p>
+    <input name="otp" type="text" gg-match="input[name='code_0']" placeholder="Verification code" />
+    <button gg-autoclick gg-match="button[type=submit]">Verify</button>
+  </body>
+</html>
