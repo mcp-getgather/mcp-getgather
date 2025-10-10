@@ -1,6 +1,6 @@
 import asyncio
-import logging
 import ipaddress
+import logging
 import os
 import urllib.parse
 from asyncio import Task
@@ -236,7 +236,9 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                     if checked:
                         if frame_selector:
                             await (
-                                page.frame_locator(str(frame_selector)).locator(str(selector)).check()
+                                page.frame_locator(str(frame_selector))
+                                .locator(str(selector))
+                                .check()
                             )
                         else:
                             await page.check(str(selector))
@@ -257,7 +259,9 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                     radio_selector, radio_frame_selector = get_selector(str(radio.get("gg-match")))
                     if radio_frame_selector:
                         await (
-                            page.frame_locator(str(radio_frame_selector)).locator(str(radio_selector)).check()
+                            page.frame_locator(str(radio_frame_selector))
+                            .locator(str(radio_selector))
+                            .check()
                         )
                     else:
                         await page.check(str(radio_selector))
@@ -275,7 +279,9 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                         current.distilled = str(document)
                         if frame_selector:
                             await (
-                                page.frame_locator(str(frame_selector)).locator(str(selector)).fill(value)
+                                page.frame_locator(str(frame_selector))
+                                .locator(str(selector))
+                                .fill(value)
                             )
                         else:
                             await page.fill(str(selector), value)
