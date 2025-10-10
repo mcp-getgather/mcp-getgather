@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from types import MethodType
-from typing import Iterable
 
 from patchright.async_api import BrowserContext, Page, Route
 
@@ -29,22 +28,11 @@ async def configure_context(context: BrowserContext) -> None:
 
     context.new_page = MethodType(new_page_with_blocking, context)
 
-    await _configure_existing_pages(context.pages)
-
     setattr(context, "_gather_resource_blocking_configured", True)
 
 
-async def _configure_existing_pages(pages: Iterable[Page]) -> None:
-    for page in pages:
-        await _maybe_block_unwanted_resources(page)
-
-
 async def _maybe_block_unwanted_resources(page: Page) -> None:
-    if getattr(page, "_gather_resource_blocking_enabled", False):
-        return
-
     await page.route("**/*", _handle_route)
-    setattr(page, "_gather_resource_blocking_enabled", True)
 
 
 async def _handle_route(route: Route) -> None:
