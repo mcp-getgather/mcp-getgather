@@ -1,20 +1,28 @@
 import asyncio
 import json
+import logging
 import os
 import re
 import urllib.parse
+from datetime import datetime
 from glob import glob
-from typing import cast
+from pathlib import Path
+from typing import Any, cast
 
 import pwinput
+import sentry_sdk
 from bs4 import BeautifulSoup
 from bs4.element import Tag
+from nanoid import generate
 from patchright.async_api import Locator, Page
 from pydantic import BaseModel
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
+from getgather.config import settings
+from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.logs import logger
+from getgather.sentry import setup_error_context
 
 
 class Pattern(BaseModel):
@@ -36,6 +44,135 @@ class Match(BaseModel):
 
 
 ConversionResult = list[dict[str, str | list[str]]]
+
+
+def _safe_fragment(value: str) -> str:
+    fragment = re.sub(r"[^a-zA-Z0-9_-]+", "-", value).strip("-")
+    return fragment or "distill"
+
+
+async def capture_page_artifacts(
+    page: Page,
+    *,
+    identifier: str,
+    prefix: str,
+    capture_html: bool = True,
+) -> tuple[Path, Path | None, str | None]:
+    """Capture a screenshot (and optional HTML) for debugging/triage."""
+
+    settings.screenshots_dir.mkdir(parents=True, exist_ok=True)
+
+    base_identifier = _safe_fragment(identifier)
+    base_prefix = _safe_fragment(prefix)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    token = generate(size=5)
+    filename = f"{base_identifier}_{base_prefix}_{timestamp}_{token}.png"
+    screenshot_path = settings.screenshots_dir / filename
+
+    await page.screenshot(path=str(screenshot_path), full_page=True)
+
+    html_path: Path | None = None
+    html_content: str | None = None
+    if capture_html:
+        try:
+            html_content = await page.content()
+        except Exception as exc:  # ignore navigation races during capture
+            logger.debug(f"⚠️ Can't capture page content during navigation: {exc}")
+        else:
+            html_path = screenshot_path.with_suffix(".html")
+            html_path.write_text(html_content, encoding="utf-8")
+
+    logger.debug(
+        "📸 Distill artifact saved",
+        extra={
+            "screenshot": f"file://{screenshot_path}",
+            "html": f"file://{html_path}" if html_path else None,
+        },
+    )
+
+    return screenshot_path, html_path, html_content
+
+
+def _coerce_brand_id(brand_id: BrandIdEnum | str | None) -> BrandIdEnum | None:
+    if brand_id is None:
+        return None
+    if isinstance(brand_id, BrandIdEnum):
+        return brand_id
+    try:
+        return BrandIdEnum(brand_id)
+    except Exception:  # guards against invalid IDs without raising during triage
+        logger.warning(f"Unrecognized brand id for distillation error context: {brand_id}")
+        return None
+
+
+async def report_distill_error(
+    *,
+    error: Exception,
+    page: Page | None,
+    profile_id: str,
+    location: str,
+    hostname: str,
+    iteration: int,
+    brand_id: BrandIdEnum | str | None = None,
+) -> None:
+    screenshot_path: Path | None = None
+    html_path: Path | None = None
+    html_content: str | None = None
+
+    if page:
+        try:
+            screenshot_path, html_path, html_content = await capture_page_artifacts(
+                page,
+                identifier=profile_id,
+                prefix="distill_error",
+            )
+        except Exception as capture_error:
+            logger.warning(f"Failed to capture distillation artifacts: {capture_error}")
+
+    context: dict[str, Any] = {
+        "location": location,
+        "hostname": hostname,
+        "iteration": iteration,
+    }
+
+    logger.error(
+        "Distillation error",
+        extra={
+            "profile_id": profile_id,
+            "location": location,
+            "iteration": iteration,
+            "screenshot": f"file://{screenshot_path}" if screenshot_path else None,
+        },
+    )
+
+    brand_enum = _coerce_brand_id(brand_id)
+    if settings.SENTRY_DSN:
+        with sentry_sdk.isolation_scope() as scope:
+            if brand_enum:
+                setup_error_context(
+                    scope=scope,
+                    e=error,
+                    brand_id=brand_enum,
+                    error_type="distill_error",
+                    flow_state=context,
+                    browser_profile_id=profile_id,
+                    page_content=html_content,
+                    screenshot_path=screenshot_path,
+                )
+            else:
+                scope.set_context("distill", context)
+                if screenshot_path:
+                    scope.add_attachment(
+                        filename=screenshot_path.name,
+                        path=str(screenshot_path),
+                    )
+                if html_path:
+                    scope.add_attachment(
+                        filename=html_path.name,
+                        path=str(html_path),
+                    )
+
+            sentry_sdk.capture_exception(error)
 
 
 def get_selector(input_selector: str | None) -> tuple[str | None, str | None]:
@@ -380,6 +517,7 @@ async def run_distillation_loop(
     timeout: int = 15,
     interactive: bool = True,
     with_terminate_flag: bool = False,
+    brand_id: BrandIdEnum | str | None = None,
 ) -> dict[str, str | ConversionResult | None | bool] | str | ConversionResult:
     if len(patterns) == 0:
         logger.error("No distillation patterns provided")
@@ -391,54 +529,78 @@ async def run_distillation_loop(
     profile = browser_profile or BrowserProfile()
 
     async with browser_session(profile) as session:
-        page = await session.page()
+        page: Page | None = None
+        iteration_index = -1
+        try:
+            page = await session.page()
 
-        logger.info(f"Starting browser {profile.id}")
-        logger.info(f"Navigating to {location}")
-        await page.goto(location)
+            logger.info(f"Starting browser {profile.id}")
+            logger.info(f"Navigating to {location}")
+            await page.goto(location)
 
-        TICK = 1  # seconds
-        max = timeout // TICK
+            if logger.isEnabledFor(logging.DEBUG):
+                await capture_page_artifacts(
+                    page,
+                    identifier=profile.id,
+                    prefix="distill_debug",
+                )
 
-        current = Match(name="", priority=-1, distilled="", matches=[])
+            TICK = 1  # seconds
+            max = timeout // TICK
 
-        for iteration in range(max):
-            logger.info("")
-            logger.info(f"Iteration {iteration + 1} of {max}")
-            await asyncio.sleep(TICK)
+            current = Match(name="", priority=-1, distilled="", matches=[])
 
-            match = await distill(hostname, page, patterns)
-            if match:
-                if match.distilled == current.distilled:
-                    logger.debug(f"Still the same: {match.name}")
-                else:
-                    distilled = match.distilled
-                    current = match
-                    print()
-                    print(distilled)
+            for iteration in range(max):
+                iteration_index = iteration
+                logger.info("")
+                logger.info(f"Iteration {iteration + 1} of {max}")
+                await asyncio.sleep(TICK)
 
-                    if await terminate(page, distilled):
-                        converted = await convert(distilled)
-                        if with_terminate_flag:
-                            return {
-                                "terminated": True,
-                                "result": converted if converted else distilled,
-                            }
-                        else:
-                            return converted if converted else distilled
+                match = await distill(hostname, page, patterns)
+                if match:
+                    if match.distilled == current.distilled:
+                        logger.debug(f"Still the same: {match.name}")
+                    else:
+                        distilled = match.distilled
+                        current = match
 
-                    if interactive:
-                        distilled = await autofill(page, distilled)
-                        await autoclick(page, distilled, "[gg-autoclick]:not(button)")
-                        await autoclick(
-                            page, distilled, "button[gg-autoclick], button[type=submit]"
-                        )
+                        print()
+                        print(distilled)
+
+                        if await terminate(page, distilled):
+                            converted = await convert(distilled)
+                            if with_terminate_flag:
+                                return {
+                                    "terminated": True,
+                                    "result": converted if converted else distilled,
+                                }
+                            else:
+                                return converted if converted else distilled
+
+                        if interactive:
+                            distilled = await autofill(page, distilled)
+                            await autoclick(page, distilled, "[gg-autoclick]:not(button)")
+                            await autoclick(
+                                page, distilled, "button[gg-autoclick], button[type=submit]"
+                            )
+
                         current.distilled = distilled
 
-            else:
-                logger.debug(f"No matched pattern found")
+                else:
+                    logger.debug(f"No matched pattern found")
 
-        if with_terminate_flag:
-            return {"terminated": False, "result": current.distilled}
-        else:
-            return current.distilled
+            if with_terminate_flag:
+                return {"terminated": False, "result": current.distilled}
+            else:
+                return current.distilled
+        except Exception as error:
+            await report_distill_error(
+                error=error,
+                page=page,
+                profile_id=profile.id,
+                location=location,
+                hostname=hostname,
+                iteration=iteration_index,
+                brand_id=brand_id,
+            )
+            raise
