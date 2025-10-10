@@ -1,0 +1,20 @@
+<html gg-domain="delta" gg-priority="1">
+  <body>
+    <p gg-optional gg-match="idp-form-alert div p span"></p>
+    <input
+      autofocus
+      placeholder="SkyMiles Number Or Username"
+      name="userid"
+      type="text"
+      gg-match="form input#userId"
+    />
+    <input placeholder="Password" name="password" type="password" gg-match="form input#password" />
+    <button
+      gg-autoclick
+      type="submit"
+      gg-match="form button[type='submit']:not([disabled]):has-text('LOG IN')"
+    >
+      LOG IN
+    </button>
+  </body>
+</html>
