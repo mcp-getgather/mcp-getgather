@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import ipaddress
 import os
 import urllib.parse
@@ -18,10 +19,12 @@ from getgather.config import settings
 from getgather.distill import (
     Match,
     autoclick,
+    capture_page_artifacts,
     convert,
     distill,
     get_selector,
     load_distillation_patterns,
+    report_distill_error,
     run_distillation_loop,
     terminate,
 )
@@ -178,132 +181,165 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
 
     current = Match(name="", priority=-1, distilled="", matches=[])
 
+    iteration_index = -1
+
+    if logger.isEnabledFor(logging.DEBUG):
+        await capture_page_artifacts(page, identifier=id, prefix="dpage_debug")
+
     for iteration in range(max):
-        logger.debug(f"Iteration {iteration + 1} of {max}")
-        await asyncio.sleep(TICK)
+        iteration_index = iteration
+        try:
+            logger.debug(f"Iteration {iteration + 1} of {max}")
+            await asyncio.sleep(TICK)
 
-        hostname = urllib.parse.urlparse(page.url).hostname
+            location = page.url
+            hostname = urllib.parse.urlparse(location).hostname
 
-        match = await distill(hostname, page, patterns)
-        if not match:
-            logger.info("No matched pattern found")
-            continue
+            match = await distill(hostname, page, patterns)
+            if not match:
+                logger.info("No matched pattern found")
+                continue
 
-        if match.distilled == current.distilled:
-            logger.info(f"Still the same: {match.name}")
-            continue
+            if match.distilled == current.distilled:
+                logger.info(f"Still the same: {match.name}")
+                continue
 
-        current = match
-        distilled = match.distilled
+            current = match
+            distilled = match.distilled
 
-        print(distilled)
+            print(distilled)
 
-        title_element = BeautifulSoup(distilled, "html.parser").find("title")
-        title = title_element.get_text() if title_element is not None else "GetGather"
-        action = f"/dpage/{id}"
-        options = {"title": title, "action": action}
+            names: list[str] = []
+            document = BeautifulSoup(distilled, "html.parser")
+            inputs = document.find_all("input")
 
-        if await terminate(page, distilled):
-            logger.info("Finished!")
-            converted = await convert(distilled)
-            await dpage_close(id)
-            if converted:
-                print(converted)
-                distillation_results[id] = converted
-            else:
-                logger.info("No conversion found")
-                distillation_results[id] = distilled
-            return HTMLResponse(render(FINISHED_MSG, options))
+            for input in inputs:
+                if not isinstance(input, Tag):
+                    continue
 
-        names: list[str] = []
-        document = BeautifulSoup(distilled, "html.parser")
-        inputs = document.find_all("input")
-
-        for input in inputs:
-            if isinstance(input, Tag):
                 gg_match = input.get("gg-match")
-                selector, frame_selector = get_selector(
-                    str(gg_match) if gg_match is not None else ""
-                )
+                selector, frame_selector = get_selector(str(gg_match) if gg_match else "")
                 name = input.get("name")
                 input_type = input.get("type")
 
-                if selector:
-                    if input_type == "checkbox":
-                        if not name:
-                            logger.warning(f"No name for the checkbox {selector}")
-                            continue
-                        value = fields.get(str(name))
-                        checked = value and len(str(value)) > 0
-                        names.append(str(name))
-                        logger.info(f"Status of checkbox {name}={checked}")
-                        if checked:
-                            if frame_selector:
-                                await (
-                                    page.frame_locator(str(frame_selector))
-                                    .locator(str(selector))
-                                    .check()
-                                )
-                            else:
-                                await page.check(str(selector))
-                    elif input_type == "radio":
-                        if name is not None:
-                            name_str = str(name)
-                            value = fields.get(name_str)
-                            if not value or len(value) == 0:
-                                logger.warning(f"No form data found for radio button group {name}")
-                                continue
-                            radio = document.find("input", {"type": "radio", "id": str(value)})
-                            if not radio or not isinstance(radio, Tag):
-                                logger.warning(f"No radio button found with id {value}")
-                                continue
-                            logger.info(f"Handling radio button group {name}")
-                            logger.info(f"Using form data {name}={value}")
-                            radio_selector, radio_frame_selector = get_selector(
-                                str(radio.get("gg-match"))
-                            )
-                            if radio_frame_selector:
-                                await (
-                                    page.frame_locator(str(radio_frame_selector))
-                                    .locator(str(radio_selector))
-                                    .check()
-                                )
-                            else:
-                                await page.check(str(radio_selector))
-                            radio["checked"] = "checked"
-                            current.distilled = str(document)
-                            names.append(str(input.get("id")) if input.get("id") else "radio")
-                            await asyncio.sleep(0.25)
-                    elif name is not None:
-                        name_str = str(name)
-                        value = fields.get(name_str)
-                        if value and len(value) > 0:
-                            logger.info(f"Using form data {name}")
-                            names.append(name_str)
-                            input["value"] = value
-                            current.distilled = str(document)
-                            if frame_selector:
-                                await (
-                                    page.frame_locator(str(frame_selector))
-                                    .locator(str(selector))
-                                    .fill(value)
-                                )
-                            else:
-                                await page.fill(str(selector), value)
-                            del fields[name_str]
-                            await asyncio.sleep(0.25)
-                        else:
-                            logger.info(f"No form data found for {name}")
+                if not selector:
+                    continue
 
-        await autoclick(page, distilled, "[gg-autoclick]:not(button)")
-        SUBMIT_BUTTON = "button[gg-autoclick], button[type=submit]"
-        if document.select(SUBMIT_BUTTON):
-            if len(names) > 0 and len(inputs) == len(names):
-                logger.info("Submitting form, all fields are filled...")
-                await autoclick(page, distilled, SUBMIT_BUTTON)
+                if input_type == "checkbox":
+                    if not name:
+                        logger.warning(f"No name for the checkbox {selector}")
+                        continue
+                    value = fields.get(str(name))
+                    checked = value and len(str(value)) > 0
+                    names.append(str(name))
+                    logger.info(f"Status of checkbox {name}={checked}")
+                    if checked:
+                        if frame_selector:
+                            await (
+                                page.frame_locator(str(frame_selector)).locator(str(selector)).check()
+                            )
+                        else:
+                            await page.check(str(selector))
+                elif input_type == "radio":
+                    if name is None:
+                        continue
+                    name_str = str(name)
+                    value = fields.get(name_str)
+                    if not value or len(value) == 0:
+                        logger.warning(f"No form data found for radio button group {name}")
+                        continue
+                    radio = document.find("input", {"type": "radio", "id": str(value)})
+                    if not radio or not isinstance(radio, Tag):
+                        logger.warning(f"No radio button found with id {value}")
+                        continue
+                    logger.info(f"Handling radio button group {name}")
+                    logger.info(f"Using form data {name}={value}")
+                    radio_selector, radio_frame_selector = get_selector(str(radio.get("gg-match")))
+                    if radio_frame_selector:
+                        await (
+                            page.frame_locator(str(radio_frame_selector)).locator(str(radio_selector)).check()
+                        )
+                    else:
+                        await page.check(str(radio_selector))
+                    radio["checked"] = "checked"
+                    current.distilled = str(document)
+                    names.append(str(input.get("id")) if input.get("id") else "radio")
+                    await asyncio.sleep(0.25)
+                elif name is not None:
+                    name_str = str(name)
+                    value = fields.get(name_str)
+                    if value and len(value) > 0:
+                        logger.info(f"Using form data {name}")
+                        names.append(name_str)
+                        input["value"] = value
+                        current.distilled = str(document)
+                        if frame_selector:
+                            await (
+                                page.frame_locator(str(frame_selector)).locator(str(selector)).fill(value)
+                            )
+                        else:
+                            await page.fill(str(selector), value)
+                        del fields[name_str]
+                        await asyncio.sleep(0.25)
+                    else:
+                        logger.info(f"No form data found for {name}")
+
+            title_element = document.find("title")
+            title = title_element.get_text() if title_element is not None else "GetGather"
+            action = f"/dpage/{id}"
+            options = {"title": title, "action": action}
+
+            await autoclick(page, distilled, "[gg-autoclick]:not(button)")
+            submit_selector = "button[gg-autoclick], button[type=submit]"
+            has_submit = bool(document.select(submit_selector))
+
+            if len(inputs) == len(names):
+                if len(names) > 0 and has_submit:
+                    logger.info("Submitting form, all fields are filled...")
+                    await autoclick(page, distilled, submit_selector)
+                    continue
+
+                if await terminate(page, distilled):
+                    logger.info("Finished!")
+                    converted = await convert(distilled)
+                    await dpage_close(id)
+                    if converted:
+                        print(converted)
+                        distillation_results[id] = converted
+                    else:
+                        logger.info("No conversion found")
+                        distillation_results[id] = distilled
+                    return HTMLResponse(render(FINISHED_MSG, options))
+
+                logger.info("All form fields are filled")
                 continue
-            logger.warning("Not all form fields are filled")
+
+            if await terminate(page, distilled):
+                converted = await convert(distilled)
+                await dpage_close(id)
+                if converted:
+                    print(converted)
+                    distillation_results[id] = converted
+                return HTMLResponse(render(FINISHED_MSG, options))
+
+            if has_submit:
+                logger.warning("Not all form fields are filled")
+            else:
+                logger.info("Not all form fields are filled")
+
             return HTMLResponse(render(str(document.find("body")), options))
+        except Exception as error:
+            location = page.url if page else ""
+            hostname = urllib.parse.urlparse(location).hostname or ""
+            await report_distill_error(
+                error=error,
+                page=page,
+                profile_id=id,
+                location=location,
+                hostname=hostname,
+                iteration=iteration_index,
+            )
+            raise
 
     raise HTTPException(status_code=503, detail="Timeout reached")
 
