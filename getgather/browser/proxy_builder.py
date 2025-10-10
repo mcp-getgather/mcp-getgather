@@ -178,7 +178,7 @@ class ProxyConfig:
             before, _, after = current.partition(f"{{{placeholder}}}")
 
             # If we have a value for this placeholder, include the segment
-            if placeholder in values:
+            if placeholder in values and values[placeholder] is not None:
                 parts.append(before + str(values[placeholder]))
 
             current = after
@@ -195,13 +195,10 @@ class ProxyConfig:
         return result
 
 
-def load_proxy_configs_from_env(env_dict: dict[str, str]) -> dict[str, ProxyConfig]:
+def load_proxy_configs_from_env(env_dict: dict[str, str | None]) -> dict[str, ProxyConfig]:
     """Load all proxy configurations from environment variables.
 
     Expected format:
-        PROXY_0_URL=http://user:pass@proxy.example.com:8888
-        PROXY_0_PARAMS_TEMPLATE=country-{country}-sessionid-{session_id}
-
         PROXY_1_URL=http://user2:pass2@proxy2.example.com:8000
         PROXY_1_PARAMS_TEMPLATE=session-{session_id}-state-{state}
 

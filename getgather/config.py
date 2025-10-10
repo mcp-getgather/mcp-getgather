@@ -1,7 +1,8 @@
+from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -11,9 +12,6 @@ if TYPE_CHECKING:
     from getgather.browser.proxy_builder import ProxyConfig
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
-
-# Load .env file into os.environ so PROXY_* variables are accessible
-load_dotenv(PROJECT_DIR / ".env")
 
 
 class Settings(BaseSettings):
@@ -113,28 +111,21 @@ class Settings(BaseSettings):
             logger.warning("SENTRY_DSN is not set, logging will not be captured in Sentry.")
         return v
 
-    _proxy_configs_cache: dict[str, "ProxyConfig"] | None = None
-
-    @property
+    @cached_property
     def proxy_configs(self) -> dict[str, "ProxyConfig"]:
-        """Load proxy configurations from environment variables (cached).
+        """Load proxy configurations from .env file (cached).
 
         Returns:
             dict: Mapping of proxy identifiers (e.g., 'proxy-0') to ProxyConfig objects
         """
-        # Return cached configs if already loaded
-        if self._proxy_configs_cache is not None:
-            return self._proxy_configs_cache
-
         # Import here to avoid circular dependency
-        # Get all environment variables
-        import os
-
         from getgather.browser.proxy_builder import load_proxy_configs_from_env
 
-        # Load and cache
-        self._proxy_configs_cache = load_proxy_configs_from_env(dict(os.environ))
-        return self._proxy_configs_cache
+        # Read PROXY_* variables from .env file
+        env_file = self.model_config.get("env_file")
+        env_dict = dotenv_values(env_file) if env_file else {}
+
+        return load_proxy_configs_from_env(env_dict)
 
 
 settings = Settings()

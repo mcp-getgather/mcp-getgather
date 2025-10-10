@@ -15,7 +15,6 @@ async def setup_proxy(
     """Setup proxy configuration using the proxy type system.
 
     Proxy types are configured via PROXY_* environment variables:
-    - proxy-0: No proxy (or configured type from PROXY_0_TYPE)
     - proxy-1: First configured proxy (from PROXY_1_*)
     - proxy-2: Second configured proxy (from PROXY_2_*)
     - etc.
