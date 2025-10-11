@@ -8,7 +8,7 @@
     </div>
     <script type="application/json" id="orders">
       {
-        "rows": "div.orders-list_orderCardContainer__rmUOD",
+        "rows": "div[class*='orders-list_orderCardContainer']",
         "columns": [
           {
             "name": "order_number",
@@ -20,19 +20,19 @@
           },
           {
             "name": "status",
-            "selector": "div[data-testid=order-status] span.order-card-body_orderDetails__3_mo6"
+            "selector": "div[data-testid=order-status] span[class*='order-card-body_orderDetails']"
           },
           {
             "name": "total_items",
-            "selector": "div[data-testid=total-items-count] span.order-card-body_orderDetails__3_mo6"
+            "selector": "div[data-testid=total-items-count] span[class*='order-card-body_orderDetails']"
           },
-          { "name": "order_type", "selector": "div.order-card-body_orderHeading__ND0ig" },
+          { "name": "order_type", "selector": "div[class*='order-card-body_orderHeading']" },
           {
             "name": "order_url",
             "selector": "a[data-testid^=order-card-cta]",
             "attribute": "href"
           },
-          { "name": "image_url", "selector": "img.image_image__QTtfs", "attribute": "srcset" }
+          { "name": "image_url", "selector": "img[class*='image_image']", "attribute": "srcset" }
         ]
       }
     </script>
