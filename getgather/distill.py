@@ -12,8 +12,7 @@ from bs4.element import Tag
 from patchright.async_api import Locator, Page
 from pydantic import BaseModel
 
-from getgather.browser.profile import BrowserProfile
-from getgather.browser.session import browser_session
+from getgather.browser.session import BrowserSession, get_global_browser_session
 from getgather.logs import logger
 
 
@@ -376,7 +375,8 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
 async def run_distillation_loop(
     location: str,
     patterns: list[Pattern],
-    browser_profile: BrowserProfile | None = None,
+    *,
+    browser_session: BrowserSession | None = None,
     timeout: int = 15,
     interactive: bool = True,
     with_terminate_flag: bool = False,
@@ -387,58 +387,54 @@ async def run_distillation_loop(
 
     hostname = urllib.parse.urlparse(location).hostname or ""
 
-    # Use provided profile or create new one
-    profile = browser_profile or BrowserProfile()
+    session = browser_session or await get_global_browser_session()
+    page = await session.page()
 
-    async with browser_session(profile) as session:
-        page = await session.page()
+    profile = session.profile
+    logger.info(f"Using browser session {profile.id}")
+    logger.info(f"Navigating to {location}")
+    await page.goto(location)
 
-        logger.info(f"Starting browser {profile.id}")
-        logger.info(f"Navigating to {location}")
-        await page.goto(location)
+    TICK = 1  # seconds
+    max = timeout // TICK
 
-        TICK = 1  # seconds
-        max = timeout // TICK
+    current = Match(name="", priority=-1, distilled="", matches=[])
 
-        current = Match(name="", priority=-1, distilled="", matches=[])
+    for iteration in range(max):
+        logger.info("")
+        logger.info(f"Iteration {iteration + 1} of {max}")
+        await asyncio.sleep(TICK)
 
-        for iteration in range(max):
-            logger.info("")
-            logger.info(f"Iteration {iteration + 1} of {max}")
-            await asyncio.sleep(TICK)
-
-            match = await distill(hostname, page, patterns)
-            if match:
-                if match.distilled == current.distilled:
-                    logger.debug(f"Still the same: {match.name}")
-                else:
-                    distilled = match.distilled
-                    current = match
-                    print()
-                    print(distilled)
-
-                    if await terminate(page, distilled):
-                        converted = await convert(distilled)
-                        if with_terminate_flag:
-                            return {
-                                "terminated": True,
-                                "result": converted if converted else distilled,
-                            }
-                        else:
-                            return converted if converted else distilled
-
-                    if interactive:
-                        distilled = await autofill(page, distilled)
-                        await autoclick(page, distilled, "[gg-autoclick]:not(button)")
-                        await autoclick(
-                            page, distilled, "button[gg-autoclick], button[type=submit]"
-                        )
-                        current.distilled = distilled
-
+        match = await distill(hostname, page, patterns)
+        if match:
+            if match.distilled == current.distilled:
+                logger.debug(f"Still the same: {match.name}")
             else:
-                logger.debug(f"No matched pattern found")
+                distilled = match.distilled
+                current = match
+                print()
+                print(distilled)
 
-        if with_terminate_flag:
-            return {"terminated": False, "result": current.distilled}
+                if await terminate(page, distilled):
+                    converted = await convert(distilled)
+                    if with_terminate_flag:
+                        return {
+                            "terminated": True,
+                            "result": converted if converted else distilled,
+                        }
+                    else:
+                        return converted if converted else distilled
+
+                if interactive:
+                    distilled = await autofill(page, distilled)
+                    await autoclick(page, distilled, "[gg-autoclick]:not(button)")
+                    await autoclick(page, distilled, "button[gg-autoclick], button[type=submit]")
+                    current.distilled = distilled
+
         else:
-            return current.distilled
+            logger.debug(f"No matched pattern found")
+
+    if with_terminate_flag:
+        return {"terminated": False, "result": current.distilled}
+    else:
+        return current.distilled

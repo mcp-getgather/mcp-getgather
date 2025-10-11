@@ -1,23 +1,25 @@
 import os
 from typing import Any
 
+from getgather.browser.session import BrowserSession
 from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import get_mcp_browser_profile
+from getgather.mcp.shared import get_mcp_browser_session, with_brand_browser_session
 
 wayfair_mcp = BrandMCPBase(brand_id="wayfair", name="Wayfair MCP")
 
 
 @wayfair_mcp.tool(tags={"private"})
-async def get_order_history() -> dict[str, Any]:
+@with_brand_browser_session
+async def get_order_history(*, browser_session: BrowserSession | None = None) -> dict[str, Any]:
     """Get order history of wayfair."""
-    browser_profile = get_mcp_browser_profile()
+    browser_session = browser_session or get_mcp_browser_session()
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
     purchase_history = await run_distillation_loop(
         "https://www.wayfair.com/session/secure/account/order_search.php",
         patterns,
-        browser_profile=browser_profile,
+        browser_session=browser_session,
     )
 
     if purchase_history and isinstance(purchase_history, list) and len(purchase_history) > 0:
@@ -32,16 +34,21 @@ async def get_order_history() -> dict[str, Any]:
 
 
 @wayfair_mcp.tool(tags={"private"})
-async def get_order_history_details(order_id: str) -> dict[str, Any]:
+@with_brand_browser_session
+async def get_order_history_details(
+    order_id: str,
+    *,
+    browser_session: BrowserSession | None = None,
+) -> dict[str, Any]:
     """Get order history details for a specific Wayfair order."""
-    browser_profile = get_mcp_browser_profile()
+    browser_session = browser_session or get_mcp_browser_session()
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
 
     purchase_history_details = await run_distillation_loop(
         f"https://www.wayfair.com/v/account/order/details?order_id={order_id}",
         patterns,
-        browser_profile=browser_profile,
+        browser_session=browser_session,
     )
 
     # Edit image URLs to use higher resolution

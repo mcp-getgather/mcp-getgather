@@ -3,6 +3,7 @@ from typing import Any
 
 from patchright.async_api import Page
 
+from getgather.browser.session import BrowserSession
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.mcp.dpage import dpage_mcp_tool
@@ -24,9 +25,13 @@ async def get_life_list() -> dict[str, Any]:
 
 @ebird_mcp.tool
 @with_brand_browser_session
-async def get_explore_species_list(keyword: str) -> dict[str, Any]:
+async def get_explore_species_list(
+    keyword: str,
+    *,
+    browser_session: BrowserSession | None = None,
+) -> dict[str, Any]:
     """Get species list from ebird to be explored."""
-    browser_session = get_mcp_browser_session()
+    browser_session = browser_session or get_mcp_browser_session()
     page = await browser_session.page()
 
     await page.goto("https://ebird.org/explore")
@@ -52,9 +57,13 @@ async def get_explore_species_list(keyword: str) -> dict[str, Any]:
 
 @ebird_mcp.tool
 @with_brand_browser_session
-async def explore_species(sci_name: str) -> dict[str, Any]:
+async def explore_species(
+    sci_name: str,
+    *,
+    browser_session: BrowserSession | None = None,
+) -> dict[str, Any]:
     """Explore species on Ebird from get_explore_species_list."""
-    browser_session = get_mcp_browser_session()
+    browser_session = browser_session or get_mcp_browser_session()
     page = await browser_session.page()
 
     # Navigate to explore and search for the species by scientific name
@@ -88,9 +97,11 @@ async def submit_checklist(
     checklist_datetime: datetime,
     duration_hours: str = "1",
     distance: str = "1",
+    *,
+    browser_session: BrowserSession | None = None,
 ):
     """Submit checklist to ebird."""
-    session = get_mcp_browser_session()
+    session = browser_session or get_mcp_browser_session()
     page = await session.page()
     await page.goto("https://ebird.org/submit")
     await page.wait_for_selector("select#myLocSel")

@@ -141,25 +141,6 @@ def get_mcp_brand_id() -> BrandIdEnum:
     return brand_id
 
 
-def get_mcp_browser_profile() -> BrowserProfile:
-    """Get browser profile from MCP context if available."""
-    try:
-        brand_id = get_mcp_brand_id()
-        brand_state = brand_state_manager.get(brand_id)
-
-        if not (brand_state and brand_state.is_connected and brand_state.browser_profile_id):
-            raise ValueError("Browser profile is not set")
-
-        logger.info(
-            f"Using existing browser profile {brand_state.browser_profile_id} for brand {brand_id}"
-        )
-        return BrowserProfile(id=brand_state.browser_profile_id)
-
-    except (ValueError, AttributeError) as e:
-        logger.debug(f"MCP context not available: {e}")
-        raise ValueError("Browser profile is not found")
-
-
 def get_mcp_browser_session() -> BrowserSession:
     session = get_context().get_state("browser_session")
     if not session:
@@ -185,23 +166,25 @@ def with_brand_browser_session(func: Callable[P, Awaitable[T]]) -> Callable[P, A
         browser_profile = BrowserProfile(id=profile_id) if profile_id else BrowserProfile()
         browser_session = BrowserSession.get(browser_profile)
 
+        await browser_session.start()
+
         mcp_ctx = get_context()
         mcp_ctx.set_state("browser_session", browser_session)
 
-        await browser_session.start()
+        kwargs.setdefault("browser_session", browser_session)
+
         try:
             return await func(*args, **kwargs)
         finally:
-            await browser_session.stop()
             mcp_ctx.set_state("browser_session", None)
 
     return wrapper
 
 
 @with_brand_browser_session
-async def extract() -> dict[str, Any]:
+async def extract(*, browser_session: BrowserSession | None = None) -> dict[str, Any]:
     """Extract data from a brand."""
-    browser_session = get_mcp_browser_session()
+    browser_session = browser_session or get_mcp_browser_session()
 
     extract_orchestrator = ExtractOrchestrator(
         brand_id=get_mcp_brand_id(),

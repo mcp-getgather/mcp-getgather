@@ -7,6 +7,7 @@ from browser_use.llm import ChatOpenAI
 from fastmcp.server.dependencies import get_context
 from patchright.async_api import BrowserContext
 
+from getgather.browser.session import BrowserSession
 from getgather.config import settings
 from getgather.logs import logger
 from getgather.mcp.shared import get_mcp_browser_session, with_brand_browser_session
@@ -37,8 +38,12 @@ async def run_agent(browser_context: BrowserContext, task: str) -> str | None:
 
 
 @with_brand_browser_session
-async def run_agent_for_brand(task: str) -> dict[str, Any]:
-    browser_session = get_mcp_browser_session()
+async def run_agent_for_brand(
+    task: str,
+    *,
+    browser_session: BrowserSession | None = None,
+) -> dict[str, Any]:
+    browser_session = browser_session or get_mcp_browser_session()
     try:
         logger.info(f"Running agent with task: {task}")
         result = await run_agent(browser_session.context, task)

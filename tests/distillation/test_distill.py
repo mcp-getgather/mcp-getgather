@@ -65,11 +65,12 @@ async def test_distillation_loop(location: str):
     patterns = load_distillation_patterns(path)
     assert patterns, "No patterns found to begin matching."
 
-    result = await run_distillation_loop(
-        location=location,
-        patterns=patterns,
-        browser_profile=profile,
-        timeout=30,
-        interactive=True,
-    )
+    async with browser_session(profile) as session:
+        result = await run_distillation_loop(
+            location=location,
+            patterns=patterns,
+            browser_session=session,
+            timeout=30,
+            interactive=True,
+        )
     assert result, "No result found when one was expected."

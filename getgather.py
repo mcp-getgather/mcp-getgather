@@ -63,8 +63,14 @@ async def run_command(location: str):
     if not location.startswith("http"):
         location = f"https://{location}"
 
-    result = await run_distillation_loop(location, patterns=patterns)
-    print(result)
+    profile = BrowserProfile()
+    async with browser_session(profile) as session:
+        result = await run_distillation_loop(
+            location,
+            patterns=patterns,
+            browser_session=session,
+        )
+        print(result)
 
     logger.info("Terminated.")
 

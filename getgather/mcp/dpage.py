@@ -12,7 +12,7 @@ from nanoid import generate
 from patchright.async_api import Page
 
 from getgather.browser.profile import BrowserProfile
-from getgather.browser.session import BrowserSession
+from getgather.browser.session import BrowserSession, get_global_browser_session
 from getgather.config import settings
 from getgather.distill import (
     Match,
@@ -30,14 +30,16 @@ router = APIRouter(prefix="/dpage", tags=["dpage"])
 
 
 active_pages: dict[str, Page] = {}
+active_sessions: dict[str, tuple[BrowserSession, bool]] = {}
 distillation_results: dict[str, str | list[dict[str, str | list[str]]]] = {}
-global_browser_profile: BrowserProfile | None = None
 
 
 async def dpage_add(
-    browser_profile: BrowserProfile | None = None,
+    browser_session: BrowserSession | None = None,
+    *,
     location: str | None = None,
     id: str | None = None,
+    owns_session: bool | None = None,
 ):
     if id is None:
         FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
@@ -45,10 +47,8 @@ async def dpage_add(
         if settings.HOSTNAME:
             id = f"{settings.HOSTNAME}-{id}"
 
-    if browser_profile is None:
-        browser_profile = BrowserProfile()
-
-    session = BrowserSession(browser_profile.id)
+    session = browser_session or await get_global_browser_session()
+    owns = owns_session if owns_session is not None else browser_session is not None
 
     await session.start()
     page = await session.context.new_page()
@@ -59,6 +59,7 @@ async def dpage_add(
         await page.goto(location, timeout=300000)
 
     active_pages[id] = page
+    active_sessions[id] = (session, owns)
     return id
 
 
@@ -66,6 +67,14 @@ async def dpage_close(id: str) -> None:
     if id in active_pages:
         # await active_pages[id].close()
         del active_pages[id]
+    session_entry = active_sessions.pop(id, None)
+    if session_entry:
+        session, owns_session = session_entry
+        if owns_session:
+            try:
+                await session.stop()
+            except Exception as exc:  # pragma: no cover - log only
+                logger.warning(f"Failed to stop browser session for {id}: {exc}")
 
 
 async def dpage_check(id: str):
@@ -315,42 +324,36 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
     headers = get_http_headers(include_all=True)
     incognito = headers.get("x-incognito", "0") == "1"
 
+    owns_session = False
+
     if incognito:
-        browser_profile = BrowserProfile()
+        profile = BrowserProfile()
+        browser_session = BrowserSession.get(profile)
+        await browser_session.start()
+        owns_session = True
     else:
-        global global_browser_profile
-        if global_browser_profile is None:
-            logger.info(f"Creating global browser profile...")
-            global_browser_profile = BrowserProfile()
-            session = BrowserSession(global_browser_profile.id)
-            await session.start()
-            logger.debug("Visiting google.com to initialize the profile...")
-
-            # to help troubleshooting
-            debug_page = await session.context.new_page()
-            await debug_page.goto("https://ifconfig.me")
-
-            init_page = await session.context.new_page()
-
-            await init_page.goto(initial_url)
-            await asyncio.sleep(1)
-
-        browser_profile = global_browser_profile
+        browser_session = await get_global_browser_session()
 
     # First, try without any interaction as this will work if the user signed in previously
     distillation_result = await run_distillation_loop(
         initial_url,
         patterns,
-        browser_profile=browser_profile,
+        browser_session=browser_session,
         interactive=False,
         timeout=timeout,
         with_terminate_flag=True,
     )
     if isinstance(distillation_result, dict) and distillation_result["terminated"]:
+        if owns_session:
+            await browser_session.stop()
         return {result_key: distillation_result["result"]}
 
     # If that didn't work, try signing in via distillation
-    id = await dpage_add(browser_profile=browser_profile, location=initial_url)
+    id = await dpage_add(
+        browser_session=browser_session,
+        location=initial_url,
+        owns_session=owns_session,
+    )
 
     host = headers.get("x-forwarded-host") or headers.get("host")
     if host is None:
