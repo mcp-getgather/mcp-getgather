@@ -105,6 +105,28 @@ class BrowserSession:
         del self._sessions[self.profile.id]
 
 
+_global_session: BrowserSession | None = None
+_global_session_lock: asyncio.Lock = asyncio.Lock()
+
+
+async def get_global_browser_session() -> BrowserSession:
+    """Return a lazily-created global browser session shared across the app."""
+
+    global _global_session
+
+    async with _global_session_lock:
+        if _global_session is None:
+            profile = BrowserProfile()
+            session = BrowserSession.get(profile)
+            await session.start()
+            _global_session = session
+        else:
+            # Ensure the session is started (start() is idempotent).
+            await _global_session.start()
+
+        return _global_session
+
+
 @asynccontextmanager
 async def browser_session(profile: BrowserProfile, *, nested: bool = False):
     session = BrowserSession.get(profile)
