@@ -1,0 +1,16 @@
+<html gg-domain="starbucks">
+  <head>
+    <title>Starbucks Reward</title>
+  </head>
+  <body>
+    <div gg-match="div.sb-contentColumn__inner:has(h2:has-text('Reward Status'))"></div>
+    <div gg-stop gg-match-html="nav[aria-label='Global footer']"></div>
+    <script type="application/json" id="reward">
+      {
+        "star_count": "div[data-e2e='starCount']",
+        "reward_message": "p[data-e2e='nextRewardMessage']",
+        "nudge_text": "div[data-e2e='nudgeText']"
+      }
+    </script>
+  </body>
+</html>
