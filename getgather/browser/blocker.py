@@ -4,7 +4,7 @@ from types import MethodType
 
 from patchright.async_api import BrowserContext, Page, Route
 
-from getgather.browser import blocklist
+from getgather.browser.blocklist import blocklist_manager
 from getgather.config import settings
 from getgather.logs import logger
 
@@ -50,7 +50,7 @@ async def _handle_route(route: Route) -> None:
             await route.abort()
             return
 
-        if await blocklist.is_blocked(url):
+        if await blocklist_manager.is_blocked(url):
             await route.abort()
             return
 
