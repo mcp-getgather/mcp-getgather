@@ -4,6 +4,7 @@ from types import MethodType
 
 from patchright.async_api import BrowserContext, Page, Route
 
+from getgather.browser import blocklist
 from getgather.config import settings
 from getgather.logs import logger
 
@@ -21,7 +22,7 @@ async def configure_context(context: BrowserContext) -> None:
 
     original_new_page = context.new_page
 
-    async def new_page_with_blocking(self: BrowserContext) -> Page:
+    async def new_page_with_blocking(_: BrowserContext) -> Page:
         page = await original_new_page()
         await _maybe_block_unwanted_resources(page)
         return page
@@ -46,6 +47,10 @@ async def _handle_route(route: Route) -> None:
             return
 
         if any(keyword in url for keyword in _BLOCKED_URL_KEYWORDS):
+            await route.abort()
+            return
+
+        if await blocklist.is_blocked(url):
             await route.abort()
             return
 

@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     # Browser Package Settings
     HEADLESS: bool = False
     SHOULD_BLOCK_UNWANTED_RESOURCES: bool = True
+    ENABLE_BLOCKLIST: bool = True
 
     # Browser-use settings
     BROWSER_USE_MODEL: str = "o4-mini"

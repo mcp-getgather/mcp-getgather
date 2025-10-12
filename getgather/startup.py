@@ -3,6 +3,7 @@ import logging
 import sentry_sdk
 from sentry_sdk.integrations.logging import LoggingIntegration
 
+from getgather.browser.blocklist import blocklist_manager
 from getgather.config import settings
 from getgather.logs import logger
 
@@ -20,3 +21,12 @@ async def startup():
         ],  # capture logs in sentry above INFO level
         send_default_pii=True,
     )
+
+    # Preload blocklists on startup
+    if settings.ENABLE_BLOCKLIST:
+        logger.info("Preloading blocklists on startup...")
+        try:
+            await blocklist_manager.load()
+            logger.info("Blocklists preloaded successfully")
+        except Exception as exc:
+            logger.error(f"Failed to preload blocklists: {exc}")
