@@ -1,0 +1,14 @@
+<html gg-domain="starbucks">
+  <head>
+    <title>Starbucks Sign In</title>
+  </head>
+  <body>
+    <div gg-optional gg-autoclick gg-match="button#truste-consent-button:has-text('Agree')">
+      Agree
+    </div>
+    <span gg-optional gg-match="div[class*='alert___']"></span>
+    <input autofocus name="email" type="email" placeholder="Email" gg-match="input#username" />
+    <input name="password" type="password" placeholder="Password" gg-match="input#password" />
+    <button type="submit" gg-match="button[type=submit]">Sign in</button>
+  </body>
+</html>
