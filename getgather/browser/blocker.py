@@ -51,6 +51,7 @@ async def _handle_route(route: Route) -> None:
             return
 
         if await blocklist_manager.is_blocked(url):
+            logger.debug(f"Blocked request to {url} (matched blocklist)")
             await route.abort()
             return
 
