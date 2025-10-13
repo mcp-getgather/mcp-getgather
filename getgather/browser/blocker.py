@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from types import MethodType
-
-from patchright.async_api import BrowserContext, Page, Route
+from patchright.async_api import BrowserContext, Route
 
 from getgather.browser.blocklist import blocklist_manager
 from getgather.config import settings
@@ -17,23 +15,7 @@ async def configure_context(context: BrowserContext) -> None:
     if not settings.SHOULD_BLOCK_UNWANTED_RESOURCES:
         return
 
-    if getattr(context, "_gather_resource_blocking_configured", False):
-        return
-
-    original_new_page = context.new_page
-
-    async def new_page_with_blocking(_: BrowserContext) -> Page:
-        page = await original_new_page()
-        await _maybe_block_unwanted_resources(page)
-        return page
-
-    context.new_page = MethodType(new_page_with_blocking, context)
-
-    setattr(context, "_gather_resource_blocking_configured", True)
-
-
-async def _maybe_block_unwanted_resources(page: Page) -> None:
-    await page.route("**/*", _handle_route)
+    await context.route("**/*", _handle_route)
 
 
 async def _handle_route(route: Route) -> None:
@@ -51,7 +33,6 @@ async def _handle_route(route: Route) -> None:
             return
 
         if await blocklist_manager.is_blocked(url):
-            logger.debug(f"Blocked request to {url} (matched blocklist)")
             await route.abort()
             return
 
