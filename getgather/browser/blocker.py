@@ -209,12 +209,10 @@ async def _handle_route(route: Route) -> None:
 
     try:
         if resource_blocker.is_resource_type_blocked(resource_type):
-            logger.debug(f"DEBUGPRINT[18]: blocker.py:213: resource_type={resource_type}")
             await route.abort()
             return
 
         if await resource_blocker.is_blocked(url):
-            logger.debug(f"DEBUGPRINT[19]: blocker.py:218: url={url}")
             await route.abort()
             return
 
