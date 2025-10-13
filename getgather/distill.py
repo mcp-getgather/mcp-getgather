@@ -530,77 +530,86 @@ async def run_distillation_loop(
 
     async with browser_session(profile) as session:
         page: Page | None = None
-        iteration_index = -1
+
+        page = await session.page()
+
+        logger.info(f"Starting browser {profile.id}")
+        logger.info(f"Navigating to {location}")
         try:
-            page = await session.page()
-
-            logger.info(f"Starting browser {profile.id}")
-            logger.info(f"Navigating to {location}")
             await page.goto(location)
-
-            if logger.isEnabledFor(logging.DEBUG):
-                await capture_page_artifacts(
-                    page,
-                    identifier=profile.id,
-                    prefix="distill_debug",
-                )
-
-            TICK = 1  # seconds
-            max = timeout // TICK
-
-            current = Match(name="", priority=-1, distilled="", matches=[])
-
-            for iteration in range(max):
-                iteration_index = iteration
-                logger.info("")
-                logger.info(f"Iteration {iteration + 1} of {max}")
-                await asyncio.sleep(TICK)
-
-                match = await distill(hostname, page, patterns)
-                if match:
-                    if match.distilled == current.distilled:
-                        logger.debug(f"Still the same: {match.name}")
-                    else:
-                        distilled = match.distilled
-                        current = match
-
-                        print()
-                        print(distilled)
-
-                        if await terminate(page, distilled):
-                            converted = await convert(distilled)
-                            if with_terminate_flag:
-                                return {
-                                    "terminated": True,
-                                    "result": converted if converted else distilled,
-                                }
-                            else:
-                                return converted if converted else distilled
-
-                        if interactive:
-                            distilled = await autofill(page, distilled)
-                            await autoclick(page, distilled, "[gg-autoclick]:not(button)")
-                            await autoclick(
-                                page, distilled, "button[gg-autoclick], button[type=submit]"
-                            )
-
-                        current.distilled = distilled
-
-                else:
-                    logger.debug(f"No matched pattern found")
-
-            if with_terminate_flag:
-                return {"terminated": False, "result": current.distilled}
-            else:
-                return current.distilled
         except Exception as error:
+            logger.error(f"Failed to navigate to {location}: {error}")
             await report_distill_error(
                 error=error,
                 page=page,
                 profile_id=profile.id,
                 location=location,
                 hostname=hostname,
-                iteration=iteration_index,
+                iteration=0,
                 brand_id=brand_id,
             )
-            raise
+            raise ValueError(f"Failed to navigate to {location}: {error}")
+
+        if logger.isEnabledFor(logging.DEBUG):
+            await capture_page_artifacts(
+                page,
+                identifier=profile.id,
+                prefix="distill_debug",
+            )
+
+        TICK = 1  # seconds
+        max = timeout // TICK
+
+        current = Match(name="", priority=-1, distilled="", matches=[])
+
+        for iteration in range(max):
+            logger.info("")
+            logger.info(f"Iteration {iteration + 1} of {max}")
+            await asyncio.sleep(TICK)
+
+            match = await distill(hostname, page, patterns)
+            if match:
+                if match.distilled == current.distilled:
+                    logger.debug(f"Still the same: {match.name}")
+                else:
+                    distilled = match.distilled
+                    current = match
+
+                    print()
+                    print(distilled)
+
+                    if await terminate(page, distilled):
+                        converted = await convert(distilled)
+                        if with_terminate_flag:
+                            return {
+                                "terminated": True,
+                                "result": converted if converted else distilled,
+                            }
+                        else:
+                            return converted if converted else distilled
+
+                    if interactive:
+                        distilled = await autofill(page, distilled)
+                        await autoclick(page, distilled, "[gg-autoclick]:not(button)")
+                        await autoclick(
+                            page, distilled, "button[gg-autoclick], button[type=submit]"
+                        )
+
+                    current.distilled = distilled
+
+            else:
+                logger.debug(f"No matched pattern found")
+                await report_distill_error(
+                    error=ValueError("No matched pattern found"),
+                    page=page,
+                    profile_id=profile.id,
+                    location=location,
+                    hostname=hostname,
+                    iteration=iteration,
+                    brand_id=brand_id,
+                )
+
+        if with_terminate_flag:
+            return {"terminated": False, "result": current.distilled}
+        else:
+            return current.distilled
