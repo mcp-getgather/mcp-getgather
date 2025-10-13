@@ -3,7 +3,7 @@ import logging
 import sentry_sdk
 from sentry_sdk.integrations.logging import LoggingIntegration
 
-from getgather.browser.blocklist import blocklist_manager
+from getgather.browser.blocker import blocklist_manager
 from getgather.config import settings
 from getgather.logs import logger
 
