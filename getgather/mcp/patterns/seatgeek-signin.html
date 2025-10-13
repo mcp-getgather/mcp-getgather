@@ -1,0 +1,21 @@
+<html gg-domain="seatgeek">
+  <head>
+    <title>SeatGeek Signin</title>
+  </head>
+  <body>
+    <div>
+      <h3 gg-match="h3#login-heading"></h3>
+      <p gg-optional gg-match="div[data-testid='error']"></p>
+      <input
+        autofocus
+        placeholder="Email"
+        gg-match="input[data-uniform-id='input-email']"
+        type="email"
+        name="email"
+      />
+      <button type="submit" gg-match="button:has-text('Instantly log in with email')">
+        Sign in
+      </button>
+    </div>
+  </body>
+</html>
