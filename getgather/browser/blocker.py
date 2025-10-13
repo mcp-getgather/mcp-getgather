@@ -11,13 +11,6 @@ from patchright.async_api import BrowserContext, Route
 from getgather.config import settings
 from getgather.logs import logger
 
-_BLOCKED_RESOURCE_TYPES = {"image", "media", "font"}
-
-_BLOCKLIST_URLS = [
-    "https://raw.githubusercontent.com/blocklistproject/Lists/master/ads.txt",
-    "https://raw.githubusercontent.com/blocklistproject/Lists/master/tracking.txt",
-]
-
 
 def _get_blocklist_file_path(url: str) -> Path:
     """Get the file path for a specific blocklist URL."""
@@ -122,8 +115,30 @@ async def _load_blocklist(url: str) -> set[str]:
     return _parse_blocklist_content(content)
 
 
-class BlocklistManager:
-    """Manages blocklist loading, caching, and domain checking."""
+def _extract_domain(url: str) -> str:
+    """Extract the domain from a URL.
+
+    Args:
+        url: Full URL string
+
+    Returns:
+        The domain portion (e.g., "example.com")
+    """
+    try:
+        parsed = urlparse(url)
+        return parsed.netloc.lower()
+    except Exception:
+        return ""
+
+
+class ResourceBlocker:
+    """Manages resource type blocking and domain blocklist checking."""
+
+    _BLOCKED_RESOURCE_TYPES = {"image", "media", "font"}
+    _BLOCKLIST_URLS = [
+        "https://raw.githubusercontent.com/blocklistproject/Lists/master/ads.txt",
+        "https://raw.githubusercontent.com/blocklistproject/Lists/master/tracking.txt",
+    ]
 
     def __init__(self):
         self._domains: frozenset[str] | None = None
@@ -134,7 +149,7 @@ class BlocklistManager:
 
         # Load all blocklists sequentially
         all_domains: set[str] = set()
-        for url in _BLOCKLIST_URLS:
+        for url in self._BLOCKLIST_URLS:
             domains = await _load_blocklist(url)
             all_domains.update(domains)
             logger.info(f"Loaded {len(domains)} domains from {url.split('/')[-1]}")
@@ -142,21 +157,6 @@ class BlocklistManager:
         self._domains = frozenset(all_domains)
 
         logger.info(f"Blocklists loaded: {len(self._domains)} total domains")
-
-    def extract_domain(self, url: str) -> str:
-        """Extract the domain from a URL.
-
-        Args:
-            url: Full URL string
-
-        Returns:
-            The domain portion (e.g., "example.com")
-        """
-        try:
-            parsed = urlparse(url)
-            return parsed.netloc.lower()
-        except Exception:
-            return ""
 
     async def is_blocked(self, url: str) -> bool:
         """Check if a URL should be blocked based on loaded blocklists.
@@ -172,7 +172,7 @@ class BlocklistManager:
         if self._domains is None:
             return False
 
-        domain = self.extract_domain(url)
+        domain = _extract_domain(url)
         if not domain:
             return False
 
@@ -182,13 +182,23 @@ class BlocklistManager:
 
         return False
 
+    def is_resource_type_blocked(self, resource_type: str) -> bool:
+        """Check if a resource type should be blocked.
 
-blocklist_manager = BlocklistManager()
+        Args:
+            resource_type: The resource type to check (e.g., "image", "media", "font")
+
+        Returns:
+            True if the resource type should be blocked
+        """
+        return resource_type in self._BLOCKED_RESOURCE_TYPES
+
+
+resource_blocker = ResourceBlocker()
 
 
 async def configure_context(context: BrowserContext) -> None:
-    """Install resource blocking for all existing and future pages in the context."""
-    if not settings.SHOULD_BLOCK_UNWANTED_RESOURCES:
+    if not settings.ENABLE_BLOCKLIST:
         return
 
     await context.route("**/*", _handle_route)
@@ -200,11 +210,11 @@ async def _handle_route(route: Route) -> None:
     url = request.url
 
     try:
-        if resource_type in _BLOCKED_RESOURCE_TYPES:
+        if resource_blocker.is_resource_type_blocked(resource_type):
             await route.abort()
             return
 
-        if await blocklist_manager.is_blocked(url):
+        if await resource_blocker.is_blocked(url):
             await route.abort()
             return
 
