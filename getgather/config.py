@@ -1,15 +1,12 @@
 from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-from dotenv import dotenv_values
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from getgather.browser.proxy_loader import load_proxy_configs
+from getgather.browser.proxy_types import ProxyConfig
 from getgather.logs import logger, setup_logging
-
-if TYPE_CHECKING:
-    from getgather.browser.proxy_builder import ProxyConfig
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 
@@ -112,20 +109,13 @@ class Settings(BaseSettings):
         return v
 
     @cached_property
-    def proxy_configs(self) -> dict[str, "ProxyConfig"]:
-        """Load proxy configurations from .env file (cached).
+    def proxy_configs(self) -> dict[str, ProxyConfig]:
+        """Load proxy configurations from YAML file or environment variable (cached).
 
         Returns:
             dict: Mapping of proxy identifiers (e.g., 'proxy-0') to ProxyConfig objects
         """
-        # Import here to avoid circular dependency
-        from getgather.browser.proxy_builder import load_proxy_configs_from_env
-
-        # Read PROXY_* variables from .env file
-        env_file = self.model_config.get("env_file")
-        env_dict = dotenv_values(env_file) if env_file else {}
-
-        return load_proxy_configs_from_env(env_dict)
+        return load_proxy_configs()
 
 
 settings = Settings()

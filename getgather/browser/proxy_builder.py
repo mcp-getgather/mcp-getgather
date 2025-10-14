@@ -1,239 +1,177 @@
-"""Proxy configuration builder with template-based dynamic parameter replacement.
-
-This module provides a flexible system for building proxy configurations from
-environment variable templates, supporting multiple proxy providers with different
-URL formats and parameter naming conventions.
-"""
+"""Proxy configuration builder with template-based dynamic parameter replacement."""
 
 import re
 from typing import Any
-from urllib.parse import urlparse
 
 from getgather.api.types import RequestInfo
+from getgather.browser.proxy_types import ProxyConfig
 from getgather.logs import logger
 
 
-class ProxyConfig:
-    """Represents a configured proxy from environment variables."""
-
-    def __init__(
-        self,
-        url: str | None = None,
-        params_template: str | None = None,
-    ):
-        """Initialize proxy configuration.
-
-        Args:
-            url: Proxy URL with credentials (e.g., 'http://user:pass@proxy.example.com:8888')
-            params_template: Dynamic parameters with placeholders (e.g., 'country-{country}-sessionid-{session_id}')
-        """
-        self.params_template = params_template
-
-        # Parse URL to extract username, password, and server
-        self.base_username: str | None = None
-        self.password: str | None = None
-        self.server: str | None = None
-        self.masked_url: str | None = None  # URL with credentials masked for logging
-
-        if url:
-            self._parse_url(url)
-
-    def _parse_url(self, url: str) -> None:
-        """Parse URL to extract base username, password, and server.
-
-        Args:
-            url: Full URL with credentials (e.g., 'user:pass@host:port' or 'http://user:pass@host:port')
-        """
-        # Add scheme if not present to help urlparse
-        url_to_parse = url
-        if "://" not in url:
-            url_to_parse = f"http://{url}"
-
-        # Create masked version for logging (mask credentials once)
-        self.masked_url = re.sub(r"://[^@]+@", "://***@", url_to_parse)
-
-        parsed = urlparse(url_to_parse)
-
-        # Extract username and password from URL
-        if parsed.username:
-            self.base_username = parsed.username
-        if parsed.password:
-            self.password = parsed.password
-
-        # Reconstruct server URL without credentials
-        if parsed.hostname:
-            scheme = parsed.scheme or "http"
-            port = f":{parsed.port}" if parsed.port else ""
-            self.server = f"{scheme}://{parsed.hostname}{port}"
-        else:
-            logger.warning(f"Could not parse hostname from URL: {self.masked_url}")
-            self.server = url
-
-    def build(
-        self, profile_id: str, request_info: RequestInfo | None = None
-    ) -> dict[str, str] | None:
-        """Build proxy configuration dict with dynamic parameter replacement.
-
-        Args:
-            profile_id: Profile ID to use as session identifier
-            request_info: Optional request information with location data
-
-        Returns:
-            dict: Proxy configuration with server, username, password
-            None: If no server configured
-        """
-        if not self.server:
-            logger.info("No proxy server configured, skipping proxy")
-            return None
-
-        # Build username from base + params
-        username = None
-        if self.base_username:
-            username = self.base_username
-
-            # Add dynamic parameters if template is provided
-            if self.params_template:
-                values = self._extract_values(profile_id, request_info)
-                params = self._build_params(self.params_template, values)
-                if params:
-                    username = f"{username}-{params}"
-
-            logger.info(f"Built proxy username: {username}")
-
-        result = {
-            "server": self.server,
-        }
-        if username:
-            result["username"] = username
-        if self.password:
-            result["password"] = self.password
-
-        logger.info(
-            f"Built proxy config - server: {self.server}, username: {username}, "
-            f"has_password: {bool(self.password)}"
-        )
-        return result
-
-    def _extract_values(self, profile_id: str, request_info: RequestInfo | None) -> dict[str, Any]:
-        """Extract replacement values from request info.
-
-        Args:
-            profile_id: Profile ID to use as session identifier
-            request_info: Optional request information
-
-        Returns:
-            dict: Mapping of placeholder names to values
-        """
-        values = {
-            "session_id": profile_id,  # Use profile_id as session identifier
-        }
-
-        if not request_info:
-            return values
-
-        country = None
-        if request_info.country:
-            country = request_info.country.lower()
-            values["country"] = country
-
-        # Only include state for US requests (state-us_{state} format)
-        if request_info.state and country == "us":
-            values["state"] = request_info.state.lower().replace(" ", "_")
-
-        if request_info.city:
-            values["city"] = request_info.city.lower().replace(" ", "_")
-        if request_info.postal_code:
-            values["postal_code"] = request_info.postal_code
-
-        return values
-
-    def _build_params(self, template: str, values: dict[str, Any]) -> str:
-        """Build params string by only including segments with actual values.
-
-        Splits template by placeholders and only joins segments that have values.
-
-        Examples:
-        - Template: 'cc-{country}-city-{city}', values: {'country': 'us'} -> 'cc-us'
-        - Template: 'cc-{country}-city-{city}', values: {} -> ''
-        - Template: 'state-us_{state}', values: {'state': 'ca'} -> 'state-us_ca'
-        - Template: 'state-us_{state}', values: {} -> ''
-
-        Args:
-            template: Template string with {placeholders}
-            values: Mapping of placeholder names to values
-
-        Returns:
-            str: Params with only segments that have values, or empty string
-        """
-        # Split by placeholders to get segments
-        # We'll rebuild by only including segments where we have values
-        parts: list[str] = []
-        current = template
-
-        # Find all placeholders in order
-        placeholders: list[str] = re.findall(r"\{([^}]+)\}", template)
-
-        for placeholder in placeholders:
-            # Split on this placeholder
-            before, _, after = current.partition(f"{{{placeholder}}}")
-
-            # If we have a value for this placeholder, include the segment
-            if placeholder in values and values[placeholder] is not None:
-                parts.append(before + str(values[placeholder]))
-
-            current = after
-
-        # Add any remaining text
-        if current:
-            parts.append(current)
-
-        result = "".join(parts)
-
-        # Clean up separators at start/end
-        result = result.strip("-_")
-
-        return result
-
-
-def load_proxy_configs_from_env(env_dict: dict[str, str | None]) -> dict[str, ProxyConfig]:
-    """Load all proxy configurations from environment variables.
-
-    Expected format:
-        PROXY_1_URL=http://user2:pass2@proxy2.example.com:8000
-        PROXY_1_PARAMS_TEMPLATE=session-{session_id}-state-{state}
+def build_proxy_config(
+    proxy_config: ProxyConfig,
+    profile_id: str,
+    request_info: RequestInfo | None = None,
+) -> dict[str, str] | None:
+    """Build proxy configuration dict with dynamic parameter replacement.
 
     Args:
-        env_dict: Environment variables dictionary
+        proxy_config: ProxyConfig instance to build from
+        profile_id: Profile ID to use as session identifier
+        request_info: Optional request information with location data
 
     Returns:
-        dict: Mapping of proxy identifiers (e.g., 'proxy-0') to ProxyConfig objects
+        dict: Proxy configuration with server, username, password
+        None: If no server configured or proxy type is 'none'
     """
-    configs: dict[str, ProxyConfig] = {}
+    # Handle 'none' proxy type - no proxy
+    if proxy_config.proxy_type == "none":
+        logger.info("Proxy type is 'none', skipping proxy")
+        return None
 
-    # Find all proxy indices by looking for PROXY_X_URL
-    indices: set[int] = set()
-    for key in env_dict.keys():
-        if key.startswith("PROXY_") and "_URL" in key:
-            # Extract index from PROXY_{INDEX}_URL
-            parts = key.split("_")
-            if len(parts) >= 2 and parts[1].isdigit():
-                indices.add(int(parts[1]))
+    # Extract values for template replacement
+    values = _extract_values(profile_id, request_info)
 
-    # Load configuration for each index
-    for idx in sorted(indices):
-        url = env_dict.get(f"PROXY_{idx}_URL")
-        if not url:
-            continue
+    # Format 1: url_template (full URL with credentials and dynamic params)
+    if proxy_config.url_template:
+        full_url = _build_params(proxy_config.url_template, values)
+        if not full_url:
+            logger.warning("url_template resulted in empty string, skipping proxy")
+            return None
 
-        params_template = env_dict.get(f"PROXY_{idx}_PARAMS_TEMPLATE")
+        # Parse the built URL to extract components
+        temp_config = ProxyConfig(url=full_url)
+        if not temp_config.server:
+            logger.warning(f"Failed to parse url_template result: {temp_config.masked_url}")
+            return None
 
-        config = ProxyConfig(
-            url=url,
-            params_template=params_template,
+        result = {
+            "server": temp_config.server,
+        }
+        if temp_config.base_username:
+            result["username"] = temp_config.base_username
+        if temp_config.password:
+            result["password"] = temp_config.password
+
+        logger.info(
+            f"Built proxy config from url_template - server: {temp_config.server}, "
+            f"username: {temp_config.base_username}, has_password: {bool(temp_config.password)}"
         )
+        return result
 
-        proxy_key = f"proxy-{idx}"
-        configs[proxy_key] = config
-        logger.info(f"Loaded proxy configuration for {proxy_key}: url={config.masked_url}")
+    # Format 2: Separate components (url + username_template + password)
+    if not proxy_config.server:
+        logger.info("No proxy server configured, skipping proxy")
+        return None
 
-    return configs
+    # Build username from base + template
+    username = None
+
+    # Priority: username_template > base_username
+    if proxy_config.username_template:
+        # Build from template (may not need base_username)
+        params = _build_params(proxy_config.username_template, values)
+        if params:
+            username = params
+    elif proxy_config.base_username:
+        # Use base username if no template
+        username = proxy_config.base_username
+
+    if username:
+        logger.info(f"Built proxy username: {username}")
+
+    result = {
+        "server": proxy_config.server,
+    }
+    if username:
+        result["username"] = username
+    if proxy_config.password:
+        result["password"] = proxy_config.password
+
+    logger.info(
+        f"Built proxy config - server: {proxy_config.server}, username: {username}, "
+        f"has_password: {bool(proxy_config.password)}"
+    )
+    return result
+
+
+def _extract_values(profile_id: str, request_info: RequestInfo | None) -> dict[str, Any]:
+    """Extract replacement values from request info.
+
+    Args:
+        profile_id: Profile ID to use as session identifier
+        request_info: Optional request information
+
+    Returns:
+        dict: Mapping of placeholder names to values
+    """
+    values = {
+        "session_id": profile_id,  # Use profile_id as session identifier
+    }
+
+    if not request_info:
+        return values
+
+    country = None
+    if request_info.country:
+        country = request_info.country.lower()
+        values["country"] = country
+
+    # Only include state for US requests (state-us_{state} format)
+    if request_info.state and country == "us":
+        values["state"] = request_info.state.lower().replace(" ", "_")
+
+    if request_info.city:
+        values["city"] = request_info.city.lower().replace(" ", "_")
+    if request_info.postal_code:
+        values["postal_code"] = request_info.postal_code
+
+    return values
+
+
+def _build_params(template: str, values: dict[str, Any]) -> str:
+    """Build params string by only including segments with actual values.
+
+    Splits template by placeholders and only joins segments that have values.
+
+    Examples:
+    - Template: 'cc-{country}-city-{city}', values: {'country': 'us'} -> 'cc-us'
+    - Template: 'cc-{country}-city-{city}', values: {} -> ''
+    - Template: 'state-us_{state}', values: {'state': 'ca'} -> 'state-us_ca'
+    - Template: 'state-us_{state}', values: {} -> ''
+
+    Args:
+        template: Template string with {placeholders}
+        values: Mapping of placeholder names to values
+
+    Returns:
+        str: Params with only segments that have values, or empty string
+    """
+    # Split by placeholders to get segments
+    # We'll rebuild by only including segments where we have values
+    parts: list[str] = []
+    current = template
+
+    # Find all placeholders in order
+    placeholders: list[str] = re.findall(r"\{([^}]+)\}", template)
+
+    for placeholder in placeholders:
+        # Split on this placeholder
+        before, _, after = current.partition(f"{{{placeholder}}}")
+
+        # If we have a value for this placeholder, include the segment
+        if placeholder in values and values[placeholder] is not None:
+            parts.append(before + str(values[placeholder]))
+
+        current = after
+
+    # Add any remaining text
+    if current:
+        parts.append(current)
+
+    result = "".join(parts)
+
+    # Clean up separators at start/end
+    result = result.strip("-_")
+
+    return result

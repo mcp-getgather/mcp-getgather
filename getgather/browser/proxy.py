@@ -5,6 +5,7 @@ with hierarchical location support (city, state, country) and multiple proxy typ
 """
 
 from getgather.api.types import RequestInfo
+from getgather.browser.proxy_builder import build_proxy_config
 from getgather.config import settings
 from getgather.logs import logger
 
@@ -60,7 +61,7 @@ async def setup_proxy(
     proxy_config = proxy_configs[proxy_type]
 
     # Build proxy configuration with dynamic parameters (profile_id as session)
-    result = proxy_config.build(profile_id, request_info)
+    result = build_proxy_config(proxy_config, profile_id, request_info)
 
     # Log the final proxy configuration for debugging
     if result:
