@@ -1,4 +1,3 @@
-import asyncio
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -8,39 +7,6 @@ from patchright.async_api import BrowserContext, Route
 
 from getgather.config import settings
 from getgather.logs import logger
-
-
-def _get_blocklist_file_path(url: str) -> Path:
-    """Get the file path for a specific blocklist URL."""
-    # Use last part of URL path as filename (e.g., "ads.txt", "tracking.txt")
-    filename = url.rstrip("/").split("/")[-1]
-    file_path = settings.data_dir / "blocklists" / filename
-    file_path.parent.mkdir(parents=True, exist_ok=True)
-    return file_path
-
-
-def _parse_blocklist_content(content: str) -> set[str]:
-    """Parse blocklist content and extract domains.
-
-    Expected format: "0.0.0.0 domain.com" or just "domain.com"
-    """
-    domains: set[str] = set()
-    for line in content.splitlines():
-        line = line.strip()
-
-        # Skip comments and empty lines
-        if not line or line.startswith("#") or line.startswith("!"):
-            continue
-
-        parts = line.split()
-        if not parts:
-            continue
-
-        # Handle "0.0.0.0 domain.com" format or plain "domain.com"
-        domain = parts[1] if line.startswith("0.0.0.0") and len(parts) > 1 else parts[0]
-        domains.add(domain.lower())
-
-    return domains
 
 
 def _get_domain_variants(domain: str) -> list[str]:
@@ -67,50 +33,44 @@ def _get_domain_variants(domain: str) -> list[str]:
     return variants
 
 
-async def _download_blocklist(url: str) -> str:
-    """Download a blocklist from the remote URL."""
-    logger.info(f"Downloading blocklist from {url}")
+async def _load_blocklist_from_urls(urls: list[str]) -> frozenset[str]:
+    """Download and parse blocklists from multiple remote URLs.
 
-    try:
+    Args:
+        urls: List of URLs to download blocklists from
+
+    Returns:
+        Set of all domain strings from all blocklists
+    """
+    all_domains: set[str] = set()
+
+    for url in urls:
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=60)) as response:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=120)) as response:
                 response.raise_for_status()
                 content = await response.text()
                 logger.info(f"Successfully downloaded blocklist ({len(content)} bytes)")
-                return content
-    except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
-        logger.error(f"Failed to download blocklist from {url}: {exc}")
-        raise
+
+                # Parse domains from content (one per line)
+                domains = {line.strip() for line in content.splitlines() if line.strip()}
+                all_domains.update(domains)
+                logger.info(f"Loaded {len(domains)} domains from {url.split('/')[-1]}")
+
+    return frozenset(all_domains)
 
 
-async def _load_blocklist(url: str) -> set[str]:
-    """Load a single blocklist from local file or download if not exists."""
-    file_path = _get_blocklist_file_path(url)
+async def _load_blocklist_from_file(path: Path) -> frozenset[str]:
+    """Load blocklist domains from a file.
 
-    # Try loading from local file
-    if file_path.exists():
-        try:
-            async with aiofiles.open(file_path, "r") as f:
-                content = await f.read()
-            logger.debug(f"Loaded blocklist from file: {file_path.name}")
-        except (OSError, IOError) as exc:
-            logger.warning(f"Failed to load blocklist file: {exc}")
-            content = None
-    else:
-        content = None
+    Args:
+        path: Path to the blocklist file
 
-    # Download if file doesn't exist or failed to read
-    if content is None:
-        content = await _download_blocklist(url)
-        try:
-            async with aiofiles.open(file_path, "w") as f:
-                await f.write(content)
-            logger.debug(f"Saved blocklist to file: {file_path.name}")
-        except (OSError, IOError) as exc:
-            logger.warning(f"Failed to save blocklist: {exc}")
-
-    # Parse and return domains
-    return _parse_blocklist_content(content)
+    Returns:
+        Frozenset of domain strings
+    """
+    async with aiofiles.open(path, "r") as f:
+        lines = await f.readlines()
+        return frozenset(line.strip() for line in lines)
 
 
 def _extract_domain(url: str) -> str:
@@ -133,9 +93,11 @@ class ResourceBlocker:
     """Manages resource type blocking and domain blocklist checking."""
 
     _BLOCKED_RESOURCE_TYPES = {"image", "media", "font"}
+    _BLOCKLIST_PATH = settings.data_dir / "blocklists.txt"
     _BLOCKLIST_URLS = [
-        "https://raw.githubusercontent.com/blocklistproject/Lists/master/ads.txt",
-        "https://raw.githubusercontent.com/blocklistproject/Lists/master/tracking.txt",
+        "https://raw.githubusercontent.com/hectorm/hmirror/refs/heads/master/data/molinero.dev/list.txt",
+        "https://raw.githubusercontent.com/hectorm/hmirror/refs/heads/master/data/adguard-cname-trackers/list.txt",
+        "https://raw.githubusercontent.com/hectorm/hmirror/refs/heads/master/data/easyprivacy/list.txt",
     ]
 
     def __init__(self):
@@ -145,14 +107,16 @@ class ResourceBlocker:
         """Load all configured blocklists into memory."""
         logger.info("Loading blocklists...")
 
-        # Load all blocklists sequentially
-        all_domains: set[str] = set()
-        for url in self._BLOCKLIST_URLS:
-            domains = await _load_blocklist(url)
-            all_domains.update(domains)
-            logger.info(f"Loaded {len(domains)} domains from {url.split('/')[-1]}")
+        if self._BLOCKLIST_PATH.exists():
+            self._domains = await _load_blocklist_from_file(self._BLOCKLIST_PATH)
+        else:
+            self._domains = await _load_blocklist_from_urls(self._BLOCKLIST_URLS)
 
-        self._domains = frozenset(all_domains)
+            # Save blocklist to file
+            self._BLOCKLIST_PATH.parent.mkdir(parents=True, exist_ok=True)
+            async with aiofiles.open(self._BLOCKLIST_PATH, "w") as f:
+                await f.write("\n".join(sorted(self._domains)))
+            logger.info(f"Saved blocklist to: {self._BLOCKLIST_PATH.name}")
 
         logger.info(f"Blocklists loaded: {len(self._domains)} total domains")
 
