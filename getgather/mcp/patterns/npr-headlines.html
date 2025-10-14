@@ -1,0 +1,17 @@
+<html gg-domain="npr">
+  <head>
+    <title>NPR Headlines</title>
+  </head>
+  <body>
+    <ul gg-stop gg-match-html="main ul"></ul>
+    <script type="application/json" id="headlines">
+      {
+        "rows": "ul li",
+        "columns": [
+          { "name": "title", "selector": "li a" },
+          { "name": "link", "selector": "li a", "attribute": "href" }
+        ]
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,18 @@
+<html gg-domain="petsmart">
+  <head>
+    <title>PetSmart Sign In</title>
+  </head>
+  <body>
+    <h2 gg-optional gg-match=".sparky-c-alert--error h2"></h2>
+    <div gg-optional gg-match=".sparky-c-alert--error div.sparky-c-text-passage"></div>
+    <input type="email" name="email" gg-match="input#email" placeholder="Email" />
+    <input type="password" name="password" gg-match="input#password" placeholder="Password" />
+    <button
+      type="submit"
+      gg-autoclick
+      gg-match="button[data-testid='signInCta']:not(:has(.sparky-c-button__icon))"
+    >
+      Sign in
+    </button>
+  </body>
+</html>

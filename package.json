@@ -9,7 +9,6 @@
   "scripts": {
     "dev": "npm run generate:schema && concurrently --raw \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "uv run -m uvicorn getgather.main:app --reload --host 127.0.0.1 --port 23456",
-    "inspector": "ALLOWED_ORIGINS=http://localhost:5173,http://localhost:6274 npx @modelcontextprotocol/inspector",
     "dev:frontend": "concurrently --raw \"npm run watch:schema:api\" \"vite\"",
     "build": "npm run generate:schema && tsc -b && vite build",
     "build:ci": "tsc -b && vite build",
@@ -27,7 +26,6 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@modelcontextprotocol/inspector": "^0.16.5",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tabs": "^1.1.12",
     "@tailwindcss/vite": "^4.1.11",

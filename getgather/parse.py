@@ -14,8 +14,6 @@ from getgather.connectors.spec_loader import BrandIdEnum, load_brand_spec, load_
 from getgather.connectors.spec_models import Column, Schema
 from getgather.logs import logger
 
-TIMEOUT = 10000
-
 
 class BundleOutput(BaseModel):
     """A bundle output."""
@@ -398,8 +396,6 @@ async def parse_html(
             async with async_playwright() as pw:
                 browser = await pw.chromium.launch()
                 context = await browser.new_context()
-                context.set_default_timeout(TIMEOUT)
-                context.set_default_navigation_timeout(TIMEOUT)
                 page = await context.new_page()
                 await page.set_content(html_content)
                 data = await _extract_data_from_page(brand_id, schema, page)
@@ -416,8 +412,6 @@ async def parse_html(
         async with async_playwright() as pw:
             browser = await pw.chromium.launch()
             context = await browser.new_context()
-            context.set_default_timeout(TIMEOUT)
-            context.set_default_navigation_timeout(TIMEOUT)
             page = await context.new_page()
 
             input_path = bundle_dir / schema.bundle

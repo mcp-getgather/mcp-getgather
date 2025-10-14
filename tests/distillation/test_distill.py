@@ -15,6 +15,7 @@ DISTILL_PATTERN_LOCATIONS = {
     "http://localhost:5001": "acme_home_page.html",
     "http://localhost:5001/auth/email-and-password": "acme_email_and_password.html",
     "http://localhost:5001/auth/email-then-password": "acme_email_only.html",
+    "http://localhost:5001/auth/email-and-password-checkbox": "acme_email_and_password_checkbox.html",
     "http://localhost:5001/universal-error-test": "acme_universal_error_test.html",
 }
 
@@ -23,6 +24,7 @@ SIGN_IN_PATTERN_ENDPOINTS = [
     "http://localhost:5001/auth/email-and-password-checkbox",
     "http://localhost:5001/auth/email-then-password",
     "http://localhost:5001/auth/email-then-otp",
+    "http://localhost:5001/auth/email-and-password-then-mfa",
 ]
 
 

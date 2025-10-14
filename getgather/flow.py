@@ -62,9 +62,7 @@ async def _maybe_navigate_to_start(page: Page, flow_state: FlowState) -> None:
         match flow_state.flow.start:
             case PageSpec():
                 if flow_state.flow.start.url:
-                    await page.goto(
-                        flow_state.flow.start.url, wait_until="domcontentloaded", timeout=60_000
-                    )
+                    await page.goto(flow_state.flow.start.url, wait_until="domcontentloaded")
                     start_page = flow_state.flow.start
                     flow_state.current_page_spec_name = start_page.name
                 else:
@@ -72,9 +70,7 @@ async def _maybe_navigate_to_start(page: Page, flow_state: FlowState) -> None:
                         f"⚠️ No URL provided for start page '{flow_state.flow.start.name}'"
                     )
             case str():
-                await page.goto(
-                    flow_state.flow.start, wait_until="domcontentloaded", timeout=60_000
-                )
+                await page.goto(flow_state.flow.start, wait_until="domcontentloaded")
             case None:
                 pass
 

@@ -1,7 +1,7 @@
 import asyncio
+import ipaddress
 import os
 import urllib.parse
-from asyncio import Task
 from typing import Any
 
 from bs4 import BeautifulSoup, Tag
@@ -9,10 +9,11 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastmcp.server.dependencies import get_http_headers
 from nanoid import generate
-from patchright.async_api import Page, Route
+from patchright.async_api import Page
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
+from getgather.config import settings
 from getgather.distill import (
     Match,
     autoclick,
@@ -29,17 +30,8 @@ from getgather.mcp.html_renderer import render_form
 router = APIRouter(prefix="/dpage", tags=["dpage"])
 
 
-def block_unwanted_resources(route: Route) -> Task[None]:
-    """Block images, media (videos), and fonts"""
-    return asyncio.create_task(
-        route.abort()
-        if route.request.resource_type in ["image", "media", "font"]
-        else route.continue_()
-    )
-
-
 active_pages: dict[str, Page] = {}
-distillation_results: dict[str, list[dict[str, str | list[str]]]] = {}
+distillation_results: dict[str, str | list[dict[str, str | list[str]]]] = {}
 global_browser_profile: BrowserProfile | None = None
 
 
@@ -51,6 +43,8 @@ async def dpage_add(
     if id is None:
         FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
         id = generate(FRIENDLY_CHARS, 8)
+        if settings.HOSTNAME:
+            id = f"{settings.HOSTNAME}-{id}"
 
     if browser_profile is None:
         browser_profile = BrowserProfile()
@@ -59,12 +53,11 @@ async def dpage_add(
 
     await session.start()
     page = await session.context.new_page()
-    await page.route("**/*", block_unwanted_resources)
 
     if location:
         if not location.startswith("http"):
             location = f"https://{location}"
-        await page.goto(location)
+        await page.goto(location, timeout=300000)
 
     active_pages[id] = page
     return id
@@ -177,6 +170,23 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
 
         print(distilled)
 
+        title_element = BeautifulSoup(distilled, "html.parser").find("title")
+        title = title_element.get_text() if title_element is not None else "GetGather"
+        action = f"/dpage/{id}"
+        options = {"title": title, "action": action}
+
+        if await terminate(page, distilled):
+            logger.info("Finished!")
+            converted = await convert(distilled)
+            await dpage_close(id)
+            if converted:
+                print(converted)
+                distillation_results[id] = converted
+            else:
+                logger.info("No conversion found")
+                distillation_results[id] = distilled
+            return HTMLResponse(render(FINISHED_MSG, options))
+
         names: list[str] = []
         document = BeautifulSoup(distilled, "html.parser")
         inputs = document.find_all("input")
@@ -192,8 +202,22 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
 
                 if selector:
                     if input_type == "checkbox":
-                        names.append(str(name) if name is not None else "checkbox")
-                        logger.info(f"Handling {selector} using autoclick")
+                        if not name:
+                            logger.warning(f"No name for the checkbox {selector}")
+                            continue
+                        value = fields.get(str(name))
+                        checked = value and len(str(value)) > 0
+                        names.append(str(name))
+                        logger.info(f"Status of checkbox {name}={checked}")
+                        if checked:
+                            if frame_selector:
+                                await (
+                                    page.frame_locator(str(frame_selector))
+                                    .locator(str(selector))
+                                    .check()
+                                )
+                            else:
+                                await page.check(str(selector))
                     elif input_type == "radio":
                         if name is not None:
                             name_str = str(name)
@@ -243,41 +267,29 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                         else:
                             logger.info(f"No form data found for {name}")
 
-        title_element = document.find("title")
-        title = title_element.get_text() if title_element is not None else "GetGather"
-        action = f"/dpage/{id}"
-        options = {"title": title, "action": action}
-
-        if len(inputs) == len(names):
-            await autoclick(page, distilled)
-            if await terminate(page, distilled):
-                logger.info("Finished!")
-                converted = await convert(distilled)
-                await dpage_close(id)
-                if converted:
-                    print(converted)
-                    distillation_results[id] = converted
-                return HTMLResponse(render(FINISHED_MSG, options))
-
-            logger.info("All form fields are filled")
-            continue
-
-        if await terminate(page, distilled):
-            converted = await convert(distilled)
-            await dpage_close(id)
-            if converted:
-                print(converted)
-                distillation_results[id] = converted
-            return HTMLResponse(render(FINISHED_MSG, options))
-        else:
-            logger.info("Not all form fields are filled")
-
-        return HTMLResponse(render(str(document.find("body")), options))
+        await autoclick(page, distilled, "[gg-autoclick]:not(button)")
+        SUBMIT_BUTTON = "button[gg-autoclick], button[type=submit]"
+        if document.select(SUBMIT_BUTTON):
+            if len(names) > 0 and len(inputs) == len(names):
+                logger.info("Submitting form, all fields are filled...")
+                await autoclick(page, distilled, SUBMIT_BUTTON)
+                continue
+            logger.warning("Not all form fields are filled")
+            return HTMLResponse(render(str(document.find("body")), options))
 
     raise HTTPException(status_code=503, detail="Timeout reached")
 
 
-async def dpage_mcp_tool(initial_url: str, result_key: str) -> dict[str, Any]:
+def is_local_address(host: str) -> bool:
+    hostname = host.split(":")[0].lower().strip()
+    try:
+        ip = ipaddress.ip_address(hostname)
+        return ip.is_loopback
+    except ValueError:
+        return hostname in ("localhost", "127.0.0.1")
+
+
+async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) -> dict[str, Any]:
     """Generic MCP tool based on distillation"""
 
     path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
@@ -302,7 +314,6 @@ async def dpage_mcp_tool(initial_url: str, result_key: str) -> dict[str, Any]:
             await debug_page.goto("https://ifconfig.me")
 
             init_page = await session.context.new_page()
-            await init_page.route("**/*", block_unwanted_resources)
 
             await init_page.goto(initial_url)
             await asyncio.sleep(1)
@@ -310,22 +321,27 @@ async def dpage_mcp_tool(initial_url: str, result_key: str) -> dict[str, Any]:
         browser_profile = global_browser_profile
 
     # First, try without any interaction as this will work if the user signed in previously
-    result = await run_distillation_loop(
-        initial_url, patterns, browser_profile=browser_profile, interactive=False, timeout=2
+    distillation_result = await run_distillation_loop(
+        initial_url,
+        patterns,
+        browser_profile=browser_profile,
+        interactive=False,
+        timeout=timeout,
+        with_terminate_flag=True,
     )
-    if isinstance(result, list):
-        return {result_key: result}
+    if isinstance(distillation_result, dict) and distillation_result["terminated"]:
+        return {result_key: distillation_result["result"]}
 
     # If that didn't work, try signing in via distillation
     id = await dpage_add(browser_profile=browser_profile, location=initial_url)
 
-    host = headers.get("host")
+    host = headers.get("x-forwarded-host") or headers.get("host")
     if host is None:
         logger.warning("Missing Host header; defaulting to localhost")
         base_url = "http://localhost:23456"
     else:
-        is_local = "localhost" in host or "127.0.0.1" in host
-        scheme = headers.get("x-forwarded-proto", "http" if is_local else "https")
+        default_scheme = "http" if is_local_address(host) else "https"
+        scheme = headers.get("x-forwarded-proto", default_scheme)
         base_url = f"{scheme}://{host}"
 
     url = f"{base_url}/dpage/{id}"

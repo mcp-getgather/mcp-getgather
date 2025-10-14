@@ -31,6 +31,15 @@ jobs:
           tags: tag:ci
           use-cache: true
 
+      - name: Show Tailnet IP address
+        run: tailscale ip
+
+      - name: Check the reachability of the app server
+        env:
+          APP_URL: ${{ secrets.TAILSCALE_APP_URL }}
+        run: curl -s "${APP_URL}/health"
+        continue-on-error: true
+
       - name: Deploy to GCE via dokku
         uses: dokku/github-action@master
         with:

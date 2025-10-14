@@ -35,6 +35,9 @@ class Match(BaseModel):
         arbitrary_types_allowed = True
 
 
+ConversionResult = list[dict[str, str | list[str]]]
+
+
 def get_selector(input_selector: str | None) -> tuple[str | None, str | None]:
     pattern = r"^(iframe(?:[^\s]*\[[^\]]+\]|[^\s]+))\s+(.+)$"
     if not input_selector:
@@ -66,7 +69,7 @@ async def convert(distilled: str):
 
             rows = document.select(str(converter.get("rows", "")))
             logger.info(f"Found {len(rows)} rows")
-            converted: list[dict[str, str | list[str]]] = []
+            converted: ConversionResult = []
             for _, el in enumerate(rows):
                 kv: dict[str, str | list[str]] = {}
                 for col in converter.get("columns", []):
@@ -200,6 +203,15 @@ async def autofill(page: Page, distilled: str):
                 else:
                     await page.check(str(selector))
 
+        elif input_type == "checkbox":
+            checked = element.get("checked")
+            if checked is not None:
+                logger.info(f"Checking {name}")
+                if frame_selector:
+                    await page.frame_locator(str(frame_selector)).locator(str(selector)).check()
+                else:
+                    await page.check(str(selector))
+
     return str(document)
 
 
@@ -242,18 +254,14 @@ async def click(
         raise e
 
 
-async def autoclick(page: Page, distilled: str):
+async def autoclick(page: Page, distilled: str, expr: str):
     document = BeautifulSoup(distilled, "html.parser")
-    buttons = document.find_all(attrs={"gg-autoclick": True})
-
-    for button in buttons:
-        if isinstance(button, Tag):
-            selector, frame_selector = get_selector(str(button.get("gg-match")))
-            if selector:
-                logger.info(f"Auto-clicking {selector}")
-                if isinstance(frame_selector, list):
-                    frame_selector = str(frame_selector[0]) if frame_selector else None
-                await click(page, str(selector), frame_selector=frame_selector)
+    elements = document.select(expr)
+    for el in elements:
+        selector, frame_selector = get_selector(str(el.get("gg-match")))
+        if selector:
+            logger.info(f"Clicking {selector}")
+            await click(page, str(selector), frame_selector=frame_selector)
 
 
 async def terminate(page: Page, distilled: str) -> bool:
@@ -371,7 +379,8 @@ async def run_distillation_loop(
     browser_profile: BrowserProfile | None = None,
     timeout: int = 15,
     interactive: bool = True,
-) -> str | list[dict[str, str | list[str]]] | None:
+    with_terminate_flag: bool = False,
+) -> dict[str, str | ConversionResult | None | bool] | str | ConversionResult:
     if len(patterns) == 0:
         logger.error("No distillation patterns provided")
         raise ValueError("No distillation patterns provided")
@@ -404,22 +413,32 @@ async def run_distillation_loop(
                     logger.debug(f"Still the same: {match.name}")
                 else:
                     distilled = match.distilled
-                    if interactive:
-                        distilled = await autofill(page, distilled)
-
                     current = match
-                    current.distilled = distilled
                     print()
                     print(distilled)
-                    if interactive:
-                        await autoclick(page, distilled)
+
                     if await terminate(page, distilled):
                         converted = await convert(distilled)
-                        if converted:
-                            return converted
-                        break
+                        if with_terminate_flag:
+                            return {
+                                "terminated": True,
+                                "result": converted if converted else distilled,
+                            }
+                        else:
+                            return converted if converted else distilled
+
+                    if interactive:
+                        distilled = await autofill(page, distilled)
+                        await autoclick(page, distilled, "[gg-autoclick]:not(button)")
+                        await autoclick(
+                            page, distilled, "button[gg-autoclick], button[type=submit]"
+                        )
+                        current.distilled = distilled
 
             else:
                 logger.debug(f"No matched pattern found")
 
-        return current.distilled
+        if with_terminate_flag:
+            return {"terminated": False, "result": current.distilled}
+        else:
+            return current.distilled

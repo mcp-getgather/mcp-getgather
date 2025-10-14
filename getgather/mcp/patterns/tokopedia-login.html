@@ -1,10 +1,15 @@
 <html gg-domain="tokopedia" gg-priority="2">
+  <head>
+    <title>Tokopedia Sign In</title>
+  </head>
   <body>
     <input
       type="text"
       gg-match="input[name=login]"
       placeholder="Masukkan nomor ponsel atau email"
     />
-    <button gg-autoclick gg-match="button[data-testid=button-submit]">Selanjutnya</button>
+    <button type="submit" gg-autoclick gg-match="button[data-testid=button-submit]">
+      Selanjutnya
+    </button>
   </body>
 </html>

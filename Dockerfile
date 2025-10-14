@@ -1,9 +1,6 @@
 # Stage 1: Backend Builder
 FROM mirror.gcr.io/library/python:3.13-slim-bookworm AS backend-builder
 
-ARG MULTI_USER_ENABLED=false
-ENV MULTI_USER_ENABLED=${MULTI_USER_ENABLED}
-
 COPY --from=ghcr.io/astral-sh/uv:0.8.4 /uv /uvx /bin/
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -41,6 +38,7 @@ RUN $VENV_PATH/bin/patchright install --with-deps chromium
 COPY getgather /app/getgather
 COPY tests /app/tests
 COPY entrypoint.sh /app/entrypoint.sh
+COPY .jwmrc /app/.jwmrc
 
 # Install the workspace package
 RUN uv sync --no-dev
@@ -78,12 +76,8 @@ RUN npm run build:ci
 # Stage 3: Final image
 FROM mirror.gcr.io/library/python:3.13-slim-bookworm
 
-RUN apt-get update && apt-get install -y curl gnupg \
-    && curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
-
-RUN apt-get install -y \
-    xvfb \
-    xauth \
+RUN apt-get update && apt-get install -y \
+    tigervnc-standalone-server \
     libnss3 \
     libatk-bridge2.0-0 \
     libgtk-3-0 \
@@ -96,10 +90,10 @@ RUN apt-get install -y \
     libvulkan1 \
     x11vnc \
     jwm \
+    xterm \
     x11-apps \
     dbus \
     dbus-x11 \
-    nodejs \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
@@ -109,6 +103,7 @@ COPY --from=backend-builder /app/.venv /opt/venv
 COPY --from=backend-builder /app/getgather /app/getgather
 COPY --from=backend-builder /app/tests /app/tests
 COPY --from=backend-builder /app/entrypoint.sh /app/entrypoint.sh
+COPY --from=backend-builder /app/.jwmrc /app/.jwmrc
 COPY --from=backend-builder /opt/ms-playwright /opt/ms-playwright
 COPY --from=frontend-builder /app/getgather/frontend /app/getgather/frontend
 
@@ -119,12 +114,14 @@ ENV PYTHONUNBUFFERED=1 \
 # Set Playwright-specific environment variables only for full deployment
 ENV PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
+ENV DISPLAY=:99
+
+ARG PORT=23456
+ENV PORT=${PORT}
 
 # port for FastAPI server
-EXPOSE 23456
+EXPOSE ${PORT}
 # port for VNC server
 EXPOSE 5900
-# port for MCP inspector server
-EXPOSE 6277
 
 ENTRYPOINT ["/app/entrypoint.sh"]
