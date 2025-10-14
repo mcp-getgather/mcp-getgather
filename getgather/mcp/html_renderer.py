@@ -89,7 +89,12 @@ def render_form(content: str, title: str = "GetGather", action: str = "") -> str
         font-size: 0.875rem;
         font-weight: 500;
         color: var(--gray-800);
-        margin-bottom: 0.5rem;
+      }}
+      
+      .radio-wrapper {{
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }}
 
       input[type="email"],
