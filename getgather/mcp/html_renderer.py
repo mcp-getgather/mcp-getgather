@@ -11,8 +11,8 @@ def render_form(content: str, title: str = "GetGather", action: str = "") -> str
     <title>{title}</title>
     <style>
       :root {{
-        --primary: #3b82f6;
-        --primary-dark: #1d4ed8;
+        --primary: #0a0a0a;
+        --primary-dark: #090909;
         --gray-50: #f9fafb;
         --gray-200: #e5e7eb;
         --gray-300: #d1d5db;
@@ -49,7 +49,6 @@ def render_form(content: str, title: str = "GetGather", action: str = "") -> str
 
       .header {{
         text-align: center;
-        margin-bottom: 2rem;
       }}
 
       .logo {{
@@ -115,7 +114,7 @@ def render_form(content: str, title: str = "GetGather", action: str = "") -> str
       textarea:focus {{
         outline: none;
         border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
       }}
 
       input[type="checkbox"] {{
@@ -150,7 +149,7 @@ def render_form(content: str, title: str = "GetGather", action: str = "") -> str
       button:focus,
       input[type="submit"]:focus {{
         outline: none;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.2);
       }}
 
       .content-wrapper {{
@@ -165,16 +164,54 @@ def render_form(content: str, title: str = "GetGather", action: str = "") -> str
           max-width: 100%;
         }}
       }}
+
+      /* Loading spinner styles */
+      .spinner {{
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+        margin-right: 8px;
+        vertical-align: middle;
+      }}
+
+      @keyframes spin {{
+        to {{ transform: rotate(360deg); }}
+      }}
+
+      button:disabled,
+      input[type="submit"]:disabled {{
+        opacity: 0.7;
+        cursor: not-allowed;
+      }}
     </style>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {{
+        const form = document.querySelector('form');
+        if (form) {{
+          form.addEventListener('submit', function(e) {{
+            const submitButtons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+            submitButtons.forEach(button => {{
+              button.disabled = true;
+              if (button.tagName === 'BUTTON') {{
+                const spinner = document.createElement('span');
+                spinner.className = 'spinner';
+                button.insertBefore(spinner, button.firstChild);
+              }}
+            }});
+          }});
+        }}
+      }});
+    </script>
   </head>
   <body>
     <div class="card">
       <div class="header">
-        <div class="logo">GG</div>
         <h2>{title}</h2>
-        <p class="subtitle">Please complete the form below</p>
       </div>
-
       <form method="POST" action="{action}">
         <div class="content-wrapper">
           {content}
