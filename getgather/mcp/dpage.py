@@ -314,6 +314,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
     headers = get_http_headers(include_all=True)
     incognito = headers.get("x-incognito", "0") == "1"
+    skip_result_check = headers.get("x-skip-result-check", "0") == "1"
 
     if incognito:
         browser_profile = BrowserProfile()
@@ -337,17 +338,18 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
         browser_profile = global_browser_profile
 
-    # First, try without any interaction as this will work if the user signed in previously
-    distillation_result = await run_distillation_loop(
-        initial_url,
-        patterns,
-        browser_profile=browser_profile,
-        interactive=False,
-        timeout=timeout,
-        with_terminate_flag=True,
-    )
-    if isinstance(distillation_result, dict) and distillation_result["terminated"]:
-        return {result_key: distillation_result["result"]}
+    if not skip_result_check:
+        # First, try without any interaction as this will work if the user signed in previously
+        distillation_result = await run_distillation_loop(
+            initial_url,
+            patterns,
+            browser_profile=browser_profile,
+            interactive=False,
+            timeout=timeout,
+            with_terminate_flag=True,
+        )
+        if isinstance(distillation_result, dict) and distillation_result["terminated"]:
+            return {result_key: distillation_result["result"]}
 
     # If that didn't work, try signing in via distillation
     id = await dpage_add(browser_profile=browser_profile, location=initial_url)
