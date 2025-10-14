@@ -196,7 +196,7 @@ resource_blocker = ResourceBlocker()
 
 
 async def configure_context(context: BrowserContext) -> None:
-    if not settings.ENABLE_BLOCKER:
+    if not settings.SHOULD_BLOCK_UNWANTED_RESOURCES:
         return
 
     await context.route("**/*", _handle_route)

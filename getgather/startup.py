@@ -23,7 +23,7 @@ async def startup():
     )
 
     # Preload blocklists on startup
-    if settings.ENABLE_BLOCKER:
+    if settings.SHOULD_BLOCK_UNWANTED_RESOURCES:
         logger.info("Preloading blocklists on startup...")
         try:
             await resource_blocker.load()
