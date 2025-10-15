@@ -506,3 +506,7 @@ frontend/__generated__/
 !frontend/src/lib
 
 .claude/
+
+# Additional blocklists
+blocklists-*.txt
+!blocklists-basic.txt
