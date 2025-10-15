@@ -53,10 +53,9 @@ class BrowserSession:
 
     async def page(self) -> Page:
         # TODO: It's okay for now to return the last page. We may want to track all pages in the future.
-        if self._context is not None:
-            if self._context.pages and len(self._context.pages) > 0:
-                logger.info(f"Returning existing page in context with profile {self.profile.id}")
-                return self._context.pages[-1]
+        if self.context.pages and len(self.context.pages) > 0:
+            logger.info(f"Returning existing page in context with profile {self.profile.id}")
+            return self.context.pages[-1]
         return await self.new_page()
 
     async def start(self):
