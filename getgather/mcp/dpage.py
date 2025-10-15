@@ -307,14 +307,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
             global_browser_profile = BrowserProfile()
             session = BrowserSession(global_browser_profile.id)
             await session.start()
-            logger.debug("Visiting google.com to initialize the profile...")
-
-            # to help troubleshooting
-            debug_page = await session.context.new_page()
-            await debug_page.goto("https://ifconfig.me")
-
-            init_page = await session.context.new_page()
-
+            init_page = await session.page()
             await init_page.goto(initial_url)
             await asyncio.sleep(1)
 

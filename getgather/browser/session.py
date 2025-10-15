@@ -47,11 +47,16 @@ class BrowserSession:
         assert self._playwright is not None, "Browser session not started"
         return self._playwright
 
+    async def new_page(self) -> Page:
+        logger.info(f"Creating new page in context with profile {self.profile.id}")
+        return await self.context.new_page()
+
     async def page(self) -> Page:
         # TODO: It's okay for now to return the last page. We may want to track all pages in the future.
-        if not self.context.pages:
-            await self.context.new_page()
-        return self.context.pages[-1]
+        if self.context.pages and len(self.context.pages) > 0:
+            logger.info(f"Returning existing page in context with profile {self.profile.id}")
+            return self.context.pages[-1]
+        return await self.new_page()
 
     async def start(self):
         try:
@@ -73,7 +78,12 @@ class BrowserSession:
 
             await configure_context(self._context)
 
-            page = await self.page()
+            debug_page = await self.page()
+            await debug_page.goto("https://ifconfig.me")
+
+            # Intentionally create a new page to apply resources filtering (from blocklists)
+            page = await self.new_page()
+
             page.on(
                 "load",
                 lambda page: asyncio.create_task(rrweb_injector.setup_rrweb(self.context, page)),
