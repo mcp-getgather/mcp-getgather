@@ -5,12 +5,15 @@ from contextlib import asynccontextmanager
 from typing import ClassVar
 
 from fastapi import HTTPException
+from nanoid import generate
 from patchright.async_api import BrowserContext, Page, Playwright, async_playwright
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.resource_blocker import configure_context
 from getgather.logs import logger
-from getgather.rrweb import rrweb_injector
+from getgather.rrweb import rrweb_injector, rrweb_manager
+
+FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
 
 
 class BrowserStartupError(HTTPException):
@@ -28,6 +31,7 @@ class BrowserSession:
         self._playwright: Playwright | None = None
         self._context: BrowserContext | None = None
 
+        self.session_id = generate(FRIENDLY_CHARS, 8)
         self.total_event = 0
 
     @classmethod
@@ -90,6 +94,9 @@ class BrowserSession:
                 "profile_id": self.profile.id,
             },
         )
+
+        await rrweb_manager.save_recording(self.session_id)
+
         try:
             if self.context.browser:
                 await self.context.browser.close()
