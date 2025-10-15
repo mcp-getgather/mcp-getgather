@@ -297,7 +297,6 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
     headers = get_http_headers(include_all=True)
     incognito = headers.get("x-incognito", "0") == "1"
-    skip_result_check = headers.get("x-skip-result-check", "0") == "1"
 
     if incognito:
         browser_profile = BrowserProfile()
@@ -321,7 +320,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
         browser_profile = global_browser_profile
 
-    if not skip_result_check:
+    if not incognito:
         # First, try without any interaction as this will work if the user signed in previously
         distillation_result = await run_distillation_loop(
             initial_url,
