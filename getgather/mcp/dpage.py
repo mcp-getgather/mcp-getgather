@@ -260,26 +260,10 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                             value = fields.get(name_str)
                             if not value or len(value) == 0:
                                 logger.warning(f"No form data found for radio button group {name}")
-                                await report_distill_error(
-                                    error=ValueError("No name for the radio button group"),
-                                    page=page,
-                                    profile_id=id,
-                                    location=location,
-                                    hostname=hostname or "unknown",
-                                    iteration=iteration,
-                                )
                                 continue
                             radio = document.find("input", {"type": "radio", "id": str(value)})
                             if not radio or not isinstance(radio, Tag):
                                 logger.warning(f"No radio button found with id {value}")
-                                await report_distill_error(
-                                    error=ValueError("No radio button found with id"),
-                                    page=page,
-                                    profile_id=id,
-                                    location=location,
-                                    hostname=hostname or "unknown",
-                                    iteration=iteration,
-                                )
                                 continue
                             logger.info(f"Handling radio button group {name}")
                             logger.info(f"Using form data {name}={value}")
@@ -318,14 +302,6 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                             await asyncio.sleep(0.25)
                         else:
                             logger.info(f"No form data found for {name}")
-                            await report_distill_error(
-                                error=ValueError("No name for the checkbox"),
-                                page=page,
-                                profile_id=id,
-                                location=location,
-                                hostname=hostname or "unknown",
-                                iteration=iteration,
-                            )
 
         await autoclick(page, distilled, "[gg-autoclick]:not(button)")
         SUBMIT_BUTTON = "button[gg-autoclick], button[type=submit]"
