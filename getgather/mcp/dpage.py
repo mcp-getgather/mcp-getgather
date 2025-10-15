@@ -7,7 +7,7 @@ from typing import Any
 from bs4 import BeautifulSoup, Tag
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from fastmcp.server.dependencies import get_http_headers
+from fastmcp.server.dependencies import get_context, get_http_headers
 from nanoid import generate
 from patchright.async_api import Page
 
@@ -33,6 +33,7 @@ router = APIRouter(prefix="/dpage", tags=["dpage"])
 active_pages: dict[str, Page] = {}
 distillation_results: dict[str, str | list[dict[str, str | list[str]]]] = {}
 global_browser_profile: BrowserProfile | None = None
+browser_profiles: dict[str, BrowserProfile] = {}
 
 
 async def dpage_add(
@@ -299,7 +300,14 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
     incognito = headers.get("x-incognito", "0") == "1"
 
     if incognito:
-        browser_profile = BrowserProfile()
+        if headers.get("x-getgather-custom-app") is not None:
+            if get_context().session_id in browser_profiles:
+                browser_profile = browser_profiles[get_context().session_id]
+            else:
+                browser_profile = BrowserProfile()
+                browser_profiles[get_context().session_id] = browser_profile
+        else:
+            browser_profile = BrowserProfile()
     else:
         global global_browser_profile
         if global_browser_profile is None:
