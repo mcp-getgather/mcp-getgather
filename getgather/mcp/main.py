@@ -93,11 +93,13 @@ CATEGORY_BUNDLES: dict[str, list[str]] = {
     "books": ["goodreads"],
     "shopping": ["amazon", "shopee", "tokopedia"],
     "media": [],
+    "demoapp": ["goodreads", "wayfair", "amazon", "officedepot"],
 }
 
 # For MCP tools based on distillation
 MCP_BUNDLES: dict[str, list[str]] = {
     "media": ["bbc", "cnn", "espn", "groundnews", "npr", "nytimes"],
+    "demoapp": ["goodreads", "wayfair", "amazon", "officedepot"],
 }
 
 
