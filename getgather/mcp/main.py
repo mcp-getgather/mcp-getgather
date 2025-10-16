@@ -30,7 +30,8 @@ except Exception as e:
 
 
 class AuthMiddleware(Middleware):
-    async def on_call_tool(self, context: MiddlewareContext[Any], call_next: CallNext[Any, Any]):  # type: ignore
+    # type: ignore
+    async def on_call_tool(self, context: MiddlewareContext[Any], call_next: CallNext[Any, Any]):
         if not context.fastmcp_context:
             return await call_next(context)
 
@@ -45,7 +46,8 @@ class AuthMiddleware(Middleware):
             except json.JSONDecodeError:
                 logger.warning(f"Failed to parse x-location header as JSON, {location}")
 
-        tool = await context.fastmcp_context.fastmcp.get_tool(context.message.name)  # type: ignore
+        # type: ignore
+        tool = await context.fastmcp_context.fastmcp.get_tool(context.message.name)
 
         if "general_tool" in tool.tags:
             async with activity(
@@ -91,13 +93,14 @@ class AuthMiddleware(Middleware):
 CATEGORY_BUNDLES: dict[str, list[str]] = {
     "food": ["doordash", "ubereats"],
     "books": ["goodreads"],
-    "shopping": ["amazon", "shopee", "tokopedia"],
+    "shopping": ["amazon", "shopee", "tokopedia", "astro"],
     "media": [],
 }
 
 # For MCP tools based on distillation
 MCP_BUNDLES: dict[str, list[str]] = {
     "media": ["bbc", "cnn", "espn", "groundnews", "npr", "nytimes"],
+    "shopping": ["astro"],
 }
 
 
