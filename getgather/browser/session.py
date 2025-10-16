@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import ClassVar
 
 from fastapi import HTTPException
@@ -23,7 +23,17 @@ class BrowserStartupError(HTTPException):
 class BrowserSession:
     _sessions: ClassVar[dict[str, BrowserSession]] = {}  # tracking profile_id -> session
 
+    def __new__(cls, profile_id: str) -> BrowserSession:
+        if profile_id in cls._sessions:
+            return cls._sessions[profile_id]
+        else:
+            instance = super(BrowserSession, cls).__new__(cls)
+            return instance
+
     def __init__(self, profile_id: str):
+        if getattr(self, "_initialized", False):  # double init check_initialized")
+            return
+        self._initialized = True
         self.profile: BrowserProfile = BrowserProfile(id=profile_id)
         self._playwright: Playwright | None = None
         self._context: BrowserContext | None = None
@@ -64,8 +74,6 @@ class BrowserSession:
                 # Session already started
                 return
 
-            BrowserSession._sessions[self.profile.id] = self
-
             logger.info(
                 f"Starting new session with profile {self.profile.id}",
                 extra={"profile_id": self.profile.id},
@@ -89,6 +97,9 @@ class BrowserSession:
                 lambda page: asyncio.create_task(rrweb_injector.setup_rrweb(self.context, page)),
             )
 
+            # safely register the session at the end
+            BrowserSession._sessions[self.profile.id] = self
+
         except Exception as e:
             logger.error(f"Error starting browser: {e}")
             raise BrowserStartupError(f"Failed to start browser: {e}") from e
@@ -101,18 +112,22 @@ class BrowserSession:
             },
         )
         try:
-            if self.context.browser:
+            if self._context and self.context.browser:
                 await self.context.browser.close()
         except Exception as e:
-            logger.error(f"Error closing browser. Stopping playwright manually: {e}")
-            raise
+            logger.error(f"Error closing browser; continuing teardown: {e}")
         finally:
-            await self.playwright.stop()
+            if self._playwright:
+                with suppress(Exception):  # try or die kill playwright
+                    await self.playwright.stop()
 
-        # clean up local browser profile after playwright is stopped
-        self.profile.cleanup(self.profile.id)
-
-        del self._sessions[self.profile.id]
+        try:
+            # clean up local browser profile after playwright is stopped
+            self.profile.cleanup(self.profile.id)
+        finally:  # ensure we always remove session from tracking
+            self._sessions.pop(self.profile.id, None)
+            self._context = None
+            self._playwright = None
 
 
 @asynccontextmanager
