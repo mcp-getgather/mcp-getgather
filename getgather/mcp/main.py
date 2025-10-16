@@ -37,13 +37,25 @@ class AuthMiddleware(Middleware):
         logger.info(f"[AuthMiddleware Context]: {context.message}")
 
         headers = get_http_headers(include_all=True)
-        location = headers.get("x-location", None)
+        location = headers.get("x-location")
+        custom_proxy_username = headers.get("x-getgather-custom-app")
+
+        location_data: dict[str, Any] = {}
+        should_set_request_info = custom_proxy_username is not None
         if location is not None:
             try:
                 location_data = json.loads(location)
-                request_info.set(RequestInfo(**location_data))
+                should_set_request_info = True
             except json.JSONDecodeError:
                 logger.warning(f"Failed to parse x-location header as JSON, {location}")
+
+        if should_set_request_info:
+            request_info.set(
+                RequestInfo(
+                    **location_data,
+                    custom_proxy_username=custom_proxy_username,
+                )
+            )
 
         tool = await context.fastmcp_context.fastmcp.get_tool(context.message.name)  # type: ignore
 

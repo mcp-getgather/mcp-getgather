@@ -6,7 +6,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config([
-  globalIgnores(["getgather/frontend/**", ".venv/**"]),
+  globalIgnores(["getgather/frontend/**", ".venv/**", ".pnp.cjs", ".pnp.loader.mjs"]),
   {
     files: ["**/*.{ts,tsx}"],
     extends: [
