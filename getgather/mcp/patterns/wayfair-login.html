@@ -1,6 +1,11 @@
 <html gg-domain="wayfair" priority="2">
+  <head>
+    <title>Wayfair Sign In</title>
+  </head>
   <body>
     <input type="text" gg-match="input[name=email]" placeholder="Email Address" />
-    <button gg-autoclick gg-match="button[data-test-id='SUBMIT_BUTTON']">Continue</button>
+    <button type="submit" gg-autoclick gg-match="button[data-test-id='SUBMIT_BUTTON']">
+      Continue
+    </button>
   </body>
 </html>

@@ -1,0 +1,18 @@
+<html gg-domain="birds.cornell">
+  <head>
+    <title>Sign In to eBird</title>
+  </head>
+
+  <body>
+    <p gg-optional gg-match="div.Message-content > p"></p>
+    <input
+      autofocus
+      placeholder="Email"
+      name="username"
+      type="text"
+      gg-match="input#input-user-name"
+    />
+    <input placeholder="Password" name="password" type="password" gg-match="input#input-password" />
+    <button gg-autoclick gg-match="input#form-submit">Sign in</button>
+  </body>
+</html>

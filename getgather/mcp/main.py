@@ -105,9 +105,9 @@ class AuthMiddleware(Middleware):
 
 CATEGORY_BUNDLES: dict[str, list[str]] = {
     "food": ["doordash", "ubereats"],
-    "books": ["audible", "goodreads", "kindle", "hardcover"],
+    "books": ["goodreads"],
     "shopping": ["amazon", "shopee", "tokopedia"],
-    "media": ["cnn"],
+    "media": [],
 }
 
 # For MCP tools based on distillation
