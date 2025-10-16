@@ -3,7 +3,7 @@ import ipaddress
 import logging
 import os
 import urllib.parse
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 from bs4 import BeautifulSoup, Tag
 from fastapi import APIRouter, HTTPException, Request
@@ -308,11 +308,26 @@ def is_local_address(host: str) -> bool:
         return hostname in ("localhost", "127.0.0.1")
 
 
-async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) -> dict[str, Any]:
-    """Generic MCP tool based on distillation"""
-    path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
-    patterns = load_distillation_patterns(path)
+async def dpage_mcp_tool(
+    initial_url: str,
+    result_key: str,
+    timeout: int = 2,
+    callback: Callable[[Page, BrowserSession], Awaitable[Any]] | None = None,
+    use_patterns: bool = True,
+) -> dict[str, Any]:
+    """
+    Generic MCP tool that supports both pattern-based distillation and manual browser control.
 
+    Args:
+        initial_url: URL to navigate to
+        result_key: Key name for the result in return dict
+        timeout: Timeout in seconds
+        callback: Optional async function for manual browser control
+        use_patterns: Whether to try pattern-based distillation (default: True)
+
+    Returns:
+        Dict with result or signin flow info
+    """
     headers = get_http_headers(include_all=True)
     incognito = headers.get("x-incognito", "0") == "1"
 
@@ -341,19 +356,51 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
         browser_profile = global_browser_profile
 
+    # Try pattern-based distillation first (if enabled)
+    if use_patterns:
+        path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
+        patterns = load_distillation_patterns(path)
+
         # First, try without any interaction as this will work if the user signed in previously
         distillation_result, terminated = await run_distillation_loop(
             initial_url,
             patterns,
             browser_profile=browser_profile,
             interactive=False,
-            timeout=timeout,
+            timeout=timeout if callback is None else min(timeout // 2, 10),
             stop_ok=False,  # Keep global session alive
         )
         if terminated:
             return {result_key: distillation_result}
 
-    # If that didn't work, try signing in via distillation
+    # If patterns failed or manual callback provided, try manual control
+    if callback is not None:
+        try:
+            session = BrowserSession.get(browser_profile)
+            # Check if session needs to be started by trying to access context
+            try:
+                _ = session.context  # This will raise if not started
+            except AssertionError:
+                await session.start()
+
+            page = await session.page()
+
+            # Navigate to initial URL if not already there
+            if page.url != initial_url:
+                logger.info(f"Navigating to {initial_url}")
+                await page.goto(initial_url, timeout=30000)
+
+            # Execute custom action callback
+            logger.info("Executing manual browser callback...")
+            result: Any = await callback(page, session)
+
+            return {result_key: result}
+
+        except Exception as e:
+            logger.error(f"Manual browser action failed: {e}")
+            # Continue to fallback signin flow below
+
+    # Fall back to interactive signin flow
     id = await dpage_add(browser_profile=browser_profile, location=initial_url)
 
     host = headers.get("x-forwarded-host") or headers.get("host")
@@ -367,9 +414,14 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
     url = f"{base_url}/dpage/{id}"
     logger.info(f"Continue with the sign in at {url}", extra={"url": url, "id": id})
+
+    message = "Continue to sign in in your browser"
+    if callback is not None:
+        message = "Manual action failed. Continue to sign in"
+
     return {
         "url": url,
-        "message": f"Continue to sign in in your browser at {url}.",
+        "message": f"{message} at {url}.",
         "signin_id": id,
         "system_message": (
             f"Try open the url {url} in a browser with a tool if available."
