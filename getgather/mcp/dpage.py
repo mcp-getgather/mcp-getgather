@@ -2,6 +2,7 @@ import asyncio
 import ipaddress
 import os
 import urllib.parse
+from contextlib import suppress
 from typing import Any
 
 from bs4 import BeautifulSoup, Tag
@@ -11,8 +12,12 @@ from fastmcp.server.dependencies import get_http_headers
 from nanoid import generate
 from patchright.async_api import Page
 
+from getgather.browser.page_provider import (
+    IncognitoPageProvider,
+    PageProvider,
+    SharedBrowserPageProvider,
+)
 from getgather.browser.profile import BrowserProfile
-from getgather.browser.session import BrowserSession
 from getgather.config import settings
 from getgather.distill import (
     Match,
@@ -31,28 +36,23 @@ router = APIRouter(prefix="/dpage", tags=["dpage"])
 
 
 active_pages: dict[str, Page] = {}
+active_page_providers: dict[str, PageProvider] = {}
 distillation_results: dict[str, str | list[dict[str, str | list[str]]]] = {}
-global_browser_profile: BrowserProfile | None = None
+global_shared_page_provider: SharedBrowserPageProvider | None = None
 
 
 async def dpage_add(
-    browser_profile: BrowserProfile | None = None,
+    page_provider: PageProvider,
     location: str | None = None,
     id: str | None = None,
-):
+) -> str:
     if id is None:
         FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
         id = generate(FRIENDLY_CHARS, 8)
         if settings.HOSTNAME:
             id = f"{settings.HOSTNAME}-{id}"
 
-    if browser_profile is None:
-        browser_profile = BrowserProfile()
-
-    session = BrowserSession.get(browser_profile)
-
-    session = await session.start()
-    page = await session.context.new_page()
+    page = await page_provider.new_page()
 
     if location:
         if not location.startswith("http"):
@@ -60,13 +60,25 @@ async def dpage_add(
         await page.goto(location, timeout=300000)
 
     active_pages[id] = page
+    active_page_providers[id] = page_provider
     return id
 
 
 async def dpage_close(id: str) -> None:
-    if id in active_pages:
-        # await active_pages[id].close()
-        del active_pages[id]
+    page = active_pages.pop(id, None)
+    provider = active_page_providers.pop(id, None)
+
+    if page is None:
+        return
+
+    if provider is not None:
+        await provider.close_page(page)
+        if isinstance(provider, IncognitoPageProvider):
+            await provider.shutdown()
+    else:
+        if not page.is_closed():
+            with suppress(Exception):
+                await page.close()
 
 
 async def dpage_check(id: str):
@@ -121,7 +133,8 @@ async def get_dpage(location: str | None = None, id: str | None = None) -> HTMLR
         raise HTTPException(status_code=400, detail="Missing location parameter")
 
     logger.info(f"Starting distillation at {location}...")
-    id = await dpage_add(location=location)
+    provider = await IncognitoPageProvider.create()
+    id = await dpage_add(page_provider=provider, location=location)
     return redirect(id)
 
 
@@ -298,20 +311,24 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
     incognito = headers.get("x-incognito", "0") == "1"
 
     if incognito:
-        browser_profile = BrowserProfile()
+        page_provider = await IncognitoPageProvider.create()
     else:
-        global global_browser_profile
-        if global_browser_profile is None:
-            logger.info(f"Creating global browser profile...")
-            global_browser_profile = BrowserProfile()
-            session = BrowserSession.get(global_browser_profile)
-            session = await session.start()
-            init_page = await session.new_page()  # never use old pages in global session due to really difficult race conditions with concurrent requests
-            await init_page.goto(initial_url)
+        global global_shared_page_provider
+        if global_shared_page_provider is None:
+            logger.info("Creating global shared page provider...")
+            profile = BrowserProfile()
+            global_shared_page_provider = await SharedBrowserPageProvider.create(
+                profile,
+                anchor_url="https://ifconfig.me",
+                stop_on_shutdown=False,
+            )
+            warm_page = await global_shared_page_provider.new_page(initial_url=initial_url)
             await asyncio.sleep(1)
+            await global_shared_page_provider.close_page(warm_page)
 
-        browser_profile = global_browser_profile
+        page_provider = global_shared_page_provider
 
+    browser_profile = page_provider.profile
     # First, try without any interaction as this will work if the user signed in previously
     distillation_result = await run_distillation_loop(
         initial_url,
@@ -320,12 +337,13 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
         interactive=False,
         timeout=timeout,
         with_terminate_flag=True,
+        page_provider=page_provider,
     )
     if isinstance(distillation_result, dict) and distillation_result["terminated"]:
         return {result_key: distillation_result["result"]}
 
     # If that didn't work, try signing in via distillation
-    id = await dpage_add(browser_profile=browser_profile, location=initial_url)
+    id = await dpage_add(page_provider=page_provider, location=initial_url)
 
     host = headers.get("x-forwarded-host") or headers.get("host")
     if host is None:

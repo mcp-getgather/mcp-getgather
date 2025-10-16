@@ -12,8 +12,12 @@ from bs4.element import Tag
 from patchright.async_api import Locator, Page
 from pydantic import BaseModel
 
+from getgather.browser.page_provider import (
+    IncognitoPageProvider,
+    PageProvider,
+    SharedBrowserPageProvider,
+)
 from getgather.browser.profile import BrowserProfile
-from getgather.browser.session import browser_session
 from getgather.logs import logger
 
 
@@ -380,6 +384,7 @@ async def run_distillation_loop(
     timeout: int = 15,
     interactive: bool = True,
     with_terminate_flag: bool = False,
+    page_provider: PageProvider | None = None,
 ) -> dict[str, str | ConversionResult | None | bool] | str | ConversionResult:
     if len(patterns) == 0:
         logger.error("No distillation patterns provided")
@@ -387,13 +392,23 @@ async def run_distillation_loop(
 
     hostname = urllib.parse.urlparse(location).hostname or ""
 
-    # Use provided profile or create new one
-    profile = browser_profile or BrowserProfile()
+    created_page_provider = False
+    if page_provider is None:
+        if browser_profile is None:
+            page_provider = await IncognitoPageProvider.create()
+            profile_id = "incognito"
+        else:
+            page_provider = await SharedBrowserPageProvider.create(
+                browser_profile, stop_on_shutdown=True
+            )
+            profile_id = browser_profile.id
+        created_page_provider = True
+    else:
+        profile_id = browser_profile.id if browser_profile else "custom"
 
-    async with browser_session(profile, stop_ok=False) as session:
-        page = await session.page()
-
-        logger.info(f"Starting browser {profile.id}")
+    page = await page_provider.new_page()
+    try:
+        logger.info(f"Starting browser {profile_id}")
         logger.info(f"Navigating to {location}")
         await page.goto(location)
 
@@ -442,3 +457,7 @@ async def run_distillation_loop(
             return {"terminated": False, "result": current.distilled}
         else:
             return current.distilled
+    finally:
+        await page_provider.close_page(page)
+        if created_page_provider:
+            await page_provider.shutdown()
