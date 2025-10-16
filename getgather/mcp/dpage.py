@@ -49,7 +49,7 @@ async def dpage_add(
     if browser_profile is None:
         browser_profile = BrowserProfile()
 
-    session = BrowserSession(browser_profile.id)
+    session = BrowserSession.get(browser_profile)
 
     await session.start()
     page = await session.context.new_page()
@@ -305,7 +305,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
         if global_browser_profile is None:
             logger.info(f"Creating global browser profile...")
             global_browser_profile = BrowserProfile()
-            session = BrowserSession(global_browser_profile.id)
+            session = BrowserSession.get(global_browser_profile)
             await session.start()
             init_page = await session.page()
             await init_page.goto(initial_url)
