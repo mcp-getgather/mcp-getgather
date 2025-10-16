@@ -2,7 +2,6 @@ import asyncio
 import ipaddress
 import os
 import urllib.parse
-from asyncio import Task
 from typing import Any
 
 from bs4 import BeautifulSoup, Tag
@@ -10,7 +9,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastmcp.server.dependencies import get_http_headers
 from nanoid import generate
-from patchright.async_api import Page, Route
+from patchright.async_api import Page
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
@@ -26,17 +25,9 @@ from getgather.distill import (
     terminate,
 )
 from getgather.logs import logger
+from getgather.mcp.html_renderer import render_form
 
 router = APIRouter(prefix="/dpage", tags=["dpage"])
-
-
-def block_unwanted_resources(route: Route) -> Task[None]:
-    """Block images, media (videos), and fonts"""
-    return asyncio.create_task(
-        route.abort()
-        if route.request.resource_type in ["image", "media", "font"]
-        else route.continue_()
-    )
 
 
 active_pages: dict[str, Page] = {}
@@ -62,12 +53,11 @@ async def dpage_add(
 
     await session.start()
     page = await session.context.new_page()
-    await page.route("**/*", block_unwanted_resources)
 
     if location:
         if not location.startswith("http"):
             location = f"https://{location}"
-        await page.goto(location)
+        await page.goto(location, timeout=300000)
 
     active_pages[id] = page
     return id
@@ -94,32 +84,14 @@ async def dpage_check(id: str):
 
 
 def render(content: str, options: dict[str, str] | None = None) -> str:
+    """Render HTML template with content and options."""
     if options is None:
         options = {}
 
     title = options.get("title", "GetGather")
     action = options.get("action", "")
 
-    return f"""<!doctype html>
-<html data-theme=light>
-  <head>
-    <title>{title}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-  </head>
-  <body>
-    <main class="container">
-      <section>
-        <h2>{title}</h2>
-        <articles>
-        <form method="POST" action="{action}">
-        {content}
-        </form>
-        </articles>
-      </section>
-    </main>
-  </body>
-</html>"""
+    return render_form(content, title, action)
 
 
 # Since the browser can't redirect from GET to POST,
@@ -197,6 +169,23 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
         distilled = match.distilled
 
         print(distilled)
+
+        title_element = BeautifulSoup(distilled, "html.parser").find("title")
+        title = title_element.get_text() if title_element is not None else "GetGather"
+        action = f"/dpage/{id}"
+        options = {"title": title, "action": action}
+
+        if await terminate(page, distilled):
+            logger.info("Finished!")
+            converted = await convert(distilled)
+            await dpage_close(id)
+            if converted:
+                print(converted)
+                distillation_results[id] = converted
+            else:
+                logger.info("No conversion found")
+                distillation_results[id] = distilled
+            return HTMLResponse(render(FINISHED_MSG, options))
 
         names: list[str] = []
         document = BeautifulSoup(distilled, "html.parser")
@@ -278,39 +267,15 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                         else:
                             logger.info(f"No form data found for {name}")
 
-        title_element = document.find("title")
-        title = title_element.get_text() if title_element is not None else "GetGather"
-        action = f"/dpage/{id}"
-        options = {"title": title, "action": action}
-
-        if len(inputs) == len(names):
-            await autoclick(page, distilled)
-            if await terminate(page, distilled):
-                logger.info("Finished!")
-                converted = await convert(distilled)
-                await dpage_close(id)
-                if converted:
-                    print(converted)
-                    distillation_results[id] = converted
-                else:
-                    logger.info("No conversion found")
-                    distillation_results[id] = distilled
-                return HTMLResponse(render(FINISHED_MSG, options))
-
-            logger.info("All form fields are filled")
-            continue
-
-        if await terminate(page, distilled):
-            converted = await convert(distilled)
-            await dpage_close(id)
-            if converted:
-                print(converted)
-                distillation_results[id] = converted
-            return HTMLResponse(render(FINISHED_MSG, options))
-        else:
-            logger.info("Not all form fields are filled")
-
-        return HTMLResponse(render(str(document.find("body")), options))
+        await autoclick(page, distilled, "[gg-autoclick]:not(button)")
+        SUBMIT_BUTTON = "button[gg-autoclick], button[type=submit]"
+        if document.select(SUBMIT_BUTTON):
+            if len(names) > 0 and len(inputs) == len(names):
+                logger.info("Submitting form, all fields are filled...")
+                await autoclick(page, distilled, SUBMIT_BUTTON)
+                continue
+            logger.warning("Not all form fields are filled")
+            return HTMLResponse(render(str(document.find("body")), options))
 
     raise HTTPException(status_code=503, detail="Timeout reached")
 
@@ -342,15 +307,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
             global_browser_profile = BrowserProfile()
             session = BrowserSession(global_browser_profile.id)
             await session.start()
-            logger.debug("Visiting google.com to initialize the profile...")
-
-            # to help troubleshooting
-            debug_page = await session.context.new_page()
-            await debug_page.goto("https://ifconfig.me")
-
-            init_page = await session.context.new_page()
-            await init_page.route("**/*", block_unwanted_resources)
-
+            init_page = await session.page()
             await init_page.goto(initial_url)
             await asyncio.sleep(1)
 

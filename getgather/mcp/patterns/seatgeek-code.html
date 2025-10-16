@@ -1,0 +1,20 @@
+<html gg-domain="seatgeek">
+  <head>
+    <title>SeatGeek Signin</title>
+  </head>
+  <body>
+    <div>
+      <h3 gg-match="h3#login-heading"></h3>
+      <p gg-match="p#login-description"></p>
+      <p gg-optional gg-match="div[data-testid='error']"></p>
+      <input
+        autofocus
+        placeholder="Code"
+        gg-match="input[name='magicCode']"
+        type="text"
+        name="code"
+      />
+      <button type="submit" gg-match="button:has-text('Confirm')">Confirm</button>
+    </div>
+  </body>
+</html>
