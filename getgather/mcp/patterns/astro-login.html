@@ -4,11 +4,7 @@
   </head>
   <body>
     <input type="text" name="phone" placeholder="phone number" gg-match="input[name=phone]" />
-    <button
-      type="submit"
-      gg-autoclick
-      gg-match='[data-testid="btnSubmitPhoneNumber"]:not([disabled])'
-    >
+    <button gg-autoclick gg-match='[data-testid="btnSubmitPhoneNumber"]:not([disabled])'>
       Continue
     </button>
   </body>
