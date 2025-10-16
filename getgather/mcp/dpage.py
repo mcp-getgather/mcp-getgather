@@ -51,7 +51,7 @@ async def dpage_add(
 
     session = BrowserSession.get(browser_profile)
 
-    await session.start()
+    session = await session.start()
     page = await session.context.new_page()
 
     if location:
@@ -291,7 +291,7 @@ def is_local_address(host: str) -> bool:
 
 async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) -> dict[str, Any]:
     """Generic MCP tool based on distillation"""
-
+    print("ENTERING DPAGE MCP TOOL")
     path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
 
@@ -306,8 +306,8 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
             logger.info(f"Creating global browser profile...")
             global_browser_profile = BrowserProfile()
             session = BrowserSession.get(global_browser_profile)
-            await session.start()
-            init_page = await session.page()
+            session = await session.start()
+            init_page = await session.new_page()  # never use old pages in global session due to really difficult race conditions with concurrent requests
             await init_page.goto(initial_url)
             await asyncio.sleep(1)
 
@@ -323,6 +323,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
         with_terminate_flag=True,
     )
     if isinstance(distillation_result, dict) and distillation_result["terminated"]:
+        print("REturnING RESULT")
         return {result_key: distillation_result["result"]}
 
     # If that didn't work, try signing in via distillation

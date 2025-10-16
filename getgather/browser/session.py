@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections import defaultdict
 from contextlib import asynccontextmanager, suppress
 from typing import ClassVar
 
@@ -22,6 +23,7 @@ class BrowserStartupError(HTTPException):
 
 class BrowserSession:
     _sessions: ClassVar[dict[str, BrowserSession]] = {}  # tracking profile_id -> session
+    _locks: ClassVar[dict[str, asyncio.Lock]] = defaultdict(asyncio.Lock)
 
     def __new__(cls, profile_id: str) -> BrowserSession:
         if profile_id in cls._sessions:
@@ -68,41 +70,49 @@ class BrowserSession:
             return self.context.pages[-1]
         return await self.new_page()
 
-    async def start(self):
-        try:
-            if self.profile.id in BrowserSession._sessions:
-                # Session already started
-                return
+    async def start(self) -> BrowserSession:
+        if self.profile.id in BrowserSession._sessions:
+            # Session already started
+            return BrowserSession._sessions[self.profile.id]
+        lock = self._locks[self.profile.id]
+        async with lock:  # prevent race condition when two requests try to start the same profile
+            try:
+                if self.profile.id in BrowserSession._sessions:
+                    # Session already started
+                    return BrowserSession._sessions[self.profile.id]
+                logger.info(
+                    f"Starting new session with profile {self.profile.id}",
+                    extra={"profile_id": self.profile.id},
+                )
 
-            logger.info(
-                f"Starting new session with profile {self.profile.id}",
-                extra={"profile_id": self.profile.id},
-            )
+                self._playwright = await async_playwright().start()
+                self._context = await self.profile.launch(
+                    profile_id=self.profile.id, browser_type=self.playwright.chromium
+                )
 
-            self._playwright = await async_playwright().start()
-            self._context = await self.profile.launch(
-                profile_id=self.profile.id, browser_type=self.playwright.chromium
-            )
+                await configure_context(self._context)
 
-            await configure_context(self._context)
+                debug_page = await self.page()
+                await debug_page.goto("https://ifconfig.me")
 
-            debug_page = await self.page()
-            await debug_page.goto("https://ifconfig.me")
+                # Intentionally create a new page to apply resources filtering (from blocklists)
+                page = await self.new_page()
 
-            # Intentionally create a new page to apply resources filtering (from blocklists)
-            page = await self.new_page()
+                page.on(
+                    "load",
+                    lambda page: asyncio.create_task(
+                        rrweb_injector.setup_rrweb(self.context, page)
+                    ),
+                )
 
-            page.on(
-                "load",
-                lambda page: asyncio.create_task(rrweb_injector.setup_rrweb(self.context, page)),
-            )
+                # safely register the session at the end
+                self._sessions[self.profile.id] = self
 
-            # safely register the session at the end
-            BrowserSession._sessions[self.profile.id] = self
+                return self
 
-        except Exception as e:
-            logger.error(f"Error starting browser: {e}")
-            raise BrowserStartupError(f"Failed to start browser: {e}") from e
+            except Exception as e:
+                logger.error(f"Error starting browser: {e}")
+                raise BrowserStartupError(f"Failed to start browser: {e}") from e
 
     async def stop(self):
         logger.info(
@@ -125,18 +135,20 @@ class BrowserSession:
             # clean up local browser profile after playwright is stopped
             self.profile.cleanup(self.profile.id)
         finally:  # ensure we always remove session from tracking
+            print(f"Removing session for profile {self.profile.id}")
             self._sessions.pop(self.profile.id, None)
             self._context = None
             self._playwright = None
+            print(f"Session removed for profile {self.profile.id}")
 
 
 @asynccontextmanager
-async def browser_session(profile: BrowserProfile, *, nested: bool = False):
+async def browser_session(profile: BrowserProfile, *, nested: bool = False, stop_ok: bool = True):
     session = BrowserSession.get(profile)
     if not nested:
-        await session.start()
+        session = await session.start()
     try:
         yield session
     finally:
-        if not nested:
+        if not nested and stop_ok:
             await session.stop()

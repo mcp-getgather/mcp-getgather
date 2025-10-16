@@ -28,5 +28,5 @@ async def get_headlines(ctx: Context) -> dict[str, Any]:
                 parsed.fragment,
             ))
             headline["url"] = url
-
+    print("HEADLINES", result)
     return result
