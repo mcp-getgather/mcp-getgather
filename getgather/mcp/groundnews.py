@@ -27,5 +27,4 @@ async def get_stories(ctx: Context) -> dict[str, Any]:
                 parsed.fragment,
             ))
             story["url"] = url
-
     return result

@@ -188,7 +188,7 @@ def with_brand_browser_session(func: Callable[P, Awaitable[T]]) -> Callable[P, A
         mcp_ctx = get_context()
         mcp_ctx.set_state("browser_session", browser_session)
 
-        await browser_session.start()
+        browser_session = await browser_session.start()
         try:
             return await func(*args, **kwargs)
         finally:

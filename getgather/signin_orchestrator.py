@@ -77,7 +77,7 @@ class SigninOrchestrator:
             self._maybe_set_sentry_user()
 
             if self.status == SigninStatus.INITIALIZING:
-                await browser_session.start()
+                browser_session = await browser_session.start()
 
             page = await browser_session.page()
         except BrowserStartupError as e:

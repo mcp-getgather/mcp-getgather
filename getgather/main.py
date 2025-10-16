@@ -183,7 +183,7 @@ IP_CHECK_URL: Final[str] = "https://ifconfig.me/ip"
 async def extended_health():
     session = BrowserSession.get(BrowserProfile())
     try:
-        await session.start()
+        session = await session.start()
         page = await session.page()
         await page.goto(IP_CHECK_URL, timeout=3000)
         ip_text: str = await page.evaluate("() => document.body.innerText.trim()")
