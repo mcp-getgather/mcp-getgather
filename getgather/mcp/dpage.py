@@ -294,7 +294,6 @@ async def dpage_mcp_tool(
     result_key: str,
     timeout: int = 2,
     callback: Callable[[Page, BrowserSession], Awaitable[Any]] | None = None,
-    use_patterns: bool = True,
 ) -> dict[str, Any]:
     """
     Generic MCP tool that supports both pattern-based distillation and manual browser control.
@@ -303,8 +302,8 @@ async def dpage_mcp_tool(
         initial_url: URL to navigate to
         result_key: Key name for the result in return dict
         timeout: Timeout in seconds
-        manual_callback: Optional async function for manual browser control
-        use_patterns: Whether to try pattern-based distillation (default: True)
+        callback: Optional async function for manual browser control.
+                 If provided, skips pattern matching and goes straight to manual control.
 
     Returns:
         Dict with result or signin flow info
@@ -327,23 +326,7 @@ async def dpage_mcp_tool(
 
         browser_profile = global_browser_profile
 
-    # Try pattern-based distillation first (if enabled)
-    if use_patterns:
-        path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
-        patterns = load_distillation_patterns(path)
-
-        distillation_result = await run_distillation_loop(
-            initial_url,
-            patterns,
-            browser_profile=browser_profile,
-            interactive=False,
-            timeout=timeout if callback is None else min(timeout // 2, 10),
-            with_terminate_flag=True,
-        )
-        if isinstance(distillation_result, dict) and distillation_result["terminated"]:
-            return {result_key: distillation_result["result"]}
-
-    # If patterns failed or manual callback provided, try manual control
+    # If callback is provided, skip patterns and go straight to manual control
     if callback is not None:
         try:
             session = BrowserSession.get(browser_profile)
@@ -369,6 +352,22 @@ async def dpage_mcp_tool(
         except Exception as e:
             logger.error(f"Manual browser action failed: {e}")
             # Continue to fallback signin flow below
+
+    # No callback provided, try pattern-based distillation
+    else:
+        path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
+        patterns = load_distillation_patterns(path)
+
+        distillation_result = await run_distillation_loop(
+            initial_url,
+            patterns,
+            browser_profile=browser_profile,
+            interactive=False,
+            timeout=timeout,
+            with_terminate_flag=True,
+        )
+        if isinstance(distillation_result, dict) and distillation_result["terminated"]:
+            return {result_key: distillation_result["result"]}
 
     # Fall back to interactive signin flow
     id = await dpage_add(browser_profile=browser_profile, location=initial_url)
