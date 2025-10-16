@@ -135,11 +135,9 @@ class BrowserSession:
             # clean up local browser profile after playwright is stopped
             self.profile.cleanup(self.profile.id)
         finally:  # ensure we always remove session from tracking
-            print(f"Removing session for profile {self.profile.id}")
             self._sessions.pop(self.profile.id, None)
             self._context = None
             self._playwright = None
-            print(f"Session removed for profile {self.profile.id}")
 
 
 @asynccontextmanager

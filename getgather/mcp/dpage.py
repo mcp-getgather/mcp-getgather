@@ -291,7 +291,6 @@ def is_local_address(host: str) -> bool:
 
 async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) -> dict[str, Any]:
     """Generic MCP tool based on distillation"""
-    print("ENTERING DPAGE MCP TOOL")
     path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
 
@@ -323,7 +322,6 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
         with_terminate_flag=True,
     )
     if isinstance(distillation_result, dict) and distillation_result["terminated"]:
-        print("REturnING RESULT")
         return {result_key: distillation_result["result"]}
 
     # If that didn't work, try signing in via distillation
