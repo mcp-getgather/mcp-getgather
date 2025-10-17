@@ -35,6 +35,7 @@ router = APIRouter(prefix="/dpage", tags=["dpage"])
 
 active_pages: dict[str, Page] = {}
 distillation_results: dict[str, str | list[dict[str, str | list[str]]]] = {}
+pending_callbacks: dict[str, dict[str, Any]] = {}  # Store callbacks to resume after signin
 global_browser_profile: BrowserProfile | None = None
 
 
@@ -92,8 +93,40 @@ async def dpage_check(id: str):
     for iteration in range(max):
         logger.debug(f"Checking dpage {id}: {iteration + 1} of {max}")
         await asyncio.sleep(TICK)
+
+        # Check if signin completed
         if id in distillation_results:
-            return distillation_results[id]
+            result = distillation_results[id]
+
+            # Check if there's a pending callback to resume
+            if id in pending_callbacks:
+                callback_info = pending_callbacks[id]
+                logger.info(f"Signin completed for {id}, resuming callback...")
+
+                try:
+                    # Resume the original callback
+                    callback_result = await dpage_mcp_tool(
+                        initial_url=callback_info["initial_url"],
+                        result_key=callback_info["result_key"],
+                        timeout=callback_info["timeout"],
+                        callback=callback_info["callback"],
+                    )
+
+                    # Clean up
+                    del pending_callbacks[id]
+
+                    # Return the callback result instead of signin result
+                    return callback_result
+
+                except Exception as e:
+                    logger.error(f"Failed to resume callback after signin: {e}")
+                    del pending_callbacks[id]
+                    return {
+                        "error": f"Callback resumption failed: {str(e)}",
+                        "signin_result": result,
+                    }
+
+            return result
 
     return None
 
@@ -380,7 +413,8 @@ async def dpage_mcp_tool(
 
         except Exception as e:
             logger.error(f"Manual browser action failed: {e}")
-            # Continue to fallback signin flow below
+            if callback is not None:
+                pass
 
     # No callback provided, try pattern-based distillation
     else:
@@ -400,6 +434,15 @@ async def dpage_mcp_tool(
 
     # Fall back to interactive signin flow
     id = await dpage_add(browser_profile=browser_profile, location=initial_url)
+
+    # Store callback for auto-resumption after signin
+    if callback is not None:
+        pending_callbacks[id] = {
+            "callback": callback,
+            "initial_url": initial_url,
+            "result_key": result_key,
+            "timeout": timeout,
+        }
 
     host = headers.get("x-forwarded-host") or headers.get("host")
     if host is None:
@@ -421,10 +464,11 @@ async def dpage_mcp_tool(
         "url": url,
         "message": f"{message} at {url}.",
         "signin_id": id,
+        "auto_resume": callback is not None,  # Indicate if callback will auto-resume
         "system_message": (
             f"Try open the url {url} in a browser with a tool if available."
             "Give the url to the user so the user can open it manually in their browser."
-            "Then call check_signin tool with the signin_id to check if the sign in process is completed. "
-            "Once it is completed successfully, then call this tool again to proceed with the action."
+            f"Then call check_signin tool with the signin_id to check if the sign in process is completed. "
+            f"{'The original callback will automatically resume after successful signin.' if callback else 'Once completed successfully, call this tool again to proceed with the action.'}"
         ),
     }
