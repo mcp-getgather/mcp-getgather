@@ -28,6 +28,7 @@ dependencies = [
   "stagehand>=0.5.2",
   "fastmcp>=2.12.2",
   "pytest-asyncio>=1.0.0",
+  "logfire[fastapi]>=4.13.2",
 ]
 
 [dependency-groups]
