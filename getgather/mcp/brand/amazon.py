@@ -39,7 +39,7 @@ async def get_purchase_history(year: str | int | None = None) -> dict[str, Any]:
     browser_profile = get_mcp_browser_profile()
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
-    purchases = await run_distillation_loop(
+    purchases, _ = await run_distillation_loop(
         f"https://www.amazon.com/your-orders/orders?timeFilter=year-{target_year}",
         patterns,
         browser_profile=browser_profile,

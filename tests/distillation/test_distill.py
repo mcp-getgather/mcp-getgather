@@ -65,7 +65,7 @@ async def test_distillation_loop(location: str):
     patterns = load_distillation_patterns(path)
     assert patterns, "No patterns found to begin matching."
 
-    result = await run_distillation_loop(
+    result, _ = await run_distillation_loop(
         location=location,
         patterns=patterns,
         browser_profile=profile,
