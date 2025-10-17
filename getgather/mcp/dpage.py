@@ -28,6 +28,7 @@ from getgather.distill import (
     terminate,
 )
 from getgather.logs import logger
+from getgather.mcp.html_renderer import render_form
 
 router = APIRouter(prefix="/dpage", tags=["dpage"])
 
@@ -51,9 +52,9 @@ async def dpage_add(
     if browser_profile is None:
         browser_profile = BrowserProfile()
 
-    session = BrowserSession(browser_profile.id)
+    session = BrowserSession.get(browser_profile)
 
-    await session.start()
+    session = await session.start()
     page = await session.context.new_page()
 
     try:
@@ -98,32 +99,14 @@ async def dpage_check(id: str):
 
 
 def render(content: str, options: dict[str, str] | None = None) -> str:
+    """Render HTML template with content and options."""
     if options is None:
         options = {}
 
     title = options.get("title", "GetGather")
     action = options.get("action", "")
 
-    return f"""<!doctype html>
-<html data-theme=light>
-  <head>
-    <title>{title}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-  </head>
-  <body>
-    <main class="container">
-      <section>
-        <h2>{title}</h2>
-        <articles>
-        <form method="POST" action="{action}">
-        {content}
-        </form>
-        </articles>
-      </section>
-    </main>
-  </body>
-</html>"""
+    return render_form(content, title, action)
 
 
 # Since the browser can't redirect from GET to POST,
@@ -327,7 +310,6 @@ def is_local_address(host: str) -> bool:
 
 async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) -> dict[str, Any]:
     """Generic MCP tool based on distillation"""
-
     path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
 
@@ -341,15 +323,9 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
         if global_browser_profile is None:
             logger.info(f"Creating global browser profile...")
             global_browser_profile = BrowserProfile()
-            session = BrowserSession(global_browser_profile.id)
-            await session.start()
-            logger.debug("Visiting google.com to initialize the profile...")
-
-            # to help troubleshooting
-            debug_page = await session.context.new_page()
-            await debug_page.goto("https://ifconfig.me")
-
-            init_page = await session.context.new_page()
+            session = BrowserSession.get(global_browser_profile)
+            session = await session.start()
+            init_page = await session.new_page()  # never use old pages in global session due to really difficult race conditions with concurrent requests
             try:
                 await init_page.goto(initial_url)
             except Exception as e:
@@ -365,17 +341,16 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
         browser_profile = global_browser_profile
 
-    # First, try without any interaction as this will work if the user signed in previously
-    distillation_result = await run_distillation_loop(
-        initial_url,
-        patterns,
-        browser_profile=browser_profile,
-        interactive=False,
-        timeout=timeout,
-        with_terminate_flag=True,
-    )
-    if isinstance(distillation_result, dict) and distillation_result["terminated"]:
-        return {result_key: distillation_result["result"]}
+        # First, try without any interaction as this will work if the user signed in previously
+        distillation_result, terminated = await run_distillation_loop(
+            initial_url,
+            patterns,
+            browser_profile=browser_profile,
+            interactive=False,
+            timeout=timeout,
+        )
+        if terminated:
+            return {result_key: distillation_result}
 
     # If that didn't work, try signing in via distillation
     id = await dpage_add(browser_profile=browser_profile, location=initial_url)

@@ -20,9 +20,7 @@ from pydantic import BaseModel
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import browser_session
 from getgather.config import settings
-from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.logs import logger
-from getgather.sentry import setup_error_context
 
 
 class Pattern(BaseModel):
@@ -93,18 +91,6 @@ async def capture_page_artifacts(
     return screenshot_path, html_path, html_content
 
 
-def _coerce_brand_id(brand_id: BrandIdEnum | str | None) -> BrandIdEnum | None:
-    if brand_id is None:
-        return None
-    if isinstance(brand_id, BrandIdEnum):
-        return brand_id
-    try:
-        return BrandIdEnum(brand_id)
-    except Exception:  # guards against invalid IDs without raising during triage
-        logger.warning(f"Unrecognized brand id for distillation error context: {brand_id}")
-        return None
-
-
 async def report_distill_error(
     *,
     error: Exception,
@@ -113,15 +99,13 @@ async def report_distill_error(
     location: str,
     hostname: str,
     iteration: int,
-    brand_id: BrandIdEnum | str | None = None,
 ) -> None:
     screenshot_path: Path | None = None
     html_path: Path | None = None
-    html_content: str | None = None
 
     if page:
         try:
-            screenshot_path, html_path, html_content = await capture_page_artifacts(
+            screenshot_path, html_path, _ = await capture_page_artifacts(
                 page,
                 identifier=profile_id,
                 prefix="distill_error",
@@ -145,32 +129,19 @@ async def report_distill_error(
         },
     )
 
-    brand_enum = _coerce_brand_id(brand_id)
     if settings.SENTRY_DSN:
         with sentry_sdk.isolation_scope() as scope:
-            if brand_enum:
-                setup_error_context(
-                    scope=scope,
-                    e=error,
-                    brand_id=brand_enum,
-                    error_type="distill_error",
-                    flow_state=context,
-                    browser_profile_id=profile_id,
-                    page_content=html_content,
-                    screenshot_path=screenshot_path,
+            scope.set_context("distill", context)
+            if screenshot_path:
+                scope.add_attachment(
+                    filename=screenshot_path.name,
+                    path=str(screenshot_path),
                 )
-            else:
-                scope.set_context("distill", context)
-                if screenshot_path:
-                    scope.add_attachment(
-                        filename=screenshot_path.name,
-                        path=str(screenshot_path),
-                    )
-                if html_path:
-                    scope.add_attachment(
-                        filename=html_path.name,
-                        path=str(html_path),
-                    )
+            if html_path:
+                scope.add_attachment(
+                    filename=html_path.name,
+                    path=str(html_path),
+                )
 
             sentry_sdk.capture_exception(error)
 
@@ -516,9 +487,7 @@ async def run_distillation_loop(
     browser_profile: BrowserProfile | None = None,
     timeout: int = 15,
     interactive: bool = True,
-    with_terminate_flag: bool = False,
-    brand_id: BrandIdEnum | str | None = None,
-) -> dict[str, str | ConversionResult | None | bool] | str | ConversionResult:
+) -> tuple[dict[str, str | ConversionResult | None] | str | ConversionResult, bool]:
     if len(patterns) == 0:
         logger.error("No distillation patterns provided")
         raise ValueError("No distillation patterns provided")
@@ -528,10 +497,8 @@ async def run_distillation_loop(
     # Use provided profile or create new one
     profile = browser_profile or BrowserProfile()
 
-    async with browser_session(profile) as session:
-        page: Page | None = None
-
-        page = await session.page()
+    async with browser_session(profile, stop_ok=False) as session:
+        page = await session.new_page()
 
         logger.info(f"Starting browser {profile.id}")
         logger.info(f"Navigating to {location}")
@@ -546,7 +513,6 @@ async def run_distillation_loop(
                 location=location,
                 hostname=hostname,
                 iteration=0,
-                brand_id=brand_id,
             )
             raise ValueError(f"Failed to navigate to {location}: {error}")
 
@@ -580,13 +546,7 @@ async def run_distillation_loop(
 
                     if await terminate(page, distilled):
                         converted = await convert(distilled)
-                        if with_terminate_flag:
-                            return {
-                                "terminated": True,
-                                "result": converted if converted else distilled,
-                            }
-                        else:
-                            return converted if converted else distilled
+                        return (converted if converted else distilled, True)
 
                     if interactive:
                         distilled = await autofill(page, distilled)
@@ -606,10 +566,6 @@ async def run_distillation_loop(
                     location=location,
                     hostname=hostname,
                     iteration=iteration,
-                    brand_id=brand_id,
                 )
 
-        if with_terminate_flag:
-            return {"terminated": False, "result": current.distilled}
-        else:
-            return current.distilled
+        return (current.distilled, False)
