@@ -98,7 +98,7 @@ async def test_distillation_captures_screenshot_without_pattern(
 
     profile = BrowserProfile()
 
-    result = await run_distillation_loop(
+    result, _ = await run_distillation_loop(
         location="http://localhost:5001/random-info-page",
         patterns=patterns,
         browser_profile=profile,
