@@ -402,7 +402,7 @@ async def dpage_mcp_tool(
             return {result_key: None, "error": str(e)}
 
     # For callbacks, try with existing global session if available first
-    if callback is not None and global_browser_profile is not None:
+    if callback is not None and global_browser_profile is not None and page_id is not None:
         try:
             logger.info("Trying callback with existing global browser session...")
             session = BrowserSession.get(global_browser_profile)
@@ -411,6 +411,7 @@ async def dpage_mcp_tool(
             await page.goto(initial_url)
             result = await callback(page)
             logger.info("Callback succeeded with existing session!")
+            await page.close()
             return {result_key: result}
         except Exception as e:
             logger.info(f"Callback with existing session failed: {e}, proceeding with signin flow")

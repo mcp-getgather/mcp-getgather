@@ -14,7 +14,7 @@ goodreads_mcp = BrandMCPBase(brand_id="goodreads", name="Goodreads MCP")
 
 
 @goodreads_mcp.tool
-async def get_username() -> dict[str, Any]:
+async def get_url() -> dict[str, Any]:
     async def callback(page: Page) -> dict[str, Any]:
         await page.click("a:has-text('My Books')")
         return {"url": page.url}
