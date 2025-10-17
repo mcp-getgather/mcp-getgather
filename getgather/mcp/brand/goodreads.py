@@ -1,12 +1,11 @@
-import os
 from typing import Any
 
 from fastmcp import Context
+from patchright.async_api import Page
 
-from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.mcp.agent import run_agent_for_brand
+from getgather.mcp.dpage import dpage_mcp_tool
 from getgather.mcp.registry import BrandMCPBase
-from getgather.mcp.shared import get_mcp_browser_profile
 from getgather.mcp.stagehand_agent import (
     run_stagehand_agent,
 )
@@ -14,19 +13,26 @@ from getgather.mcp.stagehand_agent import (
 goodreads_mcp = BrandMCPBase(brand_id="goodreads", name="Goodreads MCP")
 
 
-@goodreads_mcp.tool(tags={"private"})
+@goodreads_mcp.tool
+async def get_username() -> dict[str, Any]:
+    async def callback(page: Page) -> dict[str, Any]:
+        await page.click("a:has-text('My Books')")
+        return {"url": page.url}
+
+    return await dpage_mcp_tool(
+        "https://www.goodreads.com/recommendations",
+        "url",
+        callback=callback,
+    )
+
+
+@goodreads_mcp.tool
 async def get_book_list() -> dict[str, Any]:
     """Get the book list from a user's Goodreads account."""
-
-    browser_profile = get_mcp_browser_profile()
-    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
-    patterns = load_distillation_patterns(path)
-    books, _ = await run_distillation_loop(
+    return await dpage_mcp_tool(
         "https://www.goodreads.com/review/list?ref=nav_mybooks&view=table",
-        patterns,
-        browser_profile=browser_profile,
+        "books",
     )
-    return {"books": books}
 
 
 @goodreads_mcp.tool(tags={"private"})
