@@ -19,7 +19,9 @@ amazon_mcp = BrandMCPBase(brand_id="amazon", name="Amazon MCP")
 
 
 @amazon_mcp.tool(tags={"private"})
-async def get_purchase_history(year: str | int | None = None) -> dict[str, Any]:
+async def get_purchase_history(
+    year: str | int | None = None, start_index: int = 0
+) -> dict[str, Any]:
     """Get purchase/order history of a amazon."""
 
     if year is None:
@@ -40,7 +42,7 @@ async def get_purchase_history(year: str | int | None = None) -> dict[str, Any]:
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
     purchases, _ = await run_distillation_loop(
-        f"https://www.amazon.com/your-orders/orders?timeFilter=year-{target_year}",
+        f"https://www.amazon.com/your-orders/orders?timeFilter=year-{target_year}&startIndex={start_index}",
         patterns,
         browser_profile=browser_profile,
     )
