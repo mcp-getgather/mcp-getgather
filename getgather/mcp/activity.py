@@ -5,7 +5,6 @@ from typing import AsyncGenerator
 
 from pydantic import BaseModel, Field, computed_field
 
-from getgather import rrweb
 from getgather.mcp.persist import PersistentStore
 
 
@@ -50,6 +49,5 @@ async def activity(name: str, brand_id: str = "") -> AsyncGenerator[str, None]:
     try:
         yield activity.id
     finally:
-        await rrweb.rrweb_manager.save_recording(activity.id)
         activity.end_time = datetime.now(UTC)
         activity_manager.update(activity)
