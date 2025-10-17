@@ -400,25 +400,22 @@ async def dpage_mcp_tool(
         except Exception as e:
             logger.error(f"Callback execution failed: {e}")
             return {result_key: None, "error": str(e)}
-        # For callbacks, first try with existing global session if available
+
+    # For callbacks, try with existing global session if available first
     if callback is not None and global_browser_profile is not None:
         try:
             logger.info("Trying callback with existing global browser session...")
             session = BrowserSession.get(global_browser_profile)
-            # Ensure session is started
             await session.start()
             page = await session.page()
             await page.goto(initial_url)
-
-            # Try the callback directly - if authentication is needed, it will be handled by run_distillation_loop
             result = await callback(page)
             logger.info("Callback succeeded with existing session!")
             return {result_key: result}
-
         except Exception as e:
             logger.info(f"Callback with existing session failed: {e}, proceeding with signin flow")
-            # Don't re-raise the exception, just continue to signin flow
-    # If no callback provided, try pattern-based distillation
+
+    # If no callback or callback failed, try pattern-based distillation
     path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
     distillation_result, terminated = await run_distillation_loop(
