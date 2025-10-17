@@ -1,5 +1,6 @@
 import asyncio
 import ipaddress
+import logging
 import os
 import urllib.parse
 from typing import Any
@@ -17,10 +18,12 @@ from getgather.config import settings
 from getgather.distill import (
     Match,
     autoclick,
+    capture_page_artifacts,
     convert,
     distill,
     get_selector,
     load_distillation_patterns,
+    report_distill_error,
     run_distillation_loop,
     terminate,
 )
@@ -54,11 +57,23 @@ async def dpage_add(
     session = await session.start()
     page = await session.context.new_page()
 
-    if location:
-        if not location.startswith("http"):
-            location = f"https://{location}"
-        await page.goto(location, timeout=300000)
-
+    try:
+        if location:
+            if not location.startswith("http"):
+                location = f"https://{location}"
+            await page.goto(location, timeout=300000)
+    except Exception as error:
+        hostname = (
+            urllib.parse.urlparse(location).hostname if location else "unknown"
+        ) or "unknown"
+        await report_distill_error(
+            error=error,
+            page=page,
+            profile_id=browser_profile.id,
+            location=location if location else "unknown",
+            hostname=hostname,
+            iteration=0,
+        )
     active_pages[id] = page
     return id
 
@@ -150,11 +165,15 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
 
     current = Match(name="", priority=-1, distilled="", matches=[])
 
+    if logger.isEnabledFor(logging.DEBUG):
+        await capture_page_artifacts(page, identifier=id, prefix="dpage_debug")
+
     for iteration in range(max):
         logger.debug(f"Iteration {iteration + 1} of {max}")
         await asyncio.sleep(TICK)
 
-        hostname = urllib.parse.urlparse(page.url).hostname
+        location = page.url
+        hostname = urllib.parse.urlparse(location).hostname
 
         match = await distill(hostname, page, patterns)
         if not match:
@@ -307,7 +326,17 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
             session = BrowserSession.get(global_browser_profile)
             session = await session.start()
             init_page = await session.new_page()  # never use old pages in global session due to really difficult race conditions with concurrent requests
-            await init_page.goto(initial_url)
+            try:
+                await init_page.goto(initial_url)
+            except Exception as e:
+                await report_distill_error(
+                    error=e,
+                    page=init_page,
+                    profile_id=global_browser_profile.id,
+                    location=initial_url,
+                    hostname=urllib.parse.urlparse(initial_url).hostname or "",
+                    iteration=0,
+                )
             await asyncio.sleep(1)
 
         browser_profile = global_browser_profile
