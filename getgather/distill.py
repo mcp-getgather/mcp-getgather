@@ -390,7 +390,7 @@ async def run_distillation_loop(
     profile = browser_profile or BrowserProfile()
 
     async with browser_session(profile, stop_ok=False) as session:
-        page = await session.page()
+        page = await session.new_page()
 
         logger.info(f"Starting browser {profile.id}")
         logger.info(f"Navigating to {location}")
