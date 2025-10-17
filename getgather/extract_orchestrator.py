@@ -64,7 +64,7 @@ class ExtractOrchestrator:
             self.browser_profile, nested=self.nested_browser_session
         ) as session:
             try:
-                page = await session.page()
+                page = await session.new_page()
                 logger.info(
                     f"🔥 Starting extraction for {self.brand_id}",
                     extra={"profile_id": self.browser_profile.id},

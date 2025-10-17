@@ -79,7 +79,7 @@ class SigninOrchestrator:
             if self.status == SigninStatus.INITIALIZING:
                 browser_session = await browser_session.start()
 
-            page = await browser_session.page()
+            page = await browser_session.new_page()
         except BrowserStartupError as e:
             sentry_sdk.capture_exception(e)
             raise

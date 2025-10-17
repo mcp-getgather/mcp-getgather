@@ -41,7 +41,7 @@ async def test_distill(location: str):
     patterns = load_distillation_patterns(path)
     assert patterns, "No patterns found to begin matching."
     async with browser_session(profile) as session:
-        page = await session.page()
+        page = await session.new_page()
         hostname = urllib.parse.urlparse(location).hostname
         await page.goto(location)
 

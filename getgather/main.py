@@ -184,7 +184,7 @@ async def extended_health():
     session = BrowserSession.get(BrowserProfile())
     try:
         session = await session.start()
-        page = await session.page()
+        page = await session.new_page()
         await page.goto(IP_CHECK_URL, timeout=3000)
         ip_text: str = await page.evaluate("() => document.body.innerText.trim()")
     except Exception as e:

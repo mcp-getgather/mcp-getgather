@@ -184,7 +184,7 @@ async def get_purchase_history() -> dict[str, Any]:
 async def search_product(keyword: str) -> dict[str, Any]:
     """Search product on astro."""
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
 
     # URL encode the search keyword
     encoded_keyword = quote(keyword)
@@ -228,7 +228,7 @@ async def search_product(keyword: str) -> dict[str, Any]:
 async def get_product_details(product_url: str) -> dict[str, Any]:
     """Get product detail from astro. Get product_url from search_product tool."""
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
 
     # Ensure the product URL is a full URL
     if product_url.startswith("/p/"):
@@ -277,7 +277,7 @@ async def get_product_details(product_url: str) -> dict[str, Any]:
 async def add_item_to_cart(product_url: str, quantity: int = 1) -> dict[str, Any]:
     """Add item to cart on astro (add new item or update existing quantity). Get product_url from search_product tool."""
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
 
     # Ensure the product URL is a full URL
     if product_url.startswith("/p/"):
@@ -347,7 +347,7 @@ async def add_item_to_cart(product_url: str, quantity: int = 1) -> dict[str, Any
 async def update_cart_quantity(product_name: str, quantity: int) -> dict[str, Any]:
     """Update cart item quantity on astro (set quantity to 0 to remove item). Use product name from cart summary."""
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
 
     await page.goto("https://www.astronauts.id/cart", wait_until="commit")
     await page.wait_for_selector("main.MuiBox-root")
@@ -401,7 +401,7 @@ async def update_cart_quantity(product_name: str, quantity: int) -> dict[str, An
 async def get_cart_summary() -> dict[str, Any]:
     """Get cart summary from astro."""
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
 
     await page.goto("https://www.astronauts.id/cart", wait_until="commit")
     await page.wait_for_selector("main.MuiBox-root")

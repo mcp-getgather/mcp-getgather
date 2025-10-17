@@ -52,7 +52,7 @@ async def get_purchase_history(year: str | int | None = None) -> dict[str, Any]:
 async def search_product(keyword: str) -> dict[str, Any]:
     """Search product on amazon."""
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
     await page.goto(f"https://www.amazon.com/s?k={keyword}", wait_until="commit")
     await page.wait_for_selector("div[data-component-type='s-search-result']")
 
@@ -88,7 +88,7 @@ async def search_product(keyword: str) -> dict[str, Any]:
 async def get_product_detail(ctx: Context, product_url: str) -> dict[str, Any]:
     """Get product detail from amazon."""
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
     if not product_url.startswith("https"):
         product_url = f"https://www.amazon.com/{product_url}"
     await page.goto(product_url)
@@ -147,7 +147,7 @@ async def get_cart_summary() -> dict[str, Any]:
 async def get_browsing_history() -> dict[str, Any]:
     """Get browsing history from amazon."""
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
     await page.goto("https://www.amazon.com/gp/history?ref_=nav_AccountFlyout_browsinghistory")
     await page.wait_for_timeout(1000)
     await page.wait_for_selector("div[class*='desktop-grid']")
@@ -160,7 +160,7 @@ async def get_browsing_history() -> dict[str, Any]:
 async def search_purchase_history(keyword: str) -> dict[str, Any]:
     """Search purchase history of a amazon."""
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
     await page.goto(
         f"https://www.amazon.com/your-orders/search/ref=ppx_yo2ov_dt_b_search?opt=ab&search={keyword}"
     )

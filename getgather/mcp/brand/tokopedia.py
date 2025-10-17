@@ -82,7 +82,7 @@ async def search_product(
 async def get_product_details(product_url: str) -> dict[str, Any]:
     """Get product details from tokopedia. Get product_url from search_product tool."""
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
     await page.goto(product_url, wait_until="commit")
     await page.wait_for_selector("h1[data-testid='lblPDPDetailProductName']")
     await page.wait_for_timeout(2000)
@@ -128,7 +128,7 @@ async def get_product_details(product_url: str) -> dict[str, Any]:
 async def search_shop(keyword: str) -> dict[str, Any]:
     """Search shop on tokopedia."""
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
 
     # URL encode the search keyword
     encoded_keyword = quote(keyword)
@@ -230,7 +230,7 @@ async def get_shop_details(
         return {"error": "Could not determine valid shop URL"}
 
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
     await page.goto(target_url, wait_until="commit")
     await page.wait_for_selector("h1[data-testid='shopNameHeader']")
     await page.wait_for_timeout(2000)
@@ -261,7 +261,7 @@ async def get_purchase_history(
     """Get purchase history of a tokopedia."""
 
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
     await page.goto(f"https://www.tokopedia.com/order-list?page={page_number}")
     raw_data = await handle_graphql_response(
         page,
@@ -307,7 +307,7 @@ async def get_purchase_history(
 async def get_cart() -> dict[str, Any]:
     """Get cart of a tokopedia."""
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
     await page.goto(f"https://www.tokopedia.com/cart")
     raw_data = await handle_graphql_response(
         page,
@@ -354,7 +354,7 @@ async def get_cart() -> dict[str, Any]:
 async def get_wishlist(page_number: int = 1) -> dict[str, Any]:
     """Get purchase history of a tokopedia."""
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
     await page.goto(f"https://www.tokopedia.com/wishlist/all?page={page_number}")
     raw_data = await handle_graphql_response(
         page,
@@ -395,7 +395,7 @@ async def add_to_cart(
     browser_session = get_mcp_browser_session()
 
     async def search_single_product(product_url: str):
-        page = await browser_session.page()
+        page = await browser_session.new_page()
         await page.goto(product_url, wait_until="commit")
         await page.wait_for_selector("h1[data-testid='lblPDPDetailProductName']")
         await page.wait_for_timeout(2000)
@@ -448,7 +448,7 @@ async def action_product_in_cart(
         else:
             selector = f"div[data-testid='productInfoAvailable-{product_id}'] svg[data-testid='CartcartBtnDeleteListShopProductBox']"
 
-        page = await browser_session.page()
+        page = await browser_session.new_page()
         await page.goto(f"https://www.tokopedia.com/cart")
         await page.wait_for_timeout(1000)
         await page.wait_for_selector(selector)

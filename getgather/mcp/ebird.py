@@ -27,7 +27,7 @@ async def get_life_list() -> dict[str, Any]:
 async def get_explore_species_list(keyword: str) -> dict[str, Any]:
     """Get species list from ebird to be explored."""
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
 
     await page.goto("https://ebird.org/explore")
     await page.wait_for_timeout(1000)
@@ -55,7 +55,7 @@ async def get_explore_species_list(keyword: str) -> dict[str, Any]:
 async def explore_species(sci_name: str) -> dict[str, Any]:
     """Explore species on Ebird from get_explore_species_list."""
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
 
     # Navigate to explore and search for the species by scientific name
     await page.goto("https://ebird.org/explore")
@@ -91,7 +91,7 @@ async def submit_checklist(
 ):
     """Submit checklist to ebird."""
     session = get_mcp_browser_session()
-    page = await session.page()
+    page = await session.new_page()
     await page.goto("https://ebird.org/submit")
     await page.wait_for_selector("select#myLocSel")
     await page.wait_for_timeout(1000)

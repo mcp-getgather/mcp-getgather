@@ -32,7 +32,7 @@ async def get_purchase_history() -> dict[str, Any]:
 async def search_product(keyword: str, page_number: int = 1) -> dict[str, Any]:
     """Search product on shopee."""
     browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
+    page = await browser_session.new_page()
 
     # URL encode the search keyword
     encoded_keyword = quote(keyword)

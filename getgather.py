@@ -38,7 +38,7 @@ async def distill_command(location: str, option: str | None = None):
 
     profile = BrowserProfile()
     async with browser_session(profile) as session:
-        page = await session.page()
+        page = await session.new_page()
 
         if location.startswith("http"):
             hostname = urllib.parse.urlparse(location).hostname
@@ -72,7 +72,7 @@ async def run_command(location: str):
 async def inspect_command(id: str, option: str | None = None):
     profile = BrowserProfile(id=id)
     async with browser_session(profile) as session:
-        page = await session.page()
+        page = await session.new_page()
 
         if option and len(option) > 0:
             url = option if option.startswith("http") else f"https://{option}"

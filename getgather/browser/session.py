@@ -63,13 +63,6 @@ class BrowserSession:
         logger.info(f"Creating new page in context with profile {self.profile.id}")
         return await self.context.new_page()
 
-    async def page(self) -> Page:
-        # TODO: It's okay for now to return the last page. We may want to track all pages in the future.
-        if self.context.pages and len(self.context.pages) > 0:
-            logger.info(f"Returning existing page in context with profile {self.profile.id}")
-            return self.context.pages[-1]
-        return await self.new_page()
-
     async def start(self) -> BrowserSession:
         if self.profile.id in BrowserSession._sessions:
             # Session already started
@@ -92,7 +85,7 @@ class BrowserSession:
 
                 await configure_context(self._context)
 
-                debug_page = await self.page()
+                debug_page = await self.new_page()
                 await debug_page.goto("https://ifconfig.me")
 
                 # Intentionally create a new page to apply resources filtering (from blocklists)
