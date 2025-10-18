@@ -503,7 +503,7 @@ async def run_distillation_loop(
         logger.info(f"Starting browser {profile.id}")
         logger.info(f"Navigating to {location}")
         try:
-            await page.goto(location)
+            await page.goto(location, timeout=settings.BROWSER_TIMEOUT)
         except Exception as error:
             logger.error(f"Failed to navigate to {location}: {error}")
             await report_distill_error(

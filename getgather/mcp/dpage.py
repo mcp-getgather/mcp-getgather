@@ -61,7 +61,7 @@ async def dpage_add(
         if location:
             if not location.startswith("http"):
                 location = f"https://{location}"
-            await page.goto(location, timeout=300000)
+            await page.goto(location, timeout=settings.BROWSER_TIMEOUT)
     except Exception as error:
         hostname = (
             urllib.parse.urlparse(location).hostname if location else "unknown"
