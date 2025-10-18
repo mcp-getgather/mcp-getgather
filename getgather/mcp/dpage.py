@@ -80,7 +80,7 @@ async def dpage_add(
 
 async def dpage_close(id: str) -> None:
     if id in active_pages:
-        # await active_pages[id].close()
+        await active_pages[id].close()
         del active_pages[id]
 
 
