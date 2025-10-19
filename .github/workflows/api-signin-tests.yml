@@ -10,7 +10,7 @@ jobs:
   api-signin-tests:
     name: API Signin Tests
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
