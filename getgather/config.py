@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "getgather-local"
     LOG_LEVEL: str = "INFO"
     GIT_REV: str = ""
+    LOGFIRE_TOKEN: str = ""
 
     DATA_DIR: str = ""
 
