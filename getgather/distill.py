@@ -546,6 +546,7 @@ async def run_distillation_loop(
 
                     if await terminate(page, distilled):
                         converted = await convert(distilled)
+                        await page.close()
                         return (converted if converted else distilled, True)
 
                     if interactive:
@@ -568,4 +569,5 @@ async def run_distillation_loop(
                     iteration=iteration,
                 )
 
+        await page.close()
         return (current.distilled, False)
