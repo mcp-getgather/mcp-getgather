@@ -213,15 +213,16 @@ for mcp_app in mcp_apps:
 
 
 @app.middleware("http")
-async def mcp_slash_redirect_middleware(
+async def mcp_slash_middleware(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ):
-    # redirect /mcp* to /mcp*/
+    """Make /mcp* and /mcp*/ behave the same without actual redirect."""
     path = request.url.path
     if path.startswith("/mcp") and not path.endswith("/"):
-        return RedirectResponse(url=f"{path}/", status_code=307)
-    else:
-        return await call_next(request)
+        request.scope["path"] = f"{path}/"
+        if request.scope.get("raw_path"):
+            request.scope["raw_path"] = f"{path}/".encode()
+    return await call_next(request)
 
 
 # Everything else is handled by the SPA
