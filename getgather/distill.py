@@ -423,6 +423,9 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
             if not isinstance(target, Tag):
                 continue
 
+            if not found:
+                break
+
             html = target.get("gg-match-html")
             selector, frame_selector = get_selector(str(html if html else target.get("gg-match")))
 
