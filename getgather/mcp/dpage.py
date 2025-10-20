@@ -348,6 +348,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
             browser_profile=browser_profile,
             interactive=False,
             timeout=timeout,
+            stop_ok=False,  # Keep global session alive
         )
         if terminated:
             return {result_key: distillation_result}

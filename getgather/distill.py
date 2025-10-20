@@ -487,6 +487,7 @@ async def run_distillation_loop(
     browser_profile: BrowserProfile | None = None,
     timeout: int = 15,
     interactive: bool = True,
+    stop_ok: bool = False,
 ) -> tuple[dict[str, str | ConversionResult | None] | str | ConversionResult, bool]:
     if len(patterns) == 0:
         logger.error("No distillation patterns provided")
@@ -497,7 +498,7 @@ async def run_distillation_loop(
     # Use provided profile or create new one
     profile = browser_profile or BrowserProfile()
 
-    async with browser_session(profile, stop_ok=False) as session:
+    async with browser_session(profile, stop_ok=stop_ok) as session:
         page = await session.new_page()
 
         logger.info(f"Starting browser {profile.id}")

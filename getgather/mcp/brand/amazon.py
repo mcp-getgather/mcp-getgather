@@ -45,6 +45,7 @@ async def get_purchase_history(
         f"https://www.amazon.com/your-orders/orders?timeFilter=year-{target_year}&startIndex={start_index}",
         patterns,
         browser_profile=browser_profile,
+        stop_ok=True,
     )
     return {"purchases": purchases}
 
