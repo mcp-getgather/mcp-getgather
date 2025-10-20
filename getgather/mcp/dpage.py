@@ -163,7 +163,7 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
     TIMEOUT = 15  # seconds
     max = TIMEOUT // TICK
 
-    current = Match(name="", priority=-1, distilled="", matches=[])
+    current = Match(name="", priority=-1, distilled="")
 
     if logger.isEnabledFor(logging.DEBUG):
         await capture_page_artifacts(page, identifier=id, prefix="dpage_debug")
