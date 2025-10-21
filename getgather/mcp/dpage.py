@@ -34,6 +34,7 @@ router = APIRouter(prefix="/dpage", tags=["dpage"])
 
 
 active_pages: dict[str, Page] = {}
+browser_profiles: dict[str, BrowserProfile] = {}
 distillation_results: dict[str, str | list[dict[str, str | list[str]]]] = {}
 global_browser_profile: BrowserProfile | None = None
 
@@ -315,9 +316,16 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
     headers = get_http_headers(include_all=True)
     incognito = headers.get("x-incognito", "0") == "1"
+    signin_id = headers.get("x-signin-id") or None
 
     if incognito:
-        browser_profile = BrowserProfile()
+        if signin_id is not None:
+            if signin_id in browser_profiles:
+                browser_profile = browser_profiles[signin_id]
+            else:
+                raise ValueError(f"Browser profile for signin {signin_id} not found")
+        else:
+            browser_profile = BrowserProfile()
     else:
         global global_browser_profile
         if global_browser_profile is None:
@@ -341,6 +349,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
         browser_profile = global_browser_profile
 
+    if not incognito or signin_id is not None:
         # First, try without any interaction as this will work if the user signed in previously
         distillation_result, terminated = await run_distillation_loop(
             initial_url,
@@ -355,6 +364,9 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
     # If that didn't work, try signing in via distillation
     id = await dpage_add(browser_profile=browser_profile, location=initial_url)
+
+    if incognito:
+        browser_profiles[id] = browser_profile
 
     host = headers.get("x-forwarded-host") or headers.get("host")
     if host is None:
