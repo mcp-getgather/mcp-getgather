@@ -315,9 +315,14 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
     headers = get_http_headers(include_all=True)
     incognito = headers.get("x-incognito", "0") == "1"
+    browser_profile_id = headers.get("x-browser-profile-id") or None
 
     if incognito:
-        browser_profile = BrowserProfile()
+        if browser_profile_id is not None:
+            logger.info(f"Using existing browser profile {browser_profile_id} for incognito mode")
+            browser_profile = BrowserProfile(id=browser_profile_id)
+        else:
+            browser_profile = BrowserProfile()
     else:
         global global_browser_profile
         if global_browser_profile is None:
@@ -367,7 +372,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
     url = f"{base_url}/dpage/{id}"
     logger.info(f"Continue with the sign in at {url}", extra={"url": url, "id": id})
-    return {
+    result = {
         "url": url,
         "message": f"Continue to sign in in your browser at {url}.",
         "signin_id": id,
@@ -378,3 +383,8 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
             "Once it is completed successfully, then call this tool again to proceed with the action."
         ),
     }
+
+    if incognito:
+        result["browser_profile_id"] = browser_profile.id
+
+    return result
