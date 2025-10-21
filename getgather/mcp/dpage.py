@@ -1,5 +1,6 @@
 import asyncio
 import ipaddress
+import logging
 import os
 import urllib.parse
 from typing import Any
@@ -17,10 +18,12 @@ from getgather.config import settings
 from getgather.distill import (
     Match,
     autoclick,
+    capture_page_artifacts,
     convert,
     distill,
     get_selector,
     load_distillation_patterns,
+    report_distill_error,
     run_distillation_loop,
     terminate,
 )
@@ -49,23 +52,35 @@ async def dpage_add(
     if browser_profile is None:
         browser_profile = BrowserProfile()
 
-    session = BrowserSession(browser_profile.id)
+    session = BrowserSession.get(browser_profile)
 
-    await session.start()
+    session = await session.start()
     page = await session.context.new_page()
 
-    if location:
-        if not location.startswith("http"):
-            location = f"https://{location}"
-        await page.goto(location, timeout=300000)
-
+    try:
+        if location:
+            if not location.startswith("http"):
+                location = f"https://{location}"
+            await page.goto(location, timeout=300000)
+    except Exception as error:
+        hostname = (
+            urllib.parse.urlparse(location).hostname if location else "unknown"
+        ) or "unknown"
+        await report_distill_error(
+            error=error,
+            page=page,
+            profile_id=browser_profile.id,
+            location=location if location else "unknown",
+            hostname=hostname,
+            iteration=0,
+        )
     active_pages[id] = page
     return id
 
 
 async def dpage_close(id: str) -> None:
     if id in active_pages:
-        # await active_pages[id].close()
+        await active_pages[id].close()
         del active_pages[id]
 
 
@@ -148,13 +163,17 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
     TIMEOUT = 15  # seconds
     max = TIMEOUT // TICK
 
-    current = Match(name="", priority=-1, distilled="", matches=[])
+    current = Match(name="", priority=-1, distilled="")
+
+    if logger.isEnabledFor(logging.DEBUG):
+        await capture_page_artifacts(page, identifier=id, prefix="dpage_debug")
 
     for iteration in range(max):
         logger.debug(f"Iteration {iteration + 1} of {max}")
         await asyncio.sleep(TICK)
 
-        hostname = urllib.parse.urlparse(page.url).hostname
+        location = page.url
+        hostname = urllib.parse.urlparse(location).hostname
 
         match = await distill(hostname, page, patterns)
         if not match:
@@ -291,7 +310,6 @@ def is_local_address(host: str) -> bool:
 
 async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) -> dict[str, Any]:
     """Generic MCP tool based on distillation"""
-
     path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
 
@@ -305,25 +323,35 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
         if global_browser_profile is None:
             logger.info(f"Creating global browser profile...")
             global_browser_profile = BrowserProfile()
-            session = BrowserSession(global_browser_profile.id)
-            await session.start()
-            init_page = await session.page()
-            await init_page.goto(initial_url)
+            session = BrowserSession.get(global_browser_profile)
+            session = await session.start()
+            init_page = await session.new_page()  # never use old pages in global session due to really difficult race conditions with concurrent requests
+            try:
+                await init_page.goto(initial_url)
+            except Exception as e:
+                await report_distill_error(
+                    error=e,
+                    page=init_page,
+                    profile_id=global_browser_profile.id,
+                    location=initial_url,
+                    hostname=urllib.parse.urlparse(initial_url).hostname or "",
+                    iteration=0,
+                )
             await asyncio.sleep(1)
 
         browser_profile = global_browser_profile
 
-    # First, try without any interaction as this will work if the user signed in previously
-    distillation_result = await run_distillation_loop(
-        initial_url,
-        patterns,
-        browser_profile=browser_profile,
-        interactive=False,
-        timeout=timeout,
-        with_terminate_flag=True,
-    )
-    if isinstance(distillation_result, dict) and distillation_result["terminated"]:
-        return {result_key: distillation_result["result"]}
+        # First, try without any interaction as this will work if the user signed in previously
+        distillation_result, terminated = await run_distillation_loop(
+            initial_url,
+            patterns,
+            browser_profile=browser_profile,
+            interactive=False,
+            timeout=timeout,
+            stop_ok=False,  # Keep global session alive
+        )
+        if terminated:
+            return {result_key: distillation_result}
 
     # If that didn't work, try signing in via distillation
     id = await dpage_add(browser_profile=browser_profile, location=initial_url)

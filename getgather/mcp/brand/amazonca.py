@@ -26,7 +26,7 @@ async def get_purchase_history() -> dict[str, Any]:
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
     current_year = datetime.now().year
-    purchases = await run_distillation_loop(
+    purchases, _ = await run_distillation_loop(
         f"https://www.amazon.ca/your-orders/orders?timeFilter=year-{current_year}",
         patterns,
         browser_profile=browser_profile,

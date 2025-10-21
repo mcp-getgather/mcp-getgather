@@ -73,7 +73,7 @@ async def signin_flow(
             browser_profile = BrowserProfile()
 
         browser_session = BrowserSession.get(browser_profile)
-        await browser_session.start()
+        browser_session = await browser_session.start()
         signin_orchestrator = SigninOrchestrator(
             brand_id=brand_id,
             browser_profile=browser_profile,
