@@ -11,8 +11,22 @@ concurrency:
 
 jobs:
   deploy:
+    name: Deploy (${{ matrix.server }})
     runs-on: ubuntu-22.04
     timeout-minutes: 10
+    strategy:
+      matrix:
+        include:
+          - server: production
+            git_remote_url_secret: DOKKU_GIT_REMOTE_URL_PRODUCTION
+            ssh_host_key_secret: DOKKU_SSH_HOST_KEY_PRODUCTION
+            ssh_private_key_secret: DOKKU_SSH_PRIVATE_KEY_PRODUCTION
+            tailscale_app_url_secret: TAILSCALE_APP_URL_PRODUCTION
+          - server: all
+            git_remote_url_secret: DOKKU_GIT_REMOTE_URL_ALL
+            ssh_host_key_secret: DOKKU_SSH_HOST_KEY_ALL
+            ssh_private_key_secret: DOKKU_SSH_PRIVATE_KEY_ALL
+            tailscale_app_url_secret: TAILSCALE_APP_URL_ALL
 
     steps:
       - name: Check out source repository
@@ -36,8 +50,10 @@ jobs:
 
       - name: Check the reachability of the app server
         env:
-          APP_URL: ${{ secrets.TAILSCALE_APP_URL }}
-        run: curl -s "${APP_URL}/health"
+          APP_URL: ${{ secrets[matrix.tailscale_app_url_secret] }}
+        run: |
+          echo "Target: ${{ matrix.server }}"
+          curl -s "${APP_URL}/health"
         continue-on-error: true
 
       - name: Deploy to GCE via dokku
@@ -46,16 +62,17 @@ jobs:
           trace: 1
           branch: main
           git_push_flags: --force
-          git_remote_url: ${{ secrets.DOKKU_GIT_REMOTE_URL }}
-          ssh_host_key: ${{ secrets.DOKKU_SSH_HOST_KEY }}
-          ssh_private_key: ${{ secrets.DOKKU_SSH_PRIVATE_KEY }}
+          git_remote_url: ${{ secrets[matrix.git_remote_url_secret] }}
+          ssh_host_key: ${{ secrets[matrix.ssh_host_key_secret] }}
+          ssh_private_key: ${{ secrets[matrix.ssh_private_key_secret] }}
 
       - name: Verify deployment via health endpoint
         env:
-          APP_URL: ${{ secrets.TAILSCALE_APP_URL }}
+          APP_URL: ${{ secrets[matrix.tailscale_app_url_secret] }}
 
         run: |-
           LOCAL_COMMIT=$(git rev-parse HEAD)
+          echo "Target: ${{ matrix.server }}"
           echo "Local commit: $LOCAL_COMMIT"
           echo "App URL: $APP_URL"
 
