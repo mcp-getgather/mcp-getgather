@@ -35,7 +35,6 @@ class Match(BaseModel):
     name: str
     priority: int
     distilled: str
-    matches: list[Locator]
 
     class Config:
         arbitrary_types_allowed = True
@@ -414,7 +413,8 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
         logger.debug(f"Checking {name} with priority {priority}")
 
         found = True
-        matches: list[Locator] = []
+        match_count = 0
+
         targets = pattern.find_all(attrs={"gg-match": True}) + pattern.find_all(
             attrs={"gg-match-html": True}
         )
@@ -438,6 +438,7 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
                 source = await locate(page.locator(selector))
 
             if source:
+                match_count += 1
                 if html:
                     target.clear()
                     fragment = BeautifulSoup(
@@ -451,21 +452,19 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
                     raw_text = await source.text_content()
                     if raw_text:
                         target.string = raw_text.strip()
-                matches.append(source)
             else:
                 optional = target.get("gg-optional") is not None
                 logger.debug(f"Optional {selector} has no match")
                 if not optional:
                     found = False
 
-        if found and len(matches) > 0:
+        if found and match_count > 0:
             distilled = str(pattern)
             result.append(
                 Match(
                     name=name,
                     priority=priority,
                     distilled=distilled,
-                    matches=matches,
                 )
             )
 
@@ -530,7 +529,7 @@ async def run_distillation_loop(
         TICK = 1  # seconds
         max = timeout // TICK
 
-        current = Match(name="", priority=-1, distilled="", matches=[])
+        current = Match(name="", priority=-1, distilled="")
 
         for iteration in range(max):
             logger.info("")
