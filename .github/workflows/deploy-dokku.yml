@@ -14,19 +14,15 @@ jobs:
     name: Deploy (${{ matrix.server }})
     runs-on: ubuntu-22.04
     timeout-minutes: 10
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
     strategy:
       matrix:
         include:
           - server: production
-            git_remote_url_secret: DOKKU_GIT_REMOTE_URL_PRODUCTION
-            ssh_host_key_secret: DOKKU_SSH_HOST_KEY_PRODUCTION
-            ssh_private_key_secret: DOKKU_SSH_PRIVATE_KEY_PRODUCTION
-            tailscale_app_url_secret: TAILSCALE_APP_URL_PRODUCTION
+            secret_suffix: production
           - server: all
-            git_remote_url_secret: DOKKU_GIT_REMOTE_URL_ALL
-            ssh_host_key_secret: DOKKU_SSH_HOST_KEY_ALL
-            ssh_private_key_secret: DOKKU_SSH_PRIVATE_KEY_ALL
-            tailscale_app_url_secret: TAILSCALE_APP_URL_ALL
+            secret_suffix: all
 
     steps:
       - name: Check out source repository
@@ -48,9 +44,24 @@ jobs:
       - name: Show Tailnet IP address
         run: tailscale ip
 
+      - name: Configure Google Cloud
+        uses: ./.github/actions/gcp-setup
+        with:
+          credentials_json: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
+
+      - id: fetch_secrets
+        name: Fetch deployment secrets
+        uses: google-github-actions/get-secretmanager-secrets@v3
+        with:
+          secrets: |-
+            DOKKU_GIT_REMOTE_URL:projects/${{ env.GCP_PROJECT_ID }}/secrets/dokku-git-remote-url-${{ matrix.secret_suffix }}/versions/latest
+            DOKKU_SSH_HOST_KEY:projects/${{ env.GCP_PROJECT_ID }}/secrets/dokku-ssh-host-key-${{ matrix.secret_suffix }}/versions/latest
+            DOKKU_SSH_PRIVATE_KEY:projects/${{ env.GCP_PROJECT_ID }}/secrets/dokku-ssh-private-key-${{ matrix.secret_suffix }}/versions/latest
+            TAILSCALE_APP_URL:projects/${{ env.GCP_PROJECT_ID }}/secrets/tailscale-app-url-${{ matrix.secret_suffix }}/versions/latest
+
       - name: Check the reachability of the app server
         env:
-          APP_URL: ${{ secrets[matrix.tailscale_app_url_secret] }}
+          APP_URL: ${{ steps.fetch_secrets.outputs.TAILSCALE_APP_URL }}
         run: |
           echo "Target: ${{ matrix.server }}"
           curl -s "${APP_URL}/health"
@@ -62,13 +73,13 @@ jobs:
           trace: 1
           branch: main
           git_push_flags: --force
-          git_remote_url: ${{ secrets[matrix.git_remote_url_secret] }}
-          ssh_host_key: ${{ secrets[matrix.ssh_host_key_secret] }}
-          ssh_private_key: ${{ secrets[matrix.ssh_private_key_secret] }}
+          git_remote_url: ${{ steps.fetch_secrets.outputs.DOKKU_GIT_REMOTE_URL }}
+          ssh_host_key: ${{ steps.fetch_secrets.outputs.DOKKU_SSH_HOST_KEY }}
+          ssh_private_key: ${{ steps.fetch_secrets.outputs.DOKKU_SSH_PRIVATE_KEY }}
 
       - name: Verify deployment via health endpoint
         env:
-          APP_URL: ${{ secrets[matrix.tailscale_app_url_secret] }}
+          APP_URL: ${{ steps.fetch_secrets.outputs.TAILSCALE_APP_URL }}
 
         run: |-
           LOCAL_COMMIT=$(git rev-parse HEAD)
