@@ -563,14 +563,14 @@ async def run_distillation_loop(
 
             else:
                 logger.debug(f"No matched pattern found")
-                await report_distill_error(
-                    error=ValueError("No matched pattern found"),
-                    page=page,
-                    profile_id=profile.id,
-                    location=location,
-                    hostname=hostname,
-                    iteration=iteration,
-                )
 
+        await report_distill_error(
+            error=ValueError("No matched pattern found"),
+            page=page,
+            profile_id=profile.id,
+            location=location,
+            hostname=hostname,
+            iteration=max,
+        )
         await page.close()
         return (current.distilled, False)
