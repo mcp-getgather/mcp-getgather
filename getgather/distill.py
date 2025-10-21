@@ -8,6 +8,7 @@ from datetime import datetime
 from glob import glob
 from pathlib import Path
 from typing import Any, cast
+from urllib.parse import urlparse, urlunparse
 
 import pwinput
 import sentry_sdk
@@ -18,7 +19,7 @@ from patchright.async_api import Locator, Page
 from pydantic import BaseModel
 
 from getgather.browser.profile import BrowserProfile
-from getgather.browser.session import browser_session
+from getgather.browser.session import BrowserSession, browser_session
 from getgather.config import settings
 from getgather.logs import logger
 
@@ -574,3 +575,41 @@ async def run_distillation_loop(
         )
         await page.close()
         return (current.distilled, False)
+
+
+async def short_lived_mcp_tool(
+    location: str,
+    pattern_wildcard: str,
+    result_key: str,
+    url_hostname: str,
+) -> tuple[bool, dict[str, Any]]:
+    path = os.path.join(os.path.dirname(__file__), "mcp", "patterns", pattern_wildcard)
+    patterns = load_distillation_patterns(path)
+
+    browser_profile = BrowserProfile()
+    session = BrowserSession.get(browser_profile)
+    session = await session.start()
+    distilled, terminated = await run_distillation_loop(
+        location, patterns, browser_profile, interactive=False
+    )
+    await session.context.close()
+
+    result: dict[str, Any] = {result_key: distilled}
+    if result_key in result:
+        items_value = result[result_key]
+        if isinstance(items_value, list):
+            for item in cast(list[dict[str, Any]], items_value):
+                if "link" in item:
+                    link = cast(str, item["link"])
+                    parsed = urlparse(link)
+                    netloc: str = parsed.netloc if parsed.netloc else url_hostname
+                    url: str = urlunparse((
+                        "https",
+                        netloc,
+                        parsed.path,
+                        parsed.params,
+                        parsed.query,
+                        parsed.fragment,
+                    ))
+                    item["url"] = url
+    return terminated, result
