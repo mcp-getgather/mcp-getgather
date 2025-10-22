@@ -432,35 +432,9 @@ async def dpage_callback_tool(
     """
     headers = get_http_headers(include_all=True)
     incognito = headers.get("x-incognito", "0") == "1"
-    path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
-    patterns = load_distillation_patterns(path)
+    global global_browser_profile
 
-    if incognito:
-        browser_profile = BrowserProfile()
-    else:
-        global global_browser_profile
-        if global_browser_profile is None:
-            logger.info(f"Creating global browser profile for callback tool...")
-            global_browser_profile = BrowserProfile()
-            session = BrowserSession.get(global_browser_profile)
-            session = await session.start()
-            init_page = await session.new_page()
-            try:
-                await init_page.goto(initial_url)
-            except Exception as e:
-                await report_distill_error(
-                    error=e,
-                    page=init_page,
-                    profile_id=global_browser_profile.id,
-                    location=initial_url,
-                    hostname=urllib.parse.urlparse(initial_url).hostname or "",
-                    iteration=0,
-                )
-            await asyncio.sleep(1)
-
-        browser_profile = global_browser_profile
-
-    # Step 1: If resuming after signin completion, use the active page
+    # Step 1: If resuming after signin completion, use the active page directly
     if signin_completed and page_id is not None and page_id in active_pages:
         logger.info(f"Resuming callback after signin with page_id={page_id}")
         page = active_pages[page_id]
@@ -468,34 +442,32 @@ async def dpage_callback_tool(
         result = await callback(page)
         return {result_key: result}
 
-    # Step 2: If global_browser_profile exists, user signed in before - try callback with existing session
-    if global_browser_profile is not None:
+    # Step 2: If global_browser_profile exists, try executing callback directly
+    # This will work if user signed in previously and session is still valid
+    if global_browser_profile is not None and not incognito:
         try:
-            logger.info("Attempting callback with existing global browser session...")
+            logger.info("Trying callback with existing global browser session...")
             session = BrowserSession.get(global_browser_profile)
             await session.start()
             page = await session.page()
             await page.goto(initial_url)
             result = await callback(page)
-            logger.info("Callback executed successfully with existing session!")
+            logger.info("Callback succeeded with existing session!")
             await page.close()
             return {result_key: result}
         except Exception as e:
-            logger.info(f"Callback with existing session failed: {e}, trying distillation loop")
+            logger.info(f"Callback failed with existing session (likely not signed in): {e}")
 
-    # Step 3: Try distillation loop (may work if signin not needed or can auto-signin)
-    distillation_result, terminated = await run_distillation_loop(
-        initial_url,
-        patterns,
-        browser_profile=browser_profile,
-        interactive=False,
-        timeout=timeout,
-        stop_ok=False,  # Keep global session alive
-    )
-    if terminated:
-        return {result_key: distillation_result}
+    # Step 3: User not signed in - create interactive signin flow with callback
+    # Create or get browser profile for signin flow
+    if incognito:
+        browser_profile = BrowserProfile()
+    else:
+        if global_browser_profile is None:
+            logger.info("Creating global browser profile for signin flow...")
+            global_browser_profile = BrowserProfile()
+        browser_profile = global_browser_profile
 
-    # Step 4: User never signed in - create interactive signin flow with callback
     id = await dpage_add(browser_profile=browser_profile, location=initial_url)
 
     # Store callback for auto-resumption after signin
