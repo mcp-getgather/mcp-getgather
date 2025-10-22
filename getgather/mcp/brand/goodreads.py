@@ -4,7 +4,7 @@ from fastmcp import Context
 from patchright.async_api import Page
 
 from getgather.mcp.agent import run_agent_for_brand
-from getgather.mcp.dpage import dpage_with_action, dpage_mcp_tool
+from getgather.mcp.dpage import dpage_mcp_tool, dpage_with_action
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.stagehand_agent import (
     run_stagehand_agent,
