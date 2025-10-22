@@ -205,13 +205,13 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                 callback_info = pending_callbacks[id]
                 logger.info(f"Signin completed for {id}, resuming callback...")
 
-                callback_result = await dpage_mcp_tool(
+                callback_result = await dpage_callback_tool(
                     initial_url=callback_info["initial_url"],
                     result_key=callback_info["result_key"],
-                    timeout=callback_info["timeout"],
                     callback=callback_info["callback"],
+                    timeout=callback_info["timeout"],
                     signin_completed=True,
-                    page_id=callback_info["page_id"],
+                    page_id=id,
                 )
 
                 if callback_info["result_key"] in callback_result:
@@ -337,27 +337,11 @@ def is_local_address(host: str) -> bool:
         return hostname in ("localhost", "127.0.0.1")
 
 
-async def dpage_mcp_tool(
-    initial_url: str,
-    result_key: str,
-    timeout: int = 2,
-    callback: Any = None,
-    signin_completed: bool = False,
-    page_id: str | None = None,
-) -> dict[str, Any]:
-    """
-    Generic MCP tool that supports both pattern-based distillation and manual browser control.
+async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) -> dict[str, Any]:
+    """Generic MCP tool based on distillation"""
+    path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
+    patterns = load_distillation_patterns(path)
 
-    Args:
-        initial_url: URL to navigate to
-        result_key: Key name for the result in return dict
-        timeout: Timeout in seconds
-        callback: Optional async function for manual browser control.
-                 If provided, skips pattern matching and goes straight to manual control.
-
-    Returns:
-        Dict with result or signin flow info
-    """
     headers = get_http_headers(include_all=True)
     incognito = headers.get("x-incognito", "0") == "1"
 
@@ -386,62 +370,20 @@ async def dpage_mcp_tool(
 
         browser_profile = global_browser_profile
 
-    # If callback is provided and signin is completed, skip patterns and go straight to manual control
-    if callback is not None and signin_completed and page_id is not None:
-        if page_id not in active_pages:
-            logger.error(f"Page ID {page_id} not found in active_pages")
-            return {result_key: None, "error": f"Page ID {page_id} not found"}
+        # First, try without any interaction as this will work if the user signed in previously
+        distillation_result, terminated = await run_distillation_loop(
+            initial_url,
+            patterns,
+            browser_profile=browser_profile,
+            interactive=False,
+            timeout=timeout,
+            stop_ok=False,  # Keep global session alive
+        )
+        if terminated:
+            return {result_key: distillation_result}
 
-        try:
-            page = active_pages[page_id]
-            await page.goto(initial_url)
-            result = await callback(page)
-            return {result_key: result}
-        except Exception as e:
-            logger.error(f"Callback execution failed: {e}")
-            return {result_key: None, "error": str(e)}
-
-    # For callbacks, try with existing global session if available first
-    if callback is not None and global_browser_profile is not None and page_id is not None:
-        try:
-            logger.info("Trying callback with existing global browser session...")
-            session = BrowserSession.get(global_browser_profile)
-            await session.start()
-            page = await session.page()
-            await page.goto(initial_url)
-            result = await callback(page)
-            logger.info("Callback succeeded with existing session!")
-            await page.close()
-            return {result_key: result}
-        except Exception as e:
-            logger.info(f"Callback with existing session failed: {e}, proceeding with signin flow")
-
-    # If no callback or callback failed, try pattern-based distillation
-    path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
-    patterns = load_distillation_patterns(path)
-    distillation_result, terminated = await run_distillation_loop(
-        initial_url,
-        patterns,
-        browser_profile=browser_profile,
-        interactive=False,
-        timeout=timeout,
-        stop_ok=False,  # Keep global session alive
-    )
-    if terminated:
-        return {result_key: distillation_result}
-
-    # Fall back to interactive signin flow
+    # If that didn't work, try signing in via distillation
     id = await dpage_add(browser_profile=browser_profile, location=initial_url)
-
-    # Store callback for auto-resumption after signin
-    if callback is not None:
-        pending_callbacks[id] = {
-            "callback": callback,
-            "initial_url": initial_url,
-            "result_key": result_key,
-            "timeout": timeout,
-            "page_id": id,
-        }
 
     host = headers.get("x-forwarded-host") or headers.get("host")
     if host is None:
@@ -454,8 +396,130 @@ async def dpage_mcp_tool(
 
     url = f"{base_url}/dpage/{id}"
     logger.info(f"Continue with the sign in at {url}", extra={"url": url, "id": id})
+    return {
+        "url": url,
+        "message": f"Continue to sign in in your browser at {url}.",
+        "signin_id": id,
+        "system_message": (
+            f"Try open the url {url} in a browser with a tool if available."
+            "Give the url to the user so the user can open it manually in their browser."
+            "Then call check_signin tool with the signin_id to check if the sign in process is completed. "
+            "Once it is completed successfully, then call this tool again to proceed with the action."
+        ),
+    }
 
-    message = "Continue to sign in in your browser"
+
+async def dpage_callback_tool(
+    initial_url: str,
+    result_key: str,
+    callback: Any,
+    timeout: int = 2,
+    signin_completed: bool = False,
+    page_id: str | None = None,
+) -> dict[str, Any]:
+    """
+    MCP tool specifically designed for callback-based operations.
+    This function focuses on executing callbacks after signin completion.
+
+    Args:
+        initial_url: URL to navigate to
+        result_key: Key name for the result in return dict
+        callback: Async function for manual browser control
+        timeout: Timeout in seconds
+
+    Returns:
+        Dict with result or signin flow info
+    """
+    headers = get_http_headers(include_all=True)
+    incognito = headers.get("x-incognito", "0") == "1"
+    path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
+    patterns = load_distillation_patterns(path)
+
+    if incognito:
+        browser_profile = BrowserProfile()
+    else:
+        global global_browser_profile
+        if global_browser_profile is None:
+            logger.info(f"Creating global browser profile for callback tool...")
+            global_browser_profile = BrowserProfile()
+            session = BrowserSession.get(global_browser_profile)
+            session = await session.start()
+            init_page = await session.new_page()
+            try:
+                await init_page.goto(initial_url)
+            except Exception as e:
+                await report_distill_error(
+                    error=e,
+                    page=init_page,
+                    profile_id=global_browser_profile.id,
+                    location=initial_url,
+                    hostname=urllib.parse.urlparse(initial_url).hostname or "",
+                    iteration=0,
+                )
+            await asyncio.sleep(1)
+
+        browser_profile = global_browser_profile
+
+    # Step 1: If resuming after signin completion, use the active page
+    if signin_completed and page_id is not None and page_id in active_pages:
+        logger.info(f"Resuming callback after signin with page_id={page_id}")
+        page = active_pages[page_id]
+        await page.goto(initial_url)
+        result = await callback(page)
+        return {result_key: result}
+
+    # Step 2: If global_browser_profile exists, user signed in before - try callback with existing session
+    if global_browser_profile is not None:
+        try:
+            logger.info("Attempting callback with existing global browser session...")
+            session = BrowserSession.get(global_browser_profile)
+            await session.start()
+            page = await session.page()
+            await page.goto(initial_url)
+            result = await callback(page)
+            logger.info("Callback executed successfully with existing session!")
+            await page.close()
+            return {result_key: result}
+        except Exception as e:
+            logger.info(f"Callback with existing session failed: {e}, trying distillation loop")
+
+    # Step 3: Try distillation loop (may work if signin not needed or can auto-signin)
+    distillation_result, terminated = await run_distillation_loop(
+        initial_url,
+        patterns,
+        browser_profile=browser_profile,
+        interactive=False,
+        timeout=timeout,
+        stop_ok=False,  # Keep global session alive
+    )
+    if terminated:
+        return {result_key: distillation_result}
+
+    # Step 4: User never signed in - create interactive signin flow with callback
+    id = await dpage_add(browser_profile=browser_profile, location=initial_url)
+
+    # Store callback for auto-resumption after signin
+    pending_callbacks[id] = {
+        "callback": callback,
+        "initial_url": initial_url,
+        "result_key": result_key,
+        "timeout": timeout,
+        "page_id": id,
+    }
+
+    host = headers.get("x-forwarded-host") or headers.get("host")
+    if host is None:
+        logger.warning("Missing Host header; defaulting to localhost")
+        base_url = "http://localhost:23456"
+    else:
+        default_scheme = "http" if is_local_address(host) else "https"
+        scheme = headers.get("x-forwarded-proto", default_scheme)
+        base_url = f"{scheme}://{host}"
+
+    url = f"{base_url}/dpage/{id}"
+    logger.info(f"Callback tool: Continue with sign in at {url}", extra={"url": url, "id": id})
+
+    message = "Continue to sign in in your browser to execute callback"
 
     return {
         "url": url,
@@ -465,5 +529,6 @@ async def dpage_mcp_tool(
             f"Try open the url {url} in a browser with a tool if available."
             "Give the url to the user so the user can open it manually in their browser."
             f"Then call check_signin tool with the signin_id to check if the sign in process is completed. "
+            f"The callback will be executed automatically after successful signin."
         ),
     }
