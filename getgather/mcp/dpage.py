@@ -35,7 +35,7 @@ router = APIRouter(prefix="/dpage", tags=["dpage"])
 
 active_pages: dict[str, Page] = {}
 distillation_results: dict[str, str | list[dict[str, str | list[str]]] | dict[str, Any]] = {}
-pending_callbacks: dict[str, dict[str, Any]] = {}  # Store callbacks to resume after signin
+pending_actions: dict[str, dict[str, Any]] = {}  # Store actions to resume after signin
 global_browser_profile: BrowserProfile | None = None
 
 
@@ -201,21 +201,21 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
             logger.info("Finished!")
             converted = await convert(distilled)
 
-            if id in pending_callbacks:
-                callback_info = pending_callbacks[id]
-                logger.info(f"Signin completed for {id}, resuming callback...")
+            if id in pending_actions:
+                action_info = pending_actions[id]
+                logger.info(f"Signin completed for {id}, resuming action...")
 
-                callback_result = await dpage_with_action(
-                    initial_url=callback_info["initial_url"],
-                    action=callback_info["action"],
-                    timeout=callback_info["timeout"],
-                    signin_completed=True,
-                    page_id=id,
+                action_result = await dpage_with_action(
+                    initial_url=action_info["initial_url"],
+                    action=action_info["action"],
+                    timeout=action_info["timeout"],
+                    _signin_completed=True,
+                    _page_id=id,
                 )
 
-                distillation_results[id] = callback_result
+                distillation_results[id] = action_result
 
-                del pending_callbacks[id]
+                del pending_actions[id]
                 await dpage_close(id)
                 return HTMLResponse(render(FINISHED_MSG, options))
 
@@ -406,50 +406,51 @@ async def dpage_with_action(
     initial_url: str,
     action: Any,
     timeout: int = 2,
-    signin_completed: bool = False,
-    page_id: str | None = None,
+    _signin_completed: bool = False,
+    _page_id: str | None = None,
 ) -> dict[str, Any]:
-    """
-    MCP tool specifically designed for callback-based operations.
-    This function focuses on executing callbacks after signin completion.
+    """Execute an action after signin completion.
 
     Args:
         initial_url: URL to navigate to
-        callback: Async function that receives a Page and returns a dict
+        action: Async function that receives a Page and returns a dict
         timeout: Timeout in seconds
-
+        _signin_completed: Whether the signin process is completed
+        _page_id: ID of the page to resume from
     Returns:
-        Dict with callback result or signin flow info
+        Dict with result or signin flow info
     """
     headers = get_http_headers(include_all=True)
     incognito = headers.get("x-incognito", "0") == "1"
     global global_browser_profile
 
     # Step 1: If resuming after signin completion, use the active page directly
-    if signin_completed and page_id is not None and page_id in active_pages:
-        logger.info(f"Resuming callback after signin with page_id={page_id}")
-        page = active_pages[page_id]
+    if _signin_completed and _page_id is not None and _page_id in active_pages:
+        logger.info(f"Resuming action after signin with page_id={_page_id}")
+        page = active_pages[_page_id]
         await page.goto(initial_url)
         result = await action(page)
         return result
 
-    # Step 2: If global_browser_profile exists, try executing callback directly
+    # Step 2: If global_browser_profile exists, try executing action directly
     # This will work if user signed in previously and session is still valid
     if global_browser_profile is not None and not incognito:
         try:
-            logger.info("Trying callback with existing global browser session...")
+            logger.info("Trying action with existing global browser session...")
             session = BrowserSession.get(global_browser_profile)
             await session.start()
             page = await session.page()
             await page.goto(initial_url)
             result = await action(page)
-            logger.info("Callback succeeded with existing session!")
+            logger.info("Action succeeded with existing session!")
             await page.close()
             return result
         except Exception as e:
-            logger.info(f"Callback failed with existing session (likely not signed in): {e}")
+            logger.info(
+                f"dpage_with_action failed with existing session (likely not signed in): {e}"
+            )
 
-    # Step 3: User not signed in - create interactive signin flow with callback
+    # Step 3: User not signed in - create interactive signin flow with action
     # Create or get browser profile for signin flow
     if incognito:
         browser_profile = BrowserProfile()
@@ -461,8 +462,8 @@ async def dpage_with_action(
 
     id = await dpage_add(browser_profile=browser_profile, location=initial_url)
 
-    # Store callback for auto-resumption after signin
-    pending_callbacks[id] = {
+    # Store action for auto-resumption after signin
+    pending_actions[id] = {
         "action": action,
         "initial_url": initial_url,
         "timeout": timeout,
@@ -479,9 +480,9 @@ async def dpage_with_action(
         base_url = f"{scheme}://{host}"
 
     url = f"{base_url}/dpage/{id}"
-    logger.info(f"Callback tool: Continue with sign in at {url}", extra={"url": url, "id": id})
+    logger.info(f"dpage_with_action: Continue with sign in at {url}", extra={"url": url, "id": id})
 
-    message = "Continue to sign in in your browser to execute callback"
+    message = "Continue to sign in in your browser"
 
     return {
         "url": url,
