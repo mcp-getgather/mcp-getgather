@@ -205,9 +205,9 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                 callback_info = pending_callbacks[id]
                 logger.info(f"Signin completed for {id}, resuming callback...")
 
-                callback_result = await dpage_callback_tool(
+                callback_result = await dpage_with_action(
                     initial_url=callback_info["initial_url"],
-                    callback=callback_info["callback"],
+                    action=callback_info["action"],
                     timeout=callback_info["timeout"],
                     signin_completed=True,
                     page_id=id,
@@ -402,9 +402,9 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
     }
 
 
-async def dpage_callback_tool(
+async def dpage_with_action(
     initial_url: str,
-    callback: Any,
+    action: Any,
     timeout: int = 2,
     signin_completed: bool = False,
     page_id: str | None = None,
@@ -430,7 +430,7 @@ async def dpage_callback_tool(
         logger.info(f"Resuming callback after signin with page_id={page_id}")
         page = active_pages[page_id]
         await page.goto(initial_url)
-        result = await callback(page)
+        result = await action(page)
         return result
 
     # Step 2: If global_browser_profile exists, try executing callback directly
@@ -442,7 +442,7 @@ async def dpage_callback_tool(
             await session.start()
             page = await session.page()
             await page.goto(initial_url)
-            result = await callback(page)
+            result = await action(page)
             logger.info("Callback succeeded with existing session!")
             await page.close()
             return result
@@ -463,7 +463,7 @@ async def dpage_callback_tool(
 
     # Store callback for auto-resumption after signin
     pending_callbacks[id] = {
-        "callback": callback,
+        "action": action,
         "initial_url": initial_url,
         "timeout": timeout,
         "page_id": id,

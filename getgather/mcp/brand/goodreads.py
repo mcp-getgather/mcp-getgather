@@ -4,7 +4,7 @@ from fastmcp import Context
 from patchright.async_api import Page
 
 from getgather.mcp.agent import run_agent_for_brand
-from getgather.mcp.dpage import dpage_callback_tool, dpage_mcp_tool
+from getgather.mcp.dpage import dpage_with_action, dpage_mcp_tool
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.stagehand_agent import (
     run_stagehand_agent,
@@ -15,13 +15,13 @@ goodreads_mcp = BrandMCPBase(brand_id="goodreads", name="Goodreads MCP")
 
 @goodreads_mcp.tool
 async def get_url() -> dict[str, Any]:
-    async def callback(page: Page) -> dict[str, Any]:
+    async def action(page: Page) -> dict[str, Any]:
         await page.click("a:has-text('My Books')")
         return {"url": page.url}
 
-    return await dpage_callback_tool(
+    return await dpage_with_action(
         "https://www.goodreads.com/recommendations",
-        callback=callback,
+        action,
     )
 
 
