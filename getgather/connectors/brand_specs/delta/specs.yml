@@ -56,17 +56,3 @@ signin:
       end: true
 
   start: Delta homepage
-
-extract:
-  steps:
-    - name: Go to the trip history
-      url: https://www.delta.com/my-trips/upcoming-trips
-
-    - name: Wait for the loading
-      sleep: 3
-      timeout: 5
-      wait_for_selector: section.ut-landing__travel-cards-item.ng-star-inserted
-
-    - name: Extract the list of orders
-      bundle: trips.html
-      slurp_selector: section.ut-landing__travel-cards.ng-star-inserted
