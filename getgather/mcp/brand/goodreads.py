@@ -21,7 +21,6 @@ async def get_url() -> dict[str, Any]:
 
     return await dpage_callback_tool(
         "https://www.goodreads.com/recommendations",
-        "url",
         callback=callback,
     )
 

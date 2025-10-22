@@ -34,7 +34,7 @@ router = APIRouter(prefix="/dpage", tags=["dpage"])
 
 
 active_pages: dict[str, Page] = {}
-distillation_results: dict[str, str | list[dict[str, str | list[str]]]] = {}
+distillation_results: dict[str, str | list[dict[str, str | list[str]]] | dict[str, Any]] = {}
 pending_callbacks: dict[str, dict[str, Any]] = {}  # Store callbacks to resume after signin
 global_browser_profile: BrowserProfile | None = None
 
@@ -207,20 +207,13 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
 
                 callback_result = await dpage_callback_tool(
                     initial_url=callback_info["initial_url"],
-                    result_key=callback_info["result_key"],
                     callback=callback_info["callback"],
                     timeout=callback_info["timeout"],
                     signin_completed=True,
                     page_id=id,
                 )
 
-                if callback_info["result_key"] in callback_result:
-                    distillation_results[id] = callback_result[callback_info["result_key"]]
-                else:
-                    logger.error(
-                        f"Result key '{callback_info['result_key']}' not found in callback_result"
-                    )
-                    distillation_results[id] = "Error: Result key not found"
+                distillation_results[id] = callback_result
 
                 del pending_callbacks[id]
                 await dpage_close(id)
@@ -411,7 +404,6 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
 async def dpage_callback_tool(
     initial_url: str,
-    result_key: str,
     callback: Any,
     timeout: int = 2,
     signin_completed: bool = False,
@@ -423,12 +415,11 @@ async def dpage_callback_tool(
 
     Args:
         initial_url: URL to navigate to
-        result_key: Key name for the result in return dict
-        callback: Async function for manual browser control
+        callback: Async function that receives a Page and returns a dict
         timeout: Timeout in seconds
 
     Returns:
-        Dict with result or signin flow info
+        Dict with callback result or signin flow info
     """
     headers = get_http_headers(include_all=True)
     incognito = headers.get("x-incognito", "0") == "1"
@@ -440,7 +431,7 @@ async def dpage_callback_tool(
         page = active_pages[page_id]
         await page.goto(initial_url)
         result = await callback(page)
-        return {result_key: result}
+        return result
 
     # Step 2: If global_browser_profile exists, try executing callback directly
     # This will work if user signed in previously and session is still valid
@@ -454,7 +445,7 @@ async def dpage_callback_tool(
             result = await callback(page)
             logger.info("Callback succeeded with existing session!")
             await page.close()
-            return {result_key: result}
+            return result
         except Exception as e:
             logger.info(f"Callback failed with existing session (likely not signed in): {e}")
 
@@ -474,7 +465,6 @@ async def dpage_callback_tool(
     pending_callbacks[id] = {
         "callback": callback,
         "initial_url": initial_url,
-        "result_key": result_key,
         "timeout": timeout,
         "page_id": id,
     }
@@ -501,6 +491,5 @@ async def dpage_callback_tool(
             f"Try open the url {url} in a browser with a tool if available."
             "Give the url to the user so the user can open it manually in their browser."
             f"Then call check_signin tool with the signin_id to check if the sign in process is completed. "
-            f"The callback will be executed automatically after successful signin."
         ),
     }
