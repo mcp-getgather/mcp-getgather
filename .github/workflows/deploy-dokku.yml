@@ -20,9 +20,9 @@ jobs:
       matrix:
         include:
           - server: production
-            secret_suffix: production
+            secret_suffix: getgather-production
           - server: all
-            secret_suffix: all
+            secret_suffix: getgather-all
 
     steps:
       - name: Check out source repository
@@ -54,10 +54,10 @@ jobs:
         uses: google-github-actions/get-secretmanager-secrets@v3
         with:
           secrets: |-
-            DOKKU_GIT_REMOTE_URL:projects/${{ env.GCP_PROJECT_ID }}/secrets/dokku-git-remote-url-${{ matrix.secret_suffix }}/versions/latest
-            DOKKU_SSH_HOST_KEY:projects/${{ env.GCP_PROJECT_ID }}/secrets/dokku-ssh-host-key-${{ matrix.secret_suffix }}/versions/latest
-            DOKKU_SSH_PRIVATE_KEY:projects/${{ env.GCP_PROJECT_ID }}/secrets/dokku-ssh-private-key-${{ matrix.secret_suffix }}/versions/latest
-            TAILSCALE_APP_URL:projects/${{ env.GCP_PROJECT_ID }}/secrets/tailscale-app-url-${{ matrix.secret_suffix }}/versions/latest
+            DOKKU_GIT_REMOTE_URL:${{ env.GCP_PROJECT_ID }}/dokku-git-remote-url-${{ matrix.secret_suffix }}
+            DOKKU_SSH_HOST_KEY:${{ env.GCP_PROJECT_ID }}/dokku-ssh-host-key-${{ matrix.secret_suffix }}
+            DOKKU_SSH_PRIVATE_KEY:${{ env.GCP_PROJECT_ID }}/dokku-ssh-private-key-${{ matrix.secret_suffix }}
+            TAILSCALE_APP_URL:${{ env.GCP_PROJECT_ID }}/tailscale-app-url-${{ matrix.secret_suffix }}
 
       - name: Check the reachability of the app server
         env:
