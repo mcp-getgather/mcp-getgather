@@ -17,7 +17,7 @@ dependencies = [
   "jinja2>=3.1.6",
   "uvicorn[standard]>=0.34.2",
   # Browser Automation: Locked to specific versions to avoid breaking changes.
-  "patchright==1.52.5",
+  "patchright==1.55.0",
   "requests>=2.32.4",
   "httpx>=0.28.1",
   "browser-use>=0.5.10",
