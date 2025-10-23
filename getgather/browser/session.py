@@ -96,7 +96,7 @@ class BrowserSession:
                 await debug_page.goto("https://checkip.amazonaws.com")
 
                 # Intentionally create a new page to apply resources filtering (from blocklists)
-                # page = await self.new_page()
+                await self.new_page()
 
                 # page.on(
                 #     "load",
