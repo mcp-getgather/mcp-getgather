@@ -10,6 +10,7 @@ from getgather.logs import logger
 
 _BLOCKED_RESOURCE_TYPES = {"image", "media", "font"}
 _blocked_domains: frozenset[str] | None = None
+_EXCLUDED_DOMAINS: list[str] = ["amazon.ca"]
 
 
 def _get_domain_variants(domain: str) -> list[str]:
@@ -82,7 +83,11 @@ async def _load_blocklists() -> None:
             logger.debug(f"Loading blocklist file: {blocklist_file.name}")
             domains = await _load_blocklist_from_file(blocklist_file)
             all_domains.update(domains)
-        _blocked_domains = frozenset(all_domains)
+
+        excluded_set = set(_EXCLUDED_DOMAINS)
+        filtered_domains = all_domains - excluded_set
+        _blocked_domains = frozenset(filtered_domains)
+
     else:
         logger.warning("No blocklist files found matching pattern 'blocklists-*.txt'")
         _blocked_domains = frozenset()
