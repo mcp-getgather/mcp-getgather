@@ -103,8 +103,16 @@ signin:
     - name: order-containers
       type: wait
       selector: div.your-orders-content-container__content
+    - name: navigate
+      type: navigate
+      url: https://www.amazon.ca/
+      expect_nav: true
 
   pages:
+    - name: Home Page (not signed in) US
+      url: https://www.amazon.com/
+      fields: [not_signed_in, navigate]
+
     - name: Home Page (not signed in)
       url: https://www.amazon.ca/
       fields: [not_signed_in, signin_click]
@@ -169,7 +177,7 @@ signin:
       fields: [signed_in, Your Orders Page, order]
       end: true
 
-  start: https://www.amazon.ca/
+  start: https://www.amazon.com/
 
 extract:
   steps:
