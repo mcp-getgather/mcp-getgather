@@ -96,14 +96,14 @@ class BrowserSession:
                 await debug_page.goto("https://checkip.amazonaws.com")
 
                 # Intentionally create a new page to apply resources filtering (from blocklists)
-                page = await self.new_page()
+                # page = await self.new_page()
 
-                page.on(
-                    "load",
-                    lambda page: asyncio.create_task(
-                        rrweb_injector.setup_rrweb(self.context, page)
-                    ),
-                )
+                # page.on(
+                #     "load",
+                #     lambda page: asyncio.create_task(
+                #         rrweb_injector.setup_rrweb(self.context, page)
+                #     ),
+                # )
 
                 # safely register the session at the end
                 self._sessions[self.profile.id] = self
