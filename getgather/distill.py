@@ -487,7 +487,7 @@ async def run_distillation_loop(
     timeout: int = 15,
     interactive: bool = True,
     stop_ok: bool = False,
-) -> tuple[dict[str, str | ConversionResult | None] | str | ConversionResult, bool]:
+) -> tuple[dict[str, str | ConversionResult | None] | str | ConversionResult, str, bool]:
     if len(patterns) == 0:
         logger.error("No distillation patterns provided")
         raise ValueError("No distillation patterns provided")
@@ -547,7 +547,7 @@ async def run_distillation_loop(
                     if await terminate(page, distilled):
                         converted = await convert(distilled)
                         await page.close()
-                        return (converted if converted else distilled, True)
+                        return (converted if converted else distilled, distilled, True)
 
                     if interactive:
                         distilled = await autofill(page, distilled)
@@ -570,7 +570,7 @@ async def run_distillation_loop(
             iteration=max,
         )
         await page.close()
-        return (current.distilled, False)
+        return (current.distilled, current.distilled, False)
 
 
 async def short_lived_mcp_tool(
@@ -585,7 +585,7 @@ async def short_lived_mcp_tool(
     browser_profile = BrowserProfile()
     session = BrowserSession.get(browser_profile)
     session = await session.start()
-    distilled, terminated = await run_distillation_loop(
+    distilled, _, terminated = await run_distillation_loop(
         location, patterns, browser_profile, interactive=False
     )
     await session.context.close()
