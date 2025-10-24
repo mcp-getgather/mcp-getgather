@@ -62,6 +62,7 @@ logfire.configure(
     send_to_logfire="if-token-present",
     token=settings.LOGFIRE_TOKEN or None,
     environment=settings.ENVIRONMENT,
+    distributed_tracing=True,
     code_source=logfire.CodeSource(
         repository="https://github.com/mcp-getgather/mcp-getgather", revision="main"
     ),
