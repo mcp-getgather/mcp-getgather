@@ -335,7 +335,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
     if not incognito or signin_id is not None:
         # First, try without any interaction as this will work if the user signed in previously (using global browser profile or incognito with signin_id)
-        distillation_result, terminated = await run_distillation_loop(
+        distillation_result, _, terminated = await run_distillation_loop(
             initial_url,
             patterns,
             browser_profile=browser_profile,
