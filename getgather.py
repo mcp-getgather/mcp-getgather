@@ -63,7 +63,7 @@ async def run_command(location: str):
     if not location.startswith("http"):
         location = f"https://{location}"
 
-    result, _ = await run_distillation_loop(location, patterns=patterns)
+    result, _, _ = await run_distillation_loop(location, patterns=patterns)
     print(result)
 
     logger.info("Terminated.")

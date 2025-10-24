@@ -70,7 +70,7 @@ async def test_distillation_loop(location: str):
     patterns = load_distillation_patterns(path)
     assert patterns, "No patterns found to begin matching."
 
-    result, _ = await run_distillation_loop(
+    result, _, _ = await run_distillation_loop(
         location=location,
         patterns=patterns,
         browser_profile=profile,
@@ -98,7 +98,7 @@ async def test_distillation_captures_screenshot_without_pattern(
 
     profile = BrowserProfile()
 
-    result, _ = await run_distillation_loop(
+    result, _, _ = await run_distillation_loop(
         location="http://localhost:5001/random-info-page",
         patterns=patterns,
         browser_profile=profile,
