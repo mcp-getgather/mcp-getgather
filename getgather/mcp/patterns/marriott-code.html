@@ -1,0 +1,18 @@
+<html gg-domain="marriott">
+  <body>
+    <span gg-optional gg-match="div[data-testid='verify-your-code-form-error']"></span>
+    <input
+      autofocus
+      type="number"
+      name="code"
+      gg-match="input[name='input-text-Verification Code']"
+    />
+    <button
+      gg-autoclick
+      type="submit"
+      gg-match="button[data-testid='verify-button']:not([disabled])"
+    >
+      Verify
+    </button>
+  </body>
+</html>
