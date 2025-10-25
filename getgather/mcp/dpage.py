@@ -39,19 +39,11 @@ distillation_results: dict[str, str | list[dict[str, str | list[str]]]] = {}
 global_browser_profile: BrowserProfile | None = None
 
 
-async def dpage_add(
-    browser_profile: BrowserProfile | None = None,
-    location: str | None = None,
-    id: str | None = None,
-):
-    if id is None:
-        FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
-        id = generate(FRIENDLY_CHARS, 8)
-        if settings.HOSTNAME:
-            id = f"{settings.HOSTNAME}-{id}"
-
-    if browser_profile is None:
-        browser_profile = BrowserProfile()
+async def dpage_add(browser_profile: BrowserProfile, location: str):
+    FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
+    id = generate(FRIENDLY_CHARS, 8)
+    if settings.HOSTNAME:
+        id = f"{settings.HOSTNAME}-{id}"
 
     session = BrowserSession.get(browser_profile)
 
@@ -59,19 +51,16 @@ async def dpage_add(
     page = await session.context.new_page()
 
     try:
-        if location:
-            if not location.startswith("http"):
-                location = f"https://{location}"
-            await page.goto(location, timeout=settings.BROWSER_TIMEOUT)
+        if not location.startswith("http"):
+            location = f"https://{location}"
+        await page.goto(location, timeout=settings.BROWSER_TIMEOUT)
     except Exception as error:
-        hostname = (
-            urllib.parse.urlparse(location).hostname if location else "unknown"
-        ) or "unknown"
+        hostname = urllib.parse.urlparse(location).hostname or "unknown"
         await report_distill_error(
             error=error,
             page=page,
             profile_id=browser_profile.id,
-            location=location if location else "unknown",
+            location=location,
             hostname=hostname,
             iteration=0,
         )
@@ -123,22 +112,6 @@ def redirect(id: str) -> HTMLResponse:
     </body>
     </html>
     """)
-
-
-@router.get("", response_class=HTMLResponse)
-@router.get("/{id}", response_class=HTMLResponse)
-async def get_dpage(location: str | None = None, id: str | None = None) -> HTMLResponse:
-    if id:
-        if id in active_pages:
-            return redirect(id)
-        raise HTTPException(status_code=404, detail="Invalid page id")
-
-    if not location:
-        raise HTTPException(status_code=400, detail="Missing location parameter")
-
-    logger.info(f"Starting distillation at {location}...")
-    id = await dpage_add(location=location)
-    return redirect(id)
 
 
 FINISHED_MSG = "Finished! You can close this window now."
@@ -363,7 +336,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
             return {result_key: distillation_result}
 
     # If that didn't work, try signing in via distillation
-    id = await dpage_add(browser_profile=browser_profile, location=initial_url)
+    id = await dpage_add(browser_profile, initial_url)
 
     if incognito:
         incognito_browser_profiles[id] = browser_profile
