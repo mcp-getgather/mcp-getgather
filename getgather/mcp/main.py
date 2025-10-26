@@ -114,6 +114,7 @@ CATEGORY_BUNDLES: dict[str, list[str]] = {
 MCP_BUNDLES: dict[str, list[str]] = {
     "media": ["bbc", "cnn", "espn", "groundnews", "npr", "nytimes"],
     "books": ["goodreads"],
+    "shopping": ["amazon", "amazonca"],
 }
 
 
