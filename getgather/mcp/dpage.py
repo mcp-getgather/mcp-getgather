@@ -114,6 +114,17 @@ def redirect(id: str) -> HTMLResponse:
     """)
 
 
+@router.get("", response_class=HTMLResponse)
+@router.get("/{id}", response_class=HTMLResponse)
+async def get_dpage(id: str | None = None) -> HTMLResponse:
+    if id:
+        if id in active_pages:
+            return redirect(id)
+        raise HTTPException(status_code=404, detail="Invalid page id")
+
+    raise HTTPException(status_code=400, detail="Missing page id")
+
+
 FINISHED_MSG = "Finished! You can close this window now."
 
 
