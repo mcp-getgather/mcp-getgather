@@ -171,11 +171,12 @@ async def get_purchase_history() -> dict[str, Any]:
     browser_profile = get_mcp_browser_profile()
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
-    extract_result, _, _ = await run_distillation_loop(
+    _terminated, distilled, converted = await run_distillation_loop(
         "https://www.astronauts.id/order/history",
         patterns,
         browser_profile=browser_profile,
     )
+    extract_result = converted if converted else distilled
     return {"extract_result": extract_result}
 
 

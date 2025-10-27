@@ -14,7 +14,8 @@ async def get_past_trips() -> dict[str, Any]:
     browser_profile = get_mcp_browser_profile()
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
-    past_trips, _, _ = await run_distillation_loop(
+    _terminated, distilled, converted = await run_distillation_loop(
         "https://www.expedia.com/trips/list/3 ", patterns, browser_profile=browser_profile
     )
+    past_trips = converted if converted else distilled
     return {"past_trips": past_trips}

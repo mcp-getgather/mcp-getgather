@@ -21,9 +21,10 @@ async def get_purchase_history() -> dict[str, Any]:
     browser_profile = get_mcp_browser_profile()
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
-    purchase_history, _, _ = await run_distillation_loop(
+    _terminated, distilled, converted = await run_distillation_loop(
         "https://shopee.co.id/user/purchase", patterns, browser_profile=browser_profile
     )
+    purchase_history = converted if converted else distilled
     return {"purchase_history": purchase_history}
 
 

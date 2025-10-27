@@ -14,11 +14,12 @@ async def get_order_history() -> dict[str, Any]:
     browser_profile = get_mcp_browser_profile()
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
-    purchase_history, _, _ = await run_distillation_loop(
+    _terminated, distilled, converted = await run_distillation_loop(
         "https://www.wayfair.com/session/secure/account/order_search.php",
         patterns,
         browser_profile=browser_profile,
     )
+    purchase_history = converted if converted else distilled
 
     if purchase_history and isinstance(purchase_history, list) and len(purchase_history) > 0:
         # Add order_id to each purchase by extracting from order_date_and_store
@@ -38,11 +39,12 @@ async def get_order_history_details(order_id: str) -> dict[str, Any]:
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
 
-    purchase_history_details, _, _ = await run_distillation_loop(
+    _terminated, distilled, converted = await run_distillation_loop(
         f"https://www.wayfair.com/v/account/order/details?order_id={order_id}",
         patterns,
         browser_profile=browser_profile,
     )
+    purchase_history_details = converted if converted else distilled
 
     # Edit image URLs to use higher resolution
     if purchase_history_details and isinstance(purchase_history_details, list):
