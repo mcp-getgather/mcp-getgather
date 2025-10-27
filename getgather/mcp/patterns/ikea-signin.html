@@ -5,7 +5,7 @@
   <body>
     <span gg-optional gg-match="span.form-field__message"></span>
     <input autofocus name="email" type="email" placeholder="Email" gg-match="input#username" />
-    <button gg-autoclick gg-match="button:has-text('Continue'):not(:has(.btn__loader))">
+    <button type="submit" gg-match="button:has-text('Continue'):not(:has(.btn__loader))">
       Continue
     </button>
   </body>
