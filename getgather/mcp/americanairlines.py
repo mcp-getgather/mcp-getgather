@@ -12,5 +12,5 @@ async def get_upcoming_flights() -> dict[str, Any]:
     return await dpage_mcp_tool(
         "https://www.aa.com/aadvantage-program/profile/account-summary",
         "americanairlines_upcoming_flights",
-        timeout=10
+        timeout=10,
     )
