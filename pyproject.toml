@@ -28,11 +28,13 @@ dependencies = [
   "stagehand>=0.5.2",
   "fastmcp>=2.12.2",
   "pytest-asyncio>=1.0.0",
+  "logfire[fastapi]>=4.13.2",
 ]
 
 [dependency-groups]
 dev = [
   "assertpy>=1.1",
+  "faker>=33.3.0",
   "nanoid>=2.0.0",
   "pyright>=1.1.399",
   "pytest>=8.3.5",
