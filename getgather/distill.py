@@ -489,7 +489,7 @@ async def run_distillation_loop(
     stop_ok: bool = False,
 ) -> tuple[bool, str, ConversionResult | None]:
     """Run the distillation loop.
-    
+
     Returns:
         terminated: bool indicating successful termination
         distilled: the raw distilled HTML
