@@ -1,0 +1,20 @@
+<html gg-domain="nike">
+  <head>
+    <title>Nike OTP</title>
+  </head>
+  <body>
+    <div>
+      <div gg-optional gg-match="form div[role='alert']"></div>
+      <input
+        autofocus
+        placeholder="8-digit code"
+        type="text"
+        name="otp"
+        gg-match="input#send-code"
+      />
+      <button type="submit" gg-match="form button[type='submit']:has-text('Sign In')">
+        Continue
+      </button>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,49 @@
+<html gg-domain="nordstrom">
+  <head>
+    <title>Nordstrom Orders</title>
+  </head>
+  <body>
+    <div>
+      <div gg-match="li:has(a[href*='/orders/'])"></div>
+      <div gg-stop gg-match-html="main#layer-0"></div>
+    </div>
+    <script type="application/json" id="orders">
+      {
+        "rows": "li:has(a[href*='/orders/'])",
+        "columns": [
+          {
+            "name": "order_type",
+            "selector": "div > div > div > div > p"
+          },
+          {
+            "name": "order_date",
+            "selector": "div > div > div > div:nth-of-type(2) p > span:nth-of-type(1)"
+          },
+          {
+            "name": "order_amount",
+            "selector": "div > div > div > div:nth-of-type(2) p > span:nth-of-type(3)"
+          },
+          {
+            "name": "status",
+            "selector": "div:nth-of-type(2) > div span"
+          },
+          {
+            "name": "order_destination",
+            "selector": "div:nth-of-type(2) > div p"
+          },
+          {
+            "name": "order_detail_url",
+            "selector": "a",
+            "attribute": "href"
+          },
+          {
+            "name": "order_image_urls",
+            "selector": "img[alt='product image']",
+            "attribute": "src",
+            "kind": "list"
+          }
+        ]
+      }
+    </script>
+  </body>
+</html>

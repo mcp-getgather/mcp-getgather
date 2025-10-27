@@ -1,10 +1,11 @@
 """Proxy configuration for browser sessions.
 
 This module provides proxy configuration for external proxy service integration
-with hierarchical location support (city, state, country).
+with hierarchical location support (city, state, country) and multiple proxy types.
 """
 
 from getgather.api.types import RequestInfo
+from getgather.browser.proxy_builder import build_proxy_config
 from getgather.config import settings
 from getgather.logs import logger
 
@@ -12,76 +13,72 @@ from getgather.logs import logger
 async def setup_proxy(
     profile_id: str, request_info: RequestInfo | None = None
 ) -> dict[str, str] | None:
-    """Setup proxy configuration using external proxy service.
+    """Setup proxy configuration using the proxy type system.
 
-    The proxy service supports hierarchical location targeting by encoding
-    location information in the username format:
-    - Basic: profile_id
-    - With location: profile_id-city_X_postal_code_Y_state_Z_country_W
+    Proxy types are configured via PROXY_* environment variables:
+    - proxy-1: First configured proxy (from PROXY_1_*)
+    - proxy-2: Second configured proxy (from PROXY_2_*)
+    - etc.
+
+    Proxy type can be specified via:
+    1. x-proxy-type header (highest priority)
+    2. DEFAULT_PROXY_TYPE environment variable (fallback)
+    3. No proxy if neither is set
 
     Args:
         profile_id: Profile ID to use as base proxy username
-        request_info: Optional request information containing location data
+        request_info: Optional request information containing location data and proxy type
 
     Returns:
         dict: Proxy configuration with server, username and password
-        None: If no proxy is configured
+        None: If no proxy is configured or proxy-0 (no proxy) is selected
     """
-    # Check if proxy service is configured
-    if not settings.BROWSER_HTTP_PROXY or not settings.BROWSER_HTTP_PROXY_PASSWORD:
-        logger.info(
-            "No proxy configured (BROWSER_HTTP_PROXY and BROWSER_HTTP_PROXY_PASSWORD not set)"
+    # Determine which proxy type to use
+    proxy_type = None
+
+    # Priority 1: Check if request_info specifies a proxy type via header
+    if request_info and request_info.proxy_type:
+        proxy_type = request_info.proxy_type
+        logger.info(f"Proxy type from header: {proxy_type}")
+    # Priority 2: Use DEFAULT_PROXY_TYPE if configured
+    elif settings.DEFAULT_PROXY_TYPE:
+        proxy_type = settings.DEFAULT_PROXY_TYPE
+        logger.info(f"Using default proxy type: {proxy_type}")
+    else:
+        logger.info("No proxy type specified (no header or DEFAULT_PROXY_TYPE)")
+        return None
+
+    # Load proxy configurations
+    proxy_configs = settings.proxy_configs
+
+    if proxy_type not in proxy_configs:
+        logger.warning(
+            f"Proxy type '{proxy_type}' not found in configuration. "
+            f"Available types: {list(proxy_configs.keys())}"
         )
         return None
 
-    # Use profile ID as base username
-    username = profile_id
+    proxy_config = proxy_configs[proxy_type]
 
-    if request_info and (
-        request_info.country or request_info.state or request_info.city or request_info.postal_code
-    ):
-        # Log the incoming request_info for debugging
-        logger.info(
-            f"RequestInfo received - city: {request_info.city}, "
-            f"postal_code: {request_info.postal_code}, "
-            f"state: {request_info.state}, country: {request_info.country}"
-        )
-        # Build hierarchical location string for proxy service
-        location_parts: list[str] = []
+    # Build proxy configuration with dynamic parameters (profile_id as session)
+    result = build_proxy_config(proxy_config, profile_id, request_info)
 
-        # Add city if available
-        if request_info.city:
-            location_parts.extend(["city", request_info.city.lower().replace(" ", "_")])
+    # Log the final proxy configuration for debugging
+    if result:
+        # Mask password in server URL for logging
+        server = result.get("server", "")
+        import re
 
-        # Add postal code if available
-        if request_info.postal_code:
-            location_parts.extend(["postalcode", request_info.postal_code])
+        masked_server = re.sub(r":([^:@]+)@", r":***@", server)
 
-        # Add state if available (mainly for US)
-        if request_info.state:
-            location_parts.extend(["state", request_info.state.lower().replace(" ", "_")])
-
-        # Add country if available
-        if request_info.country:
-            location_parts.extend(["country", request_info.country.lower()])
-
-        if location_parts:
-            # Format: profile_id-city_losangeles_postalcode_90001_state_california_country_us
-            location = "_".join(location_parts)
-            username = f"{profile_id}-{location}"
+        if "username" in result:
             logger.info(
-                f"Using proxy service with profile '{profile_id}' and hierarchical location: {location}"
+                f"✓ Proxy configured: type={proxy_type}, "
+                f"server={masked_server}, username={result['username']}"
             )
         else:
-            logger.info(
-                f"Using proxy service with profile '{profile_id}' without specific location"
-            )
+            logger.info(f"✓ Proxy configured: type={proxy_type}, server={masked_server}")
     else:
-        logger.info(f"Using proxy service with profile '{profile_id}' and default settings")
+        logger.info(f"✓ No proxy configured (type={proxy_type} returned None)")
 
-    # Return proxy configuration for the service
-    return {
-        "server": settings.BROWSER_HTTP_PROXY,
-        "username": username,
-        "password": settings.BROWSER_HTTP_PROXY_PASSWORD,
-    }
+    return result

@@ -1,28 +1,14 @@
 <html gg-domain="hardcover" gg-priority="1">
   <body>
     <div>
-      <div gg-match="div#navigation a.text-gray-600:has-text('Books')"></div>
-      <div gg-stop gg-match-html="nav + div"></div>
+      <div gg-stop gg-match-html="a[href*='/books/read'] + div"></div>
     </div>
-    <script type="application/json" id="books">
+    <script type="application/json" id="bookshelf">
       {
-        "rows": "div div:has(> a:has(img))",
+        "rows": "div",
         "columns": [
-          {
-            "name": "cover",
-            "selector": "a img",
-            "attribute": "src"
-          },
-          {
-            "name": "title",
-            "selector": "a img",
-            "attribute": "alt"
-          },
-          {
-            "name": "url",
-            "selector": "a",
-            "attribute": "href"
-          }
+          { "name": "title_year_author", "selector": "a", "attribute": "data-tooltip-html" },
+          { "name": "url", "selector": "a", "attribute": "href" }
         ]
       }
     </script>

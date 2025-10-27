@@ -1,0 +1,19 @@
+<html gg-domain="amazon">
+  <head>
+    <title>Amazon Sign In</title>
+  </head>
+  <body>
+    <span gg-optional gg-match="div#auth-email-missing-alert"></span>
+    <span gg-optional gg-match="div#auth-password-missing-alert"></span>
+    <span gg-optional gg-match="div#auth-error-message-box"></span>
+    <input
+      autofocus
+      name="email"
+      type="email"
+      placeholder="Email or mobile phone number"
+      gg-match="input#ap_email"
+    />
+    <input name="password" type="password" placeholder="Password" gg-match="input#ap_password" />
+    <button type="submit" gg-match="input#signInSubmit[type=submit]">Sign in</button>
+  </body>
+</html>
