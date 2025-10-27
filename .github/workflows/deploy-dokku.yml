@@ -11,8 +11,18 @@ concurrency:
 
 jobs:
   deploy:
+    name: Deploy (${{ matrix.server }})
     runs-on: ubuntu-22.04
     timeout-minutes: 10
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+    strategy:
+      matrix:
+        include:
+          - server: production
+            secret_suffix: getgather-production
+          - server: all
+            secret_suffix: getgather-all
 
     steps:
       - name: Check out source repository
@@ -31,22 +41,49 @@ jobs:
           tags: tag:ci
           use-cache: true
 
+      - name: Show Tailnet IP address
+        run: tailscale ip
+
+      - name: Configure Google Cloud
+        uses: ./.github/actions/gcp-setup
+        with:
+          credentials_json: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
+
+      - id: fetch_secrets
+        name: Fetch deployment secrets
+        uses: google-github-actions/get-secretmanager-secrets@v3
+        with:
+          secrets: |-
+            DOKKU_GIT_REMOTE_URL:${{ env.GCP_PROJECT_ID }}/dokku-git-remote-url-${{ matrix.secret_suffix }}
+            DOKKU_SSH_HOST_KEY:${{ env.GCP_PROJECT_ID }}/dokku-ssh-host-key-${{ matrix.secret_suffix }}
+            DOKKU_SSH_PRIVATE_KEY:${{ env.GCP_PROJECT_ID }}/dokku-ssh-private-key-${{ matrix.secret_suffix }}
+            TAILSCALE_APP_URL:${{ env.GCP_PROJECT_ID }}/tailscale-app-url-${{ matrix.secret_suffix }}
+
+      - name: Check the reachability of the app server
+        env:
+          APP_URL: ${{ steps.fetch_secrets.outputs.TAILSCALE_APP_URL }}
+        run: |
+          echo "Target: ${{ matrix.server }}"
+          curl -s "${APP_URL}/health"
+        continue-on-error: true
+
       - name: Deploy to GCE via dokku
         uses: dokku/github-action@master
         with:
           trace: 1
           branch: main
           git_push_flags: --force
-          git_remote_url: ${{ secrets.DOKKU_GIT_REMOTE_URL }}
-          ssh_host_key: ${{ secrets.DOKKU_SSH_HOST_KEY }}
-          ssh_private_key: ${{ secrets.DOKKU_SSH_PRIVATE_KEY }}
+          git_remote_url: ${{ steps.fetch_secrets.outputs.DOKKU_GIT_REMOTE_URL }}
+          ssh_host_key: ${{ steps.fetch_secrets.outputs.DOKKU_SSH_HOST_KEY }}
+          ssh_private_key: ${{ steps.fetch_secrets.outputs.DOKKU_SSH_PRIVATE_KEY }}
 
       - name: Verify deployment via health endpoint
         env:
-          APP_URL: ${{ secrets.TAILSCALE_APP_URL }}
+          APP_URL: ${{ steps.fetch_secrets.outputs.TAILSCALE_APP_URL }}
 
         run: |-
           LOCAL_COMMIT=$(git rev-parse HEAD)
+          echo "Target: ${{ matrix.server }}"
           echo "Local commit: $LOCAL_COMMIT"
           echo "App URL: $APP_URL"
 

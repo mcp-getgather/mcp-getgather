@@ -8,6 +8,7 @@ on:
 jobs:
   backend-format:
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,6 +24,7 @@ jobs:
 
   frontend-lint:
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -35,6 +37,7 @@ jobs:
 
   frontend-format:
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -47,6 +50,7 @@ jobs:
 
   backend-types:
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -59,6 +63,7 @@ jobs:
 
   yaml-format:
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

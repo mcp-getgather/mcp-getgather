@@ -25,13 +25,19 @@
           },
           {
             "name": "product_names",
-            "selector": "div.yohtmlc-product-title, a.a-link-normal[href*='/gp/product/'], a.a-link-normal[href*='/gp/video/'], .a-fixed-left-grid-col a.a-link-normal",
+            "selector": "div.yohtmlc-product-title a",
             "kind": "list"
           },
           {
             "name": "image_urls",
             "selector": "div.product-image img, .item-view-left-col-inner img",
             "attribute": "src",
+            "kind": "list"
+          },
+          {
+            "name": "product_urls",
+            "selector": "div.yohtmlc-product-title a",
+            "attribute": "href",
             "kind": "list"
           },
           {
@@ -48,6 +54,10 @@
             "name": "author_or_creator",
             "selector": "span.a-size-small:not(.a-color-secondary), .a-size-small:not(.a-color-secondary)",
             "kind": "list"
+          },
+          {
+            "name": "shipment_status",
+            "selector": "span.a-size-medium.delivery-box__primary-text, .yohtmlc-shipment-status-primaryText span"
           }
         ]
       }

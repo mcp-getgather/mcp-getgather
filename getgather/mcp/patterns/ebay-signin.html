@@ -1,0 +1,22 @@
+<html gg-domain="ebay">
+  <head>
+    <title>Sign In to Ebay</title>
+  </head>
+  <body>
+    <p gg-optional gg-match="p#signin-error-msg"></p>
+    <input
+      autofocus
+      name="userid"
+      type="text"
+      gg-match="input#userid"
+      placeholder="Email or username"
+    />
+    <button
+      type="submit"
+      gg-autoclick
+      gg-match="[data-testid='signin-continue-btn']:not([disabled])"
+    >
+      Sign in
+    </button>
+  </body>
+</html>

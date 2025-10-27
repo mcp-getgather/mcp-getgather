@@ -1,9 +1,8 @@
-import { ExternalLink, Wrench } from "lucide-react";
+import { Wrench } from "lucide-react";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
 import { $api } from "@/lib/api";
-import { inspectorEnabled } from "@/lib/config";
 
 type MCPDoc = {
   name: string;
@@ -113,7 +112,6 @@ function ServerCard({ server }: { server: MCPDoc }) {
       <div className="p-6">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-xl font-semibold text-slate-800 capitalize">{server.name}</h3>
-          {inspectorEnabled() && <InspectorLink route={server.route} />}
         </div>
 
         <div className="mb-4">
@@ -140,20 +138,5 @@ function ServerCard({ server }: { server: MCPDoc }) {
         </div>
       </div>
     </div>
-  );
-}
-
-function InspectorLink({ route }: { route: string }) {
-  const baseUrl = "/inspector/?MCP_PROXY_AUTH_TOKEN=getgather&transport=streamable-http";
-  return (
-    <a
-      href={`${baseUrl}&serverUrl=http://localhost:23456${route}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 rounded-md bg-indigo-100 px-3 py-1.5 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-200"
-    >
-      Inspector
-      <ExternalLink className="h-3 w-3" />
-    </a>
   );
 }

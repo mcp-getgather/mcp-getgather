@@ -141,7 +141,7 @@ async def handle_click(
 
 async def handle_navigate(page: Page, url: str):
     logger.info(f"🌐 Navigating to {url}...")
-    await page.goto(url, wait_until="domcontentloaded", timeout=60_000)
+    await page.goto(url, wait_until="domcontentloaded")
     await page.wait_for_load_state("domcontentloaded")
     logger.info(f"🌐 Navigated to {url}")
 

@@ -1,0 +1,25 @@
+<html gg-domain="jetblue" gg-priority="1">
+  <body>
+    <p gg-optional gg-match="div.infobox-error"></p>
+    <input
+      autofocus
+      type="text"
+      name="identifier"
+      placeholder="Email"
+      gg-match="input[name='identifier']"
+    />
+    <input
+      type="password"
+      name="password"
+      placeholder="Password"
+      gg-match="input[name='credentials.passcode']"
+    />
+    <button
+      type="submit"
+      gg-autoclick
+      gg-match="div.o-form-button-bar input[type=submit]:not([disabled])"
+    >
+      Sign In
+    </button>
+  </body>
+</html>
