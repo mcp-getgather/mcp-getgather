@@ -1,0 +1,76 @@
+name: Shopee
+
+signin:
+  fields:
+    - name: login_key
+      type: text
+      prompt: No. Handphone/Username/Email
+      selector: input[name="loginKey"]
+
+    - name: password
+      type: password
+      prompt: Password
+      selector: input[name="password"]
+
+    - name: login_button
+      type: click
+      prompt: Log In
+      selector: button:has-text('Log in')
+
+    - name: link_verification_button
+      type: click
+      prompt: Send Verification Link
+      selector: button[aria-label="Verifikasi melalui link"]
+
+    - name: link_verification_sms_button
+      type: click
+      prompt: Verify via SMS
+      selector: button:has-text('Kirim lewat SMS')
+
+    - name: link_verification_whatsapp_button
+      type: click
+      prompt: Verify via Whatsapp
+      selector: button[aria-label="Click the button to send the authentication link through WhatsAPP"]
+
+    - name: verification_sent
+      type: wait
+      selector: div:has-text("Link verifikasi telah dikirim melalui WhatsApp ke")
+
+    - name: incorrect_credentials
+      type: wait
+      selector: div[role="alert"] > div
+
+  pages:
+    - name: Login Page
+      url: https://shopee.co.id/buyer/login
+      fields: [login_key, password, login_button]
+    - name: Verification Page
+      url: https://shopee.co.id/verify/ivs?is_initial=true
+      fields: [link_verification_button]
+
+    - name: Choose Verification Method
+      url: https://shopee.co.id/verify/ivs?is_initial=true
+      choices:
+        name: verification_choice
+        prompt: Send verification link via SMS or Whatsapp?
+        groups:
+          - name: sms
+            prompt: SMS
+            fields: [link_verification_sms_button]
+          - name: whatsapp
+            prompt: Whatsapp
+            fields: [link_verification_whatsapp_button]
+
+    - name: Waiting Verification
+      url: https://shopee.co.id/verify/link
+      fields: [verification_sent]
+
+    - name: Incorrect login credentials
+      fields: [login_key, password, login_button, incorrect_credentials]
+      message: ❌ The login credentials you entered are incorrect. Please try again.
+
+    - name: Home
+      url: https://shopee.co.id/?is_from_login=true
+      end: true
+
+  start: Login Page
