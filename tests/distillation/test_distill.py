@@ -70,13 +70,14 @@ async def test_distillation_loop(location: str):
     patterns = load_distillation_patterns(path)
     assert patterns, "No patterns found to begin matching."
 
-    result, _, _ = await run_distillation_loop(
+    _terminated, distilled, converted = await run_distillation_loop(
         location=location,
         patterns=patterns,
         browser_profile=profile,
         timeout=30,
         interactive=True,
     )
+    result = converted if converted else distilled
     assert result, "No result found when one was expected."
 
 
@@ -98,7 +99,7 @@ async def test_distillation_captures_screenshot_without_pattern(
 
     profile = BrowserProfile()
 
-    result, _, _ = await run_distillation_loop(
+    terminated, _distilled, _converted = await run_distillation_loop(
         location="http://localhost:5001/random-info-page",
         patterns=patterns,
         browser_profile=profile,
@@ -106,7 +107,7 @@ async def test_distillation_captures_screenshot_without_pattern(
         interactive=False,
     )
 
-    assert not result, "Expected no distilled output when no pattern matches."
+    assert not terminated, "Expected not to terminate when no pattern matches."
 
     after = set(screenshot_dir.glob("*.png"))
     new_files = [item for item in after if item not in before]
