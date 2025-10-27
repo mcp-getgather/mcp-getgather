@@ -77,6 +77,12 @@ PRODUCT_CATEGORIES = {
     ],
 }
 
+# Shipment status options
+SHIPMENT_STATUSES = [
+    "",  # Default/no special status
+    "Return complete",
+]
+
 
 def generate_product(category: str | None = None) -> dict[str, Any]:
     """Generate a single fake product."""
@@ -114,11 +120,15 @@ def generate_order(order_number: int, year: int) -> dict[str, Any]:
     # Generate order ID in Amazon format
     order_id = f"{random.randint(100, 999)}-{random.randint(1000000, 9999999)}-{random.randint(1000000, 9999999)}"
 
+    # Generate random shipment status
+    shipment_status = random.choice(SHIPMENT_STATUSES)
+
     return {
         "order_id": order_id,
         "order_date": order_date.strftime("%B %d, %Y"),
         "order_total": f"${total_price:.2f}",
         "ship_to": fake.name(),
+        "shipment_status": shipment_status,
         "products": products,
     }
 
@@ -128,6 +138,7 @@ def create_order_card(
     order_date: str,
     order_total: str,
     ship_to: str,
+    shipment_status: str,
     products: list[dict[str, Any]],
 ):
     """Create a single order card with the structure Amazon uses."""
@@ -203,6 +214,14 @@ def create_order_card(
             ),
             # Order items
             Div(*product_items) if product_items else None,
+            # Shipment status
+            Div(
+                Span(
+                    shipment_status,
+                    cls="a-size-medium delivery-box__primary-text",
+                ),
+                cls="yohtmlc-shipment-status-primaryText",
+            ),
             cls="order-card js-order-card",
         ),
         cls="a-section a-spacing-none a-padding-small",
@@ -237,6 +256,7 @@ def create_orders_page(year: str, start_index: int, num_orders: int = DEFAULT_NU
             order_date=order["order_date"],
             order_total=order["order_total"],
             ship_to=order["ship_to"],
+            shipment_status=order["shipment_status"],
             products=order["products"],
         )
         for order in displayed_orders

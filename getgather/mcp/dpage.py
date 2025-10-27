@@ -36,22 +36,15 @@ router = APIRouter(prefix="/dpage", tags=["dpage"])
 active_pages: dict[str, Page] = {}
 distillation_results: dict[str, str | list[dict[str, str | list[str]]] | dict[str, Any]] = {}
 pending_actions: dict[str, dict[str, Any]] = {}  # Store actions to resume after signin
+incognito_browser_profiles: dict[str, BrowserProfile] = {}
 global_browser_profile: BrowserProfile | None = None
 
 
-async def dpage_add(
-    browser_profile: BrowserProfile | None = None,
-    location: str | None = None,
-    id: str | None = None,
-):
-    if id is None:
-        FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
-        id = generate(FRIENDLY_CHARS, 8)
-        if settings.HOSTNAME:
-            id = f"{settings.HOSTNAME}-{id}"
-
-    if browser_profile is None:
-        browser_profile = BrowserProfile()
+async def dpage_add(browser_profile: BrowserProfile, location: str):
+    FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
+    id = generate(FRIENDLY_CHARS, 8)
+    if settings.HOSTNAME:
+        id = f"{settings.HOSTNAME}-{id}"
 
     session = BrowserSession.get(browser_profile)
 
@@ -59,19 +52,16 @@ async def dpage_add(
     page = await session.context.new_page()
 
     try:
-        if location:
-            if not location.startswith("http"):
-                location = f"https://{location}"
-            await page.goto(location, timeout=settings.BROWSER_TIMEOUT)
+        if not location.startswith("http"):
+            location = f"https://{location}"
+        await page.goto(location, timeout=settings.BROWSER_TIMEOUT)
     except Exception as error:
-        hostname = (
-            urllib.parse.urlparse(location).hostname if location else "unknown"
-        ) or "unknown"
+        hostname = urllib.parse.urlparse(location).hostname or "unknown"
         await report_distill_error(
             error=error,
             page=page,
             profile_id=browser_profile.id,
-            location=location if location else "unknown",
+            location=location,
             hostname=hostname,
             iteration=0,
         )
@@ -129,18 +119,13 @@ def redirect(id: str) -> HTMLResponse:
 
 @router.get("", response_class=HTMLResponse)
 @router.get("/{id}", response_class=HTMLResponse)
-async def get_dpage(location: str | None = None, id: str | None = None) -> HTMLResponse:
+async def get_dpage(id: str | None = None) -> HTMLResponse:
     if id:
         if id in active_pages:
             return redirect(id)
         raise HTTPException(status_code=404, detail="Invalid page id")
 
-    if not location:
-        raise HTTPException(status_code=400, detail="Missing location parameter")
-
-    logger.info(f"Starting distillation at {location}...")
-    id = await dpage_add(location=location)
-    return redirect(id)
+    raise HTTPException(status_code=400, detail="Missing page id")
 
 
 FINISHED_MSG = "Finished! You can close this window now."
@@ -337,9 +322,16 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
     headers = get_http_headers(include_all=True)
     incognito = headers.get("x-incognito", "0") == "1"
+    signin_id = headers.get("x-signin-id") or None
 
     if incognito:
-        browser_profile = BrowserProfile()
+        if signin_id is not None:
+            if signin_id in incognito_browser_profiles:
+                browser_profile = incognito_browser_profiles[signin_id]
+            else:
+                raise ValueError(f"Browser profile for signin {signin_id} not found")
+        else:
+            browser_profile = BrowserProfile()
     else:
         global global_browser_profile
         if global_browser_profile is None:
@@ -363,7 +355,8 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
         browser_profile = global_browser_profile
 
-        # First, try without any interaction as this will work if the user signed in previously
+    if not incognito or signin_id is not None:
+        # First, try without any interaction as this will work if the user signed in previously (using global browser profile or incognito with signin_id)
         distillation_result, terminated = await run_distillation_loop(
             initial_url,
             patterns,
@@ -376,7 +369,10 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
             return {result_key: distillation_result}
 
     # If that didn't work, try signing in via distillation
-    id = await dpage_add(browser_profile=browser_profile, location=initial_url)
+    id = await dpage_add(browser_profile, initial_url)
+
+    if incognito:
+        incognito_browser_profiles[id] = browser_profile
 
     host = headers.get("x-forwarded-host") or headers.get("host")
     if host is None:

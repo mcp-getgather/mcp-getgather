@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import urllib.parse
+from dataclasses import dataclass
 from datetime import datetime
 from glob import glob
 from pathlib import Path
@@ -16,7 +17,6 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 from nanoid import generate
 from patchright.async_api import Locator, Page
-from pydantic import BaseModel
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession, browser_session
@@ -24,21 +24,17 @@ from getgather.config import settings
 from getgather.logs import logger
 
 
-class Pattern(BaseModel):
+@dataclass
+class Pattern:
     name: str
     pattern: BeautifulSoup
 
-    class Config:
-        arbitrary_types_allowed = True
 
-
-class Match(BaseModel):
+@dataclass
+class Match:
     name: str
     priority: int
     distilled: str
-
-    class Config:
-        arbitrary_types_allowed = True
 
 
 ConversionResult = list[dict[str, str | list[str]]]
