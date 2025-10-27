@@ -1,41 +1,145 @@
 import asyncio
 import json
+import logging
 import os
 import re
 import urllib.parse
+from dataclasses import dataclass
+from datetime import datetime
 from glob import glob
-from typing import cast
+from pathlib import Path
+from typing import Any, cast
+from urllib.parse import urlparse, urlunparse
 
 import pwinput
+import sentry_sdk
 from bs4 import BeautifulSoup
 from bs4.element import Tag
+from nanoid import generate
 from patchright.async_api import Locator, Page
-from pydantic import BaseModel
 
 from getgather.browser.profile import BrowserProfile
-from getgather.browser.session import browser_session
+from getgather.browser.session import BrowserSession, browser_session
+from getgather.config import settings
 from getgather.logs import logger
 
 
-class Pattern(BaseModel):
+@dataclass
+class Pattern:
     name: str
     pattern: BeautifulSoup
 
-    class Config:
-        arbitrary_types_allowed = True
 
-
-class Match(BaseModel):
+@dataclass
+class Match:
     name: str
     priority: int
     distilled: str
-    matches: list[Locator]
-
-    class Config:
-        arbitrary_types_allowed = True
 
 
 ConversionResult = list[dict[str, str | list[str]]]
+
+
+def _safe_fragment(value: str) -> str:
+    fragment = re.sub(r"[^a-zA-Z0-9_-]+", "-", value).strip("-")
+    return fragment or "distill"
+
+
+async def capture_page_artifacts(
+    page: Page,
+    *,
+    identifier: str,
+    prefix: str,
+    capture_html: bool = True,
+) -> tuple[Path, Path | None, str | None]:
+    """Capture a screenshot (and optional HTML) for debugging/triage."""
+
+    settings.screenshots_dir.mkdir(parents=True, exist_ok=True)
+
+    base_identifier = _safe_fragment(identifier)
+    base_prefix = _safe_fragment(prefix)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    token = generate(size=5)
+    filename = f"{base_identifier}_{base_prefix}_{timestamp}_{token}.png"
+    screenshot_path = settings.screenshots_dir / filename
+
+    await page.screenshot(path=str(screenshot_path), full_page=True)
+
+    html_path: Path | None = None
+    html_content: str | None = None
+    if capture_html:
+        try:
+            html_content = await page.content()
+        except Exception as exc:  # ignore navigation races during capture
+            logger.debug(f"⚠️ Can't capture page content during navigation: {exc}")
+        else:
+            html_path = screenshot_path.with_suffix(".html")
+            html_path.write_text(html_content, encoding="utf-8")
+
+    logger.debug(
+        "📸 Distill artifact saved",
+        extra={
+            "screenshot": f"file://{screenshot_path}",
+            "html": f"file://{html_path}" if html_path else None,
+        },
+    )
+
+    return screenshot_path, html_path, html_content
+
+
+async def report_distill_error(
+    *,
+    error: Exception,
+    page: Page | None,
+    profile_id: str,
+    location: str,
+    hostname: str,
+    iteration: int,
+) -> None:
+    screenshot_path: Path | None = None
+    html_path: Path | None = None
+
+    if page:
+        try:
+            screenshot_path, html_path, _ = await capture_page_artifacts(
+                page,
+                identifier=profile_id,
+                prefix="distill_error",
+            )
+        except Exception as capture_error:
+            logger.warning(f"Failed to capture distillation artifacts: {capture_error}")
+
+    context: dict[str, Any] = {
+        "location": location,
+        "hostname": hostname,
+        "iteration": iteration,
+    }
+
+    logger.error(
+        "Distillation error",
+        extra={
+            "profile_id": profile_id,
+            "location": location,
+            "iteration": iteration,
+            "screenshot": f"file://{screenshot_path}" if screenshot_path else None,
+        },
+    )
+
+    if settings.SENTRY_DSN:
+        with sentry_sdk.isolation_scope() as scope:
+            scope.set_context("distill", context)
+            if screenshot_path:
+                scope.add_attachment(
+                    filename=screenshot_path.name,
+                    path=str(screenshot_path),
+                )
+            if html_path:
+                scope.add_attachment(
+                    filename=html_path.name,
+                    path=str(html_path),
+                )
+
+            sentry_sdk.capture_exception(error)
 
 
 def get_selector(input_selector: str | None) -> tuple[str | None, str | None]:
@@ -254,18 +358,14 @@ async def click(
         raise e
 
 
-async def autoclick(page: Page, distilled: str):
+async def autoclick(page: Page, distilled: str, expr: str):
     document = BeautifulSoup(distilled, "html.parser")
-    buttons = document.find_all(attrs={"gg-autoclick": True})
-
-    for button in buttons:
-        if isinstance(button, Tag):
-            selector, frame_selector = get_selector(str(button.get("gg-match")))
-            if selector:
-                logger.info(f"Auto-clicking {selector}")
-                if isinstance(frame_selector, list):
-                    frame_selector = str(frame_selector[0]) if frame_selector else None
-                await click(page, str(selector), frame_selector=frame_selector)
+    elements = document.select(expr)
+    for el in elements:
+        selector, frame_selector = get_selector(str(el.get("gg-match")))
+        if selector:
+            logger.info(f"Clicking {selector}")
+            await click(page, str(selector), frame_selector=frame_selector)
 
 
 async def terminate(page: Page, distilled: str) -> bool:
@@ -310,7 +410,8 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
         logger.debug(f"Checking {name} with priority {priority}")
 
         found = True
-        matches: list[Locator] = []
+        match_count = 0
+
         targets = pattern.find_all(attrs={"gg-match": True}) + pattern.find_all(
             attrs={"gg-match-html": True}
         )
@@ -318,6 +419,9 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
         for target in targets:
             if not isinstance(target, Tag):
                 continue
+
+            if not found:
+                break
 
             html = target.get("gg-match-html")
             selector, frame_selector = get_selector(str(html if html else target.get("gg-match")))
@@ -331,6 +435,7 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
                 source = await locate(page.locator(selector))
 
             if source:
+                match_count += 1
                 if html:
                     target.clear()
                     fragment = BeautifulSoup(
@@ -344,21 +449,19 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
                     raw_text = await source.text_content()
                     if raw_text:
                         target.string = raw_text.strip()
-                matches.append(source)
             else:
                 optional = target.get("gg-optional") is not None
                 logger.debug(f"Optional {selector} has no match")
                 if not optional:
                     found = False
 
-        if found and len(matches) > 0:
+        if found and match_count > 0:
             distilled = str(pattern)
             result.append(
                 Match(
                     name=name,
                     priority=priority,
                     distilled=distilled,
-                    matches=matches,
                 )
             )
 
@@ -383,8 +486,8 @@ async def run_distillation_loop(
     browser_profile: BrowserProfile | None = None,
     timeout: int = 15,
     interactive: bool = True,
-    with_terminate_flag: bool = False,
-) -> dict[str, str | ConversionResult | None | bool] | str | ConversionResult:
+    stop_ok: bool = False,
+) -> tuple[dict[str, str | ConversionResult | None] | str | ConversionResult, bool]:
     if len(patterns) == 0:
         logger.error("No distillation patterns provided")
         raise ValueError("No distillation patterns provided")
@@ -394,17 +497,36 @@ async def run_distillation_loop(
     # Use provided profile or create new one
     profile = browser_profile or BrowserProfile()
 
-    async with browser_session(profile) as session:
-        page = await session.page()
+    async with browser_session(profile, stop_ok=stop_ok) as session:
+        page = await session.new_page()
 
         logger.info(f"Starting browser {profile.id}")
         logger.info(f"Navigating to {location}")
-        await page.goto(location)
+        try:
+            await page.goto(location, timeout=settings.BROWSER_TIMEOUT)
+        except Exception as error:
+            logger.error(f"Failed to navigate to {location}: {error}")
+            await report_distill_error(
+                error=error,
+                page=page,
+                profile_id=profile.id,
+                location=location,
+                hostname=hostname,
+                iteration=0,
+            )
+            raise ValueError(f"Failed to navigate to {location}: {error}")
+
+        if logger.isEnabledFor(logging.DEBUG):
+            await capture_page_artifacts(
+                page,
+                identifier=profile.id,
+                prefix="distill_debug",
+            )
 
         TICK = 1  # seconds
         max = timeout // TICK
 
-        current = Match(name="", priority=-1, distilled="", matches=[])
+        current = Match(name="", priority=-1, distilled="")
 
         for iteration in range(max):
             logger.info("")
@@ -417,29 +539,73 @@ async def run_distillation_loop(
                     logger.debug(f"Still the same: {match.name}")
                 else:
                     distilled = match.distilled
-                    if interactive:
-                        distilled = await autofill(page, distilled)
-
                     current = match
-                    current.distilled = distilled
+
                     print()
                     print(distilled)
-                    if interactive:
-                        await autoclick(page, distilled)
+
                     if await terminate(page, distilled):
                         converted = await convert(distilled)
-                        if with_terminate_flag:
-                            return {
-                                "terminated": True,
-                                "result": converted if converted else distilled,
-                            }
-                        else:
-                            return converted if converted else distilled
+                        await page.close()
+                        return (converted if converted else distilled, True)
+
+                    if interactive:
+                        distilled = await autofill(page, distilled)
+                        await autoclick(page, distilled, "[gg-autoclick]:not(button)")
+                        await autoclick(
+                            page, distilled, "button[gg-autoclick], button[type=submit]"
+                        )
+
+                    current.distilled = distilled
 
             else:
                 logger.debug(f"No matched pattern found")
 
-        if with_terminate_flag:
-            return {"terminated": False, "result": current.distilled}
-        else:
-            return current.distilled
+        await report_distill_error(
+            error=ValueError("No matched pattern found"),
+            page=page,
+            profile_id=profile.id,
+            location=location,
+            hostname=hostname,
+            iteration=max,
+        )
+        await page.close()
+        return (current.distilled, False)
+
+
+async def short_lived_mcp_tool(
+    location: str,
+    pattern_wildcard: str,
+    result_key: str,
+    url_hostname: str,
+) -> tuple[bool, dict[str, Any]]:
+    path = os.path.join(os.path.dirname(__file__), "mcp", "patterns", pattern_wildcard)
+    patterns = load_distillation_patterns(path)
+
+    browser_profile = BrowserProfile()
+    session = BrowserSession.get(browser_profile)
+    session = await session.start()
+    distilled, terminated = await run_distillation_loop(
+        location, patterns, browser_profile, interactive=False
+    )
+    await session.context.close()
+
+    result: dict[str, Any] = {result_key: distilled}
+    if result_key in result:
+        items_value = result[result_key]
+        if isinstance(items_value, list):
+            for item in cast(list[dict[str, Any]], items_value):
+                if "link" in item:
+                    link = cast(str, item["link"])
+                    parsed = urlparse(link)
+                    netloc: str = parsed.netloc if parsed.netloc else url_hostname
+                    url: str = urlunparse((
+                        "https",
+                        netloc,
+                        parsed.path,
+                        parsed.params,
+                        parsed.query,
+                        parsed.fragment,
+                    ))
+                    item["url"] = url
+    return terminated, result
