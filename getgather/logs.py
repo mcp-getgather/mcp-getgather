@@ -1,28 +1,84 @@
+import json
 import logging
-from typing import Any
+from typing import Any, Literal
 
 from rich.logging import RichHandler
 
 LOGGER_NAME = "getgather"
 
 
-def setup_logging(level: str = "INFO"):
-    rich_handler = RichHandler(
-        rich_tracebacks=True, markup=True, show_time=True, show_level=True, show_path=False
-    )
-    rich_handler.setFormatter(StructuredFormatter())
+def extract_extra_fields(record: logging.LogRecord) -> dict[str, Any]:
+    """Extract custom extra fields from a LogRecord, excluding standard attributes."""
+    standard_attrs = {
+        "name",
+        "msg",
+        "args",
+        "levelname",
+        "levelno",
+        "pathname",
+        "filename",
+        "module",
+        "lineno",
+        "funcName",
+        "created",
+        "msecs",
+        "relativeCreated",
+        "thread",
+        "threadName",
+        "processName",
+        "process",
+        "getMessage",
+        "exc_info",
+        "exc_text",
+        "stack_info",
+        "message",
+        "asctime",
+        "taskName",
+    }
+
+    return {
+        k: v
+        for k, v in record.__dict__.items()
+        if k not in standard_attrs and not k.startswith("_")
+    }
+
+
+def setup_logging_level(level: str = "INFO"):
+    # app logger to the level
+    logging.getLogger(LOGGER_NAME).setLevel(level)
+
+
+def setup_logging_format(format: Literal["rich", "json"] = "rich"):
+    if format == "rich":
+        handler = _setup_rich()
+    else:
+        handler = _setup_json()
 
     # reconfigure uvicorn.error, uvicorn.access and fastapi
     for name in ["uvicorn.error", "uvicorn.access", "fastapi"]:
         logger = logging.getLogger(name)
         logger.handlers.clear()
-        logger.addHandler(rich_handler)
+        logger.addHandler(handler)
         logger.propagate = False
 
-    # Configure the root logger to INFO level, and app logger to the level
-    # specified in the .env
-    logging.basicConfig(level="INFO", format="%(message)s", datefmt="[%X]", handlers=[rich_handler])
-    logging.getLogger(LOGGER_NAME).setLevel(level)
+    # Configure the root logger to INFO level
+    logging.basicConfig(level="INFO", format="%(message)s", datefmt="[%X]", handlers=[handler])
+
+
+def _setup_rich():
+    rich_handler = RichHandler(
+        rich_tracebacks=True, markup=True, show_time=True, show_level=True, show_path=False
+    )
+    rich_handler.setFormatter(StructuredFormatter())
+    return rich_handler
+
+
+def _setup_json():
+    """Setup JSON logging format."""
+    json_handler = logging.StreamHandler()
+    json_handler.setFormatter(JsonFormatter())
+
+    return json_handler
 
 
 logger = logging.getLogger(LOGGER_NAME)
@@ -35,40 +91,7 @@ class StructuredFormatter(logging.Formatter):
         # Get the base formatted message
         base_msg = super().format(record)
 
-        # Extract extra fields (anything not in the standard LogRecord attributes)
-        # Include all possible LogRecord attributes to avoid conflicts
-        standard_attrs = {
-            "name",
-            "msg",
-            "args",
-            "levelname",
-            "levelno",
-            "pathname",
-            "filename",
-            "module",
-            "lineno",
-            "funcName",
-            "created",
-            "msecs",
-            "relativeCreated",
-            "thread",
-            "threadName",
-            "processName",
-            "process",
-            "getMessage",
-            "exc_info",
-            "exc_text",
-            "stack_info",
-            "message",
-            "asctime",
-            "taskName",
-        }
-
-        extras = {
-            k: v
-            for k, v in record.__dict__.items()
-            if k not in standard_attrs and not k.startswith("_")
-        }
+        extras = extract_extra_fields(record)
 
         if extras:
             # Color code the extras section based on log level
@@ -106,6 +129,29 @@ class StructuredFormatter(logging.Formatter):
             return f"{base_msg}\n{extras_str}"
 
         return base_msg
+
+
+class JsonFormatter(logging.Formatter):
+    """JSON formatter that outputs structured logs."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        # Create the base log entry
+        log_entry = {
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "line": record.lineno,
+        }
+
+        # Add exception info if present
+        if record.exc_info:
+            log_entry["exception"] = self.formatException(record.exc_info)
+
+        log_entry.update(extract_extra_fields(record))
+
+        return json.dumps(log_entry, default=str)
 
 
 # The StructuredFormatter handles extra fields automatically when using logger.info(msg, extra={...})

@@ -1,12 +1,13 @@
 from functools import cached_property
 from pathlib import Path
+from typing import Literal
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from getgather.browser.proxy_loader import load_proxy_configs
 from getgather.browser.proxy_types import ProxyConfig
-from getgather.logs import logger, setup_logging
+from getgather.logs import logger, setup_logging_format, setup_logging_level
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,6 +26,7 @@ class Settings(BaseSettings):
 
     # Logging
     SENTRY_DSN: str = ""
+    LOG_FORMAT: Literal["rich", "json"] = "rich"
 
     # Browser Package Settings
     HEADLESS: bool = False
@@ -99,7 +101,13 @@ class Settings(BaseSettings):
     @field_validator("LOG_LEVEL", mode="after")
     @classmethod
     def set_log_level(cls, v: str) -> str:
-        setup_logging(v)
+        setup_logging_level(v)
+        return v
+
+    @field_validator("LOG_FORMAT", mode="after")
+    @classmethod
+    def set_log_format(cls, v: Literal["rich", "json"]) -> str:
+        setup_logging_format(v)
         return v
 
     @field_validator("SENTRY_DSN", mode="after")
