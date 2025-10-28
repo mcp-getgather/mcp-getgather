@@ -100,10 +100,17 @@ RUN apt-get update && apt-get install -y \
     x11-apps \
     dbus \
     dbus-x11 \
+    cron \
+    curl \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+RUN echo '* * * * * root curl -fsS http://localhost:23456/cleanup-sessions > /dev/null 2>&1' > /etc/cron.d/app-cron \
+    && echo '' >> /etc/cron.d/app-cron \
+    && chmod 0644 /etc/cron.d/app-cron \
+    && crontab /etc/cron.d/app-cron
 
 COPY --from=backend-builder /app/.venv /opt/venv
 COPY --from=backend-builder /app/getgather /app/getgather

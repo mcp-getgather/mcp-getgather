@@ -22,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from getgather.api.api import api_app
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
+from getgather.browser.session_cleanup import cleanup_old_sessions
 from getgather.config import settings
 from getgather.logs import logger
 from getgather.mcp.dpage import router as dpage_router
@@ -186,6 +187,12 @@ def health():
     return PlainTextResponse(
         content=f"OK {int(datetime.now().timestamp())} GIT_REV: {settings.GIT_REV}"
     )
+
+
+@app.get("/cleanup-sessions")
+async def cleanup_sessions():
+    await cleanup_old_sessions()
+    return PlainTextResponse(content="OK")
 
 
 IP_CHECK_URL: Final[str] = "https://ifconfig.me/ip"

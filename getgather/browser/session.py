@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 from collections import defaultdict
 from contextlib import asynccontextmanager, suppress
+from dataclasses import dataclass
+from datetime import datetime
 from typing import ClassVar
 
 from fastapi import HTTPException
@@ -15,6 +17,12 @@ from getgather.logs import logger
 from getgather.rrweb import rrweb_injector, rrweb_manager
 
 FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
+
+
+@dataclass
+class LaunchedProfile:
+    profile_id: str
+    launched_at: datetime | None
 
 
 class BrowserStartupError(HTTPException):
@@ -42,6 +50,7 @@ class BrowserSession:
         self.profile: BrowserProfile = BrowserProfile(id=profile_id)
         self._playwright: Playwright | None = None
         self._context: BrowserContext | None = None
+        self.launched_at: datetime | None = None
 
         self.session_id = generate(FRIENDLY_CHARS, 8)
         self.total_event = 0
@@ -52,6 +61,23 @@ class BrowserSession:
             return cls._sessions[profile.id]
         else:  # create new session
             return BrowserSession(profile.id)
+
+    @classmethod
+    def get_launched_profile_ids(cls) -> list[LaunchedProfile]:
+        """
+        Get a list of profile IDs that are currently launched (have active browser sessions)
+        along with their launch timestamps.
+
+        Returns:
+            list[LaunchedProfile]: A list of LaunchedProfile objects.
+        """
+        return [
+            LaunchedProfile(
+                profile_id=profile_id,
+                launched_at=session.launched_at,
+            )
+            for profile_id, session in cls._sessions.items()
+        ]
 
     @property
     def context(self) -> BrowserContext:
@@ -94,6 +120,13 @@ class BrowserSession:
                     profile_id=self.profile.id, browser_type=self.playwright.chromium
                 )
 
+                # Set launch timestamp and safely register the session at the end
+                self.launched_at = datetime.now()
+                self._sessions[self.profile.id] = self
+                logger.info(
+                    f"Session {self.profile.id} registered in sessions with launched_at {self.launched_at}"
+                )
+
                 await configure_context(self._context)
 
                 debug_page = await self.page()
@@ -108,9 +141,6 @@ class BrowserSession:
                         rrweb_injector.setup_rrweb(self.context, page)
                     ),
                 )
-
-                # safely register the session at the end
-                self._sessions[self.profile.id] = self
 
                 return self
 

@@ -23,5 +23,8 @@ jwm >/dev/null 2>&1 &
 # So that the desktop is not completely empty
 xeyes &
 
+echo "Starting cron service..."
+service cron start
+
 # Start FastAPI server
 /opt/venv/bin/python -m uvicorn getgather.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
