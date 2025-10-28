@@ -50,58 +50,14 @@ async def get_product_details(product_url: str) -> dict[str, Any]:
 
 
 @tokopedia_mcp.tool
-@with_brand_browser_session
 async def search_shop(keyword: str) -> dict[str, Any]:
     """Search shop on tokopedia."""
-    browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
-
-    # URL encode the search keyword
     encoded_keyword = quote(keyword)
-    await page.goto(
-        f"https://www.tokopedia.com/search?st=shop&q={encoded_keyword}", wait_until="commit"
+    url = f"https://www.tokopedia.com/search?st=shop&q={encoded_keyword}"
+    return await dpage_mcp_tool(
+        initial_url=url,
+        result_key="shop_list",
     )
-    await page.wait_for_selector(
-        "div[data-testid='divShopContainer'] > div:nth-child(1) > div:nth-child(1)"
-    )
-    await page.wait_for_timeout(2000)
-    html = await page.locator("div[data-testid='divShopContainer']").inner_html()
-    spec_schema = SpecSchema.model_validate({
-        "bundle": "",
-        "format": "html",
-        "output": "",
-        "row_selector": "div[data-testid='shop-card']",
-        "columns": [
-            {"name": "shop_name", "selector": "span[data-testid='spnSRPShopName']"},
-            {"name": "shop_location", "selector": "div[data-testid='dSRPShopLocation']"},
-            {
-                "name": "shop_url",
-                "selector": "a[data-testid='shop-card-header']",
-                "attribute": "href",
-            },
-            {
-                "name": "shop_highlight_product_urls",
-                "multiple": True,
-                "selector": "a[data-testid='shop-card-product']",
-                "attribute": "href",
-            },
-            {
-                "name": "shop_highlight_product_imgs",
-                "multiple": True,
-                "selector": "a[data-testid='shop-card-product'] img",
-                "attribute": "src",
-            },
-            {
-                "name": "shop_highlight_product_prices",
-                "multiple": True,
-                "selector": "a[data-testid='shop-card-product'] span",
-            },
-        ],
-    })
-    result = await parse_html(
-        brand_id=tokopedia_mcp.brand_id, html_content=html, schema=spec_schema
-    )
-    return {"shop_list": result.content}
 
 
 @tokopedia_mcp.tool
