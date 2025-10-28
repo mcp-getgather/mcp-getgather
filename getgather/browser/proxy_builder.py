@@ -85,7 +85,6 @@ def build_proxy_config(
     }
     if username:
         result["username"] = username
-
     if proxy_config.password:
         result["password"] = proxy_config.password
 
