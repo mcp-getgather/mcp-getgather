@@ -4,10 +4,9 @@ from typing import Any, Literal
 from urllib.parse import quote, urlparse
 
 from getgather.actions import handle_graphql_response
-from getgather.browser.profile import BrowserProfile
-from getgather.browser.session import browser_session
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.logs import logger
+from getgather.mcp.dpage import dpage_mcp_tool
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import get_mcp_browser_session, with_brand_browser_session
 from getgather.parse import parse_html
@@ -17,64 +16,17 @@ tokopedia_mcp = BrandMCPBase(brand_id="tokopedia", name="Tokopedia MCP")
 
 @tokopedia_mcp.tool
 async def search_product(
-    keyword: str | list[str],
+    keyword: str,
     page_number: int = 1,
 ) -> dict[str, Any]:
     """Search products on Tokopedia."""
+    encoded_keyword = quote(keyword)
+    url = f"https://www.tokopedia.com/search?q={encoded_keyword}&page={page_number}"
 
-    # Always use a fresh browser profile, because authenticated browser profile have different selectors
-    profile = BrowserProfile()
-
-    keywords = [keyword] if isinstance(keyword, str) else keyword
-
-    async with browser_session(profile) as session:
-        context = session.context
-
-        async def search_single_product(kw: str):
-            page = await context.new_page()
-            encoded_keyword = quote(kw)
-            await page.goto(
-                f"https://www.tokopedia.com/search?q={encoded_keyword}&page={page_number}",
-                wait_until="commit",
-            )
-            await page.wait_for_selector(
-                "div[data-testid='divSRPContentProducts'] > div:nth-child(1) > div:nth-child(1)"
-            )
-            await page.wait_for_timeout(2000)
-            html = await page.locator("div[data-testid='divSRPContentProducts']").inner_html()
-
-            spec_schema = SpecSchema.model_validate({
-                "bundle": "",
-                "format": "html",
-                "output": "",
-                "row_selector": "div[class='css-5wh65g']",
-                "columns": [
-                    {
-                        "name": "product_name",
-                        "selector": "a > div > div:nth-child(2) > div:nth-child(1)",
-                    },
-                    {"name": "product_url", "selector": "a", "attribute": "href"},
-                    {"name": "price_discount", "selector": "div[class='rJTRB7icxB2aB4uO48TY0Q==']"},
-                    {"name": "price", "selector": "div[class*='urMOIDHH7I0Iy1Dv2oFaNw==']"},
-                    {
-                        "name": "product_summary",
-                        "selector": "div[class='c7W9YYbRQuC29+GfsfRTEA==']",
-                    },
-                ],
-            })
-            result = await parse_html(
-                brand_id=tokopedia_mcp.brand_id, html_content=html, schema=spec_schema
-            )
-            await page.close()
-            return {kw: result.content}
-
-        results_list = await asyncio.gather(*[search_single_product(kw) for kw in keywords])
-
-    merged_results: dict[str, Any] = {}
-    for r in results_list:
-        merged_results.update(r)
-
-    return {"product_list": merged_results}
+    return await dpage_mcp_tool(
+        initial_url=url,
+        result_key="product_list",
+    )
 
 
 @tokopedia_mcp.tool
