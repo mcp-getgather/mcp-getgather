@@ -16,17 +16,28 @@ tokopedia_mcp = BrandMCPBase(brand_id="tokopedia", name="Tokopedia MCP")
 
 @tokopedia_mcp.tool
 async def search_product(
-    keyword: str,
+    keyword: str | list[str],
     page_number: int = 1,
 ) -> dict[str, Any]:
     """Search products on Tokopedia."""
-    encoded_keyword = quote(keyword)
-    url = f"https://www.tokopedia.com/search?q={encoded_keyword}&page={page_number}"
+    keywords = [keyword] if isinstance(keyword, str) else keyword
 
-    return await dpage_mcp_tool(
-        initial_url=url,
-        result_key="product_list",
-    )
+    async def search_single_product(kw: str) -> dict[str, Any]:
+        encoded_keyword = quote(kw)
+        url = f"https://www.tokopedia.com/search?q={encoded_keyword}&page={page_number}"
+        result = await dpage_mcp_tool(
+            initial_url=url,
+            result_key="product_list",
+        )
+        return {kw: result["product_list"]}
+
+    results_list = await asyncio.gather(*[search_single_product(kw) for kw in keywords])
+
+    merged_results: dict[str, Any] = {}
+    for r in results_list:
+        merged_results.update(r)
+
+    return {"product_list": merged_results}
 
 
 @tokopedia_mcp.tool
