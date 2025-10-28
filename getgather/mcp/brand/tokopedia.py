@@ -41,49 +41,12 @@ async def search_product(
 
 
 @tokopedia_mcp.tool
-@with_brand_browser_session
 async def get_product_details(product_url: str) -> dict[str, Any]:
     """Get product details from tokopedia. Get product_url from search_product tool."""
-    browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
-    await page.goto(product_url, wait_until="commit")
-    await page.wait_for_selector("h1[data-testid='lblPDPDetailProductName']")
-    await page.wait_for_timeout(2000)
-    html = await page.locator("body").inner_html()
-    spec_schema = SpecSchema.model_validate({
-        "bundle": "",
-        "format": "html",
-        "output": "",
-        "row_selector": "div#main-pdp-container",
-        "columns": [
-            {"name": "product_name", "selector": "h1[data-testid='lblPDPDetailProductName']"},
-            {
-                "name": "product_sold_count",
-                "selector": "p[data-testid='lblPDPDetailProductSoldCounter']",
-            },
-            {
-                "name": "rating_number",
-                "selector": "span[data-testid='lblPDPDetailProductRatingNumber']",
-            },
-            {
-                "name": "rating_count",
-                "selector": "div[data-testid='lblPDPDetailProductRatingCounter']",
-            },
-            {"name": "price", "selector": "div[data-testid='lblPDPDetailProductPrice']"},
-            {
-                "name": "discount_percentage",
-                "selector": "span[data-testid='lblPDPDetailDiscountPercentage']",
-            },
-            {"name": "original_price", "selector": "span[data-testid='lblPDPDetailOriginalPrice']"},
-            {"name": "variant", "selector": "div#pdpVariantContainer"},
-            {"name": "description", "selector": "div[data-testid='lblPDPDescriptionProduk']"},
-            {"name": "shop_name", "selector": "div[data-testid='llbPDPFooterShopName']"},
-        ],
-    })
-    result = await parse_html(
-        brand_id=tokopedia_mcp.brand_id, html_content=html, schema=spec_schema
+    return await dpage_mcp_tool(
+        initial_url=product_url,
+        result_key="product_detail",
     )
-    return {"product_detail": result.content}
 
 
 @tokopedia_mcp.tool
