@@ -188,7 +188,7 @@ def health():
     )
 
 
-IP_CHECK_URL: Final[str] = "https://ifconfig.me/ip"
+IP_CHECK_URL: Final[str] = "https://ip.fly.dev/ip"
 
 
 @app.get("/extended-health")
