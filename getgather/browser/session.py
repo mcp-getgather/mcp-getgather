@@ -97,7 +97,7 @@ class BrowserSession:
                 await configure_context(self._context)
 
                 debug_page = await self.page()
-                await debug_page.goto("https://checkip.amazonaws.com")
+                await debug_page.goto("https://ifconfig.me")
 
                 # Intentionally create a new page to apply resources filtering (from blocklists)
                 page = await self.new_page()
