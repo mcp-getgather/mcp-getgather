@@ -85,6 +85,7 @@ def build_proxy_config(
     }
     if username:
         result["username"] = username
+
     if proxy_config.password:
         result["password"] = proxy_config.password
 
@@ -152,6 +153,8 @@ def _build_params(template: str, values: dict[str, Any]) -> str:
     parts: list[str] = []
     current = template
 
+    prefix = template.split("-", 1)[0]
+
     # Find all placeholders in order
     placeholders: list[str] = re.findall(r"\{([^}]+)\}", template)
 
@@ -173,5 +176,6 @@ def _build_params(template: str, values: dict[str, Any]) -> str:
 
     # Clean up separators at start/end
     result = result.strip("-_")
+    result = f"{prefix}-{result}" if result else prefix
 
     return result
