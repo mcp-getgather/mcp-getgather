@@ -1,0 +1,18 @@
+<html gg-domain="tokopedia" gg-priority="4">
+  <head>
+    <title>Tokopedia Shop Detail</title>
+  </head>
+  <body>
+    <div gg-stop gg-match-html="div#zeus-root"></div>
+    <script type="application/json" id="shop-detail">
+      {
+        "rows": "div[data-ssr='shopSSR']",
+        "columns": [
+          { "name": "shop_name", "selector": "h1[data-testid=shopNameHeader]" },
+          { "name": "shop_location", "selector": "span[data-testid=shopLocationHeader]" },
+          { "name": "shop_rating", "selector": "div[data-testid=shopRatingDetailHeader]" }
+        ]
+      }
+    </script>
+  </body>
+</html>

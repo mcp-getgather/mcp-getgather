@@ -61,7 +61,6 @@ async def search_shop(keyword: str) -> dict[str, Any]:
 
 
 @tokopedia_mcp.tool
-@with_brand_browser_session
 async def get_shop_details(
     product_url: str | None = None,
     shop_url: str | None = None,
@@ -111,27 +110,10 @@ async def get_shop_details(
     if not target_url:
         return {"error": "Could not determine valid shop URL"}
 
-    browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
-    await page.goto(target_url, wait_until="commit")
-    await page.wait_for_selector("h1[data-testid='shopNameHeader']")
-    await page.wait_for_timeout(2000)
-    html = await page.locator("div#zeus-root").inner_html()
-    spec_schema = SpecSchema.model_validate({
-        "bundle": "",
-        "format": "html",
-        "output": "",
-        "row_selector": "div[data-ssr='shopSSR']",
-        "columns": [
-            {"name": "shop_name", "selector": "h1[data-testid='shopNameHeader']"},
-            {"name": "shop_location", "selector": "span[data-testid='shopLocationHeader']"},
-            {"name": "shop_rating", "selector": "div[data-testid='shopRatingDetailHeader']"},
-        ],
-    })
-    result = await parse_html(
-        brand_id=tokopedia_mcp.brand_id, html_content=html, schema=spec_schema
+    return await dpage_mcp_tool(
+        initial_url=target_url,
+        result_key="shop_detail",
     )
-    return {"shop_detail": result.content}
 
 
 @tokopedia_mcp.tool(tags={"private"})
