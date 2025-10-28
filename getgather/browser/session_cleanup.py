@@ -30,7 +30,7 @@ async def cleanup_old_sessions():
 
         session_age = current_time - launched_session.launched_at
         if session_age > max_session_age:
-            logger.info(f"Session {launched_session.profile_id} is older than 1 hour, stopping it")
+            logger.info(f"Session {launched_session.profile_id} is older than 30 minutes, stopping it")
             session = BrowserSession.get(BrowserProfile(id=launched_session.profile_id))
             if session:
                 sessions_to_stop.append(launched_session)
