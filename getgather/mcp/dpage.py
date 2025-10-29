@@ -1,8 +1,8 @@
 import asyncio
 import ipaddress
+import logging
 import os
 import urllib.parse
-from asyncio import Task
 from typing import Any
 
 from bs4 import BeautifulSoup, Tag
@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastmcp.server.dependencies import get_http_headers
 from nanoid import generate
-from patchright.async_api import Page, Route
+from patchright.async_api import Page
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
@@ -18,64 +18,59 @@ from getgather.config import settings
 from getgather.distill import (
     Match,
     autoclick,
+    capture_page_artifacts,
     convert,
     distill,
     get_selector,
     load_distillation_patterns,
+    report_distill_error,
     run_distillation_loop,
     terminate,
 )
 from getgather.logs import logger
+from getgather.mcp.html_renderer import render_form
 
 router = APIRouter(prefix="/dpage", tags=["dpage"])
 
 
-def block_unwanted_resources(route: Route) -> Task[None]:
-    """Block images, media (videos), and fonts"""
-    return asyncio.create_task(
-        route.abort()
-        if route.request.resource_type in ["image", "media", "font"]
-        else route.continue_()
-    )
-
-
 active_pages: dict[str, Page] = {}
+incognito_browser_profiles: dict[str, BrowserProfile] = {}
 distillation_results: dict[str, str | list[dict[str, str | list[str]]]] = {}
 global_browser_profile: BrowserProfile | None = None
 
 
-async def dpage_add(
-    browser_profile: BrowserProfile | None = None,
-    location: str | None = None,
-    id: str | None = None,
-):
-    if id is None:
-        FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
-        id = generate(FRIENDLY_CHARS, 8)
-        if settings.HOSTNAME:
-            id = f"{settings.HOSTNAME}-{id}"
+async def dpage_add(browser_profile: BrowserProfile, location: str):
+    FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
+    id = generate(FRIENDLY_CHARS, 8)
+    if settings.HOSTNAME:
+        id = f"{settings.HOSTNAME}-{id}"
 
-    if browser_profile is None:
-        browser_profile = BrowserProfile()
+    session = BrowserSession.get(browser_profile)
 
-    session = BrowserSession(browser_profile.id)
-
-    await session.start()
+    session = await session.start()
     page = await session.context.new_page()
-    await page.route("**/*", block_unwanted_resources)
 
-    if location:
+    try:
         if not location.startswith("http"):
             location = f"https://{location}"
-        await page.goto(location)
-
+        await page.goto(location, timeout=settings.BROWSER_TIMEOUT)
+    except Exception as error:
+        hostname = urllib.parse.urlparse(location).hostname or "unknown"
+        await report_distill_error(
+            error=error,
+            page=page,
+            profile_id=browser_profile.id,
+            location=location,
+            hostname=hostname,
+            iteration=0,
+        )
     active_pages[id] = page
     return id
 
 
 async def dpage_close(id: str) -> None:
     if id in active_pages:
-        # await active_pages[id].close()
+        await active_pages[id].close()
         del active_pages[id]
 
 
@@ -93,33 +88,23 @@ async def dpage_check(id: str):
     return None
 
 
+async def dpage_finalize(id: str):
+    if id in incognito_browser_profiles:
+        await BrowserSession.get(incognito_browser_profiles[id]).stop()
+        del incognito_browser_profiles[id]
+        return True
+    raise ValueError(f"Browser profile for signin {id} not found in incognito browser profiles")
+
+
 def render(content: str, options: dict[str, str] | None = None) -> str:
+    """Render HTML template with content and options."""
     if options is None:
         options = {}
 
     title = options.get("title", "GetGather")
     action = options.get("action", "")
 
-    return f"""<!doctype html>
-<html data-theme=light>
-  <head>
-    <title>{title}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-  </head>
-  <body>
-    <main class="container">
-      <section>
-        <h2>{title}</h2>
-        <articles>
-        <form method="POST" action="{action}">
-        {content}
-        </form>
-        </articles>
-      </section>
-    </main>
-  </body>
-</html>"""
+    return render_form(content, title, action)
 
 
 # Since the browser can't redirect from GET to POST,
@@ -139,18 +124,13 @@ def redirect(id: str) -> HTMLResponse:
 
 @router.get("", response_class=HTMLResponse)
 @router.get("/{id}", response_class=HTMLResponse)
-async def get_dpage(location: str | None = None, id: str | None = None) -> HTMLResponse:
+async def get_dpage(id: str | None = None) -> HTMLResponse:
     if id:
         if id in active_pages:
             return redirect(id)
         raise HTTPException(status_code=404, detail="Invalid page id")
 
-    if not location:
-        raise HTTPException(status_code=400, detail="Missing location parameter")
-
-    logger.info(f"Starting distillation at {location}...")
-    id = await dpage_add(location=location)
-    return redirect(id)
+    raise HTTPException(status_code=400, detail="Missing page id")
 
 
 FINISHED_MSG = "Finished! You can close this window now."
@@ -176,13 +156,17 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
     TIMEOUT = 15  # seconds
     max = TIMEOUT // TICK
 
-    current = Match(name="", priority=-1, distilled="", matches=[])
+    current = Match(name="", priority=-1, distilled="")
+
+    if logger.isEnabledFor(logging.DEBUG):
+        await capture_page_artifacts(page, identifier=id, prefix="dpage_debug")
 
     for iteration in range(max):
         logger.debug(f"Iteration {iteration + 1} of {max}")
         await asyncio.sleep(TICK)
 
-        hostname = urllib.parse.urlparse(page.url).hostname
+        location = page.url
+        hostname = urllib.parse.urlparse(location).hostname
 
         match = await distill(hostname, page, patterns)
         if not match:
@@ -197,6 +181,23 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
         distilled = match.distilled
 
         print(distilled)
+
+        title_element = BeautifulSoup(distilled, "html.parser").find("title")
+        title = title_element.get_text() if title_element is not None else "GetGather"
+        action = f"/dpage/{id}"
+        options = {"title": title, "action": action}
+
+        if await terminate(page, distilled):
+            logger.info("Finished!")
+            converted = await convert(distilled)
+            await dpage_close(id)
+            if converted:
+                print(converted)
+                distillation_results[id] = converted
+            else:
+                logger.info("No conversion found")
+                distillation_results[id] = distilled
+            return HTMLResponse(render(FINISHED_MSG, options))
 
         names: list[str] = []
         document = BeautifulSoup(distilled, "html.parser")
@@ -278,39 +279,15 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                         else:
                             logger.info(f"No form data found for {name}")
 
-        title_element = document.find("title")
-        title = title_element.get_text() if title_element is not None else "GetGather"
-        action = f"/dpage/{id}"
-        options = {"title": title, "action": action}
-
-        if len(inputs) == len(names):
-            await autoclick(page, distilled)
-            if await terminate(page, distilled):
-                logger.info("Finished!")
-                converted = await convert(distilled)
-                await dpage_close(id)
-                if converted:
-                    print(converted)
-                    distillation_results[id] = converted
-                else:
-                    logger.info("No conversion found")
-                    distillation_results[id] = distilled
-                return HTMLResponse(render(FINISHED_MSG, options))
-
-            logger.info("All form fields are filled")
-            continue
-
-        if await terminate(page, distilled):
-            converted = await convert(distilled)
-            await dpage_close(id)
-            if converted:
-                print(converted)
-                distillation_results[id] = converted
-            return HTMLResponse(render(FINISHED_MSG, options))
-        else:
-            logger.info("Not all form fields are filled")
-
-        return HTMLResponse(render(str(document.find("body")), options))
+        await autoclick(page, distilled, "[gg-autoclick]:not(button)")
+        SUBMIT_BUTTON = "button[gg-autoclick], button[type=submit]"
+        if document.select(SUBMIT_BUTTON):
+            if len(names) > 0 and len(inputs) == len(names):
+                logger.info("Submitting form, all fields are filled...")
+                await autoclick(page, distilled, SUBMIT_BUTTON)
+                continue
+            logger.warning("Not all form fields are filled")
+            return HTMLResponse(render(str(document.find("body")), options))
 
     raise HTTPException(status_code=503, detail="Timeout reached")
 
@@ -326,50 +303,63 @@ def is_local_address(host: str) -> bool:
 
 async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) -> dict[str, Any]:
     """Generic MCP tool based on distillation"""
-
     path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
 
     headers = get_http_headers(include_all=True)
     incognito = headers.get("x-incognito", "0") == "1"
+    signin_id = headers.get("x-signin-id") or None
 
     if incognito:
-        browser_profile = BrowserProfile()
+        if signin_id is not None:
+            if signin_id in incognito_browser_profiles:
+                browser_profile = incognito_browser_profiles[signin_id]
+            else:
+                raise ValueError(f"Browser profile for signin {signin_id} not found")
+        else:
+            browser_profile = BrowserProfile()
     else:
         global global_browser_profile
         if global_browser_profile is None:
             logger.info(f"Creating global browser profile...")
             global_browser_profile = BrowserProfile()
-            session = BrowserSession(global_browser_profile.id)
-            await session.start()
-            logger.debug("Visiting google.com to initialize the profile...")
-
-            # to help troubleshooting
-            debug_page = await session.context.new_page()
-            await debug_page.goto("https://ifconfig.me")
-
-            init_page = await session.context.new_page()
-            await init_page.route("**/*", block_unwanted_resources)
-
-            await init_page.goto(initial_url)
+            session = BrowserSession.get(global_browser_profile)
+            session = await session.start()
+            init_page = await session.new_page()  # never use old pages in global session due to really difficult race conditions with concurrent requests
+            try:
+                await init_page.goto(initial_url)
+            except Exception as e:
+                await report_distill_error(
+                    error=e,
+                    page=init_page,
+                    profile_id=global_browser_profile.id,
+                    location=initial_url,
+                    hostname=urllib.parse.urlparse(initial_url).hostname or "",
+                    iteration=0,
+                )
             await asyncio.sleep(1)
 
         browser_profile = global_browser_profile
 
-    # First, try without any interaction as this will work if the user signed in previously
-    distillation_result = await run_distillation_loop(
-        initial_url,
-        patterns,
-        browser_profile=browser_profile,
-        interactive=False,
-        timeout=timeout,
-        with_terminate_flag=True,
-    )
-    if isinstance(distillation_result, dict) and distillation_result["terminated"]:
-        return {result_key: distillation_result["result"]}
+    if not incognito or signin_id is not None:
+        # First, try without any interaction as this will work if the user signed in previously (using global browser profile or incognito with signin_id)
+        terminated, distilled, converted = await run_distillation_loop(
+            initial_url,
+            patterns,
+            browser_profile=browser_profile,
+            interactive=False,
+            timeout=timeout,
+            stop_ok=False,  # Keep global session alive
+        )
+        if terminated:
+            distillation_result = converted if converted else distilled
+            return {result_key: distillation_result}
 
     # If that didn't work, try signing in via distillation
-    id = await dpage_add(browser_profile=browser_profile, location=initial_url)
+    id = await dpage_add(browser_profile, initial_url)
+
+    if incognito:
+        incognito_browser_profiles[id] = browser_profile
 
     host = headers.get("x-forwarded-host") or headers.get("host")
     if host is None:

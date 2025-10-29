@@ -1,0 +1,25 @@
+<html gg-domain="harrys" gg-priority="1">
+  <body>
+    <span gg-optional gg-match="dialog form div.pb-2xs span.body-2m"></span>
+    <input
+      autofocus
+      name="email"
+      type="email"
+      placeholder="Email"
+      gg-match="dialog form input[type=email]"
+    />
+    <input
+      name="password"
+      type="password"
+      placeholder="Password"
+      gg-match="dialog form input[type=password]"
+    />
+    <button
+      type="submit"
+      gg-autoclick
+      gg-match="dialog form button[type=submit]:has-text('Login'):not([disabled])"
+    >
+      Sign in
+    </button>
+  </body>
+</html>

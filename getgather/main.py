@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Awaitable, Callable, Final
 
 import httpx
+import logfire
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import (
     FileResponse,
@@ -56,6 +57,17 @@ app = FastAPI(
     generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan,
 )
+logfire.configure(
+    service_name="mcp-getgather",
+    send_to_logfire="if-token-present",
+    token=settings.LOGFIRE_TOKEN or None,
+    environment=settings.ENVIRONMENT,
+    distributed_tracing=True,
+    code_source=logfire.CodeSource(
+        repository="https://github.com/mcp-getgather/mcp-getgather", revision="main"
+    ),
+)
+logfire.instrument_fastapi(app)
 
 
 STATIC_ASSETS_DIR = Path(__file__).parent / "static" / "assets"
@@ -176,14 +188,14 @@ def health():
     )
 
 
-IP_CHECK_URL: Final[str] = "https://ifconfig.me/ip"
+IP_CHECK_URL: Final[str] = "https://ip.fly.dev/ip"
 
 
 @app.get("/extended-health")
 async def extended_health():
     session = BrowserSession.get(BrowserProfile())
     try:
-        await session.start()
+        session = await session.start()
         page = await session.page()
         await page.goto(IP_CHECK_URL, timeout=3000)
         ip_text: str = await page.evaluate("() => document.body.innerText.trim()")
@@ -202,15 +214,16 @@ for mcp_app in mcp_apps:
 
 
 @app.middleware("http")
-async def mcp_slash_redirect_middleware(
+async def mcp_slash_middleware(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ):
-    # redirect /mcp* to /mcp*/
+    """Make /mcp* and /mcp*/ behave the same without actual redirect."""
     path = request.url.path
     if path.startswith("/mcp") and not path.endswith("/"):
-        return RedirectResponse(url=f"{path}/", status_code=307)
-    else:
-        return await call_next(request)
+        request.scope["path"] = f"{path}/"
+        if request.scope.get("raw_path"):
+            request.scope["raw_path"] = f"{path}/".encode()
+    return await call_next(request)
 
 
 # Everything else is handled by the SPA

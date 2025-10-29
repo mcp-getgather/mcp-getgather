@@ -3,7 +3,6 @@ from enum import StrEnum
 
 import sentry_sdk
 from fastapi import HTTPException
-from patchright.async_api import Page, Route
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession, BrowserStartupError
@@ -78,12 +77,9 @@ class SigninOrchestrator:
             self._maybe_set_sentry_user()
 
             if self.status == SigninStatus.INITIALIZING:
-                await browser_session.start()
+                browser_session = await browser_session.start()
 
             page = await browser_session.page()
-            if settings.SHOULD_BLOCK_UNWANTED_RESOURCES:
-                # For now block the images etc
-                await self._block_unwanted_resources(page)
         except BrowserStartupError as e:
             sentry_sdk.capture_exception(e)
             raise
@@ -159,29 +155,3 @@ class SigninOrchestrator:
         )
         browser_session = BrowserSession.get(self.browser_profile)
         await browser_session.stop()
-
-    async def _block_unwanted_resources(self, page: Page) -> None:
-        """Block loading of images, media, fonts, and specific domains."""
-        await page.route("**/*", lambda route: self._handle_route(route))
-
-    async def _handle_route(self, route: Route) -> None:
-        """Handle route requests and block unwanted resources."""
-        request = route.request
-        resource_type = request.resource_type
-        url = request.url
-
-        try:
-            # Abort requests for images, media, fonts – they are not needed for sign in flows.
-            if resource_type in ["image", "media", "font"]:
-                await route.abort()
-                return
-
-            # Abort tracking / analytics requests that slow things down and are irrelevant.
-            if "quantummetric.com" in url or "nr-data.net" in url or "googletagmanager.com" in url:
-                await route.abort()
-                return
-
-            # Allow all other requests to proceed.
-            await route.continue_()
-        except Exception as e:  # swallow errors if the page/context has already been closed
-            logger.debug(f"Route handling ignored for closed page or context. url={url} err={e}")

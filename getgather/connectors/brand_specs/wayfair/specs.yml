@@ -84,15 +84,3 @@ signin:
       end: true
 
   start: Sign in
-
-extract:
-  steps:
-    - name: Go to order history page
-      url: https://www.wayfair.com/session/secure/account/order_search.php
-
-    - name: Extract the order history
-      bundle: order.json
-      graphql:
-        endpoint: https://www.wayfair.com/graphql
-        operation: MyOrdersPage
-        function: retrieve_image_url_and_price_for_wayfair
