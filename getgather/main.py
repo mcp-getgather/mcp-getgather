@@ -41,11 +41,24 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await startup()
+
+    stop_event = asyncio.Event()
+
+    async def timer_loop():
+        while not stop_event.is_set():
+            await cleanup_old_sessions()
+            await asyncio.sleep(60)
+
+    background_task = asyncio.create_task(timer_loop())
+
     async with AsyncExitStack() as stack:
         for mcp_app in mcp_apps:
             # type: ignore
             await stack.enter_async_context(mcp_app.app.lifespan(app))
         yield
+
+        stop_event.set()
+        await background_task
 
 
 app = FastAPI(
@@ -187,12 +200,6 @@ def health():
     return PlainTextResponse(
         content=f"OK {int(datetime.now().timestamp())} GIT_REV: {settings.GIT_REV}"
     )
-
-
-@app.get("/cleanup-sessions")
-async def cleanup_sessions():
-    await cleanup_old_sessions()
-    return PlainTextResponse(content="OK")
 
 
 IP_CHECK_URL: Final[str] = "https://ifconfig.me/ip"
