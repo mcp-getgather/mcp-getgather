@@ -19,13 +19,13 @@ async def cleanup_old_sessions():
 
     # Find sessions that are older than max_session_age
     for browser_session in browser_sessions:
-        if browser_session.launched_at is None:
+        if browser_session.launch_timestamp is None:
             logger.warning(
                 f"Session {browser_session.profile.id} has no launch time, skipping cleanup check"
             )
             continue
 
-        session_age = current_time - browser_session.launched_at
+        session_age = current_time - browser_session.launch_timestamp
         if session_age > max_session_age:
             try:
                 logger.info(

@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 from collections import defaultdict
 from contextlib import asynccontextmanager, suppress
-from dataclasses import dataclass
 from datetime import datetime
 from typing import ClassVar
 
@@ -44,7 +43,7 @@ class BrowserSession:
         self.profile: BrowserProfile = BrowserProfile(id=profile_id)
         self._playwright: Playwright | None = None
         self._context: BrowserContext | None = None
-        self.launched_at: datetime | None = None
+        self.launch_timestamp: datetime | None = None
 
         self.session_id = generate(FRIENDLY_CHARS, 8)
         self.total_event = 0
@@ -102,10 +101,10 @@ class BrowserSession:
                 )
 
                 # Set launch timestamp and safely register the session at the end
-                self.launched_at = datetime.now()
+                self.launch_timestamp = datetime.now()
                 self._sessions[self.profile.id] = self
                 logger.info(
-                    f"Session {self.profile.id} registered in sessions with launched_at {self.launched_at}"
+                    f"Session {self.profile.id} registered in sessions with launch_timestamp {self.launch_timestamp}"
                 )
 
                 await configure_context(self._context)
