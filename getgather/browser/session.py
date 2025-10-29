@@ -19,12 +19,6 @@ from getgather.rrweb import rrweb_injector, rrweb_manager
 FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
 
 
-@dataclass
-class LaunchedProfile:
-    profile_id: str
-    launched_at: datetime | None
-
-
 class BrowserStartupError(HTTPException):
     """Raised when browser fails to start."""
 
@@ -63,21 +57,8 @@ class BrowserSession:
             return BrowserSession(profile.id)
 
     @classmethod
-    def get_launched_profile_ids(cls) -> list[LaunchedProfile]:
-        """
-        Get a list of profile IDs that are currently launched (have active browser sessions)
-        along with their launch timestamps.
-
-        Returns:
-            list[LaunchedProfile]: A list of LaunchedProfile objects.
-        """
-        return [
-            LaunchedProfile(
-                profile_id=profile_id,
-                launched_at=session.launched_at,
-            )
-            for profile_id, session in cls._sessions.items()
-        ]
+    def get_all_sessions(cls) -> list[BrowserSession]:
+        return list(cls._sessions.values())
 
     @property
     def context(self) -> BrowserContext:
