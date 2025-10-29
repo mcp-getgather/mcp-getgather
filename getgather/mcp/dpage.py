@@ -88,6 +88,14 @@ async def dpage_check(id: str):
     return None
 
 
+async def dpage_finalize(id: str):
+    if id in incognito_browser_profiles:
+        await BrowserSession.get(incognito_browser_profiles[id]).stop()
+        del incognito_browser_profiles[id]
+        return True
+    raise ValueError(f"Browser profile for signin {id} not found in incognito browser profiles")
+
+
 def render(content: str, options: dict[str, str] | None = None) -> str:
     """Render HTML template with content and options."""
     if options is None:
