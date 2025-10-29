@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from collections import defaultdict
 from contextlib import asynccontextmanager, suppress
+from datetime import datetime
 from typing import ClassVar
 
 from fastapi import HTTPException
@@ -42,6 +43,7 @@ class BrowserSession:
         self.profile: BrowserProfile = BrowserProfile(id=profile_id)
         self._playwright: Playwright | None = None
         self._context: BrowserContext | None = None
+        self.launch_timestamp: datetime | None = None
 
         self.session_id = generate(FRIENDLY_CHARS, 8)
         self.total_event = 0
@@ -52,6 +54,10 @@ class BrowserSession:
             return cls._sessions[profile.id]
         else:  # create new session
             return BrowserSession(profile.id)
+
+    @classmethod
+    def get_all_sessions(cls) -> list[BrowserSession]:
+        return list(cls._sessions.values())
 
     @property
     def context(self) -> BrowserContext:
@@ -94,6 +100,13 @@ class BrowserSession:
                     profile_id=self.profile.id, browser_type=self.playwright.chromium
                 )
 
+                # Set launch timestamp and safely register the session at the end
+                self.launch_timestamp = datetime.now()
+                self._sessions[self.profile.id] = self
+                logger.info(
+                    f"Session {self.profile.id} registered in sessions with launch_timestamp {self.launch_timestamp}"
+                )
+
                 await configure_context(self._context)
 
                 debug_page = await self.page()
@@ -108,9 +121,6 @@ class BrowserSession:
                         rrweb_injector.setup_rrweb(self.context, page)
                     ),
                 )
-
-                # safely register the session at the end
-                self._sessions[self.profile.id] = self
 
                 return self
 
