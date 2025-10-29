@@ -317,6 +317,7 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
         logger.info(f"✓ Best match: {match.name}")
         return match
 
+
 async def run_distillation_loop(
     location: str,
     patterns: list[Pattern],
@@ -338,9 +339,7 @@ async def run_distillation_loop(
 
         logger.info(f"Starting browser {profile.id}")
         logger.info(f"Navigating to {location}")
-        await page.goto(
-            location,
-        )
+        await page.goto(location)
 
         TICK = 1  # seconds
         max = timeout // TICK
