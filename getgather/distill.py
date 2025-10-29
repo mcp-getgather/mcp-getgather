@@ -449,6 +449,11 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
                     raw_text = await source.text_content()
                     if raw_text:
                         target.string = raw_text.strip()
+
+                    tag = await source.evaluate("el => el.tagName.toLowerCase()")
+                    if tag in ["input", "textarea", "select"]:
+                        input_value = await source.input_value()
+                        target["value"] = input_value
             else:
                 optional = target.get("gg-optional") is not None
                 logger.debug(f"Optional {selector} has no match")
