@@ -7,7 +7,6 @@ from getgather.actions import handle_graphql_response
 from getgather.logs import logger
 from getgather.mcp.dpage import dpage_mcp_tool, dpage_with_action
 from getgather.mcp.registry import GatherMCP
-from getgather.mcp.shared import get_mcp_browser_session, with_brand_browser_session
 
 tokopedia_mcp = GatherMCP(brand_id="tokopedia", name="Tokopedia MCP")
 
@@ -44,6 +43,7 @@ async def get_product_details(product_url: str) -> dict[str, Any]:
     return await dpage_mcp_tool(
         initial_url=product_url,
         result_key="product_detail",
+        timeout=10,  # Increased timeout for product pages to fully load
     )
 
 
@@ -221,81 +221,36 @@ async def get_cart() -> dict[str, Any]:
 
 
 @tokopedia_mcp.tool
-@with_brand_browser_session
 async def get_wishlist(page_number: int = 1) -> dict[str, Any]:
-    """Get purchase history of a tokopedia."""
-    browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
-    await page.goto(f"https://www.tokopedia.com/wishlist/all?page={page_number}")
-    raw_data = await handle_graphql_response(
-        page,
-        "https://gql.tokopedia.com/graphql/GetWishlistCollectionItems",
-        "GetWishlistCollectionItems",
-    )
-    results: list[dict[str, Any]] = []
-    if raw_data:
-        uoh_orders = raw_data[0].get("data", {}).get("get_wishlist_collection_items", {})
-        wishlists = uoh_orders.get("items", [])
-        for wishlist in wishlists:
-            result = {
-                "product_name": wishlist.get("name", ""),
-                "available": wishlist.get("available", ""),
-                "label_stock": wishlist.get("label_stock", ""),
-                "min_order": wishlist.get("min_order", ""),
-                "original_price": wishlist.get("original_price", ""),
-                "price": wishlist.get("price", ""),
-                "sold_count": wishlist.get("sold_count", ""),
-                "shop_name": wishlist.get("shop", {}).get("name", ""),
-            }
-            results.append(result)
+    """Get wishlist from tokopedia."""
 
-    return {"wishlist": results}
+    async def action(page: Any) -> dict[str, Any]:
+        await page.goto(f"https://www.tokopedia.com/wishlist/all?page={page_number}")
+        raw_data = await handle_graphql_response(
+            page,
+            "https://gql.tokopedia.com/graphql/GetWishlistCollectionItems",
+            "GetWishlistCollectionItems",
+        )
+        results: list[dict[str, Any]] = []
+        if raw_data:
+            uoh_orders = raw_data[0].get("data", {}).get("get_wishlist_collection_items", {})
+            wishlists = uoh_orders.get("items", [])
+            for wishlist in wishlists:
+                result = {
+                    "product_name": wishlist.get("name", ""),
+                    "available": wishlist.get("available", ""),
+                    "label_stock": wishlist.get("label_stock", ""),
+                    "min_order": wishlist.get("min_order", ""),
+                    "original_price": wishlist.get("original_price", ""),
+                    "price": wishlist.get("price", ""),
+                    "sold_count": wishlist.get("sold_count", ""),
+                    "shop_name": wishlist.get("shop", {}).get("name", ""),
+                }
+                results.append(result)
 
+        return {"wishlist": results}
 
-@tokopedia_mcp.tool
-@with_brand_browser_session
-async def add_to_cart(
-    product_url: str | list[str],
-) -> dict[str, Any]:
-    """Add a product to cart of a tokopedia."""
-
-    logger.info(f"Adding product to cart: {product_url}")
-
-    product_urls = [product_url] if isinstance(product_url, str) else product_url
-
-    browser_session = get_mcp_browser_session()
-
-    async def search_single_product(product_url: str):
-        page = await browser_session.page()
-        await page.goto(product_url, wait_until="commit")
-        await page.wait_for_selector("h1[data-testid='lblPDPDetailProductName']")
-        await page.wait_for_timeout(2000)
-        await page.click("button[data-testid='pdpBtnNormalPrimary']")
-
-        locator_success = page.locator("span[data-testid='lblSuccessATC']")
-        locator_too_far = page.locator("h5:has-text('Jarak pengiriman terlalu jauh')")
-
-        res = None
-        for _ in range(30):  # retry up to 3 seconds
-            if await locator_success.is_visible():
-                res = {"message": "Product added to cart", "status": "success"}
-                break
-            elif await locator_too_far.is_visible():
-                res = {"message": "Jarak pengiriman terlalu jauh", "status": "failed"}
-                break
-            await page.wait_for_timeout(100)
-        await page.close()
-        return {product_url: res}
-
-    results_list = await asyncio.gather(*[
-        search_single_product(product_url) for product_url in product_urls
-    ])
-
-    merged_results: dict[str, Any] = {}
-    for r in results_list:
-        merged_results.update(r)
-
-    return {"results": merged_results}
+    return await dpage_with_action("https://www.tokopedia.com", action)
 
 
 @tokopedia_mcp.tool

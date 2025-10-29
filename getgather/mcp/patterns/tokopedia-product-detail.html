@@ -1,9 +1,9 @@
-<html gg-domain="tokopedia" gg-priority="4">
+<html gg-domain="tokopedia" gg-priority="2">
   <head>
     <title>Tokopedia Product Detail</title>
   </head>
   <body>
-    <div gg-stop gg-match-html="div#main-pdp-container"></div>
+    <div gg-stop gg-match-html="div[data-ssr='mainPDPSSR']" gg-optional></div>
     <script type="application/json" id="product-detail">
       {
         "rows": "div#pdp_comp-product_content",
