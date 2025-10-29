@@ -88,6 +88,14 @@ async def dpage_check(id: str):
     return None
 
 
+async def dpage_finalize(id: str):
+    if id in incognito_browser_profiles:
+        await BrowserSession.get(incognito_browser_profiles[id]).stop()
+        del incognito_browser_profiles[id]
+        return True
+    raise ValueError(f"Browser profile for signin {id} not found in incognito browser profiles")
+
+
 def render(content: str, options: dict[str, str] | None = None) -> str:
     """Render HTML template with content and options."""
     if options is None:
@@ -335,7 +343,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
     if not incognito or signin_id is not None:
         # First, try without any interaction as this will work if the user signed in previously (using global browser profile or incognito with signin_id)
-        distillation_result, terminated = await run_distillation_loop(
+        terminated, distilled, converted = await run_distillation_loop(
             initial_url,
             patterns,
             browser_profile=browser_profile,
@@ -344,6 +352,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
             stop_ok=False,  # Keep global session alive
         )
         if terminated:
+            distillation_result = converted if converted else distilled
             return {result_key: distillation_result}
 
     # If that didn't work, try signing in via distillation

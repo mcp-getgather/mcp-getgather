@@ -3,8 +3,14 @@
     <title>Shopee Sign In</title>
   </head>
   <body>
-    <input type="text" gg-match="input[name=loginKey]" placeholder="No. Handphone/Username/Email" />
-    <input type="password" gg-match="input[name=password]" placeholder="Password" />
+    <input
+      autofocus
+      name="loginKey"
+      type="text"
+      gg-match="input[name=loginKey]"
+      placeholder="No. Handphone/Username/Email"
+    />
+    <input name="password" type="password" gg-match="input[name=password]" placeholder="Password" />
     <button type="submit" gg-match="button:has-text('LOG IN')">LOG IN</button>
   </body>
 </html>
