@@ -98,7 +98,7 @@ async def _get_user_data_dir() -> str | None:
     """Get browser profile directory for session persistence."""
     try:
         # the implementation is similar to with_brand_browser_session in shared.py
-        # howerver, it doesn't use the browser session directly, but rather uses stagehand's browser session
+        # however, it doesn't use the browser session directly, but rather uses stagehand's browser session
         brand_id = get_mcp_brand_id()
         if not brand_id:
             raise ValueError("Brand ID is not set")

@@ -1,25 +1,25 @@
+import json
 from dataclasses import dataclass
 from functools import cache, cached_property
 from typing import Any, Literal
 
 from fastmcp import Context, FastMCP
+from fastmcp.server.dependencies import get_http_headers
 from fastmcp.server.http import StarletteWithLifespan
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools.tool import ToolResult
 from pydantic import BaseModel
 
+from getgather.api.types import RequestInfo, request_info
 from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.logs import logger
 from getgather.mcp.activity import activity
 from getgather.mcp.auto_import import auto_import
-from getgather.mcp.bbc import bbc_mcp
 from getgather.mcp.brand_state import BrandState, brand_state_manager
 from getgather.mcp.calendar_utils import calendar_mcp
-from getgather.mcp.dpage import dpage_check
-from getgather.mcp.espn import espn_mcp
-from getgather.mcp.nytimes import nytimes_mcp
-from getgather.mcp.registry import BrandMCPBase
+from getgather.mcp.dpage import dpage_check, dpage_finalize
+from getgather.mcp.registry import BrandMCPBase, GatherMCP
 from getgather.mcp.shared import poll_status_hosted_link, signin_hosted_link
 
 # Ensure calendar MCP is registered by importing its module
@@ -35,6 +35,30 @@ class AuthMiddleware(Middleware):
             return await call_next(context)
 
         logger.info(f"[AuthMiddleware Context]: {context.message}")
+
+        headers = get_http_headers(include_all=True)
+
+        # Initialize request_info data
+        info_data: dict[str, str | None] = {}
+
+        # Handle x-location header (contains city, state, country, postal_code)
+        location = headers.get("x-location", None)
+        if location is not None:
+            try:
+                location_data: dict[str, str | None] = json.loads(location)
+                info_data.update(location_data)
+            except json.JSONDecodeError:
+                logger.warning(f"Failed to parse x-location header as JSON, {location}")
+
+        # Handle x-proxy-type header (e.g., "proxy-0", "proxy-1", etc.)
+        proxy_type = headers.get("x-proxy-type", None)
+        if proxy_type is not None:
+            info_data["proxy_type"] = proxy_type
+            logger.info(f"Received x-proxy-type header: {proxy_type}")
+
+        # Set request_info if we have any data
+        if info_data:
+            request_info.set(RequestInfo(**info_data))  # type: ignore[arg-type]
 
         tool = await context.fastmcp_context.fastmcp.get_tool(context.message.name)  # type: ignore
 
@@ -81,8 +105,16 @@ class AuthMiddleware(Middleware):
 
 CATEGORY_BUNDLES: dict[str, list[str]] = {
     "food": ["doordash", "ubereats"],
-    "books": ["audible", "goodreads", "kindle", "hardcover"],
+    "books": ["goodreads"],
     "shopping": ["amazon", "shopee", "tokopedia"],
+    "media": [],
+}
+
+# For MCP tools based on distillation
+MCP_BUNDLES: dict[str, list[str]] = {
+    "media": ["bbc", "cnn", "espn", "groundnews", "npr", "nytimes"],
+    "books": ["goodreads"],
+    "shopping": ["shopee"],
 }
 
 
@@ -91,7 +123,7 @@ class MCPApp:
     name: str
     type: Literal["brand", "category", "all"]
     route: str
-    brand_ids: list[BrandIdEnum]
+    brand_ids: list[BrandIdEnum | str]
 
     @cached_property
     def app(self) -> StarletteWithLifespan:
@@ -103,15 +135,23 @@ def create_mcp_apps() -> list[MCPApp]:
     # Discover and import all brand MCP modules (registers into BrandMCPBase.registry)
     auto_import("getgather.mcp.brand")
 
+    auto_import("getgather.mcp")  # Import distillation-based MCPs
+
     apps: list[MCPApp] = []
     apps.append(
         MCPApp(
             name="all",
             type="all",
             route="/mcp",
-            brand_ids=list(BrandMCPBase.registry.keys()),
+            brand_ids=list(BrandMCPBase.registry.keys())
+            + [
+                brand_id
+                for brand_id in GatherMCP.registry.keys()
+                if brand_id not in [b.value for b in BrandMCPBase.registry.keys()]
+            ],
         )
     )
+    # Add individual brand MCPs from BrandMCPBase registry
     apps.extend([
         MCPApp(
             name=brand_id.value,
@@ -121,12 +161,24 @@ def create_mcp_apps() -> list[MCPApp]:
         )
         for brand_id in BrandMCPBase.registry.keys()
     ])
+    # Add individual brand MCPs from GatherMCP registry
+    apps.extend([
+        MCPApp(
+            name=brand_id,
+            type="brand",
+            route=f"/mcp-{brand_id}",
+            brand_ids=[brand_id],
+        )
+        for brand_id in GatherMCP.registry.keys()
+        if brand_id not in [b.value for b in BrandMCPBase.registry.keys()]
+    ])
     apps.extend([
         MCPApp(
             name=category,
             type="category",
             route=f"/mcp-{category}",
-            brand_ids=[BrandIdEnum(brand_id) for brand_id in brand_ids],
+            brand_ids=[BrandIdEnum(brand_id) for brand_id in brand_ids]
+            + MCP_BUNDLES.get(category, []),
         )
         for category, brand_ids in CATEGORY_BUNDLES.items()
     ])
@@ -134,7 +186,7 @@ def create_mcp_apps() -> list[MCPApp]:
     return apps
 
 
-def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
+def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum | str]):
     """Create and return the MCP ASGI app.
 
     This performs plugin discovery/registration and mounts brand MCPs.
@@ -161,16 +213,32 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum]):
             "result": result,
         }
 
+    @mcp.tool(tags={"general_tool"})
+    async def finalize_signin(ctx: Context, signin_id: str) -> dict[str, Any]:  # pyright: ignore[reportUnusedFunction]
+        await dpage_finalize(id=signin_id)
+        return {
+            "status": "SUCCESS",
+            "message": "Sign in finalized successfully.",
+        }
+
     for brand_id in brand_ids:
-        brand_mcp = BrandMCPBase.registry[brand_id]
-        logger.info(f"Mounting {brand_mcp.name} to MCP bundle {bundle_name}")
-        mcp.mount(server=brand_mcp, prefix=brand_mcp.brand_id)
+        brand_id_str = brand_id.value if isinstance(brand_id, BrandIdEnum) else brand_id
+        brand_id_enum = brand_id if isinstance(brand_id, BrandIdEnum) else None
+
+        # Try BrandMCPBase registry first (if it's a BrandIdEnum)
+        if brand_id_enum and brand_id_enum in BrandMCPBase.registry:
+            brand_mcp = BrandMCPBase.registry[brand_id_enum]
+            logger.info(f"Mounting {brand_mcp.name} to MCP bundle {bundle_name}")
+            mcp.mount(server=brand_mcp, prefix=brand_mcp.brand_id)
+        # Try GatherMCP registry (for string brand IDs)
+        elif brand_id_str in GatherMCP.registry:
+            gather_mcp = GatherMCP.registry[brand_id_str]
+            logger.info(
+                f"Mounting {gather_mcp.name} (distillation-based) to MCP bundle {bundle_name}"
+            )
+            mcp.mount(server=gather_mcp, prefix=gather_mcp.brand_id)
 
     mcp.mount(server=calendar_mcp, prefix="calendar")
-    mcp.mount(server=nytimes_mcp, prefix="nytimes")
-    mcp.mount(server=espn_mcp, prefix="espn")
-
-    mcp.mount(server=bbc_mcp, prefix="bbc")
 
     return mcp.http_app(path="/")
 
@@ -195,7 +263,7 @@ async def mcp_app_docs(mcp_app: MCPApp) -> MCPDoc:
         tools=[
             MCPToolDoc(
                 name=tool.name,
-                description=tool.description,
+                description=tool.description or "No description provided",
             )
             for tool in (await mcp_app.app.state.fastmcp_server.get_tools()).values()
         ],

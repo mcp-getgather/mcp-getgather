@@ -40,7 +40,7 @@ async def signin_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
     link_id = link_data["link_id"]
 
     headers = get_http_headers(include_all=True)
-    host = headers.get("host")
+    host = headers.get("x-forwarded-host") or headers.get("host")
     scheme = headers.get("x-forwarded-proto", "http")
     base_url = f"{scheme}://{host}".rstrip("/")
     hosted_link_url = f"{base_url}/link/{link_id}"
@@ -81,17 +81,17 @@ async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict
                 extra={"hosted_link_id": hosted_link_id, "timeout_seconds": timeout_seconds},
             )
             return {
-                "status": "ERROR",
+                "status": "TIMEOUT",
                 "message": f"Auth timed out after {timeout_seconds} seconds. Please try again.",
             }
 
         link_data = HostedLinkManager.get_link_data(hosted_link_id)
-        if not link_data:
+        if not link_data or link_data.status == "expired":
             logger.warning(
                 "[get_hosted_link] Link not found", extra={"hosted_link_id": hosted_link_id}
             )
             return {
-                "status": "ERROR",
+                "status": "EXPIRED" if link_data else "NOT_FOUND",
                 "message": f"Link '{hosted_link_id}' not found or expired",
             }
 
@@ -188,7 +188,7 @@ def with_brand_browser_session(func: Callable[P, Awaitable[T]]) -> Callable[P, A
         mcp_ctx = get_context()
         mcp_ctx.set_state("browser_session", browser_session)
 
-        await browser_session.start()
+        browser_session = await browser_session.start()
         try:
             return await func(*args, **kwargs)
         finally:

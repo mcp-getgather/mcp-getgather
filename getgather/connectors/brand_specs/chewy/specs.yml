@@ -89,16 +89,3 @@ signin:
       end: true
 
   start: Redirect to Login Page
-
-extract:
-  steps:
-    - name: Go to order history page
-      url: https://www.chewy.com/app/account/orderhistory
-
-    - name: Wait for orders page to load
-      timeout: 10
-      wait_for_selector: header[data-testid=chewy-order-history-header]
-
-    - name: Extract orders
-      bundle: orders.html
-      slurp_selector: div[data-testid=order-history]

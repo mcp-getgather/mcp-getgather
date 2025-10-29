@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import platform
 import shutil
 from pathlib import Path
 
@@ -39,6 +41,8 @@ class BrowserProfile(FreezableModel):
         return ViewportSize(width=self.screen_width, height=self.screen_height)
 
     async def launch(self, profile_id: str, browser_type: BrowserType):
+        if platform.system() == "Linux" and not os.environ.get("DISPLAY"):
+            raise RuntimeError("Headed run requested but DISPLAY is not set")
         logger.info(
             f"Launching local browser {browser_type.name} with user_data_dir:"
             f" file://{self.profile_dir(profile_id)}",
@@ -51,13 +55,15 @@ class BrowserProfile(FreezableModel):
         # Get viewport configuration from parent class
         viewport_config = self.get_viewport_config()
 
-        return await browser_type.launch_persistent_context(
+        context = await browser_type.launch_persistent_context(
             user_data_dir=str(self.profile_dir(profile_id)),
             headless=settings.HEADLESS,
             viewport=viewport_config,
             proxy=proxy,  # type: ignore[arg-type]
             bypass_csp=True,
         )
+        context.set_default_timeout(settings.BROWSER_TIMEOUT)
+        return context
 
     def cleanup(self, profile_id: str):
         user_data_dir = self.profile_dir(profile_id)

@@ -14,8 +14,6 @@ from getgather.connectors.spec_loader import BrandIdEnum, load_brand_spec, load_
 from getgather.connectors.spec_models import Column, Schema
 from getgather.logs import logger
 
-TIMEOUT = 10000
-
 
 class BundleOutput(BaseModel):
     """A bundle output."""
@@ -317,7 +315,7 @@ async def _extract_data_from_page(
         List of dictionaries containing extracted data
     """
     has_custom_functions = any(col.function is not None for col in schema.columns)
-    extraction_method = getattr(schema, "extraction_method", "locator")
+    extraction_method = getattr(schema, "extraction_method", "python_parser")
 
     if has_custom_functions:
         extraction_method = "locator"  # Force locator method for custom functions
@@ -391,15 +389,13 @@ async def parse_html(
     elif html_content:
         # Check if we can extract directly from HTML
         has_custom_functions = any(col.function is not None for col in schema.columns)
-        extraction_method = getattr(schema, "extraction_method", "locator")
+        extraction_method = getattr(schema, "extraction_method", "python_parser")
 
         if has_custom_functions or extraction_method != "python_parser":
             # Need a browser for extraction
             async with async_playwright() as pw:
                 browser = await pw.chromium.launch()
                 context = await browser.new_context()
-                context.set_default_timeout(TIMEOUT)
-                context.set_default_navigation_timeout(TIMEOUT)
                 page = await context.new_page()
                 await page.set_content(html_content)
                 data = await _extract_data_from_page(brand_id, schema, page)
@@ -416,8 +412,6 @@ async def parse_html(
         async with async_playwright() as pw:
             browser = await pw.chromium.launch()
             context = await browser.new_context()
-            context.set_default_timeout(TIMEOUT)
-            context.set_default_navigation_timeout(TIMEOUT)
             page = await context.new_page()
 
             input_path = bundle_dir / schema.bundle

@@ -16,6 +16,7 @@ from typing import (
     get_origin,
 )
 
+from patchright.async_api import Frame, FrameLocator, Locator, Page
 from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator, model_validator
 
 
@@ -184,6 +185,7 @@ class FieldYML(YMLModel):
     label: str | None = None
     iframe_selector: str | None = None
     selector: str | None = None
+    exact_text: str | None = None
     url: str | None = None
     expect_nav: bool = False
     delay_ms: int | None = None
@@ -207,6 +209,7 @@ class Field(SpecModel[FieldYML]):
     label: str | None = None
     iframe_selector: str | None = None
     selector: str | None = None
+    exact_text: str | None = None
     # Dynamic selection helpers (only used when type == 'selection')
     option_items: str | None = None
     option_label: str | None = None
@@ -248,6 +251,24 @@ class Field(SpecModel[FieldYML]):
                 "label or prompt is required for message fields"
             )
         return self
+
+    def locator(self, page: Page | Frame) -> Locator:
+        if not self.selector:
+            raise ValueError(f"Field {self.name} does not have a selector")
+
+        if isinstance(page, Page) and self.iframe_selector:  # detect field inside iframe
+            iframe: FrameLocator = page.frame_locator(self.iframe_selector)
+            locator = iframe.locator(self.selector)
+        else:
+            locator = page.locator(self.selector)
+
+        if self.exact_text:
+            locator = locator.filter(has_text=re.compile(f"^{self.exact_text}$"))
+        return locator
+
+    @property
+    def should_be_visible(self) -> bool:
+        return self.type != "navigate"
 
 
 class GraphQLListenerYML(YMLModel):
@@ -586,7 +607,7 @@ class SchemaYML(YMLModel):
     output: str
     row_selector: str
     columns: list[ColumnYML]
-    extraction_method: Literal["locator", "evaluator", "python_parser"] = "locator"
+    extraction_method: Literal["locator", "evaluator", "python_parser"] = "python_parser"
 
 
 class Schema(SpecModel[SchemaYML]):
@@ -595,7 +616,7 @@ class Schema(SpecModel[SchemaYML]):
     output: str
     row_selector: str
     columns: list[Column]
-    extraction_method: Literal["locator", "evaluator", "python_parser"] = "locator"
+    extraction_method: Literal["locator", "evaluator", "python_parser"] = "python_parser"
 
 
 class BrandSpecYML(YMLModel):

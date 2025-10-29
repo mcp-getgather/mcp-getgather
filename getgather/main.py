@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Awaitable, Callable, Final
 
 import httpx
+import logfire
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import (
     FileResponse,
@@ -15,6 +16,7 @@ from fastapi.responses import (
     Response,
 )
 from fastapi.routing import APIRoute
+from fastapi.security import HTTPBearer
 from fastapi.staticfiles import StaticFiles
 
 from getgather.api.api import api_app
@@ -55,6 +57,17 @@ app = FastAPI(
     generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan,
 )
+logfire.configure(
+    service_name="mcp-getgather",
+    send_to_logfire="if-token-present",
+    token=settings.LOGFIRE_TOKEN or None,
+    environment=settings.ENVIRONMENT,
+    distributed_tracing=True,
+    code_source=logfire.CodeSource(
+        repository="https://github.com/mcp-getgather/mcp-getgather", revision="main"
+    ),
+)
+logfire.instrument_fastapi(app)
 
 
 STATIC_ASSETS_DIR = Path(__file__).parent / "static" / "assets"
@@ -175,14 +188,14 @@ def health():
     )
 
 
-IP_CHECK_URL: Final[str] = "https://ifconfig.me/ip"
+IP_CHECK_URL: Final[str] = "https://ip.fly.dev/ip"
 
 
 @app.get("/extended-health")
 async def extended_health():
     session = BrowserSession.get(BrowserProfile())
     try:
-        await session.start()
+        session = await session.start()
         page = await session.page()
         await page.goto(IP_CHECK_URL, timeout=3000)
         ip_text: str = await page.evaluate("() => document.body.innerText.trim()")
@@ -193,58 +206,6 @@ async def extended_health():
     return PlainTextResponse(content=f"OK IP: {ip_text}")
 
 
-@app.get("/inspector")
-def inspector_root():
-    return RedirectResponse(url="/inspector/", status_code=301)
-
-
-@app.get("/inspector/{file_path:path}")
-async def proxy_inspector(file_path: str):
-    """Proxy MCP Inspector service running on localhost:6274."""
-    target_url = f"http://localhost:6274/{file_path}"
-
-    logger.info(f"Proxying inspector request {file_path} to {target_url}")
-
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(target_url)
-            content = response.content
-
-            # Filter out headers that can cause decoding issues
-            headers = dict(response.headers)
-            for header in ["content-encoding", "content-length", "transfer-encoding"]:
-                headers.pop(header, None)
-
-            # Set appropriate content type for static assets
-            content_type = response.headers.get("content-type", "")
-            if file_path.endswith((".js", ".mjs")):
-                headers["content-type"] = "application/javascript"
-            elif file_path.endswith(".css"):
-                headers["content-type"] = "text/css"
-            elif file_path.endswith(".html") or file_path == "":
-                headers["content-type"] = "text/html"
-                # Rewrite HTML content to fix asset paths
-                try:
-                    html_content = content.decode("utf-8")
-                    # Replace absolute asset paths with proxied paths
-                    html_content = html_content.replace('src="/', 'src="/inspector/')
-                    html_content = html_content.replace('href="/', 'href="/inspector/')
-                    content = html_content.encode("utf-8")
-                except UnicodeDecodeError:
-                    # If decoding fails, leave content unchanged
-                    pass
-            elif content_type:
-                headers["content-type"] = content_type
-
-            return Response(status_code=response.status_code, content=content, headers=headers)
-        except httpx.RequestError as e:
-            logger.error(f"Error proxying inspector request: {e}")
-            return Response(status_code=502, content=f"Bad Gateway: {str(e)}")
-        except Exception as e:
-            logger.error(f"Unexpected error proxying inspector request: {e}")
-            return Response(status_code=500, content=f"Internal Server Error: {str(e)}")
-
-
 app.include_router(dpage_router)
 app.mount("/api", api_app)
 
@@ -253,15 +214,16 @@ for mcp_app in mcp_apps:
 
 
 @app.middleware("http")
-async def mcp_slash_redirect_middleware(
+async def mcp_slash_middleware(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ):
-    # redirect /mcp* to /mcp*/
+    """Make /mcp* and /mcp*/ behave the same without actual redirect."""
     path = request.url.path
     if path.startswith("/mcp") and not path.endswith("/"):
-        return RedirectResponse(url=f"{path}/", status_code=307)
-    else:
-        return await call_next(request)
+        request.scope["path"] = f"{path}/"
+        if request.scope.get("raw_path"):
+            request.scope["raw_path"] = f"{path}/".encode()
+    return await call_next(request)
 
 
 # Everything else is handled by the SPA
@@ -269,3 +231,23 @@ async def mcp_slash_redirect_middleware(
 def frontend_router(full_path: str):
     logger.info(f"Routing {full_path} to frontend")
     return FileResponse(FRONTEND_DIR / "index.html")
+
+
+bearer = HTTPBearer(auto_error=False)
+AUTH_SKIP_PATHS = {"/health", "/extended-health", "/docs", "/redoc", "/openapi.json", "/__static"}
+
+
+@app.middleware("http")
+async def bearer_token_auth_middleware(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+):
+    if not settings.AUTH_BEARER_TOKEN or any(
+        request.url.path.startswith(path) for path in AUTH_SKIP_PATHS
+    ):
+        return await call_next(request)
+
+    auth = await bearer(request)
+    if not auth or auth.credentials != settings.AUTH_BEARER_TOKEN:
+        return Response(status_code=401, content="Authorization header missing or invalid")
+
+    return await call_next(request)

@@ -6,7 +6,7 @@ This list is non-exhaustive and only includes a sampling of the full set of MCP 
 
 ## Brand Specific Tools
 
-Each brand added to the unified MCP runns as its own **individual FastMCP server instance**. Each brand has its own server instance defined in the spec file under the `/mcp/brand/` directory. For example, in `goodreads.py` the Goodreads MCP is initialized as such:
+Each brand added to the unified MCP runs as its own **individual FastMCP server instance**. Each brand has its own server instance defined in the spec file under the `/mcp/brand/` directory. For example, in `goodreads.py` the Goodreads MCP is initialized as such:
 
 `goodreads_mcp = FastMCP[Any](name="Goodreads MCP")`
 

@@ -1,0 +1,18 @@
+<html gg-domain="cnn">
+  <head>
+    <title>CNN Latest Stories</title>
+  </head>
+  <body>
+    <div gg-match="p.title:has-text('Latest Stories')"></div>
+    <div gg-stop gg-match-html="div[data-uri^=cms]"></div>
+    <script type="application/json" id="stories">
+      {
+        "rows": "section.active ul li",
+        "columns": [
+          { "name": "title", "selector": "a" },
+          { "name": "link", "selector": "a", "attribute": "href" }
+        ]
+      }
+    </script>
+  </body>
+</html>

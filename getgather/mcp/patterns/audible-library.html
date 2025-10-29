@@ -1,0 +1,32 @@
+<html gg-domain="audible">
+  <body>
+    <div>
+      <div gg-stop gg-match-html="div#adbl-library-content-main"></div>
+    </div>
+    <script type="application/json" id="library">
+      {
+        "rows": "li.productListItem",
+        "columns": [
+          {
+            "name": "cover",
+            "selector": "img",
+            "attribute": "src"
+          },
+          {
+            "name": "title",
+            "selector": "span.bc-size-headline3"
+          },
+          {
+            "name": "author",
+            "selector": "span.authorLabel a"
+          },
+          {
+            "name": "url",
+            "selector": "a.bc-link",
+            "attribute": "href"
+          }
+        ]
+      }
+    </script>
+  </body>
+</html>

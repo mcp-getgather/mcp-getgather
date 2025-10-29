@@ -9,7 +9,6 @@
   "scripts": {
     "dev": "npm run generate:schema && concurrently --raw \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "uv run -m uvicorn getgather.main:app --reload --host 127.0.0.1 --port 23456",
-    "inspector": "ALLOWED_ORIGINS=http://localhost:5173,http://localhost:6274 npx @modelcontextprotocol/inspector",
     "dev:frontend": "concurrently --raw \"npm run watch:schema:api\" \"vite\"",
     "build": "npm run generate:schema && tsc -b && vite build",
     "build:ci": "tsc -b && vite build",
@@ -21,13 +20,13 @@
     "backend:format": "uv run ruff format && uv run ruff check --fix",
     "backend:check:type-safety": "uv run pyright .",
     "yaml:check:format": "uv run yamlfix --check $(find . -type f -name '*.yml' -o -name '*.yaml' | grep -v -E '\\.venv/|node_modules/')",
+    "yaml:format": "uv run yamlfix $(find . -type f -name '*.yml' -o -name '*.yaml' | grep -v -E '\\.venv/|node_modules/')",
     "check:all": "npm run frontend:lint && npm run frontend:check:format && npm run backend:check:format && npm run backend:check:type-safety && npm run yaml:check:format",
     "generate:schema": "mkdir -p frontend/__generated__ && uv run python -m getgather.generate_openapi -o frontend/__generated__/openapi.json && openapi-typescript frontend/__generated__/openapi.json -o frontend/__generated__/api.d.ts",
     "watch:schema:api": "chokidar \"getgather/**/*.py\" -c \"npm run generate:schema\"",
     "prepare": "husky"
   },
   "dependencies": {
-    "@modelcontextprotocol/inspector": "^0.16.5",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tabs": "^1.1.12",
     "@tailwindcss/vite": "^4.1.11",
