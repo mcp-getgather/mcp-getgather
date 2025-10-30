@@ -7,11 +7,12 @@
 
 # Template Placeholders:
 # --------------------
-# {session_id}   - Browser profile ID (unique per session)
-# {country}      - Country code (e.g., us, id, jp, uk)
-# {state}        - State/province (e.g., california, new_york, texas)
-# {city}         - City name (e.g., los_angeles, jakarta, new_york)
-# {postal_code}  - Postal/zip code (e.g., 90001, 10001)
+# {session_id}      - Browser profile ID (unique per session)
+# {country}         - Country code (e.g., us, id, jp, uk)
+# {state}           - State/province (e.g., california, new_york, texas)
+# {city}            - City name with underscores (e.g., los_angeles, jakarta, new_york)
+# {city_compacted}  - City name compacted (no dashes/underscores/spaces, e.g., losangeles, newyork)
+# {postal_code}     - Postal/zip code (e.g., 90001, 10001)
 #
 # Notes:
 # - Template format (dashes vs underscores) is preserved as written
@@ -46,3 +47,10 @@ proxies:
     type: proxy_2_service
     enabled: false
     url_template: http://user-proxy_2-cc-{country}-sessid-{session_id}-sesstime-1440:password123@proxy-2.io:7000
+
+  proxy-3:
+    type: proxy_3_service
+    enabled: false
+    url: http://proxy-3.example.com:12321
+    username_template: user-{session_id}-country-{country}-city-{city_compacted}
+    password: your_password_here
