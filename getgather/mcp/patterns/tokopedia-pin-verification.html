@@ -1,0 +1,17 @@
+<html gg-domain="tokopedia" gg-priority="1">
+  <head>
+    <title>Tokopedia PIN Verification</title>
+  </head>
+  <body>
+    <div gg-match="div:has-text('Masukkan Kode Verifikasi')">Masukkan Kode Verifikasi</div>
+    <div gg-optional gg-match="div:has-text('Masukkan 6 digit PIN Tokopedia kamu')"></div>
+    <input
+      name="pin"
+      type="tel"
+      gg-match="input[type=tel][maxlength='6'][aria-label='pin input']"
+      placeholder="PIN"
+    />
+    <span gg-optional gg-match="span[aria-label='forgot pin']"></span>
+    <button type="submit">Submit</button>
+  </body>
+</html>
