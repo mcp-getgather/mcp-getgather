@@ -51,6 +51,9 @@ class Settings(BaseSettings):
 
     AUTH_BEARER_TOKEN: str = ""
 
+    # Max session age, in minutes
+    BROWSER_SESSION_AGE: int = 60
+
     @property
     def brand_spec_dir(self) -> Path:
         return PROJECT_DIR / "getgather" / "connectors" / "brand_specs"
