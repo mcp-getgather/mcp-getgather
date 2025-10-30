@@ -1,7 +1,9 @@
 """HTML template renderer for dpage forms."""
 
+DEFAULT_TITLE = "Sign In"
 
-def render_form(content: str, title: str = "GetGather", action: str = "") -> str:
+
+def render_form(content: str, title: str = DEFAULT_TITLE, action: str = "") -> str:
     """Render HTML form with the given content and options."""
     return f"""<!doctype html>
 <html lang="en">
