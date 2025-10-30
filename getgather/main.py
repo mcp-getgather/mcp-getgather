@@ -22,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from getgather.api.api import api_app
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
+from getgather.browser.session_cleanup import cleanup_old_sessions
 from getgather.config import settings
 from getgather.logs import logger
 from getgather.mcp.dpage import router as dpage_router
@@ -40,11 +41,24 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await startup()
+
+    stop_event = asyncio.Event()
+
+    async def timer_loop():
+        while not stop_event.is_set():
+            await cleanup_old_sessions()
+            await asyncio.sleep(60)
+
+    background_task = asyncio.create_task(timer_loop())
+
     async with AsyncExitStack() as stack:
         for mcp_app in mcp_apps:
             # type: ignore
             await stack.enter_async_context(mcp_app.app.lifespan(app))
         yield
+
+        stop_event.set()
+        await background_task
 
 
 app = FastAPI(
@@ -188,7 +202,7 @@ def health():
     )
 
 
-IP_CHECK_URL: Final[str] = "https://ifconfig.me/ip"
+IP_CHECK_URL: Final[str] = "https://ip.fly.dev/ip"
 
 
 @app.get("/extended-health")

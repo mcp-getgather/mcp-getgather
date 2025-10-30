@@ -18,7 +18,7 @@ from getgather.mcp.activity import activity
 from getgather.mcp.auto_import import auto_import
 from getgather.mcp.brand_state import BrandState, brand_state_manager
 from getgather.mcp.calendar_utils import calendar_mcp
-from getgather.mcp.dpage import dpage_check
+from getgather.mcp.dpage import dpage_check, dpage_finalize
 from getgather.mcp.registry import BrandMCPBase, GatherMCP
 from getgather.mcp.shared import poll_status_hosted_link, signin_hosted_link
 
@@ -114,6 +114,7 @@ CATEGORY_BUNDLES: dict[str, list[str]] = {
 MCP_BUNDLES: dict[str, list[str]] = {
     "media": ["bbc", "cnn", "espn", "groundnews", "npr", "nytimes"],
     "books": ["goodreads"],
+    "shopping": ["amazon", "amazonca", "shopee"],
 }
 
 
@@ -210,6 +211,14 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum | str]):
             "status": "SUCCESS",
             "message": "Sign in completed successfully.",
             "result": result,
+        }
+
+    @mcp.tool(tags={"general_tool"})
+    async def finalize_signin(ctx: Context, signin_id: str) -> dict[str, Any]:  # pyright: ignore[reportUnusedFunction]
+        await dpage_finalize(id=signin_id)
+        return {
+            "status": "SUCCESS",
+            "message": "Sign in finalized successfully.",
         }
 
     for brand_id in brand_ids:

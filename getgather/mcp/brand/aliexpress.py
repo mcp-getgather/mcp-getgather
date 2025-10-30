@@ -14,7 +14,8 @@ async def get_orders() -> dict[str, Any]:
     browser_profile = get_mcp_browser_profile()
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
-    orders, _ = await run_distillation_loop(
+    _terminated, distilled, converted = await run_distillation_loop(
         "https://www.aliexpress.com/p/order/index.html", patterns, browser_profile=browser_profile
     )
+    orders = converted if converted else distilled
     return {"orders": orders}
