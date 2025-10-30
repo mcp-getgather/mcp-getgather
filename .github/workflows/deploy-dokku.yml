@@ -11,16 +11,11 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy (${{ matrix.server }})
+    name: Deploy to production
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     env:
       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-    strategy:
-      matrix:
-        include:
-          - server: production
-            secret_suffix: getgather-production
 
     steps:
       - name: Check out source repository
@@ -52,16 +47,16 @@ jobs:
         uses: google-github-actions/get-secretmanager-secrets@v3
         with:
           secrets: |-
-            DOKKU_GIT_REMOTE_URL:${{ env.GCP_PROJECT_ID }}/dokku-git-remote-url-${{ matrix.secret_suffix }}
-            DOKKU_SSH_HOST_KEY:${{ env.GCP_PROJECT_ID }}/dokku-ssh-host-key-${{ matrix.secret_suffix }}
-            DOKKU_SSH_PRIVATE_KEY:${{ env.GCP_PROJECT_ID }}/dokku-ssh-private-key-${{ matrix.secret_suffix }}
-            TAILSCALE_APP_URL:${{ env.GCP_PROJECT_ID }}/tailscale-app-url-${{ matrix.secret_suffix }}
+            DOKKU_GIT_REMOTE_URL:${{ env.GCP_PROJECT_ID }}/dokku-git-remote-url-getgather-production
+            DOKKU_SSH_HOST_KEY:${{ env.GCP_PROJECT_ID }}/dokku-ssh-host-key-getgather-production
+            DOKKU_SSH_PRIVATE_KEY:${{ env.GCP_PROJECT_ID }}/dokku-ssh-private-key-getgather-production
+            TAILSCALE_APP_URL:${{ env.GCP_PROJECT_ID }}/tailscale-app-url-getgather-production
 
       - name: Check the reachability of the app server
         env:
           APP_URL: ${{ steps.fetch_secrets.outputs.TAILSCALE_APP_URL }}
         run: |
-          echo "Target: ${{ matrix.server }}"
+          echo "Target: production"
           curl -s "${APP_URL}/health"
         continue-on-error: true
 
@@ -81,7 +76,7 @@ jobs:
 
         run: |-
           LOCAL_COMMIT=$(git rev-parse HEAD)
-          echo "Target: ${{ matrix.server }}"
+          echo "Target: production"
           echo "Local commit: $LOCAL_COMMIT"
           echo "App URL: $APP_URL"
 
