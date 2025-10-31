@@ -1,0 +1,20 @@
+<html gg-domain="nordstrom">
+  <head>
+    <title>Sign In to Nordstrom</title>
+  </head>
+  <body>
+    <h1 gg-match="span:has-text('Enter your code to sign in')"></h1>
+    <span gg-optional gg-match="span[data-cy='hit-a-snag-error']"></span>
+    <input
+      inputmode="numeric"
+      autofocus
+      name="code"
+      type="text"
+      gg-match="input[name='code']"
+      placeholder="Code"
+    />
+    <button type="submit" gg-match="button[type='button']:has-text('Verify and Sign in')">
+      Verify and Sign in
+    </button>
+  </body>
+</html>

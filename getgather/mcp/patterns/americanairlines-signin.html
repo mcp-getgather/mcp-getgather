@@ -1,0 +1,23 @@
+<html gg-domain="aa" gg-priority="2">
+  <head>
+    <title>American Airlines Signin</title>
+  </head>
+  <body>
+    <p gg-optional gg-match="adc-inline-notification[role='alert'][kind='error']"></p>
+    <input
+      type="text"
+      gg-match="input[name='username']"
+      placeholder="AAdvantage® # or username"
+      name="username"
+    />
+    <input
+      type="password"
+      gg-match="input[name='password']"
+      placeholder="Password"
+      name="password"
+    />
+    <button type="submit" gg-match="body:not(:has(.adc-loading)) div.loginButton adc-button">
+      Sign in
+    </button>
+  </body>
+</html>

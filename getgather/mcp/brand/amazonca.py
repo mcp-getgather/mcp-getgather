@@ -19,18 +19,35 @@ amazonca_mcp = BrandMCPBase(brand_id="amazonca", name="Amazon CA MCP")
 
 
 @amazonca_mcp.tool(tags={"private"})
-async def get_purchase_history() -> dict[str, Any]:
-    """Get purchase/order history of a amazon ca."""
+async def get_purchase_history(
+    year: str | int | None = None, start_index: int = 0
+) -> dict[str, Any]:
+    """Get purchase/order history of a amazon canada."""
+
+    if year is None:
+        target_year = datetime.now().year
+    elif isinstance(year, str):
+        try:
+            target_year = int(year)
+        except ValueError:
+            target_year = datetime.now().year
+    else:
+        target_year = int(year)
+
+    current_year = datetime.now().year
+    if not (1900 <= target_year <= current_year + 1):
+        raise ValueError(f"Year {target_year} is out of valid range (1900-{current_year + 1})")
 
     browser_profile = get_mcp_browser_profile()
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
-    current_year = datetime.now().year
-    purchases = await run_distillation_loop(
-        f"https://www.amazon.ca/your-orders/orders?timeFilter=year-{current_year}",
+    _terminated, distilled, converted = await run_distillation_loop(
+        f"https://www.amazon.ca/your-orders/orders?timeFilter=year-{target_year}&startIndex={start_index}",
         patterns,
         browser_profile=browser_profile,
+        stop_ok=True,
     )
+    purchases = converted if converted else distilled
     return {"purchases": purchases}
 
 

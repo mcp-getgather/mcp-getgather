@@ -99,7 +99,7 @@ async def get_hosted_link(
     request: Request,
     link_id: str,
 ) -> TokenLookupResponse:
-    logger.info(
+    logger.debug(
         "[get_hosted_link] Retrieving hosted link",
         extra={"link_id": link_id, "request_url": str(request.url)},
     )
@@ -126,7 +126,7 @@ async def get_hosted_link(
             message=link_data.status_message or "Auth in progress...",
         )
 
-        logger.info(
+        logger.debug(
             "[get_hosted_link] Successfully retrieved link data",
             extra={
                 "link_id": link_id,

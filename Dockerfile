@@ -46,6 +46,12 @@ RUN uv sync --no-dev
 # Generate OpenAPI schema
 RUN $VENV_PATH/bin/python -m getgather.generate_openapi -o /tmp/openapi.json
 
+# Grab additional blocklists
+RUN curl -o /app/blocklists-analytics.txt https://raw.githubusercontent.com/hectorm/hmirror/master/data/mozilla-shavar-analytics/list.txt
+RUN curl -o /app/blocklists-ads.txt https://raw.githubusercontent.com/hectorm/hmirror/master/data/mozilla-shavar-advertising/list.txt
+RUN curl -o /app/blocklists-privacy.txt https://raw.githubusercontent.com/hectorm/hmirror/master/data/easyprivacy/list.txt
+RUN curl -o /app/blocklists-adguard.txt https://raw.githubusercontent.com/hectorm/hmirror/master/data/adguard-simplified/list.txt
+
 # Stage 2: Frontend Builder
 FROM mirror.gcr.io/library/node:22-alpine AS frontend-builder
 
@@ -105,6 +111,7 @@ COPY --from=backend-builder /app/tests /app/tests
 COPY --from=backend-builder /app/entrypoint.sh /app/entrypoint.sh
 COPY --from=backend-builder /app/.jwmrc /app/.jwmrc
 COPY --from=backend-builder /opt/ms-playwright /opt/ms-playwright
+COPY --from=backend-builder /app/blocklists-*.txt /app/
 COPY --from=frontend-builder /app/getgather/frontend /app/getgather/frontend
 
 ENV PYTHONUNBUFFERED=1 \
