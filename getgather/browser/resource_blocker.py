@@ -10,7 +10,7 @@ from getgather.logs import logger
 
 _BLOCKED_RESOURCE_TYPES = {"image", "media", "font"}
 _blocked_domains: frozenset[str] | None = None
-_allowed_domains: frozenset[str] = frozenset(["amazon.ca"])
+_allowed_domains: frozenset[str] = frozenset(["amazon.ca", "wayfair.com"])
 
 
 def _get_domain_variants(domain: str) -> list[str]:
