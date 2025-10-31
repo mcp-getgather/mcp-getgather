@@ -34,8 +34,9 @@ router = APIRouter(prefix="/dpage", tags=["dpage"])
 
 
 active_pages: dict[str, Page] = {}
+distillation_results: dict[str, str | list[dict[str, str | list[str]]] | dict[str, Any]] = {}
+pending_actions: dict[str, dict[str, Any]] = {}  # Store actions to resume after signin
 incognito_browser_profiles: dict[str, BrowserProfile] = {}
-distillation_results: dict[str, str | list[dict[str, str | list[str]]]] = {}
 global_browser_profile: BrowserProfile | None = None
 
 
@@ -82,6 +83,8 @@ async def dpage_check(id: str):
     for iteration in range(max):
         logger.debug(f"Checking dpage {id}: {iteration + 1} of {max}")
         await asyncio.sleep(TICK)
+
+        # Check if signin completed
         if id in distillation_results:
             return distillation_results[id]
 
@@ -190,6 +193,25 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
         if await terminate(page, distilled):
             logger.info("Finished!")
             converted = await convert(distilled)
+
+            if id in pending_actions:
+                action_info = pending_actions[id]
+                logger.info(f"Signin completed for {id}, resuming action...")
+
+                action_result = await dpage_with_action(
+                    initial_url=action_info["initial_url"],
+                    action=action_info["action"],
+                    timeout=action_info["timeout"],
+                    _signin_completed=True,
+                    _page_id=id,
+                )
+
+                distillation_results[id] = action_result
+
+                del pending_actions[id]
+                await dpage_close(id)
+                return HTMLResponse(render(FINISHED_MSG, options))
+
             await dpage_close(id)
             if converted:
                 print(converted)
@@ -381,5 +403,99 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
             "Give the url to the user so the user can open it manually in their browser."
             "Then call check_signin tool with the signin_id to check if the sign in process is completed. "
             "Once it is completed successfully, then call this tool again to proceed with the action."
+        ),
+    }
+
+
+async def dpage_with_action(
+    initial_url: str,
+    action: Any,
+    timeout: int = 2,
+    _signin_completed: bool = False,
+    _page_id: str | None = None,
+) -> dict[str, Any]:
+    """Execute an action after signin completion.
+
+    Args:
+        initial_url: URL to navigate to
+        action: Async function that receives a Page and returns a dict
+        timeout: Timeout in seconds
+        _signin_completed: Whether the signin process is completed
+        _page_id: ID of the page to resume from
+    Returns:
+        Dict with result or signin flow info
+    """
+    headers = get_http_headers(include_all=True)
+    incognito = headers.get("x-incognito", "0") == "1"
+    global global_browser_profile
+
+    # Step 1: If resuming after signin completion, use the active page directly
+    if _signin_completed and _page_id is not None and _page_id in active_pages:
+        logger.info(f"Resuming action after signin with page_id={_page_id}")
+        page = active_pages[_page_id]
+        await page.goto(initial_url)
+        result = await action(page)
+        return result
+
+    # Step 2: If global_browser_profile exists, try executing action directly
+    # This will work if user signed in previously and session is still valid
+    if global_browser_profile is not None and not incognito:
+        try:
+            logger.info("Trying action with existing global browser session...")
+            session = BrowserSession.get(global_browser_profile)
+            await session.start()
+            page = await session.page()
+            await page.goto(initial_url)
+            result = await action(page)
+            logger.info("Action succeeded with existing session!")
+            await page.close()
+            return result
+        except Exception as e:
+            logger.info(
+                f"dpage_with_action failed with existing session (likely not signed in): {e}"
+            )
+
+    # Step 3: User not signed in - create interactive signin flow with action
+    # Create or get browser profile for signin flow
+    if incognito:
+        browser_profile = BrowserProfile()
+    else:
+        if global_browser_profile is None:
+            logger.info("Creating global browser profile for signin flow...")
+            global_browser_profile = BrowserProfile()
+        browser_profile = global_browser_profile
+
+    id = await dpage_add(browser_profile=browser_profile, location=initial_url)
+
+    # Store action for auto-resumption after signin
+    pending_actions[id] = {
+        "action": action,
+        "initial_url": initial_url,
+        "timeout": timeout,
+        "page_id": id,
+    }
+
+    host = headers.get("x-forwarded-host") or headers.get("host")
+    if host is None:
+        logger.warning("Missing Host header; defaulting to localhost")
+        base_url = "http://localhost:23456"
+    else:
+        default_scheme = "http" if is_local_address(host) else "https"
+        scheme = headers.get("x-forwarded-proto", default_scheme)
+        base_url = f"{scheme}://{host}"
+
+    url = f"{base_url}/dpage/{id}"
+    logger.info(f"dpage_with_action: Continue with sign in at {url}", extra={"url": url, "id": id})
+
+    message = "Continue to sign in in your browser"
+
+    return {
+        "url": url,
+        "message": f"{message} at {url}.",
+        "signin_id": id,
+        "system_message": (
+            f"Try open the url {url} in a browser with a tool if available."
+            "Give the url to the user so the user can open it manually in their browser."
+            f"Then call check_signin tool with the signin_id to check if the sign in process is completed. "
         ),
     }

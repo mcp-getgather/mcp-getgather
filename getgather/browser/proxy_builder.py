@@ -123,6 +123,10 @@ def _extract_values(profile_id: str, request_info: RequestInfo | None) -> dict[s
 
     if request_info.city:
         values["city"] = request_info.city.lower().replace(" ", "_")
+        # city_compacted: removes dashes, underscores, and spaces
+        values["city_compacted"] = (
+            request_info.city.lower().replace("-", "").replace("_", "").replace(" ", "")
+        )
     if request_info.postal_code:
         values["postal_code"] = request_info.postal_code
 
