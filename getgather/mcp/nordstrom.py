@@ -1,9 +1,9 @@
-import asyncio
 from typing import Any
 
 from fastmcp import Context
-from patchright.async_api import Page, Response
+from patchright.async_api import Page
 
+from getgather.actions import handle_network_extraction
 from getgather.mcp.dpage import dpage_mcp_tool, dpage_with_action
 from getgather.mcp.registry import GatherMCP
 
@@ -29,33 +29,9 @@ async def get_order_history(ctx: Context) -> dict[str, Any]:
     async def get_order_details_action(page: Page) -> dict[str, Any]:
         """Get the details of an order from Nordstrom"""
 
-        print("Getting order details...")
+        orders = await handle_network_extraction(page, "/orders")
 
-        result_future: asyncio.Future[dict[str, Any]] = asyncio.Future()
-
-        async def handle_response(response: Response) -> None:
-            if (
-                response.status == 200
-                and "/api/shoppers/" in response.url
-                and "/orders" in response.url
-            ):
-                if not result_future.done():
-                    try:
-                        data = await response.json()
-                        result_future.set_result(data)
-                    except Exception as err:
-                        result_future.set_exception(err)
-
-        page.on("response", handle_response)
-
-        print("Waiting for response...")
-
-        # Wait for the response
-        try:
-            orders = await asyncio.wait_for(result_future, timeout=30.0)
-            return orders
-        finally:
-            page.remove_listener("response", handle_response)
+        return orders
 
     return await dpage_with_action(
         "https://www.nordstrom.com/my-account",

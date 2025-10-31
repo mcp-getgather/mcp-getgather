@@ -433,7 +433,7 @@ async def dpage_with_action(
     if _signin_completed and _page_id is not None and _page_id in active_pages:
         logger.info(f"Resuming action after signin with page_id={_page_id}")
         page = active_pages[_page_id]
-        await page.goto(initial_url)
+        await page.goto(initial_url, wait_until="commit")
         result = await action(page)
         return result
 
@@ -445,7 +445,7 @@ async def dpage_with_action(
             session = BrowserSession.get(global_browser_profile)
             await session.start()
             page = await session.page()
-            await page.goto(initial_url)
+            await page.goto(initial_url, wait_until="commit")
             result = await action(page)
             logger.info("Action succeeded with existing session!")
             await page.close()
