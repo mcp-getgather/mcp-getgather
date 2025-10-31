@@ -3,24 +3,22 @@
     <title>Hilton Signin</title>
   </head>
   <body>
-    <div>
-      <div gg-optional gg-match="div[data-testid='bannerNotification']"></div>
-      <input
-        placeholder="Username or Hilton Honors #"
-        autofocus
-        type="text"
-        name="username"
-        gg-match="input[name='username']"
-      />
-      <input
-        placeholder="Password"
-        type="password"
-        name="password"
-        gg-match="input[name='password']"
-      />
-      <button gg-autoclick type="submit" gg-match="button[data-e2e='signInButton']:not([disabled])">
-        Sign in
-      </button>
-    </div>
+    <div gg-optional gg-match="div[data-testid='bannerNotification']"></div>
+    <input
+      placeholder="Username or Hilton Honors #"
+      autofocus
+      type="text"
+      name="username"
+      gg-match="input[name='username']"
+    />
+    <input
+      placeholder="Password"
+      type="password"
+      name="password"
+      gg-match="input[name='password']"
+    />
+    <button type="submit" gg-match="button[data-e2e='signInButton']:not([disabled])">
+      Sign in
+    </button>
   </body>
 </html>
