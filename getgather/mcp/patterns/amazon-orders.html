@@ -35,6 +35,12 @@
             "kind": "list"
           },
           {
+            "name": "product_urls",
+            "selector": "div.yohtmlc-product-title a",
+            "attribute": "href",
+            "kind": "list"
+          },
+          {
             "name": "return_window_dates",
             "selector": "span[class='a-size-small']",
             "kind": "list"
@@ -48,6 +54,10 @@
             "name": "author_or_creator",
             "selector": "span.a-size-small:not(.a-color-secondary), .a-size-small:not(.a-color-secondary)",
             "kind": "list"
+          },
+          {
+            "name": "shipment_status",
+            "selector": "span.a-size-medium.delivery-box__primary-text, .yohtmlc-shipment-status-primaryText span"
           }
         ]
       }

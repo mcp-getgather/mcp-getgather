@@ -1,0 +1,21 @@
+<html gg-domain="jetblue" gg-priority="1">
+  <body>
+    <p gg-optional gg-match="div.infobox-error"></p>
+    <h2 gg-match="h2#first-focus"></h2>
+    <div gg-match="p.okta-form-subtitle"></div>
+    <input
+      autofocus
+      type="text"
+      name="otp"
+      placeholder="Verification code"
+      gg-match="input#input85"
+    />
+    <button
+      type="submit"
+      gg-autoclick
+      gg-match="div.o-form-button-bar input[type=submit]:not([disabled])"
+    >
+      Verify
+    </button>
+  </body>
+</html>

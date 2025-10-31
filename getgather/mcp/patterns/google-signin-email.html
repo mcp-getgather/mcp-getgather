@@ -1,0 +1,15 @@
+<html gg-domain="google">
+  <head>
+    <title>Google Activity</title>
+  </head>
+  <body>
+    <input autofocus placeholder="Email" gg-match="input#identifierId" type="email" name="email" />
+    <button
+      type="submit"
+      gg-autoclick
+      gg-match="div#identifierNext button:not([style*='--mdc-ripple-fg-size'])"
+    >
+      Next
+    </button>
+  </body>
+</html>

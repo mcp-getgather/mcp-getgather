@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Awaitable, Callable, Final
 
 import httpx
+import logfire
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import (
     FileResponse,
@@ -21,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from getgather.api.api import api_app
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.session import BrowserSession
+from getgather.browser.session_cleanup import cleanup_old_sessions
 from getgather.config import settings
 from getgather.logs import logger
 from getgather.mcp.dpage import router as dpage_router
@@ -39,11 +41,24 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await startup()
+
+    stop_event = asyncio.Event()
+
+    async def timer_loop():
+        while not stop_event.is_set():
+            await cleanup_old_sessions()
+            await asyncio.sleep(60)
+
+    background_task = asyncio.create_task(timer_loop())
+
     async with AsyncExitStack() as stack:
         for mcp_app in mcp_apps:
             # type: ignore
             await stack.enter_async_context(mcp_app.app.lifespan(app))
         yield
+
+        stop_event.set()
+        await background_task
 
 
 app = FastAPI(
@@ -56,6 +71,17 @@ app = FastAPI(
     generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan,
 )
+logfire.configure(
+    service_name="mcp-getgather",
+    send_to_logfire="if-token-present",
+    token=settings.LOGFIRE_TOKEN or None,
+    environment=settings.ENVIRONMENT,
+    distributed_tracing=True,
+    code_source=logfire.CodeSource(
+        repository="https://github.com/mcp-getgather/mcp-getgather", revision="main"
+    ),
+)
+logfire.instrument_fastapi(app)
 
 
 STATIC_ASSETS_DIR = Path(__file__).parent / "static" / "assets"
@@ -176,14 +202,14 @@ def health():
     )
 
 
-IP_CHECK_URL: Final[str] = "https://ifconfig.me/ip"
+IP_CHECK_URL: Final[str] = "https://ip.fly.dev/ip"
 
 
 @app.get("/extended-health")
 async def extended_health():
     session = BrowserSession.get(BrowserProfile())
     try:
-        await session.start()
+        session = await session.start()
         page = await session.page()
         await page.goto(IP_CHECK_URL, timeout=3000)
         ip_text: str = await page.evaluate("() => document.body.innerText.trim()")
@@ -202,15 +228,16 @@ for mcp_app in mcp_apps:
 
 
 @app.middleware("http")
-async def mcp_slash_redirect_middleware(
+async def mcp_slash_middleware(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ):
-    # redirect /mcp* to /mcp*/
+    """Make /mcp* and /mcp*/ behave the same without actual redirect."""
     path = request.url.path
     if path.startswith("/mcp") and not path.endswith("/"):
-        return RedirectResponse(url=f"{path}/", status_code=307)
-    else:
-        return await call_next(request)
+        request.scope["path"] = f"{path}/"
+        if request.scope.get("raw_path"):
+            request.scope["raw_path"] = f"{path}/".encode()
+    return await call_next(request)
 
 
 # Everything else is handled by the SPA

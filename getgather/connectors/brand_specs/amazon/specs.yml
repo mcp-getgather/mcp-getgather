@@ -55,20 +55,15 @@ signin:
       prompt: Submit
       selector: input[id="auth-signin-button"]
 
-    - name: alt_otp_link
-      type: click
-      prompt: Use an alternative method
-      selector: a#auth-get-new-otp-link
+    # - name: alt_otp_link
+    #   type: click
+    #   prompt: Use an alternative method
+    #   selector: a#auth-get-new-otp-link
 
-    - name: alt_send_otp
-      type: click
-      prompt: Send OTP
-      selector: input[id=auth-send-code]
-
-    - name: challenge_alt_verification_link
-      type: click
-      prompt: Use an alternative method
-      selector: a[href*="/ap/cvf/accountrecovery"]
+    # - name: alt_send_otp
+    #   type: click
+    #   prompt: Send OTP
+    #   selector: input[id=auth-send-code]
 
     - name: verification_code_form
       type: text
@@ -119,34 +114,20 @@ signin:
       fields: [captcha_click]
 
     - name: Verification Code Page
-      choices:
-        - name: MFA Current Modality Choice
-          prompt: Would you like to use the following OTP method?
-          groups:
-            - name: MFA Current Modality Choice
-              fields: [verification_code_form, verification_code_submit]  # TODO when seen ['div[id="channelDetailsForOtp"]']
-            - name: Alternative MFA Modality Choice
-              fields: [challenge_alt_verification_link]
+      fields: [verification_code_form, verification_code_submit]
 
     - name: 2SV Page
-      choices:
-        - name: OTP Current Modality Choice
-          prompt: Would you like to use the following two-step verification method or use an alternative method?
-          groups:
-            - name: OTP Current Modality Choice
-              fields: [otp, otp_submit]
-            - name: Alternative OTP Modality Choice
-              fields: [alt_otp_link]
+      fields: [otp, otp_submit]
 
-    - name: Alternate MFA Method Selection Page
-      url: https://www.amazon.com/ap/mfa/new-otp
-      choices:
-        - name: OTP Generic Modality Choice
-          prompt: Which of the following OTP methods would you like to use?
-          dynamic:
-            option_items: div[data-a-input-name="otpDeviceContext"]
-            option_label: span.a-radio-label
-          afterwards: [alt_send_otp]
+    # - name: Alternate MFA Method Selection Page
+    #   url: https://www.amazon.com/ap/mfa/new-otp
+    #   choices:
+    #     - name: OTP Generic Modality Choice
+    #       prompt: Which of the following OTP methods would you like to use?
+    #       dynamic:
+    #         option_items: div[data-a-input-name="otpDeviceContext"]
+    #         option_label: span.a-radio-label
+    #       afterwards: [alt_send_otp]
 
     - name: Incorrect Login
       fields: [login, continue, incorrect-input]
