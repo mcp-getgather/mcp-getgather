@@ -80,7 +80,7 @@ class BrowserSession:
             return self.context.pages[-1]
         return await self.new_page()
 
-    async def start(self) -> BrowserSession:
+    async def start(self, debug_url: str | None = "https://ip.fly.dev/all") -> BrowserSession:
         if self.profile.id in BrowserSession._sessions:
             # Session already started
             return BrowserSession._sessions[self.profile.id]
@@ -109,8 +109,9 @@ class BrowserSession:
 
                 await configure_context(self._context)
 
-                debug_page = await self.page()
-                await debug_page.goto("https://ip.fly.dev/all")
+                if debug_url:
+                    debug_page = await self.page()
+                    await debug_page.goto(debug_url)
 
                 # Intentionally create a new page to apply resources filtering (from blocklists)
                 page = await self.new_page()
