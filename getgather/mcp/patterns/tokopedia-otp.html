@@ -1,10 +1,11 @@
-<html gg-domain="tokopedia" gg-priority="2">
+<html gg-domain="tokopedia" gg-priority="1">
   <head>
     <title>Tokopedia OTP Verification</title>
   </head>
   <body>
     <p gg-optional gg-match="span:has-text('Kode yang kamu masukkan salah.')"></p>
     <div gg-match="div.header > div:has-text('Masukkan Kode Verifikasi')"></div>
-    <input type="tel" gg-match="input[type=tel]" placeholder="OTP" />
+    <input name="otp" type="tel" gg-match="input[type=tel]" placeholder="OTP" />
+    <button type="submit">Submit</button>
   </body>
 </html>
