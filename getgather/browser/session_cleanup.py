@@ -5,6 +5,7 @@ Session cleanup scheduler using the schedule library for automatically stopping 
 from datetime import datetime, timedelta
 
 from getgather.browser.session import BrowserSession
+from getgather.config import settings
 from getgather.logs import logger
 
 
@@ -12,7 +13,7 @@ async def cleanup_old_sessions():
     """Check for and stop sessions that have been running too long."""
     logger.info("Checking for old sessions to stop")
     current_time = datetime.now()
-    max_session_age = timedelta(minutes=30)
+    max_session_age = timedelta(minutes=settings.BROWSER_SESSION_AGE)
     browser_sessions = BrowserSession.get_all_sessions()
 
     logger.info(f"Found {len(browser_sessions)} browser sessions")

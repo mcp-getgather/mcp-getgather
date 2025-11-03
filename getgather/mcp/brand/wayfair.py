@@ -9,13 +9,13 @@ wayfair_mcp = BrandMCPBase(brand_id="wayfair", name="Wayfair MCP")
 
 
 @wayfair_mcp.tool(tags={"private"})
-async def get_order_history() -> dict[str, Any]:
+async def get_order_history(page_number: int = 1) -> dict[str, Any]:
     """Get order history of wayfair."""
     browser_profile = get_mcp_browser_profile()
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "patterns", "**/*.html")
     patterns = load_distillation_patterns(path)
     _terminated, distilled, converted = await run_distillation_loop(
-        "https://www.wayfair.com/session/secure/account/order_search.php",
+        f"https://www.wayfair.com/session/secure/account/order_search.php?page={page_number}",
         patterns,
         browser_profile=browser_profile,
     )

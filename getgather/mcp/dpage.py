@@ -28,7 +28,7 @@ from getgather.distill import (
     terminate,
 )
 from getgather.logs import logger
-from getgather.mcp.html_renderer import render_form
+from getgather.mcp.html_renderer import DEFAULT_TITLE, render_form
 
 router = APIRouter(prefix="/dpage", tags=["dpage"])
 
@@ -104,7 +104,7 @@ def render(content: str, options: dict[str, str] | None = None) -> str:
     if options is None:
         options = {}
 
-    title = options.get("title", "GetGather")
+    title = options.get("title", DEFAULT_TITLE)
     action = options.get("action", "")
 
     return render_form(content, title, action)
@@ -186,7 +186,7 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
         print(distilled)
 
         title_element = BeautifulSoup(distilled, "html.parser").find("title")
-        title = title_element.get_text() if title_element is not None else "GetGather"
+        title = title_element.get_text() if title_element is not None else DEFAULT_TITLE
         action = f"/dpage/{id}"
         options = {"title": title, "action": action}
 
@@ -433,7 +433,7 @@ async def dpage_with_action(
     if _signin_completed and _page_id is not None and _page_id in active_pages:
         logger.info(f"Resuming action after signin with page_id={_page_id}")
         page = active_pages[_page_id]
-        await page.goto(initial_url)
+        await page.goto(initial_url, wait_until="commit")
         result = await action(page)
         return result
 
@@ -445,7 +445,7 @@ async def dpage_with_action(
             session = BrowserSession.get(global_browser_profile)
             await session.start()
             page = await session.page()
-            await page.goto(initial_url)
+            await page.goto(initial_url, wait_until="commit")
             result = await action(page)
             logger.info("Action succeeded with existing session!")
             await page.close()
