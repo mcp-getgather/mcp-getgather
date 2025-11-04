@@ -100,6 +100,10 @@ class BrowserSession:
                     profile_id=self.profile.id, browser_type=self.playwright.chromium
                 )
 
+                # Always allow location permission for all origins in this context
+                # allow globally
+                await self._context.grant_permissions(["geolocation"])
+
                 # Set launch timestamp and safely register the session at the end
                 self.launch_timestamp = datetime.now()
                 self._sessions[self.profile.id] = self

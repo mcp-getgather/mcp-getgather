@@ -1,0 +1,27 @@
+<html gg-domain="gofood" gg-priority="4">
+  <head>
+    <title>GoFood Order History</title>
+  </head>
+  <body>
+    <div>
+      <h1 gg-match="div.gf-heading-2xl">History</h1>
+      <div gg-stop gg-match-html="div#__next > div"></div>
+    </div>
+    <script type="application/json" id="purchase">
+      {
+        "rows": "a",
+        "columns": [
+          { "name": "title", "selector": "div[class='line-clamp-1 md:gf-label-s gf-label-m']" },
+          {
+            "name": "order_date",
+            "selector": "div[class='text-gf-content-muted md:gf-body-s gf-body-xs line-clamp-1']"
+          },
+          {
+            "name": "menu_name",
+            "selector": "div[class='gf-body-s text-gf-content-secondary line-clamp-2']"
+          }
+        ]
+      }
+    </script>
+  </body>
+</html>
