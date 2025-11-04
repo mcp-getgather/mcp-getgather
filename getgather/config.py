@@ -54,6 +54,11 @@ class Settings(BaseSettings):
     # Max session age, in minutes
     BROWSER_SESSION_AGE: int = 60
 
+    # Browser startup retry settings
+    BROWSER_STARTUP_RETRY_ENABLED: bool = True
+    BROWSER_STARTUP_RETRY_ATTEMPTS: int = 3
+    BROWSER_STARTUP_RETRY_DELAY: float = 1.0
+
     @property
     def brand_spec_dir(self) -> Path:
         return PROJECT_DIR / "getgather" / "connectors" / "brand_specs"

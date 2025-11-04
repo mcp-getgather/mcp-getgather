@@ -12,6 +12,7 @@ from patchright.async_api import BrowserContext, Page, Playwright, async_playwri
 
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.resource_blocker import configure_context
+from getgather.config import settings
 from getgather.logs import logger
 from getgather.rrweb import rrweb_injector, rrweb_manager
 
@@ -86,47 +87,109 @@ class BrowserSession:
             return BrowserSession._sessions[self.profile.id]
         lock = self._locks[self.profile.id]
         async with lock:  # prevent race condition when two requests try to start the same profile
-            try:
-                if self.profile.id in BrowserSession._sessions:
-                    # Session already started
-                    return BrowserSession._sessions[self.profile.id]
-                logger.info(
-                    f"Starting new session with profile {self.profile.id}",
-                    extra={"profile_id": self.profile.id},
-                )
+            if self.profile.id in BrowserSession._sessions:
+                # Session already started
+                return BrowserSession._sessions[self.profile.id]
 
-                self._playwright = await async_playwright().start()
-                self._context = await self.profile.launch(
-                    profile_id=self.profile.id, browser_type=self.playwright.chromium
-                )
+            max_attempts = (
+                settings.BROWSER_STARTUP_RETRY_ATTEMPTS
+                if settings.BROWSER_STARTUP_RETRY_ENABLED
+                else 1
+            )
+            last_exception: Exception | None = None
 
-                # Set launch timestamp and safely register the session at the end
-                self.launch_timestamp = datetime.now()
-                self._sessions[self.profile.id] = self
-                logger.info(
-                    f"Session {self.profile.id} registered in sessions with launch_timestamp {self.launch_timestamp}"
-                )
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    if attempt > 1:
+                        logger.info(
+                            f"Retrying browser startup (attempt {attempt}/{max_attempts}) for profile {self.profile.id}",
+                            extra={"profile_id": self.profile.id, "attempt": attempt},
+                        )
+                    else:
+                        logger.info(
+                            f"Starting new session with profile {self.profile.id}",
+                            extra={"profile_id": self.profile.id},
+                        )
 
-                await configure_context(self._context)
+                    self._playwright = await async_playwright().start()
+                    self._context = await self.profile.launch(
+                        profile_id=self.profile.id, browser_type=self.playwright.chromium
+                    )
 
-                debug_page = await self.page()
-                await debug_page.goto("https://ip.fly.dev/all")
+                    # Set launch timestamp and safely register the session at the end
+                    self.launch_timestamp = datetime.now()
+                    self._sessions[self.profile.id] = self
+                    logger.info(
+                        f"Session {self.profile.id} registered in sessions with launch_timestamp {self.launch_timestamp}"
+                    )
 
-                # Intentionally create a new page to apply resources filtering (from blocklists)
-                page = await self.new_page()
+                    await configure_context(self._context)
 
-                page.on(
-                    "load",
-                    lambda page: asyncio.create_task(
-                        rrweb_injector.setup_rrweb(self.context, page)
-                    ),
-                )
+                    debug_page = await self.page()
+                    await debug_page.goto("https://ip.fly.dev/all")
 
-                return self
+                    # Intentionally create a new page to apply resources filtering (from blocklists)
+                    page = await self.new_page()
 
-            except Exception as e:
-                logger.error(f"Error starting browser: {e}")
-                raise BrowserStartupError(f"Failed to start browser: {e}") from e
+                    page.on(
+                        "load",
+                        lambda page: asyncio.create_task(
+                            rrweb_injector.setup_rrweb(self.context, page)
+                        ),
+                    )
+
+                    # Success!
+                    if attempt > 1:
+                        logger.info(
+                            f"Browser startup succeeded on attempt {attempt}/{max_attempts}",
+                            extra={"profile_id": self.profile.id, "attempt": attempt},
+                        )
+                    return self
+
+                except Exception as e:
+                    last_exception = e
+                    error_str = str(e)
+                    is_retryable_error = any(
+                        pattern in error_str
+                        for pattern in [
+                            "ERR_TUNNEL_CONNECTION_FAILED",
+                            "ERR_CONNECTION_CLOSED",
+                            "ERR_PROXY_CONNECTION_FAILED",
+                        ]
+                    )
+                    is_last_attempt = attempt == max_attempts
+
+                    # Clean up failed playwright instance
+                    if self._playwright:
+                        with suppress(Exception):
+                            await self._playwright.stop()
+                        self._playwright = None
+                    self._context = None
+
+                    if is_retryable_error and not is_last_attempt:
+                        logger.warning(
+                            f"Retryable proxy error on attempt {attempt}/{max_attempts}: {error_str}",
+                            extra={
+                                "profile_id": self.profile.id,
+                                "attempt": attempt,
+                                "error": error_str,
+                            },
+                        )
+                        # Wait before retrying
+                        await asyncio.sleep(settings.BROWSER_STARTUP_RETRY_DELAY)
+                        continue
+
+                    # Non-retryable error or last attempt
+                    logger.error(
+                        f"Browser startup failed on attempt {attempt}/{max_attempts}: {e}",
+                        extra={"profile_id": self.profile.id, "attempt": attempt},
+                    )
+                    break
+
+            # All attempts exhausted
+            raise BrowserStartupError(
+                f"Failed to start browser after {max_attempts} attempts: {last_exception}"
+            ) from last_exception
 
     async def stop(self):
         logger.info(

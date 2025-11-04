@@ -514,19 +514,58 @@ async def run_distillation_loop(
 
         logger.info(f"Starting browser {profile.id}")
         logger.info(f"Navigating to {location}")
-        try:
-            await page.goto(location, timeout=settings.BROWSER_TIMEOUT)
-        except Exception as error:
-            logger.error(f"Failed to navigate to {location}: {error}")
-            await report_distill_error(
-                error=error,
-                page=page,
-                profile_id=profile.id,
-                location=location,
-                hostname=hostname,
-                iteration=0,
-            )
-            raise ValueError(f"Failed to navigate to {location}: {error}")
+
+        # Retry navigation on proxy-related errors
+        max_nav_attempts = 3
+
+        for nav_attempt in range(1, max_nav_attempts + 1):
+            try:
+                if nav_attempt > 1:
+                    logger.info(
+                        f"Retrying navigation (attempt {nav_attempt}/{max_nav_attempts}) to {location}",
+                        extra={"profile_id": profile.id, "attempt": nav_attempt},
+                    )
+                await page.goto(location, timeout=settings.BROWSER_TIMEOUT)
+                if nav_attempt > 1:
+                    logger.info(
+                        f"Navigation succeeded on attempt {nav_attempt}/{max_nav_attempts}",
+                        extra={"profile_id": profile.id, "attempt": nav_attempt},
+                    )
+                break  # Success!
+            except Exception as error:
+                error_str = str(error)
+                is_retryable = any(
+                    pattern in error_str
+                    for pattern in [
+                        "ERR_CONNECTION_CLOSED",
+                        "ERR_TUNNEL_CONNECTION_FAILED",
+                        "ERR_PROXY_CONNECTION_FAILED",
+                    ]
+                )
+
+                if is_retryable and nav_attempt < max_nav_attempts:
+                    logger.warning(
+                        f"Retryable navigation error on attempt {nav_attempt}/{max_nav_attempts}: {error_str}",
+                        extra={
+                            "profile_id": profile.id,
+                            "attempt": nav_attempt,
+                            "error": error_str,
+                        },
+                    )
+                    await asyncio.sleep(1)  # Brief delay before retry
+                    continue
+
+                # Non-retryable or last attempt failed
+                logger.error(f"Failed to navigate to {location}: {error}")
+                await report_distill_error(
+                    error=error,
+                    page=page,
+                    profile_id=profile.id,
+                    location=location,
+                    hostname=hostname,
+                    iteration=0,
+                )
+                raise ValueError(f"Failed to navigate to {location}: {error}")
 
         if logger.isEnabledFor(logging.DEBUG):
             await capture_page_artifacts(
