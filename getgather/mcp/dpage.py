@@ -323,6 +323,42 @@ def is_local_address(host: str) -> bool:
         return hostname in ("localhost", "127.0.0.1")
 
 
+async def get_incognito_browser_profile(signin_id: str | None) -> BrowserProfile:
+    """Get or create an incognito browser profile."""
+    if signin_id is not None:
+        if signin_id in incognito_browser_profiles:
+            return incognito_browser_profiles[signin_id]
+        else:
+            raise ValueError(f"Browser profile for signin {signin_id} not found")
+
+    MAX_ATTEMPTS = 3
+    CHECK_URL = "https://ip.fly.dev/all"
+    CHECK_TIMEOUT = 10  # seconds
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        logger.info(f"Creating incognito browser profile (attempt {attempt}/{MAX_ATTEMPTS})...")
+        fresh_profile = BrowserProfile()
+        fresh_session = BrowserSession.get(fresh_profile)
+
+        try:
+            await fresh_session.start(debug_url=None)
+            check_page = await fresh_session.new_page()
+            logger.error(f"Validating incognito browser profile at {CHECK_URL}...")
+            await check_page.goto(CHECK_URL, timeout=CHECK_TIMEOUT * 1000)
+            logger.info(f"Incognito browser profile validated on attempt {attempt}")
+            return fresh_profile
+
+        except Exception as e:
+            logger.warning(f"Incognito browser profile validation failed on attempt {attempt}: {e}")
+            if attempt < MAX_ATTEMPTS:
+                try:
+                    await fresh_session.stop()
+                except Exception:
+                    pass
+
+    logger.error(f"Failed to get browser profile after {MAX_ATTEMPTS} attempts!")
+    raise RuntimeError(f"Failed to get browser profile after {MAX_ATTEMPTS} attempts!")
+
+
 async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) -> dict[str, Any]:
     """Generic MCP tool based on distillation"""
     path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
@@ -333,13 +369,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
     signin_id = headers.get("x-signin-id") or None
 
     if incognito:
-        if signin_id is not None:
-            if signin_id in incognito_browser_profiles:
-                browser_profile = incognito_browser_profiles[signin_id]
-            else:
-                raise ValueError(f"Browser profile for signin {signin_id} not found")
-        else:
-            browser_profile = BrowserProfile()
+        browser_profile = await get_incognito_browser_profile(signin_id)
     else:
         global global_browser_profile
         if global_browser_profile is None:
@@ -457,8 +487,9 @@ async def dpage_with_action(
 
     # Step 3: User not signed in - create interactive signin flow with action
     # Create or get browser profile for signin flow
+    browser_profile: BrowserProfile
     if incognito:
-        browser_profile = BrowserProfile()
+        browser_profile = await get_incognito_browser_profile(signin_id=None)
     else:
         if global_browser_profile is None:
             logger.info("Creating global browser profile for signin flow...")
