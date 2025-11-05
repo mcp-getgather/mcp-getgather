@@ -61,6 +61,7 @@ class BrowserProfile(FreezableModel):
             viewport=viewport_config,
             proxy=proxy,  # type: ignore[arg-type]
             bypass_csp=True,
+            ignore_default_args=["--no-sandbox"],
         )
         context.set_default_timeout(settings.BROWSER_TIMEOUT)
         return context
