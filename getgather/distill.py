@@ -368,7 +368,7 @@ async def autoclick(page: Page, distilled: str, expr: str):
             await click(page, str(selector), frame_selector=frame_selector)
 
 
-async def terminate(page: Page, distilled: str) -> bool:
+async def terminate(distilled: str) -> bool:
     document = BeautifulSoup(distilled, "html.parser")
     stops = document.find_all(attrs={"gg-stop": True})
     if len(stops) > 0:
@@ -556,7 +556,7 @@ async def run_distillation_loop(
                     print()
                     print(distilled)
 
-                    if await terminate(page, distilled):
+                    if await terminate(distilled):
                         converted = await convert(distilled)
                         await page.close()
                         return (True, distilled, converted)

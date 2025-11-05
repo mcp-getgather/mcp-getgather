@@ -191,7 +191,7 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
         action = f"/dpage/{id}"
         options = {"title": title, "action": action}
 
-        if await terminate(page, distilled):
+        if await terminate(distilled):
             logger.info("Finished!")
             converted = await convert(distilled)
 
