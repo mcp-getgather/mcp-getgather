@@ -37,15 +37,3 @@ signin:
       end: true
 
   start: Redirect to Login Page
-
-extract:
-  steps:
-    - name: Go to order page
-      url: https://www.containerstore.com/myaccount/orders.htm
-
-    - name: Wait for order page to load
-      wait_for_selector: h1.head-title:has-text("Your Orders")
-
-    - name: Extract orders
-      bundle: orders.html
-      slurp_selector: div#main-content
