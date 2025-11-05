@@ -55,13 +55,17 @@ class BrowserProfile(FreezableModel):
         # Get viewport configuration from parent class
         viewport_config = self.get_viewport_config()
 
+        # Running as root (e.g. CI runs) still requires --no-sandbox
+        run_as_regular_user = os.getuid() != 0
+        ignore_default_args = ["--no-sandbox"] if run_as_regular_user else None
+
         context = await browser_type.launch_persistent_context(
             user_data_dir=str(self.profile_dir(profile_id)),
             headless=settings.HEADLESS,
             viewport=viewport_config,
             proxy=proxy,  # type: ignore[arg-type]
             bypass_csp=True,
-            ignore_default_args=["--no-sandbox"],
+            ignore_default_args=ignore_default_args,
         )
         context.set_default_timeout(settings.BROWSER_TIMEOUT)
         return context
