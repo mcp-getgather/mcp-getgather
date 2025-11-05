@@ -55,9 +55,13 @@ class BrowserProfile(FreezableModel):
         # Get viewport configuration from parent class
         viewport_config = self.get_viewport_config()
 
-        # Running as root (e.g. CI runs) still requires --no-sandbox
-        run_as_regular_user = os.getuid() != 0
-        ignore_default_args = ["--no-sandbox"] if run_as_regular_user else None
+        # Running as root requires --no-sandbox flag to be explicitly added
+        # Running as regular user should ignore (remove) --no-sandbox from defaults
+        running_as_root = os.getuid() == 0
+        ignore_default_args = ["--no-sandbox"] if not running_as_root else None
+
+        logger.info(f"Running as root: {running_as_root}", extra={"profile_id": profile_id})
+        logger.info(f"ignore_default_args: {ignore_default_args}")
 
         context = await browser_type.launch_persistent_context(
             user_data_dir=str(self.profile_dir(profile_id)),
