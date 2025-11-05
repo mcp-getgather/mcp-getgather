@@ -30,7 +30,8 @@ except Exception as e:
 
 
 class AuthMiddleware(Middleware):
-    async def on_call_tool(self, context: MiddlewareContext[Any], call_next: CallNext[Any, Any]):  # type: ignore
+    # type: ignore
+    async def on_call_tool(self, context: MiddlewareContext[Any], call_next: CallNext[Any, Any]):
         if not context.fastmcp_context:
             return await call_next(context)
 
@@ -106,7 +107,7 @@ class AuthMiddleware(Middleware):
 CATEGORY_BUNDLES: dict[str, list[str]] = {
     "food": ["doordash", "ubereats"],
     "books": ["goodreads"],
-    "shopping": ["amazon", "shopee", "wayfair"],
+    "shopping": ["amazon", "shopee", "wayfair", "astro"],
     "media": [],
 }
 
@@ -114,7 +115,7 @@ CATEGORY_BUNDLES: dict[str, list[str]] = {
 MCP_BUNDLES: dict[str, list[str]] = {
     "media": ["bbc", "cnn", "espn", "groundnews", "npr", "nytimes"],
     "books": ["goodreads"],
-    "shopping": ["amazon", "amazonca", "shopee", "wayfair"],
+    "shopping": ["amazon", "amazonca", "shopee", "wayfair", "astro"],
 }
 
 
