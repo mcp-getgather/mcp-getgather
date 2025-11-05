@@ -38,7 +38,7 @@ jobs:
   build-and-publish:
     runs-on: ubuntu-22.04
     needs: test-local-container
-    timeout-minutes: 20
+    timeout-minutes: 45
     permissions:
       contents: read
       packages: write
