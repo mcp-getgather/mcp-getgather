@@ -368,7 +368,7 @@ async def autoclick(page: Page, distilled: str, expr: str):
             await click(page, str(selector), frame_selector=frame_selector)
 
 
-async def terminate(page: Page, distilled: str) -> bool:
+async def terminate(distilled: str) -> bool:
     document = BeautifulSoup(distilled, "html.parser")
     stops = document.find_all(attrs={"gg-stop": True})
     if len(stops) > 0:
@@ -449,6 +449,11 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
                     raw_text = await source.text_content()
                     if raw_text:
                         target.string = raw_text.strip()
+
+                    tag = await source.evaluate("el => el.tagName.toLowerCase()")
+                    if tag in ["input", "textarea", "select"]:
+                        input_value = await source.input_value()
+                        target["value"] = input_value
             else:
                 optional = target.get("gg-optional") is not None
                 logger.debug(f"Optional {selector} has no match")
@@ -487,7 +492,14 @@ async def run_distillation_loop(
     timeout: int = 15,
     interactive: bool = True,
     stop_ok: bool = False,
-) -> tuple[dict[str, str | ConversionResult | None] | str | ConversionResult, bool]:
+) -> tuple[bool, str, ConversionResult | None]:
+    """Run the distillation loop.
+
+    Returns:
+        terminated: bool indicating successful termination
+        distilled: the raw distilled HTML
+        converted: the converted JSON if successful, otherwise None
+    """
     if len(patterns) == 0:
         logger.error("No distillation patterns provided")
         raise ValueError("No distillation patterns provided")
@@ -544,10 +556,10 @@ async def run_distillation_loop(
                     print()
                     print(distilled)
 
-                    if await terminate(page, distilled):
+                    if await terminate(distilled):
                         converted = await convert(distilled)
                         await page.close()
-                        return (converted if converted else distilled, True)
+                        return (True, distilled, converted)
 
                     if interactive:
                         distilled = await autofill(page, distilled)
@@ -570,7 +582,45 @@ async def run_distillation_loop(
             iteration=max,
         )
         await page.close()
-        return (current.distilled, False)
+        return (False, current.distilled, None)
+
+
+async def get_incognito_browser_profile(signin_id: str | None) -> BrowserProfile:
+    """Get or create an incognito browser profile."""
+    from getgather.mcp.dpage import incognito_browser_profiles
+
+    if signin_id is not None:
+        if signin_id in incognito_browser_profiles:
+            return incognito_browser_profiles[signin_id]
+        else:
+            raise ValueError(f"Browser profile for signin {signin_id} not found")
+
+    MAX_ATTEMPTS = 3
+    CHECK_URL = "https://ip.fly.dev/all"
+    CHECK_TIMEOUT = 10  # seconds
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        logger.info(f"Creating incognito browser profile (attempt {attempt}/{MAX_ATTEMPTS})...")
+        fresh_profile = BrowserProfile()
+        fresh_session = BrowserSession.get(fresh_profile)
+
+        try:
+            await fresh_session.start(debug_url=None)
+            check_page = await fresh_session.new_page()
+            logger.error(f"Validating incognito browser profile at {CHECK_URL}...")
+            await check_page.goto(CHECK_URL, timeout=CHECK_TIMEOUT * 1000)
+            logger.info(f"Incognito browser profile validated on attempt {attempt}")
+            return fresh_profile
+
+        except Exception as e:
+            logger.warning(f"Incognito browser profile validation failed on attempt {attempt}: {e}")
+            if attempt < MAX_ATTEMPTS:
+                try:
+                    await fresh_session.stop()
+                except Exception:
+                    pass
+
+    logger.error(f"Failed to get browser profile after {MAX_ATTEMPTS} attempts!")
+    raise RuntimeError(f"Failed to get browser profile after {MAX_ATTEMPTS} attempts!")
 
 
 async def short_lived_mcp_tool(
@@ -582,15 +632,15 @@ async def short_lived_mcp_tool(
     path = os.path.join(os.path.dirname(__file__), "mcp", "patterns", pattern_wildcard)
     patterns = load_distillation_patterns(path)
 
-    browser_profile = BrowserProfile()
+    browser_profile = await get_incognito_browser_profile(signin_id=None)
     session = BrowserSession.get(browser_profile)
     session = await session.start()
-    distilled, terminated = await run_distillation_loop(
+    terminated, distilled, converted = await run_distillation_loop(
         location, patterns, browser_profile, interactive=False
     )
     await session.context.close()
 
-    result: dict[str, Any] = {result_key: distilled}
+    result: dict[str, Any] = {result_key: converted if converted else distilled}
     if result_key in result:
         items_value = result[result_key]
         if isinstance(items_value, list):

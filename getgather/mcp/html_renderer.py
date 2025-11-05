@@ -1,7 +1,9 @@
 """HTML template renderer for dpage forms."""
 
+DEFAULT_TITLE = "Sign In"
 
-def render_form(content: str, title: str = "GetGather", action: str = "") -> str:
+
+def render_form(content: str, title: str = DEFAULT_TITLE, action: str = "") -> str:
     """Render HTML form with the given content and options."""
     return f"""<!doctype html>
 <html lang="en">
@@ -169,7 +171,7 @@ def render_form(content: str, title: str = "GetGather", action: str = "") -> str
           max-width: 100%;
         }}
       }}
-
+      
       /* Loading spinner styles */
       .spinner {{
         display: inline-block;
@@ -192,21 +194,38 @@ def render_form(content: str, title: str = "GetGather", action: str = "") -> str
         opacity: 0.7;
         cursor: not-allowed;
       }}
+
+      .form-overlay {{
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        border-radius: inherit;
+      }}
+
+      form {{
+        position: relative;
+      }}
     </style>
     <script>
-      document.addEventListener('DOMContentLoaded', function() {{
-        const form = document.querySelector('form');
+      document.addEventListener("DOMContentLoaded", function () {{
+        const form = document.querySelector("div.card");
+
         if (form) {{
-          form.addEventListener('submit', function(e) {{
-            const submitButtons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
-            submitButtons.forEach(button => {{
-              button.disabled = true;
-              if (button.tagName === 'BUTTON') {{
-                const spinner = document.createElement('span');
-                spinner.className = 'spinner';
-                button.insertBefore(spinner, button.firstChild);
-              }}
-            }});
+          form.addEventListener("submit", function (e) {{
+
+            const overlay = document.createElement("div");
+            overlay.className = "form-overlay";
+
+            const spinner = document.createElement("div");
+            spinner.className = "spinner";
+            spinner.style.borderTopColor = "#333"; 
+
+            overlay.appendChild(spinner);
+            form.appendChild(overlay);
           }});
         }}
       }});
