@@ -84,6 +84,7 @@ FROM mirror.gcr.io/library/python:3.13-slim-bookworm
 
 RUN apt-get update && apt-get install -y \
     tigervnc-standalone-server \
+    chromium \
     libnss3 \
     libatk-bridge2.0-0 \
     libgtk-3-0 \
