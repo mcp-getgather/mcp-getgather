@@ -225,6 +225,13 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
         document = BeautifulSoup(distilled, "html.parser")
         inputs = document.find_all("input")
 
+        if fields.get("button"):
+            button = document.find("button", value=str(fields.get("button")))
+            if button:
+                logger.info(f"Clicking button button[value={fields.get('button')}]")
+                await autoclick(page, distilled, f"button[value={fields.get('button')}]")
+                continue
+
         for input in inputs:
             if isinstance(input, Tag):
                 gg_match = input.get("gg-match")
