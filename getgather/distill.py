@@ -553,9 +553,6 @@ async def run_distillation_loop(
                     distilled = match.distilled
                     current = match
 
-                    print()
-                    print(distilled)
-
                     if await terminate(distilled):
                         converted = await convert(distilled)
                         await page.close()
