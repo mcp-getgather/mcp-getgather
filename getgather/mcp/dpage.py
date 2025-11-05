@@ -184,8 +184,6 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
         current = match
         distilled = match.distilled
 
-        print(distilled)
-
         title_element = BeautifulSoup(distilled, "html.parser").find("title")
         title = title_element.get_text() if title_element is not None else DEFAULT_TITLE
         action = f"/dpage/{id}"
