@@ -135,7 +135,7 @@ async def init_zendriver_browser() -> zd.Browser:
     id = nanoid.generate(FRIENDLY_CHARS, 6)
     directory = f"user-data-dir/{id}"
 
-    browser = await zd.start(user_data_dir=directory)
+    browser = await zd.start(user_data_dir=directory, sandbox=False)
 
     return browser
 
