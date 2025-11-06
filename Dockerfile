@@ -102,6 +102,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     dbus-x11 \
     iproute2 \
+    sudo \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
