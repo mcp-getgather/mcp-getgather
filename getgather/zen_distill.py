@@ -2,6 +2,7 @@ import asyncio
 import os
 import random
 import re
+import shutil
 import urllib.parse
 from datetime import datetime
 from pathlib import Path
@@ -143,6 +144,35 @@ async def init_zendriver_browser() -> zd.Browser:
     browser.id = id  # type: ignore[attr-defined]
 
     return browser
+
+
+async def terminate_zendriver_browser(browser: zd.Browser):
+    await browser.stop()
+    browser_id = cast(str, browser.id)  # type: ignore[attr-defined]
+    user_data_dir = settings.profiles_dir / browser_id
+    logger.info(
+        f"Terminating Zendriver browser with user_data_dir: {user_data_dir}",
+        extra={"profile_id": browser_id},
+    )
+    for directory in [
+        "Default/DawnGraphiteCache",
+        "Default/DawnWebGPUCache",
+        "Default/GPUCache",
+        "Default/Code Cache",
+        "Default/Cache",
+        "GraphiteDawnCache",
+        "GrShaderCache",
+        "ShaderCache",
+        "Subresource Filter",
+        "segmentation_platform",
+    ]:
+        path = user_data_dir / directory
+
+        if path.exists():
+            try:
+                shutil.rmtree(path)
+            except Exception as e:
+                logger.warning(f"Failed to remove {directory}: {e}")
 
 
 async def get_new_page(browser: zd.Browser) -> zd.Tab:
@@ -450,7 +480,7 @@ async def short_lived_mcp_tool(
 
     browser = await init_zendriver_browser()
     terminated, distilled, converted = await run_distillation_loop(location, patterns, browser)
-    await browser.stop()  # type: ignore[attr-defined]
+    await terminate_zendriver_browser(browser)
 
     result: dict[str, Any] = {result_key: converted if converted else distilled}
     if result_key in result:
