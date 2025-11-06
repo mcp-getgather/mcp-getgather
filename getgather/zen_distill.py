@@ -133,9 +133,13 @@ async def report_distill_error(
 async def init_zendriver_browser() -> zd.Browser:
     FRIENDLY_CHARS = "23456789abcdefghijkmnpqrstuvwxyz"
     id = nanoid.generate(FRIENDLY_CHARS, 6)
-    directory = f"user-data-dir/{id}"
+    user_data_dir: Path = settings.profiles_dir / id
 
-    browser = await zd.start(user_data_dir=directory, browser_args=["--no-sandbox"])
+    logger.info(
+        f"Launching Zendriver browser with user_data_dir: {user_data_dir}",
+        extra={"profile_id": id},
+    )
+    browser = await zd.start(user_data_dir=str(user_data_dir), browser_args=["--no-sandbox"])
     browser.id = id  # type: ignore[attr-defined]
 
     return browser
