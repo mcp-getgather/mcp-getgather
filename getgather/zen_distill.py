@@ -136,6 +136,7 @@ async def init_zendriver_browser() -> zd.Browser:
     directory = f"user-data-dir/{id}"
 
     browser = await zd.start(user_data_dir=directory, browser_args=["--no-sandbox"])
+    browser.id = id  # type: ignore[attr-defined]
 
     return browser
 
@@ -387,7 +388,7 @@ async def run_distillation_loop(
         await report_distill_error(
             error=error,
             page=page,
-            profile_id="",  # FIXME
+            profile_id=browser.id,  # type: ignore[attr-defined]
             location=location,
             hostname=hostname,
             iteration=0,
@@ -425,7 +426,7 @@ async def run_distillation_loop(
     await report_distill_error(
         error=ValueError("No matched pattern found"),
         page=page,
-        profile_id="",  # FIXME
+        profile_id=browser.id,  # type: ignore[attr-defined]
         location=location,
         hostname=hostname,
         iteration=max,
