@@ -357,7 +357,6 @@ async def distill(hostname: str | None, page: zd.Tab, patterns: list[Pattern]) -
         logger.debug(f"Number of matches: {len(result)}")
         for item in result:
             logger.debug(f" - {item.name} with priority {item.priority}")
-        print("RESULT", result)
         match = result[0]
         logger.info(f"✓ Best match: {match.name}")
         return match
@@ -412,9 +411,6 @@ async def run_distillation_loop(
             else:
                 distilled = match.distilled
                 current = match
-
-                print()
-                print(distilled)
 
                 if await terminate(distilled):
                     converted = await convert(distilled)
