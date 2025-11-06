@@ -132,4 +132,12 @@ EXPOSE ${PORT}
 # port for VNC server
 EXPOSE 5900
 
+
+RUN useradd -m -s /bin/bash getgather && \
+    chown -R getgather:getgather /app && \
+    usermod -aG sudo getgather && \
+    echo 'getgather ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+USER getgather
+
 ENTRYPOINT ["/app/entrypoint.sh"]
