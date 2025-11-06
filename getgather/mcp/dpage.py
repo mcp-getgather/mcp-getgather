@@ -350,6 +350,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
             init_page = await session.new_page()  # never use old pages in global session due to really difficult race conditions with concurrent requests
             try:
                 await init_page.goto(initial_url)
+                await init_page.close()
             except Exception as e:
                 await report_distill_error(
                     error=e,
