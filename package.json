@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "npm run generate:schema && concurrently --raw \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "uv run -m uvicorn getgather.main:app --reload --host 127.0.0.1 --port 23456",
-    "dev:frontend": "concurrently --raw \"npm run watch:schema:api\" \"vite\"",
+    "dev:frontend": "concurrently --raw \"npm run watch:schema:api\" \"vite --port 5170\"",
     "build": "npm run generate:schema && tsc -b && vite build",
     "build:ci": "tsc -b && vite build",
     "preview": "vite preview",
