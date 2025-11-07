@@ -19,7 +19,7 @@ from getgather.mcp.auto_import import auto_import
 from getgather.mcp.brand_state import BrandState, brand_state_manager
 from getgather.mcp.calendar_utils import calendar_mcp
 from getgather.mcp.dpage import dpage_check, dpage_finalize, dpage_mcp_tool
-from getgather.mcp.registry import BrandMCPBase, GatherMCP
+from getgather.mcp.registry import GatherMCP
 from getgather.mcp.shared import poll_status_hosted_link, signin_hosted_link
 
 # Ensure calendar MCP is registered by importing its module
@@ -139,24 +139,9 @@ def create_mcp_apps() -> list[MCPApp]:
             name="all",
             type="all",
             route="/mcp",
-            brand_ids=list(BrandMCPBase.registry.keys())
-            + [
-                brand_id
-                for brand_id in GatherMCP.registry.keys()
-                if brand_id not in [b.value for b in BrandMCPBase.registry.keys()]
-            ],
+            brand_ids=list(GatherMCP.registry.keys()),
         )
     )
-    # Add individual brand MCPs from BrandMCPBase registry
-    apps.extend([
-        MCPApp(
-            name=brand_id.value,
-            type="brand",
-            route=f"/mcp-{brand_id.value}",
-            brand_ids=[brand_id],
-        )
-        for brand_id in BrandMCPBase.registry.keys()
-    ])
     # Add individual brand MCPs from GatherMCP registry
     apps.extend([
         MCPApp(
@@ -166,7 +151,6 @@ def create_mcp_apps() -> list[MCPApp]:
             brand_ids=[brand_id],
         )
         for brand_id in GatherMCP.registry.keys()
-        if brand_id not in [b.value for b in BrandMCPBase.registry.keys()]
     ])
     apps.extend([
         MCPApp(
@@ -223,15 +207,7 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum | str]):
 
     for brand_id in brand_ids:
         brand_id_str = brand_id.value if isinstance(brand_id, BrandIdEnum) else brand_id
-        brand_id_enum = brand_id if isinstance(brand_id, BrandIdEnum) else None
-
-        # Try BrandMCPBase registry first (if it's a BrandIdEnum)
-        if brand_id_enum and brand_id_enum in BrandMCPBase.registry:
-            brand_mcp = BrandMCPBase.registry[brand_id_enum]
-            logger.info(f"Mounting {brand_mcp.name} to MCP bundle {bundle_name}")
-            mcp.mount(server=brand_mcp, prefix=brand_mcp.brand_id)
-        # Try GatherMCP registry (for string brand IDs)
-        elif brand_id_str in GatherMCP.registry:
+        if brand_id_str in GatherMCP.registry:
             gather_mcp = GatherMCP.registry[brand_id_str]
             logger.info(
                 f"Mounting {gather_mcp.name} (distillation-based) to MCP bundle {bundle_name}"
