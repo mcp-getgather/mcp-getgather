@@ -1,9 +1,9 @@
 from typing import Any
 
 from getgather.mcp.dpage import dpage_mcp_tool
-from getgather.mcp.registry import BrandMCPBase
+from getgather.mcp.registry import GatherMCP
 
-containerstore_mcp = BrandMCPBase(brand_id="containerstore", name="Container Store MCP")
+containerstore_mcp = GatherMCP(brand_id="containerstore", name="Container Store MCP")
 
 
 @containerstore_mcp.tool
