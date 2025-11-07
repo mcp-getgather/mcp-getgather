@@ -104,16 +104,11 @@ class AuthMiddleware(Middleware):
             return ToolResult(structured_content=result)
 
 
-CATEGORY_BUNDLES: dict[str, list[str]] = {
-    "books": [],
-    "shopping": ["astro"],
-    "media": [],
-}
-
 MCP_BUNDLES: dict[str, list[str]] = {
     "media": ["bbc", "cnn", "espn", "groundnews", "npr", "nytimes"],
     "books": ["goodreads"],
-    "shopping": ["amazon", "amazonca", "shopee", "astro", "officedepot"],
+    "shopping": ["amazon", "amazonca", "shopee", "wayfair", "astro"],
+    "media": ["bbc", "cnn", "espn", "groundnews", "npr", "nytimes"],
 }
 
 
@@ -157,10 +152,9 @@ def create_mcp_apps() -> list[MCPApp]:
             name=category,
             type="category",
             route=f"/mcp-{category}",
-            brand_ids=[BrandIdEnum(brand_id) for brand_id in brand_ids]
-            + MCP_BUNDLES.get(category, []),
+            brand_ids=MCP_BUNDLES[category],
         )
-        for category, brand_ids in CATEGORY_BUNDLES.items()
+        for category in MCP_BUNDLES.keys()
     ])
 
     return apps
