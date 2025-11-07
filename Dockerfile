@@ -101,6 +101,8 @@ RUN apt-get update && apt-get install -y \
     x11-apps \
     dbus \
     dbus-x11 \
+    iproute2 \
+    sudo \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
@@ -131,5 +133,13 @@ ENV PORT=${PORT}
 EXPOSE ${PORT}
 # port for VNC server
 EXPOSE 5900
+
+
+RUN useradd -m -s /bin/bash getgather && \
+    chown -R getgather:getgather /app && \
+    usermod -aG sudo getgather && \
+    echo 'getgather ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+USER getgather
 
 ENTRYPOINT ["/app/entrypoint.sh"]
