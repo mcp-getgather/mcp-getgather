@@ -20,7 +20,7 @@ from getgather.mcp.brand_state import BrandState, brand_state_manager
 from getgather.mcp.calendar_utils import calendar_mcp
 from getgather.mcp.dpage import dpage_check, dpage_finalize, dpage_mcp_tool
 from getgather.mcp.registry import GatherMCP
-from getgather.mcp.shared import poll_status_hosted_link, signin_hosted_link
+from getgather.mcp.shared import signin_hosted_link
 
 # Ensure calendar MCP is registered by importing its module
 try:
@@ -167,11 +167,6 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum | str]):
     """
     mcp = FastMCP[Context](name=f"Getgather {bundle_name} MCP")
     mcp.add_middleware(AuthMiddleware())
-
-    @mcp.tool(tags={"general_tool"})
-    async def poll_signin(ctx: Context, link_id: str) -> dict[str, Any]:  # pyright: ignore[reportUnusedFunction]
-        """Poll sign in for a session. Only call this tool if you get the sign in link/url."""
-        return await poll_status_hosted_link(context=ctx, hosted_link_id=link_id)
 
     @mcp.tool(tags={"general_tool"})
     async def check_signin(ctx: Context, signin_id: str) -> dict[str, Any]:  # pyright: ignore[reportUnusedFunction]

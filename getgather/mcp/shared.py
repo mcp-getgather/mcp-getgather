@@ -1,9 +1,6 @@
-import asyncio
 import functools
-import time
 from typing import Any, Awaitable, Callable, ParamSpec, TypeVar
 
-from fastmcp import Context
 from fastmcp.server.dependencies import get_context, get_http_headers
 
 from getgather.browser.profile import BrowserProfile
@@ -65,68 +62,6 @@ async def signin_hosted_link(brand_id: BrandIdEnum) -> dict[str, Any]:
             " Then call poll_signin tool with the link_id to check if the sign in is completed. "
             " Once the sign in is completed successfully, then call this tool again to proceed with the action."
         ),
-    }
-
-
-async def poll_status_hosted_link(context: Context, hosted_link_id: str) -> dict[str, Any]:
-    """Poll sign in for a hosted link."""
-    progress_count = 0
-    timeout_seconds = 120
-    start_time = time.monotonic()
-    processing = True
-    while processing:
-        if time.monotonic() - start_time >= timeout_seconds:
-            logger.warning(
-                "[poll_status_hosted_link] Timed out polling link status",
-                extra={"hosted_link_id": hosted_link_id, "timeout_seconds": timeout_seconds},
-            )
-            return {
-                "status": "TIMEOUT",
-                "message": f"Auth timed out after {timeout_seconds} seconds. Please try again.",
-            }
-
-        link_data = HostedLinkManager.get_link_data(hosted_link_id)
-        if not link_data or link_data.status == "expired":
-            logger.warning(
-                "[get_hosted_link] Link not found", extra={"hosted_link_id": hosted_link_id}
-            )
-            return {
-                "status": "EXPIRED" if link_data else "NOT_FOUND",
-                "message": f"Link '{hosted_link_id}' not found or expired",
-            }
-
-        logger.info(
-            "[get_hosted_link] Successfully retrieved link data",
-            extra={
-                "link_id": hosted_link_id,
-                "brand_id": link_data.brand_id,
-                "profile_id": link_data.profile_id,
-                "status": link_data.status,
-                "redirect_url": link_data.redirect_url,
-                "status_message": link_data.status_message,
-            },
-        )
-
-        if link_data.status == "completed":
-            brand_state = brand_state_manager.get(
-                BrandIdEnum(link_data.brand_id), raise_on_missing=True
-            )
-            brand_state.is_connected = True
-            brand_state_manager.update(brand_state)
-            logger.info(
-                "[poll_status_hosted_link] Marked brand as connected",
-                extra={"brand_id": link_data.brand_id},
-            )
-            processing = False
-
-        progress_count += 1
-        await context.report_progress(
-            progress=progress_count, message=link_data.status_message or "Auth in progress..."
-        )
-        await asyncio.sleep(1)
-    return {
-        "status": "FINISHED",
-        "message": "Auth completed successfully.",
     }
 
 
