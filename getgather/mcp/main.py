@@ -7,20 +7,16 @@ from fastmcp import Context, FastMCP
 from fastmcp.server.dependencies import get_http_headers
 from fastmcp.server.http import StarletteWithLifespan
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
-from fastmcp.tools.tool import ToolResult
 from pydantic import BaseModel
 
 from getgather.api.types import RequestInfo, request_info
-from getgather.browser.profile import BrowserProfile
 from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.logs import logger
 from getgather.mcp.activity import activity
 from getgather.mcp.auto_import import auto_import
-from getgather.mcp.brand_state import BrandState, brand_state_manager
 from getgather.mcp.calendar_utils import calendar_mcp
 from getgather.mcp.dpage import dpage_check, dpage_finalize, dpage_mcp_tool
 from getgather.mcp.registry import GatherMCP
-from getgather.mcp.shared import signin_hosted_link
 
 # Ensure calendar MCP is registered by importing its module
 try:
@@ -29,7 +25,7 @@ except Exception as e:
     logger.warning(f"Failed to register calendar MCP: {e}")
 
 
-class AuthMiddleware(Middleware):
+class LocationProxyMiddleware(Middleware):
     # type: ignore
     async def on_call_tool(self, context: MiddlewareContext[Any], call_next: CallNext[Any, Any]):
         if not context.fastmcp_context:
@@ -72,36 +68,11 @@ class AuthMiddleware(Middleware):
         brand_id = context.message.name.split("_")[0]
         context.fastmcp_context.set_state("brand_id", brand_id)
 
-        brand_state = brand_state_manager.get(brand_id)
-        if "private" not in tool.tags or (brand_state and brand_state.is_connected):
-            async with activity(
-                brand_id=brand_id,
-                name=context.message.name,
-            ):
-                return await call_next(context)
-
-        browser_profile_id = brand_state.browser_profile_id if brand_state else None
-        if not browser_profile_id:
-            # Create and persist a new profile for the auth flow
-            browser_profile = BrowserProfile()
-            brand_state_manager.add(
-                BrandState(
-                    brand_id=BrandIdEnum(brand_id),
-                    browser_profile_id=browser_profile.id,
-                    is_connected=False,
-                )
-            )
-
-        logger.info(
-            f"[AuthMiddleware] processing auth for brand {brand_id} with browser profile {browser_profile_id}"
-        )
-
         async with activity(
-            name="auth",
             brand_id=brand_id,
+            name=context.message.name,
         ):
-            result = await signin_hosted_link(brand_id=BrandIdEnum(brand_id))
-            return ToolResult(structured_content=result)
+            return await call_next(context)
 
 
 MCP_BUNDLES: dict[str, list[str]] = {
@@ -166,7 +137,7 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum | str]):
     This performs plugin discovery/registration and mounts brand MCPs.
     """
     mcp = FastMCP[Context](name=f"Getgather {bundle_name} MCP")
-    mcp.add_middleware(AuthMiddleware())
+    mcp.add_middleware(LocationProxyMiddleware())
 
     @mcp.tool(tags={"general_tool"})
     async def check_signin(ctx: Context, signin_id: str) -> dict[str, Any]:  # pyright: ignore[reportUnusedFunction]
