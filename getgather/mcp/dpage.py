@@ -428,7 +428,9 @@ async def dpage_with_action(
     """
     headers = get_http_headers(include_all=True)
     incognito = headers.get("x-incognito", "0") == "1"
+    signin_id = headers.get("x-signin-id") or None
     global global_browser_profile
+    global incognito_browser_profiles
 
     # Step 1: If resuming after signin completion, use the active page directly
     if _signin_completed and _page_id is not None and _page_id in active_pages:
@@ -440,10 +442,14 @@ async def dpage_with_action(
 
     # Step 2: If global_browser_profile exists, try executing action directly
     # This will work if user signed in previously and session is still valid
-    if global_browser_profile is not None and not incognito:
+    if (global_browser_profile is not None and not incognito) or signin_id is not None:
+        if global_browser_profile is not None and not incognito:
+            browser_profile = global_browser_profile
+        else:
+            browser_profile = await get_incognito_browser_profile(signin_id=signin_id)
         try:
             logger.info("Trying action with existing global browser session...")
-            session = BrowserSession.get(global_browser_profile)
+            session = BrowserSession.get(browser_profile)
             await session.start()
             page = await session.page()
             await page.goto(initial_url, wait_until="commit")
@@ -460,7 +466,7 @@ async def dpage_with_action(
     # Create or get browser profile for signin flow
     browser_profile: BrowserProfile
     if incognito:
-        browser_profile = await get_incognito_browser_profile(signin_id=None)
+        browser_profile = await get_incognito_browser_profile(signin_id=signin_id)
     else:
         if global_browser_profile is None:
             logger.info("Creating global browser profile for signin flow...")
@@ -476,6 +482,9 @@ async def dpage_with_action(
         "timeout": timeout,
         "page_id": id,
     }
+
+    if incognito:
+        incognito_browser_profiles[id] = browser_profile
 
     host = headers.get("x-forwarded-host") or headers.get("host")
     if host is None:
