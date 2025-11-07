@@ -139,6 +139,10 @@ async def _extract_data_with_locators(
     for lc in await lc_rows.all():
         row: dict[str, str | list[str]] = {}
         for column in schema.columns:
+            if column.selector == "" and column.attribute is not None:
+                value = await lc.get_attribute(column.attribute)
+                row[column.name] = value if value is not None else ""
+                continue
             elements = lc.locator(column.selector)
             count = await elements.count()
             if count == 0:

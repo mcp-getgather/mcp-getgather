@@ -8,7 +8,7 @@ from patchright.async_api import BrowserContext, Page, Route
 from getgather.config import PROJECT_DIR, settings
 from getgather.logs import logger
 
-_BLOCKED_RESOURCE_TYPES = {"image", "media", "font"}
+_BLOCKED_RESOURCE_TYPES = {"media", "font"}
 _blocked_domains: frozenset[str] | None = None
 _allowed_domains: frozenset[str] = frozenset(["amazon.ca", "wayfair.com"])
 

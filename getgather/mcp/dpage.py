@@ -38,7 +38,7 @@ active_pages: dict[str, Page] = {}
 distillation_results: dict[str, str | list[dict[str, str | list[str]]] | dict[str, Any]] = {}
 pending_actions: dict[str, dict[str, Any]] = {}  # Store actions to resume after signin
 incognito_browser_profiles: dict[str, BrowserProfile] = {}
-global_browser_profile: BrowserProfile | None = None
+global_browser_profile: BrowserProfile | None = BrowserProfile(id="GLOBAL")
 
 
 async def dpage_add(browser_profile: BrowserProfile, location: str):
@@ -347,7 +347,8 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
             global_browser_profile = BrowserProfile()
             session = BrowserSession.get(global_browser_profile)
             session = await session.start()
-            init_page = await session.new_page()  # never use old pages in global session due to really difficult race conditions with concurrent requests
+            # never use old pages in global session due to really difficult race conditions with concurrent requests
+            init_page = await session.new_page()
             try:
                 await init_page.goto(initial_url)
                 await init_page.close()
@@ -409,12 +410,12 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
 
 
 async def dpage_with_action(
-    initial_url: str,
-    action: Any,
+    initial_url: str | None = None,
+    action: Any | None = None,
     timeout: int = 2,
     _signin_completed: bool = False,
     _page_id: str | None = None,
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     """Execute an action after signin completion.
 
     Args:
@@ -428,14 +429,16 @@ async def dpage_with_action(
     """
     headers = get_http_headers(include_all=True)
     incognito = headers.get("x-incognito", "0") == "1"
-    global global_browser_profile
 
     # Step 1: If resuming after signin completion, use the active page directly
     if _signin_completed and _page_id is not None and _page_id in active_pages:
         logger.info(f"Resuming action after signin with page_id={_page_id}")
         page = active_pages[_page_id]
-        await page.goto(initial_url, wait_until="commit")
-        result = await action(page)
+        if initial_url is not None:
+            await page.goto(initial_url, wait_until="commit")
+        result = None
+        if action is not None:
+            result = await action(page)
         return result
 
     # Step 2: If global_browser_profile exists, try executing action directly
@@ -446,10 +449,13 @@ async def dpage_with_action(
             session = BrowserSession.get(global_browser_profile)
             await session.start()
             page = await session.page()
-            await page.goto(initial_url, wait_until="commit")
-            result = await action(page)
+            if initial_url is not None:
+                await page.goto(initial_url, wait_until="commit")
+            result = None
+            if action is not None:
+                result = await action(page)
             logger.info("Action succeeded with existing session!")
-            await page.close()
+            # await page.close()
             return result
         except Exception as e:
             logger.info(
@@ -467,7 +473,7 @@ async def dpage_with_action(
             global_browser_profile = BrowserProfile()
         browser_profile = global_browser_profile
 
-    id = await dpage_add(browser_profile=browser_profile, location=initial_url)
+    id = await dpage_add(browser_profile=browser_profile, location=initial_url or "")
 
     # Store action for auto-resumption after signin
     pending_actions[id] = {
