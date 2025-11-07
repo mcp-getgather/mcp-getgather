@@ -131,10 +131,7 @@ class MCPApp:
 
 @cache
 def create_mcp_apps() -> list[MCPApp]:
-    # Discover and import all brand MCP modules (registers into BrandMCPBase.registry)
-    auto_import("getgather.mcp.brand")
-
-    auto_import("getgather.mcp")  # Import distillation-based MCPs
+    auto_import("getgather.mcp")
 
     apps: list[MCPApp] = []
     apps.append(
