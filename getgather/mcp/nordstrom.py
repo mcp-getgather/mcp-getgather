@@ -1,6 +1,5 @@
 from typing import Any
 
-from fastmcp import Context
 from patchright.async_api import Page
 
 from getgather.actions import handle_network_extraction
@@ -11,7 +10,7 @@ nordstrom_mcp = GatherMCP(brand_id="nordstrom", name="Nordstrom MCP")
 
 
 @nordstrom_mcp.tool
-async def get_orders(ctx: Context) -> dict[str, Any]:
+async def get_orders() -> dict[str, Any]:
     """Get the list of orders from Nordstrom"""
 
     return await dpage_mcp_tool(
@@ -23,14 +22,14 @@ async def get_orders(ctx: Context) -> dict[str, Any]:
 # the order id needs to be paired with lookupKey which is not available in the dom / ui
 # so we need to listen specifically to the order details api call
 @nordstrom_mcp.tool
-async def get_order_history(ctx: Context) -> dict[str, Any]:
+async def get_order_history() -> dict[str, Any]:
     """Get the details of an order from Nordstrom"""
 
     async def get_order_details_action(page: Page) -> dict[str, Any]:
         """Get the details of an order from Nordstrom"""
-
+        await page.wait_for_selector("div > label > select")
+        await page.select_option("div > label > select", value="all")
         orders = await handle_network_extraction(page, "/orders")
-
         return orders
 
     return await dpage_with_action(
