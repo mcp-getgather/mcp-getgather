@@ -121,7 +121,6 @@ MCP_BUNDLES: dict[str, list[str]] = {
         "shopee",
         "wayfair",
         "astro",
-        "americanairlines",
     ],
 }
 
