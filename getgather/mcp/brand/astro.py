@@ -161,55 +161,6 @@ def _format_quantity_result(
     }
 
 
-@astro_mcp.tool
-@with_brand_browser_session
-async def get_product_details(product_url: str) -> dict[str, Any]:
-    """Get product detail from astro. Get product_url from search_product tool."""
-    browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
-
-    # Ensure the product URL is a full URL
-    if product_url.startswith("/p/"):
-        full_url = f"https://www.astronauts.id{product_url}"
-    else:
-        full_url = product_url
-
-    await page.goto(full_url, wait_until="commit")
-    await page.goto(full_url, wait_until="commit")
-    await page.wait_for_selector("main.MuiBox-root")
-    await page.wait_for_timeout(1000)
-    html = await page.locator("body").inner_html()
-
-    spec_schema = SpecSchema.model_validate({
-        "bundle": "",
-        "format": "html",
-        "output": "",
-        "row_selector": "main.MuiBox-root",
-        "columns": [
-            {"name": "product_title", "selector": "h1[data-testid='pdp-title']"},
-            {"name": "price", "selector": "p[data-testid='pdp-price']"},
-            {"name": "description", "selector": "span[data-testid='pdp-description-content']"},
-            {
-                "name": "expiry_date",
-                "selector": "div[data-testid='pdp-expiry-section'] span.MuiTypography-caption-small",
-            },
-            {
-                "name": "return_condition",
-                "selector": "div[data-testid='pdp-retur-message'] span.MuiTypography-caption-small",
-            },
-            {"name": "product_image", "selector": "img.image", "attribute": "src"},
-            {"name": "add_to_cart_available", "selector": "button[data-testid='pdp-atc-btn']"},
-        ],
-    })
-    result = await parse_html(brand_id=astro_mcp.brand_id, html_content=html, schema=spec_schema)
-
-    product_details: dict[str, Any] = (
-        result.content[0] if result.content and len(result.content) > 0 else {}
-    )
-
-    return {"product_details": product_details}
-
-
 @astro_mcp.tool(tags={"private"})
 @with_brand_browser_session
 async def add_item_to_cart(product_url: str, quantity: int = 1) -> dict[str, Any]:
