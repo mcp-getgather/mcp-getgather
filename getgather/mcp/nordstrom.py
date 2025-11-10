@@ -14,7 +14,7 @@ nordstrom_mcp = GatherMCP(brand_id="nordstrom", name="Nordstrom MCP")
 
 
 @nordstrom_mcp.tool
-async def get_order_history() -> dict[str, Any]:
+async def get_order_history(page_number: int = 1) -> dict[str, Any]:
     """Get the details of an order from Nordstrom"""
 
     async def get_order_details_action(page: Page) -> dict[str, Any]:
@@ -22,6 +22,15 @@ async def get_order_history() -> dict[str, Any]:
         await page.wait_for_selector("div > label > select")
         await page.select_option("div > label > select", value="all")
         orders = await handle_network_extraction(page, "/orders")
+
+        if page_number > 1:
+            locator = page.locator(f"ul li a[href='?page={page_number}']")
+            count = await locator.count()
+            if count == 0:
+                return {orders: []}
+            await page.click(f"ul li a[href='?page={page_number}']")
+            orders = await handle_network_extraction(page, "/orders")
+
         return orders
 
     return await dpage_with_action(
