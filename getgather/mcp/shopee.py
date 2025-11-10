@@ -1,15 +1,7 @@
 from typing import Any
-from urllib.parse import quote
 
-from getgather.connectors.spec_loader import BrandIdEnum
-from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.mcp.dpage import dpage_mcp_tool
 from getgather.mcp.registry import GatherMCP
-from getgather.mcp.shared import (
-    get_mcp_browser_session,
-    with_brand_browser_session,
-)
-from getgather.parse import parse_html
 
 shopee_mcp = GatherMCP(brand_id="shopee", name="Shopee MCP")
 
