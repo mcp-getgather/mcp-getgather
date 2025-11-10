@@ -27,7 +27,7 @@ async def get_order_history(page_number: int = 1) -> dict[str, Any]:
             locator = page.locator(f"ul li a[href='?page={page_number}']")
             count = await locator.count()
             if count == 0:
-                return {orders: []}
+                return {"orders": []}
             await page.click(f"ul li a[href='?page={page_number}']")
             orders = await handle_network_extraction(page, "/orders")
 
