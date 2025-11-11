@@ -4,6 +4,7 @@ from typing import Any
 
 from patchright.async_api import Page
 
+from getgather.logs import logger
 from getgather.mcp.dpage import dpage_mcp_tool, dpage_with_action
 from getgather.mcp.registry import GatherMCP
 
@@ -89,16 +90,17 @@ async def dpage_get_purchase_history_with_details(
                 """)
             return {"order_id": order_id, "prices": prices}
 
-        order_prices_list = await asyncio.gather(*[
-            get_order_details(order["order_id"]) for order in orders
-        ])
-
-        order_prices = {item["order_id"]: item["prices"] for item in order_prices_list}
-
-        for order in orders:
-            if order_prices[order["order_id"]] is not None:
-                order["product_prices"] = order_prices[order["order_id"]]
-
+        try:
+            order_prices_list = await asyncio.gather(*[
+                get_order_details(order["order_id"]) for order in orders
+            ])
+            order_prices = {item["order_id"]: item["prices"] for item in order_prices_list}
+            for order in orders:
+                if order_prices[order["order_id"]] is not None:
+                    order["product_prices"] = order_prices[order["order_id"]]
+        except Exception:
+            logger.error(f"Error getting order details for order")
+            pass
         return {"orders": orders, "current_url": current_url}
 
     return await dpage_with_action(
