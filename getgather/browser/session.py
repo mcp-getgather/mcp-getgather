@@ -4,7 +4,7 @@ import asyncio
 from collections import defaultdict
 from contextlib import asynccontextmanager, suppress
 from datetime import datetime
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 from fastapi import HTTPException
 from nanoid import generate
@@ -71,7 +71,8 @@ class BrowserSession:
 
     async def new_page(self) -> Page:
         logger.info(f"Creating new page in context with profile {self.profile.id}")
-        return await self.context.new_page()
+        page = await self.context.new_page()
+        return add_retry_to_page_goto(page)
 
     async def page(self) -> Page:
         # TODO: It's okay for now to return the last page. We may want to track all pages in the future.
@@ -80,7 +81,7 @@ class BrowserSession:
             return self.context.pages[-1]
         return await self.new_page()
 
-    async def start(self) -> BrowserSession:
+    async def start(self, debug_url: str | None = "https://ip.fly.dev/all") -> BrowserSession:
         if self.profile.id in BrowserSession._sessions:
             # Session already started
             return BrowserSession._sessions[self.profile.id]
@@ -109,8 +110,9 @@ class BrowserSession:
 
                 await configure_context(self._context)
 
-                debug_page = await self.page()
-                await debug_page.goto("https://ip.fly.dev/all")
+                if debug_url:
+                    debug_page = await self.page()
+                    await debug_page.goto(debug_url)
 
                 # Intentionally create a new page to apply resources filtering (from blocklists)
                 page = await self.new_page()
@@ -167,3 +169,30 @@ async def browser_session(profile: BrowserProfile, *, nested: bool = False, stop
     finally:
         if not nested and stop_ok:
             await session.stop()
+
+
+def add_retry_to_page_goto(page: Page, max_retries: int = 3) -> Page:
+    original_goto = page.goto
+
+    async def goto_with_retry(
+        url: str,
+        *,
+        timeout: float | None = None,
+        wait_until: Literal["commit", "domcontentloaded", "load", "networkidle"] | None = None,
+        referer: str | None = None,
+    ):
+        for i in range(max_retries):
+            try:
+                return await original_goto(
+                    url, timeout=timeout, wait_until=wait_until, referer=referer
+                )
+            except Exception as error:
+                msg = f"page.goto {url} {i + 1} of {max_retries} failed: {error}"
+                if i < max_retries - 1:
+                    logger.warning(msg + "\nRetrying...")
+                else:
+                    logger.exception(msg)
+                    raise
+
+    setattr(page, "goto", goto_with_retry)
+    return page

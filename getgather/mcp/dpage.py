@@ -21,6 +21,7 @@ from getgather.distill import (
     capture_page_artifacts,
     convert,
     distill,
+    get_incognito_browser_profile,
     get_selector,
     load_distillation_patterns,
     report_distill_error,
@@ -183,14 +184,12 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
         current = match
         distilled = match.distilled
 
-        print(distilled)
-
         title_element = BeautifulSoup(distilled, "html.parser").find("title")
         title = title_element.get_text() if title_element is not None else DEFAULT_TITLE
         action = f"/dpage/{id}"
         options = {"title": title, "action": action}
 
-        if await terminate(page, distilled):
+        if await terminate(distilled):
             logger.info("Finished!")
             converted = await convert(distilled)
 
@@ -224,6 +223,13 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
         names: list[str] = []
         document = BeautifulSoup(distilled, "html.parser")
         inputs = document.find_all("input")
+
+        if fields.get("button"):
+            button = document.find("button", value=str(fields.get("button")))
+            if button:
+                logger.info(f"Clicking button button[value={fields.get('button')}]")
+                await autoclick(page, distilled, f"button[value={fields.get('button')}]")
+                continue
 
         for input in inputs:
             if isinstance(input, Tag):
@@ -333,13 +339,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
     signin_id = headers.get("x-signin-id") or None
 
     if incognito:
-        if signin_id is not None:
-            if signin_id in incognito_browser_profiles:
-                browser_profile = incognito_browser_profiles[signin_id]
-            else:
-                raise ValueError(f"Browser profile for signin {signin_id} not found")
-        else:
-            browser_profile = BrowserProfile()
+        browser_profile = await get_incognito_browser_profile(signin_id)
     else:
         global global_browser_profile
         if global_browser_profile is None:
@@ -350,6 +350,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
             init_page = await session.new_page()  # never use old pages in global session due to really difficult race conditions with concurrent requests
             try:
                 await init_page.goto(initial_url)
+                await init_page.close()
             except Exception as e:
                 await report_distill_error(
                     error=e,
@@ -427,7 +428,9 @@ async def dpage_with_action(
     """
     headers = get_http_headers(include_all=True)
     incognito = headers.get("x-incognito", "0") == "1"
+    signin_id = headers.get("x-signin-id") or None
     global global_browser_profile
+    global incognito_browser_profiles
 
     # Step 1: If resuming after signin completion, use the active page directly
     if _signin_completed and _page_id is not None and _page_id in active_pages:
@@ -439,10 +442,14 @@ async def dpage_with_action(
 
     # Step 2: If global_browser_profile exists, try executing action directly
     # This will work if user signed in previously and session is still valid
-    if global_browser_profile is not None and not incognito:
+    if (global_browser_profile is not None and not incognito) or signin_id is not None:
+        if global_browser_profile is not None and not incognito:
+            browser_profile = global_browser_profile
+        else:
+            browser_profile = await get_incognito_browser_profile(signin_id=signin_id)
         try:
             logger.info("Trying action with existing global browser session...")
-            session = BrowserSession.get(global_browser_profile)
+            session = BrowserSession.get(browser_profile)
             await session.start()
             page = await session.page()
             await page.goto(initial_url, wait_until="commit")
@@ -457,8 +464,9 @@ async def dpage_with_action(
 
     # Step 3: User not signed in - create interactive signin flow with action
     # Create or get browser profile for signin flow
+    browser_profile: BrowserProfile
     if incognito:
-        browser_profile = BrowserProfile()
+        browser_profile = await get_incognito_browser_profile(signin_id=signin_id)
     else:
         if global_browser_profile is None:
             logger.info("Creating global browser profile for signin flow...")
@@ -474,6 +482,9 @@ async def dpage_with_action(
         "timeout": timeout,
         "page_id": id,
     }
+
+    if incognito:
+        incognito_browser_profiles[id] = browser_profile
 
     host = headers.get("x-forwarded-host") or headers.get("host")
     if host is None:
