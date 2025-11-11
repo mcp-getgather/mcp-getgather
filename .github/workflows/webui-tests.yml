@@ -9,6 +9,7 @@ on:
 jobs:
   webui-list-tests:
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -40,6 +41,7 @@ jobs:
 
   webui-auth-tests:
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

@@ -479,7 +479,6 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
         logger.debug(f"Number of matches: {len(result)}")
         for item in result:
             logger.debug(f" - {item.name} with priority {item.priority}")
-        print("RESULT", result)
         match = result[0]
         logger.info(f"✓ Best match: {match.name}")
         return match
