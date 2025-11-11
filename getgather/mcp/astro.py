@@ -26,7 +26,6 @@ async def search_product(keyword: str) -> dict[str, Any]:
 @astro_mcp.tool
 async def get_product_details(product_url: str) -> dict[str, Any]:
     """Get product detail from astro. Get product_url from search_product tool."""
-
     # Ensure the product URL is a full URL
     if product_url.startswith("/p/"):
         full_url = f"https://www.astronauts.id{product_url}"
@@ -34,32 +33,3 @@ async def get_product_details(product_url: str) -> dict[str, Any]:
         full_url = product_url
 
     return await dpage_mcp_tool(full_url, "astro_product_detail")
-
-    # spec_schema = SpecSchema.model_validate({
-    #     "bundle": "",
-    #     "format": "html",
-    #     "output": "",
-    #     "row_selector": "main.MuiBox-root",
-    #     "columns": [
-    #         {"name": "product_title", "selector": "h1[data-testid='pdp-title']"},
-    #         {"name": "price", "selector": "p[data-testid='pdp-price']"},
-    #         {"name": "description", "selector": "span[data-testid='pdp-description-content']"},
-    #         {
-    #             "name": "expiry_date",
-    #             "selector": "div[data-testid='pdp-expiry-section'] span.MuiTypography-caption-small",
-    #         },
-    #         {
-    #             "name": "return_condition",
-    #             "selector": "div[data-testid='pdp-retur-message'] span.MuiTypography-caption-small",
-    #         },
-    #         {"name": "product_image", "selector": "img.image", "attribute": "src"},
-    #         {"name": "add_to_cart_available", "selector": "button[data-testid='pdp-atc-btn']"},
-    #     ],
-    # })
-    # result = await parse_html(brand_id=astro_mcp.brand_id, html_content=html, schema=spec_schema)
-    #
-    # product_details: dict[str, Any] = (
-    #     result.content[0] if result.content and len(result.content) > 0 else {}
-    # )
-    #
-    # return {"product_details": product_details}
