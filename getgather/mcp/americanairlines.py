@@ -14,10 +14,6 @@ async def get_upcoming_flights() -> dict[str, Any]:
     """Get upcoming flights of americanairlines."""
 
     async def action(page: Page) -> dict[str, Any]:
-        await page.goto(
-            "https://www.aa.com/aadvantage-program/profile/account-summary",
-            wait_until="commit",
-        )
         data = await handle_network_extraction(page, "loyalty/api/upcoming-trips")
         return {"americanairlines_upcoming_flights": data}
 
@@ -32,10 +28,6 @@ async def get_recent_activity() -> dict[str, Any]:
     """Get recent activity (purchase history) of americanairlines."""
 
     async def action(page: Page) -> dict[str, Any]:
-        await page.goto(
-            "https://www.aa.com/aadvantage-program/profile/account-summary",
-            wait_until="commit",
-        )
         data = await handle_network_extraction(
             page, "api/loyalty/miles/transaction/orchestrator/memberActivity"
         )
