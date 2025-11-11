@@ -1,4 +1,4 @@
-<html gg-domain="nordstrom">
+<html gg-domain="nordstrom" gg-priority="2">
   <head>
     <title>Welcome back!</title>
   </head>
@@ -8,7 +8,7 @@
       autofocus
       name="password"
       type="password"
-      gg-match="input[type='password']"
+      gg-match="form#sign-in input[name='password']"
       placeholder="Password"
     />
     <button type="submit" gg-match="button[alt='sign in button']:has-text('Sign In')">

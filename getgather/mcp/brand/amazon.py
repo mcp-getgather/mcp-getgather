@@ -6,7 +6,6 @@ from fastmcp import Context
 
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.distill import load_distillation_patterns, run_distillation_loop
-from getgather.mcp.agent import run_agent_for_brand
 from getgather.mcp.registry import BrandMCPBase
 from getgather.mcp.shared import (
     get_mcp_browser_profile,
@@ -130,23 +129,6 @@ async def get_product_detail(ctx: Context, product_url: str) -> dict[str, Any]:
 
 
 @amazon_mcp.tool(tags={"private"})
-async def get_cart_summary() -> dict[str, Any]:
-    """Get cart summary from amazon."""
-    task = (
-        "Go to the Amazon cart page and extract cart summary information:\n"
-        " 1. Navigate to https://www.amazon.com/gp/cart/view.html\n"
-        " 2. Wait for the page to fully load\n"
-        " 3. Extract information about:\n"
-        "    - Regular cart items (if any) with titles, prices, quantities\n"
-        "    - Local delivery carts (Amazon Fresh, Whole Foods, etc.) with store types, subtotals, item counts\n"
-        "    - Overall cart totals and delivery information\n"
-        " 4. Return structured data about all cart contents"
-    )
-
-    return await run_agent_for_brand(task)
-
-
-@amazon_mcp.tool(tags={"private"})
 @with_brand_browser_session
 async def get_browsing_history() -> dict[str, Any]:
     """Get browsing history from amazon."""
@@ -198,33 +180,3 @@ async def search_purchase_history(keyword: str) -> dict[str, Any]:
 
     result = await parse_html(brand_id=amazon_mcp.brand_id, html_content=html, schema=spec_schema)
     return {"order_history": result.content}
-
-
-@amazon_mcp.tool(tags={"private"})
-async def add_to_cart(ctx: Context, product_url: str, quantity: int = 1) -> dict[str, Any]:
-    """Add a product to cart on Amazon.com with specified quantity and options.
-
-    Args:
-        product_url: The Amazon product URL or path
-        quantity: Number of items to add (default: 1)
-    """
-    task = (
-        "Following the instructions below to add a product to the Amazon cart:\n"
-        f" 1. Go to the product page at {product_url if product_url.startswith('https') else 'https://www.amazon.com' + product_url}.\n"
-        " 2. Wait for the page to fully load and verify the product title is visible.\n"
-    )
-
-    if quantity > 1:
-        task += (
-            f" 3. Locate the quantity selector and change it to {quantity}.\n"
-            "    - For regular items, look for a dropdown labeled 'Qty:' or similar\n"
-            "    - For Fresh/Local delivery items, look for the quantity widget\n"
-            "    - If quantity selector shows '10+', click it and enter the exact number\n"
-        )
-
-    task += (
-        " 4. Find and click 'Add to Cart' button. "
-        " 5. After that you're going to be redirected to a new page, or new pop up going to show up. In both cases, there should be 'Added to cart' explanation. if that's the case, then add to cart process is done."
-    )
-
-    return await run_agent_for_brand(task)

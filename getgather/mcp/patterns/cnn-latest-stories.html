@@ -3,7 +3,7 @@
     <title>CNN Latest Stories</title>
   </head>
   <body>
-    <div gg-match="p.title:has-text('Latest Stories')"></div>
+    <div gg-match="//p[@class='title' and contains(text(), 'Latest Stories')]"></div>
     <div gg-stop gg-match-html="div[data-uri^=cms]"></div>
     <script type="application/json" id="stories">
       {

@@ -30,10 +30,6 @@ class Settings(BaseSettings):
     HEADLESS: bool = False
     SHOULD_BLOCK_UNWANTED_RESOURCES: bool = True
 
-    # Browser-use settings
-    BROWSER_USE_MODEL: str = "o4-mini"
-    OPENAI_API_KEY: str = ""
-
     BROWSER_TIMEOUT: int = 30_000
 
     # Default Proxy Type (optional - e.g., "proxy-0", "proxy-1")
