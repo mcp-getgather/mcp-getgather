@@ -4,7 +4,6 @@ from typing import Any
 
 from patchright.async_api import Page
 
-from getgather.distill import convert
 from getgather.mcp.dpage import dpage_mcp_tool, dpage_with_action
 from getgather.mcp.registry import GatherMCP
 
@@ -70,7 +69,7 @@ async def dpage_get_purchase_history_with_details(
 
         async def get_order_details(order_id: str):
             url = f"https://www.amazon.com/gp/css/summary/print.html?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_invoice_pos"
-            html = await page.evaluate(f"""
+            prices = await page.evaluate(f"""
                     async () => {{
                         const res = await fetch('{url}', {{
                             method: 'GET',
@@ -80,45 +79,27 @@ async def dpage_get_purchase_history_with_details(
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(text, 'text/html');
                         doc.querySelectorAll('script').forEach(s => s.remove());
-                        return doc.body.innerHTML;
+                        
+                        const rows = doc.querySelectorAll("div.a-fixed-left-grid");
+                        const prices = Array.from(rows)
+                            .map(row => row.querySelector("span.a-price span.a-offscreen")?.textContent?.trim())
+                            .filter(Boolean);
+                        return prices;
                     }}
                 """)
-            distilled = f"""
-                    <html gg-domain="amazon">
-                        <body>
-                            {html}
-                        </body>
-                        <script type="application/json" id="orders">
-                            {{
-                                "rows": "div[class='a-fixed-left-grid']",
-                                "columns": [
-                                    {{
-                                        "name": "price",
-                                        "selector": "span.a-price span.a-offscreen"
-                                    }}
-                                ]
-                            }}
-                        </script>
-                    </html>
-                """
-            converted = await convert(distilled)
-            return {"order_id": order_id, "converted": converted}
+            return {"order_id": order_id, "prices": prices}
 
-        order_details_list = await asyncio.gather(*[
+        order_prices_list = await asyncio.gather(*[
             get_order_details(order["order_id"]) for order in orders
         ])
 
-        order_details = {item["order_id"]: item["converted"] for item in order_details_list}
+        order_prices = {item["order_id"]: item["prices"] for item in order_prices_list}
 
         for order in orders:
-            order_detail = order_details[order["order_id"]]
-            if order_detail is not None:
-                order["product_prices"] = [
-                    item["price"]  # pyright: ignore[reportArgumentType]
-                    for item in order_detail
-                ]
+            if order_prices[order["order_id"]] is not None:
+                order["product_prices"] = order_prices[order["order_id"]]
 
-        return {"orders": orders, "order_details": order_details, "current_url": current_url}
+        return {"orders": orders, "current_url": current_url}
 
     return await dpage_with_action(
         f"https://www.amazon.com/your-orders/orders?timeFilter=year-{target_year}&startIndex={start_index}",
