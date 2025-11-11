@@ -6,11 +6,23 @@
     <div gg-stop gg-match-html="div[data-testid='srp-main']"></div>
     <script type="application/json">
       {
-        "rows": "div[data-testid='srp-main'] > div",
+        "rows": ".MuiGrid-item",
         "columns": [
+          { "name": "product_name", "selector": "span.MuiTypography-paragraph-tiny" },
+          { "name": "product_url", "selector": "a[href^='/p/']", "attribute": "href" },
+          { "name": "price", "selector": "span.MuiTypography-body-smallStrong" },
           {
-            "name": "product_name",
-            "selector": "div > div:nth-child(2) > a > div:nth-child(2) > span:nth-child(2)"
+            "name": "product_image",
+            "selector": "img.image[src*='image.astronauts.cloud']",
+            "attribute": "src"
+          },
+          {
+            "name": "discount_percentage",
+            "selector": "span.MuiTypography-caption-tinyBold"
+          },
+          {
+            "name": "original_price",
+            "selector": "span[style*='text-decoration: line-through']"
           }
         ]
       }
