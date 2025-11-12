@@ -64,10 +64,10 @@ async def get_purchase_history(
 
 
 @amazon_mcp.tool
-async def search_purchase_history(keyword: str) -> dict[str, Any]:
+async def search_purchase_history(keyword: str, page_number: int = 1) -> dict[str, Any]:
     """Search purchase history from amazon."""
     return await dpage_mcp_tool(
-        f"https://www.amazon.com/your-orders/search/ref=ppx_yo2ov_dt_b_search?opt=ab&search={keyword}",
+        f"https://www.amazon.com/your-orders/search?page={page_number}&search={keyword}",
         "order_history",
     )
 
