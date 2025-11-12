@@ -59,7 +59,7 @@ async def get_purchase_history(
     )
 
 
-@amazonca_mcp.tool(tags={"private"})
+@amazonca_mcp.tool
 async def search_purchase_history(keyword: str) -> dict[str, Any]:
     """Search purchase history from amazon ca."""
     return await dpage_mcp_tool(
