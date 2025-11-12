@@ -96,7 +96,15 @@ def render_form(content: str, title: str = DEFAULT_TITLE, action: str = "") -> s
       .radio-wrapper {{
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+      }}
+      
+      .vertical-radios {{
+        gap: 1rem; 
+        display: flex; 
+        flex-direction: column; 
+        margin-bottom: 1rem; 
+        margin-top: 1rem;
       }}
 
       input[type="email"],
