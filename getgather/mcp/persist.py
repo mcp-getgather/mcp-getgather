@@ -73,54 +73,49 @@ class PersistentStore(BaseModel, Generic[T], metaclass=SingletonBaseModelMeta):
     def get(self, key: str, *, raise_on_missing: Literal[True]) -> T: ...
 
     def get(self, key: str, *, raise_on_missing: bool = False) -> T | None:
-        with self._lock:
-            if not self._indexes:
-                self.load()
-            row_key = self.key_for_retrieval(key)
-            if row_key in self._indexes:
-                num = self._indexes[row_key]
-                return self.rows[num]
-            elif raise_on_missing:
-                raise ValueError(f"Row with key {key} not found")
-            else:
-                return None
+        if not self._indexes:
+            self.load()
+        row_key = self.key_for_retrieval(key)
+        if row_key in self._indexes:
+            num = self._indexes[row_key]
+            return self.rows[num]
+        elif raise_on_missing:
+            raise ValueError(f"Row with key {key} not found")
+        else:
+            return None
 
     def add(self, row: T) -> T:
-        with self._lock:
-            if not self._indexes:
-                self.load()
+        if not self._indexes:
+            self.load()
 
-            key = self.row_key_for_retrieval(row)
-            if key in self._indexes:
-                raise ValueError(f"Row with key {key} already exists")
+        key = self.row_key_for_retrieval(row)
+        if key in self._indexes:
+            raise ValueError(f"Row with key {key} already exists")
 
-            self._indexes[key] = len(self.rows)
-            self.rows.append(row)
-            self.save()
+        self._indexes[key] = len(self.rows)
+        self.rows.append(row)
+        self.save()
 
-            return row
+        return row
 
     def update(self, row: T) -> T:
-        with self._lock:
-            if not self._indexes:
-                self.load()
+        if not self._indexes:
+            self.load()
 
-            key = self.row_key_for_retrieval(row)
-            if key not in self._indexes:
-                raise ValueError(f"Row with key {key} not found")
+        key = self.row_key_for_retrieval(row)
+        if key not in self._indexes:
+            raise ValueError(f"Row with key {key} not found")
 
-            num = self._indexes[key]
-            self.rows[num] = row
-            self.save()
+        num = self._indexes[key]
+        self.rows[num] = row
+        self.save()
 
-            return row
+        return row
 
     def get_all(self) -> list[T]:
-        with self._lock:
-            self.load()
-            return self.rows
+        self.load()
+        return self.rows
 
     def reset(self) -> None:
-        with self._lock:
-            self._indexes = {}
-            self.rows = []
+        self._indexes = {}
+        self.rows = []
