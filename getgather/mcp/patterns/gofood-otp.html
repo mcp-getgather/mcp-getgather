@@ -1,13 +1,13 @@
 <html gg-domain="gofood">
   <head>
-    <title>GoFood OTP Verification</title>
+    <title>GoFood Verification</title>
   </head>
   <body>
-    <h1 gg-match="p.gf-heading-xl">OTP sent securely to SMS</h1>
-    <p gg-match="p.gf-body-m">Enter the OTP we've just sent to</p>
+    <h1 gg-match="p.gf-heading-xl">Verification code sent securely to SMS</h1>
+    <p gg-match="p.gf-body-m">Enter the code we've just sent to</p>
     <p gg-optional gg-match="p:has-text('Invalid verification code. Please try again')"></p>
     <div class="otp-input">
-      <label gg-match="p.gf-label-m">Enter OTP</label>
+      <label gg-match="p.gf-label-m">Enter code</label>
       <input name="otp" type="tel" gg-match="input[name='data.otp']" placeholder="4-digit OTP" />
     </div>
     <button type="submit" gg-autoclick gg-match="button[type=submit]">Continue</button>
