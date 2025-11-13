@@ -2,8 +2,6 @@ import os
 from datetime import datetime
 from typing import Any
 
-from fastmcp import Context
-
 from getgather.connectors.spec_models import Schema as SpecSchema
 from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.mcp.registry import BrandMCPBase
@@ -48,97 +46,6 @@ async def get_purchase_history(
     )
     purchases = converted if converted else distilled
     return {"purchases": purchases}
-
-
-@amazon_mcp.tool
-@with_brand_browser_session
-async def search_product(keyword: str) -> dict[str, Any]:
-    """Search product on amazon."""
-    browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
-    await page.goto(f"https://www.amazon.com/s?k={keyword}", wait_until="commit")
-    await page.wait_for_selector("div[data-component-type='s-search-result']")
-
-    spec_schema = SpecSchema.model_validate({
-        "bundle": "search_results.html",
-        "format": "html",
-        "output": "search_results.json",
-        "row_selector": "div[data-component-type='s-search-result']",
-        "extraction_method": "python_parser",
-        "columns": [
-            {"name": "product_name", "selector": "h2 span"},
-            {
-                "name": "product_url",
-                "selector": "div[data-cy='title-recipe'] a",
-                "attribute": "href",
-            },
-            {"name": "price", "selector": "span.a-price-whole"},
-            {"name": "price_fraction", "selector": "span.a-price-fraction"},
-            {"name": "currency", "selector": "span.a-price-symbol"},
-            {"name": "rating", "selector": "span.a-icon-alt"},
-            {"name": "image_url", "selector": "img.s-image", "attribute": "src"},
-            {"name": "reviews", "selector": "div[data-cy='reviews-block']"},
-        ],
-    })
-
-    bundle_result = await parse_html(brand_id=amazon_mcp.brand_id, schema=spec_schema, page=page)
-
-    return {"product_list": bundle_result.content or []}
-
-
-@amazon_mcp.tool
-@with_brand_browser_session
-async def get_product_detail(ctx: Context, product_url: str) -> dict[str, Any]:
-    """Get product detail from amazon."""
-    browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
-    if not product_url.startswith("https"):
-        product_url = f"https://www.amazon.com/{product_url}"
-    await page.goto(product_url)
-
-    await page.wait_for_selector("span#productTitle")
-    await page.wait_for_timeout(1000)
-
-    product_data: dict[str, Any] = {}
-
-    title_elem = page.locator("span#productTitle")
-    if await title_elem.count() > 0:
-        product_data["title"] = await title_elem.inner_text()
-
-    main_image = page.locator("#landingImage, #imgTagWrapperId img")
-    if await main_image.count() > 0:
-        image_src = await main_image.first.get_attribute("src")
-        if image_src:
-            product_data["main_image"] = image_src
-
-    feature_bullets = page.locator("#feature-bullets ul li")
-    features: list[str] = []
-    feature_count = await feature_bullets.count()
-    for i in range(min(feature_count, 8)):  # Limit to 8 features
-        feature = feature_bullets.nth(i)
-        feature_text = await feature.inner_text()
-        if feature_text and feature_text.strip():
-            features.append(feature_text.strip())
-    product_data["features"] = features
-
-    price_elem = page.locator(".a-price .a-offscreen").first
-    if await price_elem.count() > 0:
-        product_data["price"] = await price_elem.inner_text()
-
-    return {"product_details": product_data}
-
-
-@amazon_mcp.tool(tags={"private"})
-@with_brand_browser_session
-async def get_browsing_history() -> dict[str, Any]:
-    """Get browsing history from amazon."""
-    browser_session = get_mcp_browser_session()
-    page = await browser_session.page()
-    await page.goto("https://www.amazon.com/gp/history?ref_=nav_AccountFlyout_browsinghistory")
-    await page.wait_for_timeout(1000)
-    await page.wait_for_selector("div[class*='desktop-grid']")
-    html = await page.locator("div[class*='desktop-grid']").inner_html()
-    return {"browsing_history_html": html}
 
 
 @amazon_mcp.tool(tags={"private"})

@@ -38,6 +38,33 @@ async def dpage_get_purchase_history(
 
 
 @amazon_mcp.tool
+async def dpage_search_purchase_history(keyword: str, page_number: int = 1) -> dict[str, Any]:
+    """Search purchase history from amazon."""
+    return await dpage_mcp_tool(
+        f"https://www.amazon.com/your-orders/search?page={page_number}&search={keyword}",
+        "order_history",
+    )
+
+
+@amazon_mcp.tool
+async def search_product(keyword: str) -> dict[str, Any]:
+    """Search product on amazon."""
+    return await dpage_mcp_tool(
+        f"https://www.amazon.com/s?k={keyword}",
+        "product_list",
+    )
+
+
+@amazon_mcp.tool
+async def get_browsing_history() -> dict[str, Any]:
+    """Get browsing history from amazon."""
+    return await dpage_mcp_tool(
+        "https://www.amazon.com/gp/history?ref_=nav_AccountFlyout_browsinghistory",
+        "browsing_history",
+    )
+
+
+@amazon_mcp.tool
 async def dpage_get_purchase_history_with_details(
     year: str | int | None = None, start_index: int = 0
 ) -> dict[str, Any]:
@@ -80,7 +107,7 @@ async def dpage_get_purchase_history_with_details(
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(text, 'text/html');
                         doc.querySelectorAll('script').forEach(s => s.remove());
-                        
+
                         const rows = doc.querySelectorAll("div.a-fixed-left-grid");
                         const prices = Array.from(rows)
                             .map(row => row.querySelector("span.a-price span.a-offscreen")?.textContent?.trim())

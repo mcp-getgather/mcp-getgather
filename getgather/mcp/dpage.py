@@ -212,7 +212,7 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
                 return HTMLResponse(render(FINISHED_MSG, options))
 
             await dpage_close(id)
-            if converted:
+            if converted is not None:
                 print(converted)
                 distillation_results[id] = converted
             else:
@@ -375,7 +375,7 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
             stop_ok=False,  # Keep global session alive
         )
         if terminated:
-            distillation_result = converted if converted else distilled
+            distillation_result = converted if converted is not None else distilled
             return {result_key: distillation_result}
 
     # If that didn't work, try signing in via distillation
