@@ -1,0 +1,23 @@
+<html gg-domain="astronauts.id" gg-priority="1">
+  <head>
+    <title>Astro Orders</title>
+  </head>
+  <body>
+    <div gg-match="h5:has-text('Keranjang')"></div>
+    <div
+      gg-stop
+      gg-match-html="main > div:nth-child(1) > div:nth-child(4) > div:nth-child(1)"
+    ></div>
+    <script type="application/json">
+      {
+        "rows": "div > div",
+        "columns": [
+          {
+            "name": "name",
+            "selector": "span"
+          }
+        ]
+      }
+    </script>
+  </body>
+</html>
