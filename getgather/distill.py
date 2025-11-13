@@ -602,7 +602,7 @@ async def get_incognito_browser_profile(signin_id: str | None) -> BrowserProfile
         try:
             await fresh_session.start(debug_url=None)
             check_page = await fresh_session.new_page()
-            logger.error(f"Validating incognito browser profile at {CHECK_URL}...")
+            logger.info(f"Validating incognito browser profile at {CHECK_URL}...")
             await check_page.goto(CHECK_URL, timeout=CHECK_TIMEOUT * 1000)
             logger.info(f"Incognito browser profile validated on attempt {attempt}")
             return fresh_profile
