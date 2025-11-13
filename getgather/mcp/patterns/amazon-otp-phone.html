@@ -1,0 +1,15 @@
+<html gg-domain="amazon">
+  <head>
+    <title>Amazon OTP</title>
+  </head>
+  <body>
+    <span gg-optional gg-match="div#verifyAlerts"></span>
+    <span gg-optional gg-match="div#verifyFailureAlerts"></span>
+    <h2 gg-match="span:has-text('Enter verification code')">Enter verification code</h2>
+    <span gg-match="div#channelDetailsForOtp span:has-text('your phone')"></span>
+    <input autofocus name="otp" type="tel" placeholder="OTP" gg-match="input#input-box-otp" />
+    <button type="submit" gg-match="span#cvf-submit-otp-button input[type=submit]">
+      Submit code
+    </button>
+  </body>
+</html>
