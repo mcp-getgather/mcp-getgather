@@ -140,7 +140,9 @@ async def init_zendriver_browser() -> zd.Browser:
         f"Launching Zendriver browser with user_data_dir: {user_data_dir}",
         extra={"profile_id": id},
     )
-    browser = await zd.start(user_data_dir=str(user_data_dir), browser_args=["--no-sandbox"])
+
+    browser_args = ["--no-sandbox", "--start-maximized"]
+    browser = await zd.start(user_data_dir=str(user_data_dir), browser_args=browser_args)
     browser.id = id  # type: ignore[attr-defined]
 
     return browser
