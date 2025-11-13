@@ -323,9 +323,13 @@ async def locate(locator: Locator) -> Locator | None:
     count = await locator.count()
     if count > 0:
         for i in range(count):
-            el = locator.nth(i)
-            if await el.is_visible():
-                return el
+            try:
+                el = locator.nth(i)
+                if await el.is_visible():
+                    return el
+            except Exception:
+                logger.info("Element may have disappeared or selector can't be queried")
+                continue
     return None
 
 
