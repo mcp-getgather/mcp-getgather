@@ -1,7 +1,9 @@
 from typing import Any
 from urllib.parse import quote
 
-from getgather.mcp.dpage import dpage_mcp_tool
+from patchright.async_api import Page
+
+from getgather.mcp.dpage import dpage_mcp_tool, dpage_with_action
 from getgather.mcp.registry import GatherMCP
 
 astro_mcp = GatherMCP(brand_id="astro", name="Astro MCP")
@@ -40,159 +42,75 @@ async def get_cart_summary() -> dict[str, Any]:
     """Get cart summary from astro."""
     return await dpage_mcp_tool("https://www.astronauts.id/cart", "astro_cart")
 
-    # # Extract available items
-    # available_items_schema = SpecSchema.model_validate({
-    #     "bundle": "",
-    #     "format": "html",
-    #     "output": "",
-    #     "row_selector": "div.MuiBox-root.css-bnftmf div.MuiBox-root.css-1msuw7t",
-    #     "columns": [
-    #         {
-    #             "name": "name",
-    #             "selector": "div.MuiBox-root.css-j7qwjs span.MuiTypography-body-default",
-    #         },
-    #         {"name": "image_url", "selector": "img.MuiBox-root.css-1jmoofa", "attribute": "src"},
-    #         {
-    #             "name": "quantity",
-    #             "selector": "div.MuiBox-root.css-1aek3i0 span.MuiTypography-body-small",
-    #         },
-    #         {
-    #             "name": "current_price",
-    #             "selector": "div.MuiBox-root.css-0:last-child p.MuiTypography-body-default.css-133xbhx",
-    #         },
-    #         {
-    #             "name": "original_price",
-    #             "selector": "div.MuiBox-root.css-0:last-child span.MuiTypography-body-default.css-1bb6qij",
-    #         },
-    #         {
-    #             "name": "discount_percentage",
-    #             "selector": "div.css-6qgay2 span.MuiTypography-caption-tiny",
-    #         },
-    #     ],
-    # })
+
+@astro_mcp.tool
+async def add_item_to_cart(product_url: str, quantity: int = 1) -> dict[str, Any]:
+    """Add item to cart on astro (add new item or update existing quantity). Get product_url from search_product tool."""
+    # Ensure the product URL is a full URL
+    if product_url.startswith("/p/"):
+        full_url = f"https://www.astronauts.id{product_url}"
+    else:
+        full_url = product_url
+
+    async def action(page: Page) -> dict[str, Any]:
+        cart_button = page.locator("button:has-text('Keranjang')")
+        await cart_button.wait_for(state="visible", timeout=5000)
+
+        print(
+            f"DEBUGPRINT[42]: astro.py:56: is_cart_button_enable={await cart_button.is_visible()}"
+        )
+
+        return {"added_to_cart": {"product_url": product_url, "quantity": quantity}}
+
+    return await dpage_with_action(initial_url=full_url, action=action)
+
+    # # Check if quantity controls already exist (item already in cart) - only in main product section
+    # main_product_section = page.locator("div.MuiBox-root.css-19midj6")
+    # quantity_controls = main_product_section.locator("div.MuiBox-root.css-1aek3i0")
+    # is_already_in_cart = await quantity_controls.is_visible()
     #
-    # available_items_result = await parse_html(
-    #     brand_id=astro_mcp.brand_id, html_content=html, schema=available_items_schema
-    # )
+    # if is_already_in_cart:
+    #     current_quantity_element = quantity_controls.locator("span.MuiTypography-body-small")
+    #     current_quantity_text = await current_quantity_element.text_content()
+    #     current_quantity = int(current_quantity_text or "0")
     #
-    # # Extract unavailable items
-    # unavailable_items_schema = SpecSchema.model_validate({
-    #     "bundle": "",
-    #     "format": "html",
-    #     "output": "",
-    #     "row_selector": "div.MuiBox-root.css-g89h0y div.MuiBox-root.css-1msuw7t",
-    #     "columns": [
-    #         {
-    #             "name": "name",
-    #             "selector": "div.MuiBox-root.css-j7qwjs span.MuiTypography-body-default",
-    #         },
-    #         {"name": "image_url", "selector": "img.MuiBox-root.css-1jmoofa", "attribute": "src"},
-    #         {
-    #             "name": "quantity",
-    #             "selector": "div.MuiBox-root.css-1bmdty span.MuiTypography-body-small",
-    #         },
-    #     ],
-    # })
+    #     final_quantity, adjustment_succeeded = await _adjust_quantity_with_detection(
+    #         quantity_controls, quantity, current_quantity, page, "product"
+    #     )
     #
-    # unavailable_items_result = await parse_html(
-    #     brand_id=astro_mcp.brand_id, html_content=html, schema=unavailable_items_schema
-    # )
+    #     # Wait for backend API call to complete before closing browser
+    #     await page.wait_for_timeout(1000)
     #
-    # # Extract totals
-    # summary_schema = SpecSchema.model_validate({
-    #     "bundle": "",
-    #     "format": "html",
-    #     "output": "",
-    #     "row_selector": "div.MuiBox-root.css-4kor8h",
-    #     "columns": [
-    #         {
-    #             "name": "subtotal",
-    #             "selector": "div.MuiBox-root.css-1duxxgg:first-child span:last-child",
-    #         },
-    #         {
-    #             "name": "shipping_fee",
-    #             "selector": "div.MuiBox-root.css-1duxxgg:nth-child(2) div.MuiBox-root.css-171onha:last-child span:last-child",
-    #         },
-    #         {
-    #             "name": "service_fee",
-    #             "selector": "div.MuiBox-root.css-1duxxgg:last-child span:last-child",
-    #         },
-    #     ],
-    # })
+    #     return _format_quantity_result(
+    #         quantity,
+    #         current_quantity,
+    #         final_quantity,
+    #         adjustment_succeeded,
+    #         full_url,
+    #         "",
+    #         "product",
+    #     )
+    # else:
+    #     # Item not in cart, check if add to cart button exists - only in main product section
+    #     add_to_cart_button = main_product_section.locator("button[data-testid='pdp-atc-btn']")
+    #     if not await add_to_cart_button.is_visible():
+    #         return {
+    #             "success": False,
+    #             "error": "Add to cart button not found or product not available",
+    #         }
     #
-    # summary_result = await parse_html(
-    #     brand_id=astro_mcp.brand_id, html_content=html, schema=summary_schema
-    # )
+    #     await add_to_cart_button.click()
+    #     await page.wait_for_timeout(300)
     #
-    # # Extract final total
-    # total_schema = SpecSchema.model_validate({
-    #     "bundle": "",
-    #     "format": "html",
-    #     "output": "",
-    #     "row_selector": "div.MuiBox-root.css-1ia6xgx",
-    #     "columns": [
-    #         {
-    #             "name": "total_amount",
-    #             "selector": "div.MuiBox-root.css-axw7ok span.MuiTypography-body-default.css-g3g47m",
-    #         },
-    #         {"name": "savings", "selector": "div.css-n6k44k span.MuiTypography-caption-tinyBold"},
-    #     ],
-    # })
+    #     await quantity_controls.wait_for(state="visible", timeout=5000)
     #
-    # total_result = await parse_html(
-    #     brand_id=astro_mcp.brand_id, html_content=html, schema=total_schema
-    # )
+    #     final_quantity, adjustment_succeeded = await _adjust_quantity_with_detection(
+    #         quantity_controls, quantity, 1, page, "product"
+    #     )
     #
-    # # Process available items
-    # available_items: list[dict[str, Any]] = []
-    # available_content: list[Any] = available_items_result.content or []
-    # for item in available_content:
-    #     if not isinstance(item, dict):
-    #         continue
-    #     item_dict: dict[str, Any] = cast(dict[str, Any], item)
-    #     available_items.append({
-    #         "name": item_dict.get("name", ""),
-    #         "quantity": int(item_dict.get("quantity", "1")),
-    #         "price": item_dict.get("current_price", ""),
-    #         "original_price": item_dict.get("original_price"),
-    #         "image_url": item_dict.get("image_url", ""),
-    #         "status": "available",
-    #         "discount_percentage": item_dict.get("discount_percentage", "0%"),
-    #     })
+    #     # Wait for backend API call to complete before closing browser
+    #     await page.wait_for_timeout(1000)
     #
-    # # Process unavailable items
-    # unavailable_items: list[dict[str, Any]] = []
-    # unavailable_content: list[Any] = unavailable_items_result.content or []
-    # for item in unavailable_content:
-    #     if not isinstance(item, dict):
-    #         continue
-    #     unavail_item_dict: dict[str, Any] = cast(dict[str, Any], item)
-    #     unavailable_items.append({
-    #         "name": unavail_item_dict.get("name", ""),
-    #         "quantity": int(unavail_item_dict.get("quantity", "1")),
-    #         "image_url": unavail_item_dict.get("image_url", ""),
-    #         "status": "unavailable",
-    #         "reason": "Cannot be processed",
-    #     })
-    #
-    # # Build summary
-    # summary_data: dict[str, Any] = summary_result.content[0] if summary_result.content else {}
-    # total_data: dict[str, Any] = total_result.content[0] if total_result.content else {}
-    #
-    # summary: dict[str, Any] = {
-    #     "total_items": len(available_items) + len(unavailable_items),
-    #     "available_items": len(available_items),
-    #     "unavailable_items": len(unavailable_items),
-    #     "subtotal": summary_data.get("subtotal", "Rp0"),
-    #     "shipping_fee": summary_data.get("shipping_fee", "Rp0"),
-    #     "service_fee": summary_data.get("service_fee", "Rp0"),
-    #     "total_amount": total_data.get("total_amount", "Rp0"),
-    #     "savings": total_data.get("savings", ""),
-    # }
-    #
-    # return {
-    #     "items": available_items + unavailable_items,
-    #     "available_items": available_items,
-    #     "unavailable_items": unavailable_items,
-    #     "summary": summary,
-    # }
+    #     return _format_quantity_result(
+    #         quantity, 0, final_quantity, adjustment_succeeded, full_url, "", "product"
+    #     )
