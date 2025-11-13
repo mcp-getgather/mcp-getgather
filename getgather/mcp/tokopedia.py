@@ -121,7 +121,7 @@ async def get_purchase_history(
 ) -> dict[str, Any]:
     """Get purchase history of a tokopedia."""
 
-    async def action(page: Any) -> dict[str, Any]:
+    async def action(page: Any, _) -> dict[str, Any]:
         await page.goto(f"https://www.tokopedia.com/order-list?page={page_number}")
         raw_data = await handle_graphql_response(
             page,
@@ -173,7 +173,7 @@ async def get_purchase_history(
 async def get_cart() -> dict[str, Any]:
     """Get cart of a tokopedia."""
 
-    async def action(page: Any) -> dict[str, Any]:
+    async def action(page: Any, _) -> dict[str, Any]:
         await page.goto(f"https://www.tokopedia.com/cart")
         raw_data = await handle_graphql_response(
             page,
@@ -224,7 +224,7 @@ async def get_cart() -> dict[str, Any]:
 async def get_wishlist(page_number: int = 1) -> dict[str, Any]:
     """Get wishlist from tokopedia."""
 
-    async def action(page: Any) -> dict[str, Any]:
+    async def action(page: Any, _) -> dict[str, Any]:
         await page.goto(f"https://www.tokopedia.com/wishlist/all?page={page_number}")
         raw_data = await handle_graphql_response(
             page,
@@ -265,7 +265,7 @@ async def action_product_in_cart(
 
     product_ids = [product_id] if isinstance(product_id, str) else product_id
 
-    async def perform_action(page: Any) -> dict[str, Any]:
+    async def perform_action(page: Any, _) -> dict[str, Any]:
         results_list: list[dict[str, str]] = []
         for pid in product_ids:
             if action == "toggle_checklist":

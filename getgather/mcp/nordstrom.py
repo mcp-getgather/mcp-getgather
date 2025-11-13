@@ -52,7 +52,7 @@ async def get_order_details_with_retry(
 async def get_order_history(page_number: int = 1) -> dict[str, Any]:
     """Get the details of an order from Nordstrom"""
 
-    async def get_order_details_action(page: Page) -> dict[str, Any]:
+    async def get_order_details_action(page: Page, _) -> dict[str, Any]:
         """Get the details of an order from Nordstrom"""
         return await get_order_details_with_retry(page, page_number)
 
