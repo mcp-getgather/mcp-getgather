@@ -6,7 +6,7 @@
     <div>
       <p gg-optional gg-match="h1"></p>
 
-      <h1 gg-match="strong:has-text('How should we send your code?')"></h1>
+      <p gg-match="strong:has-text('How should we send your code?')"></p>
       <div class="vertical-radios">
         <div class="radio-wrapper">
           <input
@@ -17,12 +17,14 @@
             value="EMAIL"
             checked
           />
-          <label gg-optional for="email">Email</label>
-          <strong
-            gg-optional
-            for="email"
-            gg-match="fieldset > label:nth-of-type(1) strong"
-          ></strong>
+          <div>
+            <label gg-optional for="email">Email</label>
+            <strong
+              gg-optional
+              for="email"
+              gg-match="fieldset > label:nth-of-type(1) strong"
+            ></strong>
+          </div>
         </div>
         <div class="radio-wrapper">
           <input
@@ -33,9 +35,15 @@
             gg-match="input[name='delivery-method'][value='sms']"
             value="sms"
           />
-          <label gg-optional for="sms">Text Message</label>
-          <strong gg-optional for="sms" gg-match="fieldset > label:nth-of-type(2) strong"></strong>
-          (<span gg-optional for="sms" gg-match="fieldset > label:nth-of-type(2) span"></span>)
+          <div>
+            <label gg-optional for="sms">Text Message</label>
+            <strong
+              gg-optional
+              for="sms"
+              gg-match="fieldset > label:nth-of-type(2) strong"
+            ></strong>
+            <span gg-optional for="sms" gg-match="fieldset > label:nth-of-type(2) span"></span>
+          </div>
         </div>
       </div>
       <button type="submit" gg-match="button:has-text('Send Code')">Send Code</button>

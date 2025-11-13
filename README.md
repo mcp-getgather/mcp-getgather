@@ -30,7 +30,7 @@ On MacOS `-v /etc/localtime:/etc/localtime:ro` is needed for the service to use 
 and on Linux it's `-v /etc/timezone:/etc/timezone:ro` instead.
 On windows, the timezone has to be set directly as `-e TZ=America/Los_Angeles`.
 
-Optionally, with `--env-file` if you have an env file for OPENAI_API_KEY, etc.
+Optionally, with `--env-file` if you have an env file.
 
 ```bash
 docker run --env-file ~/getgather.env -p 23456:23456 ghcr.io/mcp-getgather/mcp-getgather

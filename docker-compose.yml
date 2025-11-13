@@ -7,5 +7,3 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro  # use local timezone on MacOS
       - /etc/timezone:/etc/timezone:ro  # use local timezone on Linux
-    environment:
-      # - OPENAI_API_KEY=  # openai api key only required for browser-use

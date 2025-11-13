@@ -3,6 +3,11 @@
     <title>American Airlines Signin</title>
   </head>
   <body>
+    <div
+      gg-optional
+      gg-autoclick
+      gg-match="button.ot-pc-refuse-all-handler:has-text('Reject All')"
+    ></div>
     <p gg-optional gg-match="adc-inline-notification[role='alert'][kind='error']"></p>
     <input
       type="text"
