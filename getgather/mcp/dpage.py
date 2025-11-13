@@ -436,8 +436,9 @@ async def dpage_with_action(
     if _signin_completed and _page_id is not None and _page_id in active_pages:
         logger.info(f"Resuming action after signin with page_id={_page_id}")
         page = active_pages[_page_id]
+        action_info = pending_actions[_page_id]
         await page.goto(initial_url, wait_until="commit")
-        result = await action(page)
+        result = await action(page, action_info["browser_profile"])
         return result
 
     # Step 2: If global_browser_profile exists, try executing action directly
@@ -453,9 +454,8 @@ async def dpage_with_action(
             await session.start()
             page = await session.page()
             await page.goto(initial_url, wait_until="commit")
-            result = await action(page)
+            result = await action(page, browser_profile)
             logger.info("Action succeeded with existing session!")
-            await page.close()
             return result
         except Exception as e:
             logger.info(
@@ -481,6 +481,7 @@ async def dpage_with_action(
         "initial_url": initial_url,
         "timeout": timeout,
         "page_id": id,
+        "browser_profile": browser_profile,
     }
 
     if incognito:
