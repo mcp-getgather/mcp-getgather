@@ -1,0 +1,32 @@
+<html gg-domain="astronauts.id">
+  <head>
+    <title>Astro Product Detail</title>
+  </head>
+  <body>
+    <div gg-match-html="p:has-text('Deskripsi Produk')"></div>
+    <div gg-stop gg-match-html="main"></div>
+    <script type="application/json">
+      {
+        "rows": "div:nth-child(3)",
+        "columns": [
+          {
+            "name": "product_title",
+            "selector": "h1"
+          },
+          { "name": "price", "selector": "p[data-testid='pdp-price']" },
+          { "name": "description", "selector": "span[data-testid='pdp-description-content']" },
+          {
+            "name": "expiry_date",
+            "selector": "div[data-testid='pdp-expiry-section'] span.MuiTypography-caption-small"
+          },
+          {
+            "name": "return_condition",
+            "selector": "div[data-testid='pdp-retur-message'] span.MuiTypography-caption-small"
+          },
+          { "name": "product_image", "selector": "img.image", "attribute": "src" },
+          { "name": "add_to_cart_available", "selector": "button[data-testid='pdp-atc-btn']" }
+        ]
+      }
+    </script>
+  </body>
+</html>
