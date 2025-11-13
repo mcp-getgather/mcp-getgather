@@ -107,7 +107,7 @@ class AuthMiddleware(Middleware):
 CATEGORY_BUNDLES: dict[str, list[str]] = {
     "food": ["doordash", "ubereats"],
     "books": [],
-    "shopping": ["amazon", "shopee", "astro"],
+    "shopping": ["amazon", "astro"],
     "media": [],
 }
 

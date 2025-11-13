@@ -10,3 +10,10 @@ shopee_mcp = GatherMCP(brand_id="shopee", name="Shopee MCP")
 async def get_purchase_history() -> dict[str, Any]:
     """Get purchase history of a shopee."""
     return await dpage_mcp_tool("https://shopee.co.id/user/purchase", "shopee_purchase_history")
+
+
+@shopee_mcp.tool
+async def search_product(keyword: str, page_number: int = 1) -> dict[str, Any]:
+    """Search product on shopee."""
+    url = f"https://shopee.co.id/search?keyword={keyword}"
+    return await dpage_mcp_tool(url, "shopee_search_product")
