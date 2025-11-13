@@ -1,9 +1,12 @@
 import asyncio
+import os
 from datetime import datetime
 from typing import Any
 
 from patchright.async_api import Page
 
+from getgather.browser.profile import BrowserProfile
+from getgather.distill import load_distillation_patterns, run_distillation_loop
 from getgather.logs import logger
 from getgather.mcp.dpage import dpage_mcp_tool, dpage_with_action
 from getgather.mcp.registry import GatherMCP
@@ -84,16 +87,28 @@ async def dpage_get_purchase_history_with_details(
     if not (1900 <= target_year <= current_year + 1):
         raise ValueError(f"Year {target_year} is out of valid range (1900-{current_year + 1})")
 
-    async def get_order_details_action(page: Page) -> dict[str, Any]:
+    async def get_order_details_action(
+        page: Page, browser_profile: BrowserProfile
+    ) -> dict[str, Any]:
         current_url = page.url
         if "signin" in current_url:
             raise Exception("User is not signed in")
 
-        dpage_result = await dpage_mcp_tool(
+        path = os.path.join(os.path.dirname(__file__), "patterns", "**/amazon-*.html")
+
+        logger.info(f"Loading patterns from {path}")
+        patterns = load_distillation_patterns(path)
+        logger.info(f"Loaded {len(patterns)} patterns")
+        _, _, orders = await run_distillation_loop(
             f"https://www.amazon.com/your-orders/orders?timeFilter=year-{target_year}&startIndex={start_index}",
-            "amazon_purchase_history",
+            patterns,
+            browser_profile=browser_profile,
+            interactive=False,
+            timeout=2,
+            stop_ok=False,
         )
-        orders = dpage_result["amazon_purchase_history"]
+        if orders is None:
+            return {"amazon_purchase_history": []}
 
         async def get_order_details(order_id: str):
             url = f"https://www.amazon.com/gp/css/summary/print.html?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_invoice_pos"
@@ -119,7 +134,8 @@ async def dpage_get_purchase_history_with_details(
 
         try:
             order_prices_list = await asyncio.gather(*[
-                get_order_details(order["order_id"]) for order in orders
+                get_order_details(order["order_id"])  # pyright: ignore[reportArgumentType]
+                for order in orders
             ])
             order_prices = {item["order_id"]: item["prices"] for item in order_prices_list}
             for order in orders:
