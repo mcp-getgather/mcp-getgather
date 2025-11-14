@@ -9,7 +9,6 @@ from datetime import datetime
 from glob import glob
 from pathlib import Path
 from typing import Any, cast
-from urllib.parse import urlparse, urlunparse
 
 import pwinput
 import sentry_sdk
@@ -621,41 +620,3 @@ async def get_incognito_browser_profile(signin_id: str | None) -> BrowserProfile
 
     logger.error(f"Failed to get browser profile after {MAX_ATTEMPTS} attempts!")
     raise RuntimeError(f"Failed to get browser profile after {MAX_ATTEMPTS} attempts!")
-
-
-async def short_lived_mcp_tool(
-    location: str,
-    pattern_wildcard: str,
-    result_key: str,
-    url_hostname: str,
-) -> tuple[bool, dict[str, Any]]:
-    path = os.path.join(os.path.dirname(__file__), "mcp", "patterns", pattern_wildcard)
-    patterns = load_distillation_patterns(path)
-
-    browser_profile = await get_incognito_browser_profile(signin_id=None)
-    session = BrowserSession.get(browser_profile)
-    session = await session.start()
-    terminated, distilled, converted = await run_distillation_loop(
-        location, patterns, browser_profile, interactive=False
-    )
-    await session.context.close()
-
-    result: dict[str, Any] = {result_key: converted if converted else distilled}
-    if result_key in result:
-        items_value = result[result_key]
-        if isinstance(items_value, list):
-            for item in cast(list[dict[str, Any]], items_value):
-                if "link" in item:
-                    link = cast(str, item["link"])
-                    parsed = urlparse(link)
-                    netloc: str = parsed.netloc if parsed.netloc else url_hostname
-                    url: str = urlunparse((
-                        "https",
-                        netloc,
-                        parsed.path,
-                        parsed.params,
-                        parsed.query,
-                        parsed.fragment,
-                    ))
-                    item["url"] = url
-    return terminated, result
