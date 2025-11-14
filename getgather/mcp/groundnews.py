@@ -2,8 +2,8 @@ from typing import Any
 
 from fastmcp import Context
 
-from getgather.distill import short_lived_mcp_tool
 from getgather.mcp.registry import GatherMCP
+from getgather.zen_distill import short_lived_mcp_tool
 
 groundnews_mcp = GatherMCP(brand_id="groundnews", name="Ground News MCP")
 
