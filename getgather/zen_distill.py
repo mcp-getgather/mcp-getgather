@@ -14,7 +14,10 @@ import sentry_sdk
 import zendriver as zd
 from bs4 import BeautifulSoup, Tag
 from nanoid import generate
+from zendriver.core.connection import ProtocolException
 
+from getgather.api.types import request_info
+from getgather.browser.proxy import setup_proxy
 from getgather.config import settings
 from getgather.distill import (
     ConversionResult,
@@ -131,6 +134,28 @@ async def report_distill_error(
             sentry_sdk.capture_exception(error)
 
 
+async def install_proxy_handler(username: str, password: str, page: zd.Tab):
+    async def auth_challenge_handler(event: zd.cdp.fetch.AuthRequired):
+        logger.debug("Supplying proxy authentication...")
+        await page.send(
+            zd.cdp.fetch.continue_with_auth(
+                request_id=event.request_id,
+                auth_challenge_response=zd.cdp.fetch.AuthChallengeResponse(
+                    response="ProvideCredentials",
+                    username=username,
+                    password=password,
+                ),
+            )
+        )
+
+    async def req_paused(event: zd.cdp.fetch.RequestPaused) -> None:
+        await page.send(zd.cdp.fetch.continue_request(request_id=event.request_id))
+
+    page.add_handler(zd.cdp.fetch.RequestPaused, req_paused)  # type: ignore[arg-type]
+    page.add_handler(zd.cdp.fetch.AuthRequired, auth_challenge_handler)  # type: ignore[arg-type]
+    await page.send(zd.cdp.fetch.enable(handle_auth_requests=True))
+
+
 async def init_zendriver_browser() -> zd.Browser:
     FRIENDLY_CHARS = "23456789abcdefghijkmnpqrstuvwxyz"
     id = nanoid.generate(FRIENDLY_CHARS, 6)
@@ -142,8 +167,23 @@ async def init_zendriver_browser() -> zd.Browser:
     )
 
     browser_args = ["--no-sandbox", "--start-maximized"]
+
+    proxy = await setup_proxy(id, request_info.get())
+    proxy_username = None
+    proxy_password = None
+    if proxy:
+        proxy_username = proxy["username"]
+        proxy_password = proxy["password"]
+        proxy_server = proxy["server"]
+        browser_args.append(f"--proxy-server={proxy_server}")
+
     browser = await zd.start(user_data_dir=str(user_data_dir), browser_args=browser_args)
     browser.id = id  # type: ignore[attr-defined]
+
+    if proxy_username or proxy_password:
+        logger.debug("Setting up proxy authentication...")
+        page = await browser.get("about:blank")
+        await install_proxy_handler(proxy_username or "", proxy_password or "", page)
 
     return browser
 
@@ -192,16 +232,28 @@ async def get_new_page(browser: zd.Browser) -> zd.Tab:
         should_deny = deny_type
 
         if not should_deny:
-            await page.send(zd.cdp.fetch.continue_request(request_id=event.request_id))
+            try:
+                await page.send(zd.cdp.fetch.continue_request(request_id=event.request_id))
+            except ProtocolException as e:
+                if "Invalid state for continueInterceptedRequest" in str(e):
+                    logger.debug(f"Request already processed: {request_url}")
+                else:
+                    raise
             return
 
         logger.debug(f" DENY: {request_url}")
-        await page.send(
-            zd.cdp.fetch.fail_request(
-                request_id=event.request_id,
-                error_reason=zd.cdp.network.ErrorReason.BLOCKED_BY_CLIENT,
+        try:
+            await page.send(
+                zd.cdp.fetch.fail_request(
+                    request_id=event.request_id,
+                    error_reason=zd.cdp.network.ErrorReason.BLOCKED_BY_CLIENT,
+                )
             )
-        )
+        except ProtocolException as e:
+            if "Invalid state for continueInterceptedRequest" in str(e):
+                logger.debug(f"Request already processed: {request_url}")
+            else:
+                raise
 
     page.add_handler(zd.cdp.fetch.RequestPaused, handle_request)  # type: ignore[reportUnknownMemberType]
     return page
