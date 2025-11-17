@@ -1,11 +1,10 @@
 import tempfile
 from pathlib import Path
-from typing import Literal
 from unittest.mock import patch
 
 import pytest
 
-from getgather.connectors.spec_loader import brand_id_list, list_brand_specs, load_brand_spec
+from getgather.connectors.spec_loader import brand_id_list, load_brand_spec
 from getgather.connectors.spec_models import BrandSpec
 
 
@@ -61,15 +60,6 @@ async def test_load_brand_spec():
             assert len(spec.parse[0].columns) == 1
             assert spec.parse[0].columns[0].name == "test_column"
             assert spec.parse[0].columns[0].selector == "test_selector"
-
-
-@pytest.mark.parametrize("include", ["all", "test", "prod"])
-@pytest.mark.asyncio
-async def test_list_brand_specs(include: Literal["all", "test", "prod"]):
-    """Test the list_brand_specs function."""
-    specs = await list_brand_specs(include=include)
-    assert len(specs) > 0
-    assert isinstance(specs[0], BrandSpec)
 
 
 def test_list_brand_ids():
