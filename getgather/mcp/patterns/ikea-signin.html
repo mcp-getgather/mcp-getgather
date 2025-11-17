@@ -1,0 +1,12 @@
+<html gg-domain="ikea">
+  <head>
+    <title>Ikea Signin</title>
+  </head>
+  <body>
+    <span gg-optional gg-match="span.form-field__message"></span>
+    <input autofocus name="email" type="email" placeholder="Email" gg-match="input#username" />
+    <button type="submit" gg-match="button:has-text('Continue'):not(:has(.btn__loader))">
+      Continue
+    </button>
+  </body>
+</html>
