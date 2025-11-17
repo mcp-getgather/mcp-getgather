@@ -2,13 +2,13 @@ import os
 from typing import Any
 
 from getgather.distill import load_distillation_patterns, run_distillation_loop
-from getgather.mcp.registry import BrandMCPBase
+from getgather.mcp.registry import GatherMCP
 from getgather.mcp.shared import get_mcp_browser_profile
 
-ubereats_mcp = BrandMCPBase(brand_id="ubereats", name="UberEats MCP")
+ubereats_mcp = GatherMCP(brand_id="ubereats", name="UberEats MCP")
 
 
-@ubereats_mcp.tool(tags={"private"})
+# TODO: add signin pattern
 async def get_orders() -> dict[str, Any]:
     """Get orders from UberEats.com."""
     browser_profile = get_mcp_browser_profile()
