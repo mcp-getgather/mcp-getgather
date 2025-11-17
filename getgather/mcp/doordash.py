@@ -8,6 +8,7 @@ from getgather.mcp.shared import get_mcp_browser_profile
 doordash_mcp = GatherMCP(brand_id="doordash", name="Doordash MCP")
 
 
+# TODO: add signin pattern
 async def get_orders() -> dict[str, Any]:
     """Get orders from Doordash.com."""
     browser_profile = get_mcp_browser_profile()

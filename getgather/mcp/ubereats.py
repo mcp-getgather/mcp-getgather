@@ -8,6 +8,7 @@ from getgather.mcp.shared import get_mcp_browser_profile
 ubereats_mcp = GatherMCP(brand_id="ubereats", name="UberEats MCP")
 
 
+# TODO: add signin pattern
 async def get_orders() -> dict[str, Any]:
     """Get orders from UberEats.com."""
     browser_profile = get_mcp_browser_profile()
