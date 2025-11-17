@@ -18,6 +18,7 @@ from zendriver.core.connection import ProtocolException
 
 from getgather.api.types import request_info
 from getgather.browser.proxy import setup_proxy
+from getgather.browser.resource_blocker import blocked_domains, load_blocklists, should_be_blocked
 from getgather.config import settings
 from getgather.distill import (
     ConversionResult,
@@ -220,6 +221,9 @@ async def terminate_zendriver_browser(browser: zd.Browser):
 async def get_new_page(browser: zd.Browser) -> zd.Tab:
     page = await browser.get()
 
+    if blocked_domains is None:
+        await load_blocklists()
+
     async def handle_request(event: zd.cdp.fetch.RequestPaused) -> None:
         resource_type = event.resource_type
         request_url = event.request.url
@@ -229,7 +233,8 @@ async def get_new_page(browser: zd.Browser) -> zd.Tab:
             zd.cdp.network.ResourceType.MEDIA,
             zd.cdp.network.ResourceType.FONT,
         ]
-        should_deny = deny_type
+        deny_url = await should_be_blocked(request_url)
+        should_deny = deny_type or deny_url
 
         if not should_deny:
             try:
@@ -241,7 +246,9 @@ async def get_new_page(browser: zd.Browser) -> zd.Tab:
                     raise
             return
 
-        logger.debug(f" DENY: {request_url}")
+        kind = "URL" if deny_url else "resource"
+        logger.debug(f" DENY {kind}: {request_url}")
+
         try:
             await page.send(
                 zd.cdp.fetch.fail_request(
