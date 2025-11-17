@@ -10,7 +10,6 @@ from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from pydantic import BaseModel
 
 from getgather.api.types import RequestInfo, request_info
-from getgather.connectors.spec_loader import BrandIdEnum
 from getgather.logs import logger
 from getgather.mcp.activity import activity
 from getgather.mcp.auto_import import auto_import
@@ -88,7 +87,7 @@ class MCPApp:
     name: str
     type: Literal["brand", "category", "all"]
     route: str
-    brand_ids: list[BrandIdEnum | str]
+    brand_ids: list[str]
 
     @cached_property
     def app(self) -> StarletteWithLifespan:
@@ -131,7 +130,7 @@ def create_mcp_apps() -> list[MCPApp]:
     return apps
 
 
-def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum | str]):
+def _create_mcp_app(bundle_name: str, brand_ids: list[str]):
     """Create and return the MCP ASGI app.
 
     This performs plugin discovery/registration and mounts brand MCPs.
@@ -166,7 +165,7 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum | str]):
         return await dpage_mcp_tool(initial_url="https://ip.fly.dev/ip", result_key="ip_address")
 
     for brand_id in brand_ids:
-        brand_id_str = brand_id.value if isinstance(brand_id, BrandIdEnum) else brand_id
+        brand_id_str = brand_id
         if brand_id_str in GatherMCP.registry:
             gather_mcp = GatherMCP.registry[brand_id_str]
             logger.info(
