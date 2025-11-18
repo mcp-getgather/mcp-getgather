@@ -63,9 +63,7 @@ async def search_product(keyword: str) -> dict[str, Any]:
 async def get_browsing_history() -> dict[str, Any]:
     """Get browsing history from amazon."""
 
-    async def get_browsing_history_action(
-        page: Page, browser_profile: BrowserProfile
-    ) -> dict[str, Any]:
+    async def get_browsing_history_action(page: Page, _) -> dict[str, Any]:
         current_url = page.url
         if "signin" in current_url:
             raise Exception("User is not signed in")
@@ -199,7 +197,7 @@ async def dpage_get_purchase_history_with_details(
             browser_profile=browser_profile,
             interactive=False,
             timeout=2,
-            stop_ok=False,
+            close_page=True,
         )
         if orders is None:
             return {"amazon_purchase_history": []}
@@ -235,8 +233,8 @@ async def dpage_get_purchase_history_with_details(
             for order in orders:
                 if order_prices[order["order_id"]] is not None:
                     order["product_prices"] = order_prices[order["order_id"]]
-        except Exception:
-            logger.error(f"Error getting order details for order")
+        except Exception as e:
+            logger.error(f"Error getting order details for order: {e}")
             pass
         return {"amazon_purchase_history": orders}
 

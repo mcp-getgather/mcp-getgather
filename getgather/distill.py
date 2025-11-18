@@ -494,6 +494,7 @@ async def run_distillation_loop(
     timeout: int = 15,
     interactive: bool = True,
     stop_ok: bool = False,
+    close_page: bool = False,
 ) -> tuple[bool, str, ConversionResult | None]:
     """Run the distillation loop.
 
@@ -557,7 +558,7 @@ async def run_distillation_loop(
 
                     if await terminate(distilled):
                         converted = await convert(distilled)
-                        if stop_ok:
+                        if close_page:
                             await page.close()
                         return (True, distilled, converted)
 
