@@ -9,8 +9,9 @@ from getgather.config import PROJECT_DIR, settings
 from getgather.logs import logger
 
 _BLOCKED_RESOURCE_TYPES = {"image", "media", "font"}
-_blocked_domains: frozenset[str] | None = None
-_allowed_domains: frozenset[str] = frozenset(["amazon.ca", "wayfair.com"])
+
+blocked_domains: frozenset[str] | None = None
+allowed_domains: frozenset[str] = frozenset(["amazon.ca", "wayfair.com"])
 
 
 def _get_domain_variants(domain: str) -> list[str]:
@@ -72,8 +73,8 @@ def _extract_domain(url: str) -> str:
         return ""
 
 
-async def _load_blocklists() -> None:
-    global _blocked_domains
+async def load_blocklists() -> None:
+    global blocked_domains
     logger.info("Loading blocklists...")
     all_domains: set[str] = set()
 
@@ -84,14 +85,14 @@ async def _load_blocklists() -> None:
             domains = await _load_blocklist_from_file(blocklist_file)
             all_domains.update(domains)
 
-        filtered_domains = all_domains - _allowed_domains
-        _blocked_domains = frozenset(filtered_domains)
+        filtered_domains = all_domains - allowed_domains
+        blocked_domains = frozenset(filtered_domains)
 
     else:
         logger.warning("No blocklist files found matching pattern 'blocklists-*.txt'")
-        _blocked_domains = frozenset()
+        blocked_domains = frozenset()
 
-    logger.info(f"Blocklists loaded: {len(_blocked_domains)} total domains")
+    logger.info(f"Blocklists loaded: {len(blocked_domains)} total domains")
 
 
 async def configure_context(context: BrowserContext) -> None:
@@ -102,8 +103,8 @@ async def configure_context(context: BrowserContext) -> None:
     if getattr(context, "_gather_resource_blocking_configured", False):
         return
 
-    if _blocked_domains is None:
-        await _load_blocklists()
+    if blocked_domains is None:
+        await load_blocklists()
 
     original_new_page = context.new_page
 
@@ -121,16 +122,16 @@ async def _maybe_block_unwanted_resources(page: Page) -> None:
     await page.route("**/*", _handle_route)
 
 
-async def _should_be_blocked(url: str) -> bool:
+async def should_be_blocked(url: str) -> bool:
     domain = _extract_domain(url)
     if not domain:
         return False
 
-    if _blocked_domains is None:
+    if blocked_domains is None:
         return False
 
     for variant in _get_domain_variants(domain):
-        if variant in _blocked_domains:
+        if variant in blocked_domains:
             return True
 
     return False
@@ -146,8 +147,8 @@ async def _handle_route(route: Route) -> None:
             await route.abort()
             return
 
-        if await _should_be_blocked(url):
-            logger.debug(f"DENY {url}")
+        if await should_be_blocked(url):
+            logger.debug(f"DENY URL: {url}")
             await route.abort()
             return
 
