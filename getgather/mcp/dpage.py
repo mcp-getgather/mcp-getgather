@@ -452,9 +452,10 @@ async def dpage_with_action(
             logger.info("Trying action with existing global browser session...")
             session = BrowserSession.get(browser_profile)
             await session.start()
-            page = await session.page()
+            page = await session.new_page()
             await page.goto(initial_url, wait_until="commit")
             result = await action(page, browser_profile)
+            await page.close()
             logger.info("Action succeeded with existing session!")
             return result
         except Exception as e:
