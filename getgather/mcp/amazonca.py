@@ -143,6 +143,7 @@ async def search_product(keyword: str) -> dict[str, Any]:
         "product_list",
     )
 
+
 @amazonca_mcp.tool
 async def get_browsing_history() -> dict[str, Any]:
     """Get browsing history from amazon canada."""
@@ -243,4 +244,3 @@ async def get_browsing_history() -> dict[str, Any]:
         "https://www.amazon.ca/gp/history?ref_=nav_AccountFlyout_browsinghistory",
         action=get_browsing_history_action,
     )
-
