@@ -74,7 +74,7 @@ async def dpage_get_purchase_history_with_details(
         patterns = load_distillation_patterns(path)
         logger.info(f"Loaded {len(patterns)} patterns")
         _, _, orders = await run_distillation_loop(
-            f"https://www.amazon.com/your-orders/orders?timeFilter=year-{target_year}&startIndex={start_index}",
+            f"https://www.amazon.ca/your-orders/orders?timeFilter=year-{target_year}&startIndex={start_index}",
             patterns,
             browser_profile=browser_profile,
             interactive=False,
@@ -85,7 +85,7 @@ async def dpage_get_purchase_history_with_details(
             return {"amazon_purchase_history": []}
 
         async def get_order_details(order_id: str):
-            url = f"https://www.amazon.com/gp/css/summary/print.html?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_invoice_pos"
+            url = f"https://www.amazon.ca/gp/css/summary/print.html?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_invoice_pos"
             prices = await page.evaluate(f"""
                     async () => {{
                         const res = await fetch('{url}', {{
