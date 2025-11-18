@@ -1,12 +1,13 @@
 import asyncio
+import json
 import os
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
-from patchright.async_api import Page
+from patchright.async_api import Page, Response
 
 from getgather.browser.profile import BrowserProfile
-from getgather.distill import load_distillation_patterns, run_distillation_loop
+from getgather.distill import convert, load_distillation_patterns, run_distillation_loop
 from getgather.logs import logger
 from getgather.mcp.dpage import dpage_mcp_tool, dpage_with_action
 from getgather.mcp.registry import GatherMCP
@@ -145,8 +146,101 @@ async def search_product(keyword: str) -> dict[str, Any]:
 
 @amazonca_mcp.tool
 async def get_browsing_history() -> dict[str, Any]:
-    """Get browsing history from amazon."""
-    return await dpage_mcp_tool(
+    """Get browsing history from amazon canada."""
+
+    async def get_browsing_history_action(
+        page: Page, browser_profile: BrowserProfile
+    ) -> dict[str, Any]:
+        current_url = page.url
+        if "signin" in current_url:
+            raise Exception("User is not signed in")
+
+        def _url_matches(resp: Response) -> bool:
+            """Predicate that checks if the response URL contains the predicate string."""
+
+            return "browsing-history/" in resp.url
+
+        response: Response = cast(
+            Response,
+            await page.wait_for_event(  # type: ignore[reportUnknownReturnType]
+                "response",
+                _url_matches,
+                timeout=90_000,
+            ),
+        )
+
+        browsing_history_url = response.url
+
+        raw_attribute = await page.locator("div[data-client-recs-list]").get_attribute(
+            "data-client-recs-list"
+        )
+        output = [json.dumps(item) for item in json.loads(raw_attribute or "[]")]
+
+        async def get_browsing_history(start_index: int, end_index: int):
+            logger.info(f"Getting browsing history from {start_index} to {end_index}")
+            re = await page.request.post(
+                url=browsing_history_url,
+                data=json.dumps({"ids": output[start_index:end_index]}),
+                headers=response.request.headers,
+            )
+            html = await re.text()
+            distilled = f"""
+                <html gg-domain="amazon">
+                    <body>
+                        {html}
+                    </body>
+                    <script type="application/json" id="browsing_history">
+                        {{
+                            "rows": "div#gridItemRoot",
+                            "columns": [
+                                {{
+                                    "name": "name",
+                                    "selector": "a.a-link-normal > span > div"
+                                }},
+                                {{
+                                    "name": "url",
+                                    "selector": "div[class*='uncoverable-faceout'] > a[class='a-link-normal aok-block']",
+                                    "attribute": "href"
+                                }},
+                                {{
+                                    "name": "image_url",
+                                    "selector": "a > div > img.a-dynamic-image",
+                                    "attribute": "src"
+                                }},
+                                {{
+                                    "name": "rating",
+                                    "selector": "div.a-icon-row > a > i > span"
+                                }},
+                                {{
+                                    "name": "rating_count",
+                                    "selector": "div.a-icon-row > a > span"
+                                }},
+                                {{
+                                    "name": "price",
+                                    "selector": "span.a-color-price > span"
+                                }},
+                                {{
+                                    "name": "price_unit",
+                                    "selector": "span[class='a-size-mini a-color-price aok-nowrap']"
+                                }},
+                                {{
+                                    "name": "delivery_message",
+                                    "selector": "div.udm-primary-delivery-message"
+                                }}
+                            ]
+                        }}
+                    </script>
+                </html>
+            """
+            return await convert(distilled)
+
+        browsing_history_list = await asyncio.gather(*[
+            get_browsing_history(i, i + 100) for i in range(0, len(output), 100)
+        ])
+
+        return {"browsing_history_data": browsing_history_list}
+
+    return await dpage_with_action(
         "https://www.amazon.ca/gp/history?ref_=nav_AccountFlyout_browsinghistory",
-        "browsing_history",
+        action=get_browsing_history_action,
     )
