@@ -125,7 +125,7 @@ async def dpage_get_purchase_history_with_details(
                                     }}
                                     const href = productLink.getAttribute('href');
                                     if (href) {{
-                                        productUrls.push(href.startsWith('http') ? href : 'https://www.amazon.ca' + href);
+                                        productUrls.push(href);
                                     }}
                                 }}
 
