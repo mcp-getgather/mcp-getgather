@@ -32,3 +32,11 @@ async def get_order_history_details(order_id: str) -> dict[str, Any]:
         f"https://www.wayfair.com/v/account/order/details?order_id={order_id}",
         "wayfair_order_history_details",
     )
+
+
+@wayfair_mcp.tool
+async def get_cart() -> dict[str, Any]:
+    """Get order history details of wayfair."""
+    return await dpage_mcp_tool(
+        "https://www.wayfair.com/v/checkout/basket/show", "wayfair_cart", timeout=10
+    )
