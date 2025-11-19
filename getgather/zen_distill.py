@@ -157,11 +157,14 @@ async def install_proxy_handler(username: str, password: str, page: zd.Tab):
     await page.send(zd.cdp.fetch.enable(handle_auth_requests=True))
 
 
-async def init_zendriver_browser() -> zd.Browser:
-    FRIENDLY_CHARS = "23456789abcdefghijkmnpqrstuvwxyz"
-    id = nanoid.generate(FRIENDLY_CHARS, 6)
-    user_data_dir: Path = settings.profiles_dir / id
+FRIENDLY_CHARS = "23456789abcdefghijkmnpqrstuvwxyz"
 
+
+async def _create_zendriver_browser(id: str | None = None) -> zd.Browser:
+    if id is None:
+        id = nanoid.generate(FRIENDLY_CHARS, 6)
+
+    user_data_dir: Path = settings.profiles_dir / id
     logger.info(
         f"Launching Zendriver browser with user_data_dir: {user_data_dir}",
         extra={"profile_id": id},
@@ -187,6 +190,29 @@ async def init_zendriver_browser() -> zd.Browser:
         await install_proxy_handler(proxy_username or "", proxy_password or "", page)
 
     return browser
+
+
+async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
+    MAX_ATTEMPTS = 3
+    CHECK_URL = "https://ip.fly.dev/all"
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        logger.info(f"Creating a new Zendriver browser (attempt {attempt}/{MAX_ATTEMPTS})...")
+        browser = await _create_zendriver_browser(id)
+        try:
+            logger.info(f"Validating browser at {CHECK_URL}...")
+            await get_new_page(browser, CHECK_URL)
+            logger.info(f"Browser validated on attempt {attempt}")
+            return browser
+        except Exception as e:
+            logger.warning(f"Browser validation failed on attempt {attempt}: {e}")
+            if attempt < MAX_ATTEMPTS:
+                try:
+                    await browser.stop()
+                except Exception:
+                    pass
+
+    logger.error(f"Failed to get a working browser after {MAX_ATTEMPTS} attempts!")
+    raise RuntimeError(f"Failed to get a working Zendriver browser after {MAX_ATTEMPTS} attempts!")
 
 
 async def terminate_zendriver_browser(browser: zd.Browser):
@@ -218,8 +244,8 @@ async def terminate_zendriver_browser(browser: zd.Browser):
                 logger.warning(f"Failed to remove {directory}: {e}")
 
 
-async def get_new_page(browser: zd.Browser) -> zd.Tab:
-    page = await browser.get("about:blank", new_tab=True)
+async def get_new_page(browser: zd.Browser, location: str = "about:blank") -> zd.Tab:
+    page = await browser.get(location, new_tab=True)
 
     if blocked_domains is None:
         await load_blocklists()
