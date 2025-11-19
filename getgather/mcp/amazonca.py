@@ -82,7 +82,7 @@ async def dpage_get_purchase_history_with_details(
             close_page=True,
         )
         if orders is None:
-            return {"amazon_purchase_history": []}
+            return {"amazonca_purchase_history": []}
 
         async def get_order_details(order: dict[str, Any]):
             order_id = order["order_id"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
@@ -188,7 +188,7 @@ async def dpage_get_purchase_history_with_details(
         except Exception as e:
             logger.error(f"Error getting order details for order: {e}")
             pass
-        return {"amazon_purchase_history": orders}
+        return {"amazonca_purchase_history": orders}
 
     return await dpage_with_action(
         f"https://www.amazon.ca/your-orders/orders?timeFilter=year-{target_year}&startIndex={start_index}",
