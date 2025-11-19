@@ -33,3 +33,9 @@ async def get_product_details(product_url: str) -> dict[str, Any]:
         full_url = product_url
 
     return await dpage_mcp_tool(full_url, "astro_product_detail")
+
+
+@astro_mcp.tool
+async def get_cart_summary() -> dict[str, Any]:
+    """Get cart summary from astro."""
+    return await dpage_mcp_tool("https://www.astronauts.id/cart", "astro_cart")
