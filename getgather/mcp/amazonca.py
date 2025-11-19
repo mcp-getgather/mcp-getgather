@@ -232,7 +232,11 @@ async def get_browsing_history() -> dict[str, Any]:
                     </script>
                 </html>
             """
-            return await convert(distilled)
+            converted = await convert(distilled)
+            if converted is not None:
+                for item in converted:
+                    item["url"] = f"https://www.amazon.ca{item['url']}"
+            return converted
 
         browsing_history_list = await asyncio.gather(*[
             get_browsing_history(i, i + 100) for i in range(0, len(output), 100)
