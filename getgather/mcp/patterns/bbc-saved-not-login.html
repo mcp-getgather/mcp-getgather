@@ -1,6 +1,6 @@
 <html gg-domain="bbc" gg-priority="2">
   <body>
-    <span gg-match='span:has-text("Register for a BBC account")'></span>
-    <a gg-autoclick gg-match='button:has-text("Sign in")'></a>
+    <span gg-match='[aria-label^="Register"]'></span>
+    <a gg-autoclick gg-match='//span[contains(text(), "Sign In")]'></a>
   </body>
 </html>

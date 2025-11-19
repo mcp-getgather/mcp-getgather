@@ -80,7 +80,7 @@ async def capture_page_artifacts(
     return screenshot_path, html_path, html_content
 
 
-async def report_distill_error(
+async def zen_report_distill_error(
     *,
     error: Exception,
     page: zd.Tab | None,  # type: ignore[name-defined]
@@ -323,6 +323,10 @@ class Element:
             await self.xpath_click()
         await asyncio.sleep(0.25)
 
+    async def check(self) -> None:
+        logger.error("TODO: Element#check")
+        await asyncio.sleep(0.25)
+
     async def type_text(self, text: str) -> None:
         await self.element.clear_input()
         await asyncio.sleep(0.1)
@@ -487,8 +491,26 @@ async def distill(hostname: str | None, page: zd.Tab, patterns: list[Pattern]) -
         return match
 
 
+async def autoclick(page: zd.Tab, distilled: str, expr: str):
+    document = BeautifulSoup(distilled, "html.parser")
+    elements = document.select(expr)
+    for el in elements:
+        selector, _ = get_selector(str(el.get("gg-match")))
+        if selector:
+            target = await page_query_selector(page, selector)
+            if target:
+                logger.debug(f"Clicking {selector}")
+                await target.click()
+            else:
+                logger.warning(f"Selector {selector} not found, can't click on it")
+
+
 async def run_distillation_loop(
-    location: str, patterns: list[Pattern], browser: zd.Browser, timeout: int = 15
+    location: str,
+    patterns: list[Pattern],
+    browser: zd.Browser,
+    timeout: int = 15,
+    interactive: bool = True,
 ) -> tuple[bool, str, ConversionResult | None]:
     """Run the distillation loop with zendriver.
 
@@ -509,7 +531,7 @@ async def run_distillation_loop(
         await page.get(location)
     except Exception as error:
         logger.error(f"Failed to navigate to {location}: {error}")
-        await report_distill_error(
+        await zen_report_distill_error(
             error=error,
             page=page,
             profile_id=browser.id,  # type: ignore[attr-defined]
@@ -542,12 +564,16 @@ async def run_distillation_loop(
                     await page.close()
                     return (True, distilled, converted)
 
+                if interactive:
+                    await autoclick(page, distilled, "[gg-autoclick]")
+                    await autoclick(page, distilled, "button[type=submit]")
+
                 current.distilled = distilled
 
         else:
             logger.debug(f"No matched pattern found")
 
-    await report_distill_error(
+    await zen_report_distill_error(
         error=ValueError("No matched pattern found"),
         page=page,
         profile_id=browser.id,  # type: ignore[attr-defined]
