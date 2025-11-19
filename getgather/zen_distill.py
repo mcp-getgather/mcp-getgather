@@ -219,7 +219,7 @@ async def terminate_zendriver_browser(browser: zd.Browser):
 
 
 async def get_new_page(browser: zd.Browser) -> zd.Tab:
-    page = await browser.get()
+    page = await browser.get("about:blank", new_tab=True)
 
     if blocked_domains is None:
         await load_blocklists()
