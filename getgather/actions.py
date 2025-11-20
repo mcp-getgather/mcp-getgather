@@ -288,13 +288,6 @@ async def handle_graphql_response(
     return orders
 
 
-async def get_brand_function(brand_name: str, function_name: str) -> Any:
-    """Get a brand function by name."""
-    module_path = f"getgather.connectors.brand_specs.{brand_name}.functions"
-    module = importlib.import_module(module_path)
-    return getattr(module, function_name)
-
-
 async def get_label_text(
     page: Page, selector: str, *, iframe_selector: str | None = None, timeout: int | None = 2_000
 ) -> str | None:
