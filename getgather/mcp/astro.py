@@ -71,10 +71,9 @@ async def add_item_to_cart(product_url: str) -> dict[str, Any]:
 
 @astro_mcp.tool
 async def update_cart_quantity(product_name: str, quantity: int) -> dict[str, Any]:
-    print(f"DEBUGPRINT[44]: astro.py:73: product_name={product_name}")
     """Update cart item quantity on astro (set quantity to 0 to remove item). Use product name from cart summary."""
 
-    async def action(page: Page, _: BrowserProfile) -> dict[str, Any]:
+    async def action(page: Page, browser_profile: BrowserProfile) -> dict[str, Any]:
         await page.wait_for_selector("main.MuiBox-root")
 
         product_name_item = page.locator(f"span:has-text('{product_name}')")
@@ -87,15 +86,54 @@ async def update_cart_quantity(product_name: str, quantity: int) -> dict[str, An
                 "action": "update_failed",
             }
 
+        # Find the container that has the quantity controls
         item = product_name_item.locator("xpath=../..")
 
+        # Get current quantity
         quantity_element = item.locator("span.MuiTypography-body-small")
+        current_quantity_text = await quantity_element.text_content()
+        if not current_quantity_text:
+            return {
+                "success": False,
+                "message": f"Cannot find current quantity",
+                "product_name": product_name,
+                "action": "update_failed",
+            }
 
-        # Set the text content of the element
-        await quantity_element.evaluate(f"el => el.textContent = '{quantity}'")
+        current_quantity = int(current_quantity_text.strip())
 
-        final_quantity = await quantity_element.text_content()
+        # Calculate how many clicks we need
+        clicks_needed = quantity - current_quantity
 
-        return {"product_name": product_name, "quantity": final_quantity}
+        if clicks_needed == 0:
+            return {"product_name": product_name, "quantity": quantity, "action": "no_change"}
+
+        # Find the button container
+        button_container = item.locator("div.MuiBox-root.css-1aek3i0")
+
+        if clicks_needed > 0:
+            # Click increment button (plus button - last div)
+            increment_button = button_container.locator("div.MuiBox-root.css-70qvj9").nth(1)
+            for _ in range(clicks_needed):
+                await increment_button.click()
+                await page.wait_for_timeout(300)  # Small delay between clicks
+        else:
+            # Click decrement button (minus button - first div)
+            decrement_button = button_container.locator("div.MuiBox-root.css-70qvj9").nth(0)
+            for _ in range(abs(clicks_needed)):
+                await decrement_button.click()
+                await page.wait_for_timeout(300)  # Small delay between clicks
+
+        # Wait a bit for the final update to process
+        await page.wait_for_timeout(500)
+
+        # Get final quantity (if item still exists)
+        if quantity == 0:
+            # Item should be removed
+            return {"product_name": product_name, "quantity": 0, "action": "removed"}
+        else:
+            final_quantity_text = await quantity_element.text_content()
+            final_quantity = int(final_quantity_text.strip()) if final_quantity_text else 0
+            return {"product_name": product_name, "quantity": final_quantity, "action": "updated"}
 
     return await dpage_with_action(action=action, initial_url="https://www.astronauts.id/cart")
