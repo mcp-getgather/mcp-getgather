@@ -43,14 +43,14 @@ async def get_cart() -> dict[str, Any]:
 
 
 @wayfair_mcp.tool
-async def get_whishlists() -> dict[str, Any]:
-    """Get whishlists of wayfair."""
-    return await dpage_mcp_tool("https://www.wayfair.com/lists", "wayfair_whishlists", timeout=10)
+async def get_wishlists() -> dict[str, Any]:
+    """Get wishlists of wayfair."""
+    return await dpage_mcp_tool("https://www.wayfair.com/lists", "wayfair_wishlists", timeout=10)
 
 
 @wayfair_mcp.tool
-async def get_whishlist_details(url: str) -> dict[str, Any]:
-    """Get whishlist details of wayfair."""
+async def get_wishlist_details(url: str) -> dict[str, Any]:
+    """Get wishlist details of wayfair."""
     return await dpage_mcp_tool(
-        f"https://www.wayfair.com{url}", "wayfair_whishlist_details", timeout=10
+        f"https://www.wayfair.com{url}", "wayfair_wishlist_details", timeout=10
     )
