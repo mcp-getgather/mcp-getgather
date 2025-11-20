@@ -173,21 +173,12 @@ async def _create_zendriver_browser(id: str | None = None) -> zd.Browser:
     browser_args = ["--no-sandbox", "--start-maximized"]
 
     proxy = await setup_proxy(id, request_info.get())
-    proxy_username = None
-    proxy_password = None
     if proxy:
-        proxy_username = proxy["username"]
-        proxy_password = proxy["password"]
         proxy_server = proxy["server"]
         browser_args.append(f"--proxy-server={proxy_server}")
 
     browser = await zd.start(user_data_dir=str(user_data_dir), browser_args=browser_args)
     browser.id = id  # type: ignore[attr-defined]
-
-    if proxy_username or proxy_password:
-        logger.debug("Setting up proxy authentication...")
-        page = await browser.get("about:blank")
-        await install_proxy_handler(proxy_username or "", proxy_password or "", page)
 
     return browser
 
@@ -288,7 +279,19 @@ async def get_new_page(browser: zd.Browser, location: str = "about:blank") -> zd
             else:
                 raise
 
+    id = cast(str, browser.id)  # type: ignore[attr-defined]
+    proxy = await setup_proxy(id, request_info.get())
+    proxy_username = None
+    proxy_password = None
+    if proxy:
+        proxy_username = proxy["username"]
+        proxy_password = proxy["password"]
+        if proxy_username or proxy_password:
+            logger.debug("Setting up proxy authentication...")
+            await install_proxy_handler(proxy_username or "", proxy_password or "", page)
+
     page.add_handler(zd.cdp.fetch.RequestPaused, handle_request)  # type: ignore[reportUnknownMemberType]
+
     return page
 
 
