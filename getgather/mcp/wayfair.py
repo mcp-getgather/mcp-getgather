@@ -40,3 +40,17 @@ async def get_cart() -> dict[str, Any]:
     return await dpage_mcp_tool(
         "https://www.wayfair.com/v/checkout/basket/show", "wayfair_cart", timeout=10
     )
+
+
+@wayfair_mcp.tool
+async def get_whishlists() -> dict[str, Any]:
+    """Get whishlists of wayfair."""
+    return await dpage_mcp_tool("https://www.wayfair.com/lists", "wayfair_whishlists", timeout=10)
+
+
+@wayfair_mcp.tool
+async def get_whishlist_details(url: str) -> dict[str, Any]:
+    """Get whishlist details of wayfair."""
+    return await dpage_mcp_tool(
+        f"https://www.wayfair.com{url}", "wayfair_whishlist_details", timeout=10
+    )
