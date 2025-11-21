@@ -43,7 +43,7 @@ class BrowserSession:
         self.profile: BrowserProfile = BrowserProfile(id=profile_id)
         self._playwright: Playwright | None = None
         self._context: BrowserContext | None = None
-        self.launch_timestamp: datetime | None = None
+        self.last_active_timestamp: datetime | None = None
 
         self.session_id = generate(FRIENDLY_CHARS, 8)
         self.total_event = 0
@@ -69,13 +69,19 @@ class BrowserSession:
         assert self._playwright is not None, "Browser session not started"
         return self._playwright
 
+    def _update_last_active(self):
+        """Update the last active timestamp for this session."""
+        self.last_active_timestamp = datetime.now()
+
     async def new_page(self) -> Page:
         logger.info(f"Creating new page in context with profile {self.profile.id}")
+        self._update_last_active()
         page = await self.context.new_page()
         return add_retry_to_page_goto(page)
 
     async def page(self) -> Page:
         # TODO: It's okay for now to return the last page. We may want to track all pages in the future.
+        self._update_last_active()
         if self.context.pages and len(self.context.pages) > 0:
             logger.info(f"Returning existing page in context with profile {self.profile.id}")
             return self.context.pages[-1]
@@ -101,11 +107,11 @@ class BrowserSession:
                     profile_id=self.profile.id, browser_type=self.playwright.chromium
                 )
 
-                # Set launch timestamp and safely register the session at the end
-                self.launch_timestamp = datetime.now()
+                # Set last active timestamp and safely register the session at the end
+                self.last_active_timestamp = datetime.now()
                 self._sessions[self.profile.id] = self
                 logger.info(
-                    f"Session {self.profile.id} registered in sessions with launch_timestamp {self.launch_timestamp}"
+                    f"Session {self.profile.id} registered in sessions with last_active_timestamp {self.last_active_timestamp}"
                 )
 
                 await configure_context(self._context)
