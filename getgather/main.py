@@ -81,7 +81,7 @@ logfire.configure(
         repository="https://github.com/mcp-getgather/mcp-getgather", revision="main"
     ),
 )
-logfire.instrument_fastapi(app)
+logfire.instrument_fastapi(app, capture_headers=True)
 
 
 STATIC_ASSETS_DIR = Path(__file__).parent / "static" / "assets"
