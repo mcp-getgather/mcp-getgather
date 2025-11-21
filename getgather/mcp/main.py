@@ -18,7 +18,7 @@ from getgather.mcp.activity import activity
 from getgather.mcp.auto_import import auto_import
 from getgather.mcp.brand_state import BrandState, brand_state_manager
 from getgather.mcp.calendar_utils import calendar_mcp
-from getgather.mcp.dpage import dpage_check, dpage_finalize
+from getgather.mcp.dpage import dpage_check, dpage_finalize, dpage_mcp_tool
 from getgather.mcp.registry import BrandMCPBase, GatherMCP
 from getgather.mcp.shared import poll_status_hosted_link, signin_hosted_link
 
@@ -219,6 +219,10 @@ def _create_mcp_app(bundle_name: str, brand_ids: list[BrandIdEnum | str]):
             "status": "SUCCESS",
             "message": "Sign in finalized successfully.",
         }
+
+    @mcp.tool(tags={"general_tool"})
+    async def get_browser_ip_address() -> dict[str, Any]:  # pyright: ignore[reportUnusedFunction]
+        return await dpage_mcp_tool(initial_url="https://ifconfig.me/", result_key="ip_address")
 
     for brand_id in brand_ids:
         brand_id_str = brand_id.value if isinstance(brand_id, BrandIdEnum) else brand_id
