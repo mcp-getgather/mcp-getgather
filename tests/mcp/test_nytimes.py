@@ -14,7 +14,6 @@ config = {
 
 @pytest.mark.mcp
 @pytest.mark.asyncio
-@pytest.mark.xfail(reason="Flaky test")
 async def test_nytimes_get_bestsellers_list():
     """Test get bestsellers list from NY Times."""
     client = Client(config)
