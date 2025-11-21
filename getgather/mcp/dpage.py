@@ -484,12 +484,11 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
     if logger.isEnabledFor(logging.DEBUG):
         await zen_capture_page_artifacts(page, identifier=id, prefix="dpage_debug")
 
+    hostname: str | None = getattr(page, "hostname", None)  # type: ignore[assignment]
+
     for iteration in range(max):
         logger.debug(f"Iteration {iteration + 1} of {max}")
         await asyncio.sleep(TICK)
-
-        location = page.url
-        hostname = str(urllib.parse.urlparse(location).hostname)
 
         match = await zen_distill(hostname, page, patterns)
         if not match:
@@ -628,6 +627,8 @@ async def zen_dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2
             return {result_key: distillation_result}
 
     page = await get_new_page(browser)
+    page.hostname = urllib.parse.urlparse(initial_url).hostname  # type: ignore[attr-defined]
+
     id = await dpage_add(page, initial_url, browser.id)  # type: ignore[attr-defined]
 
     if incognito:
