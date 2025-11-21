@@ -5,15 +5,15 @@ import pkgutil
 import sys
 from typing import Any
 
-from getgather.mcp.registry import BrandMCPBase, GatherMCP
+from getgather.mcp.registry import GatherMCP
 
 
 def has_mcp_class(module: Any) -> bool:
-    """Check if a module contains a class that inherits from BrandMCPBase or GatherMCP."""
+    """Check if a module contains a class that inherits from GatherMCP."""
     for _, obj in inspect.getmembers(module):
         if inspect.isclass(obj):
             try:
-                if issubclass(obj, BrandMCPBase) or issubclass(obj, GatherMCP):
+                if issubclass(obj, GatherMCP):
                     return True
             except TypeError:
                 # Skip if obj cannot be used with issubclass
@@ -35,7 +35,7 @@ def check_module_source_for_mcp(module_name: str) -> bool:
         # Check for imports in the source file
         with open(module_spec.origin, "r") as f:
             source = f.read()
-        return "import BrandMCPBase" in source or "import GatherMCP" in source
+        return "import GatherMCP" in source
 
     except Exception:
         # If we can't check the source, assume it might have an MCP class
