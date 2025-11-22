@@ -104,12 +104,6 @@ class AuthMiddleware(Middleware):
             return ToolResult(structured_content=result)
 
 
-CATEGORY_BUNDLES: dict[str, list[str]] = {
-    "books": [],
-    "shopping": ["astro"],
-    "media": [],
-}
-
 MCP_BUNDLES: dict[str, list[str]] = {
     "media": ["bbc", "cnn", "espn", "groundnews", "npr", "nytimes"],
     "books": ["goodreads"],
@@ -131,9 +125,6 @@ class MCPApp:
 
 @cache
 def create_mcp_apps() -> list[MCPApp]:
-    # Discover and import all brand MCP modules (registers into BrandMCPBase.registry)
-    auto_import("getgather.mcp.brand")
-
     auto_import("getgather.mcp")  # Import distillation-based MCPs
 
     apps: list[MCPApp] = []
@@ -170,16 +161,6 @@ def create_mcp_apps() -> list[MCPApp]:
         )
         for brand_id in GatherMCP.registry.keys()
         if brand_id not in [b.value for b in BrandMCPBase.registry.keys()]
-    ])
-    apps.extend([
-        MCPApp(
-            name=category,
-            type="category",
-            route=f"/mcp-{category}",
-            brand_ids=[BrandIdEnum(brand_id) for brand_id in brand_ids]
-            + MCP_BUNDLES.get(category, []),
-        )
-        for category, brand_ids in CATEGORY_BUNDLES.items()
     ])
 
     return apps
