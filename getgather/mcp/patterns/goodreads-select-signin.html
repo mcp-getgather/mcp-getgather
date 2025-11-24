@@ -1,8 +1,7 @@
-<html gg-domain="goodreads">
+<html gg-domain="goodreads" gg-priority="3">
   <body>
-    <button gg-match=".thirdPartyConnectButton">Third Party</button>
-    <button gg-match=".appleConnectButton">Apple</button>
-    <button gg-match=".amazonSignInButton">Amazon</button>
-    <a gg-autoclick gg-match="button.authPortalSignInButton">Email sign-in</a>
+    <p gg-match=".amazonConnectButton">Amazon</p>
+    <p gg-optional gg-match=".appleConnectButton">Apple</p>
+    <p gg-autoclick gg-match="//button[contains(text(), 'Sign in')]">Sign in</p>
   </body>
 </html>
