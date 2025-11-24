@@ -206,37 +206,174 @@ async def dpage_get_purchase_history_with_details(
         if orders is None:
             return {"amazon_purchase_history": []}
 
-        async def get_order_details(order_id: str):
-            url = f"https://www.amazon.com/gp/css/summary/print.html?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_invoice_pos"
-            prices = await page.evaluate(f"""
-                    async () => {{
-                        const res = await fetch('{url}', {{
-                            method: 'GET',
-                            credentials: 'include',
-                        }});
-                        const text = await res.text();
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(text, 'text/html');
-                        doc.querySelectorAll('script').forEach(s => s.remove());
+        async def get_order_details(order: dict[str, Any]):
+            order_id = order["order_id"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            store_logo = order.get("store_logo")  # pyright: ignore[reportTypedDictNotRequiredAccess]
 
-                        const rows = doc.querySelectorAll("div.a-fixed-left-grid");
-                        const prices = Array.from(rows)
-                            .map(row => row.querySelector("span.a-price span.a-offscreen")?.textContent?.trim())
-                            .filter(Boolean);
-                        return prices;
-                    }}
-                """)
-            return {"order_id": order_id, "prices": prices}
+            # Determine order type based on brand logo alt text
+            order_type = "regular"
+            if store_logo:
+                store_logo_text = str(store_logo).lower()
+                if "whole foods" in store_logo_text:
+                    order_type = "wholefoods"
+                elif "fresh" in store_logo_text:
+                    order_type = "fresh"
+
+            match order_type:
+                case "wholefoods":
+                    # Use Whole Foods URL format
+                    url = f"https://www.amazon.com/fopo/order-details?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_wwgs_wfm_ATVPDKIKX0DER&page=itemmod"
+                    result = await page.evaluate(f"""
+                        async () => {{
+                            const res = await fetch('{url}', {{
+                                method: 'GET',
+                                credentials: 'include',
+                            }});
+                            const text = await res.text();
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(text, 'text/html');
+                            doc.querySelectorAll('script').forEach(s => s.remove());
+
+                            const itemRows = doc.querySelectorAll('div.a-row.a-spacing-base');
+                            const prices = [];
+                            const productNames = [];
+                            const productUrls = [];
+                            const imageUrls = [];
+
+                            itemRows.forEach(row => {{
+                                const productLink = row.querySelector('div.a-column.a-span10 > a.a-size-small.a-link-normal');
+                                if (productLink) {{
+                                    const name = productLink.textContent?.trim();
+                                    if (name) {{
+                                        productNames.push(name);
+                                    }}
+                                    const href = productLink.getAttribute('href');
+                                    if (href) {{
+                                        productUrls.push(href);
+                                    }}
+                                }}
+
+                                const priceSpan = row.querySelector('div.a-column.a-span2.a-span-last div.a-text-right span.a-size-small');
+                                if (priceSpan) {{
+                                    prices.push(priceSpan.textContent?.trim() || '');
+                                }}
+
+                                const img = row.querySelector('img.ufpo-itemListWidget-image');
+                                if (img) {{
+                                    const src = img.getAttribute('src') || img.getAttribute('data-a-hires');
+                                    if (src) {{
+                                        imageUrls.push(src);
+                                    }}
+                                }}
+                            }});
+
+                            return {{
+                                prices,
+                                productNames,
+                                productUrls,
+                                imageUrls
+                            }};
+                        }}
+                    """)
+                    return {"order_id": order_id, **result}
+
+                case "fresh":
+                    # Use Fresh URL format
+                    url = f"https://www.amazon.com/uff/your-account/order-details?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_wwgs_yo_odp_A1VC38T7YXB528&page=itemmod"
+                    result = await page.evaluate(f"""
+                        async () => {{
+                            const res = await fetch('{url}', {{
+                                method: 'GET',
+                                credentials: 'include',
+                            }});
+                            const text = await res.text();
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(text, 'text/html');
+                            doc.querySelectorAll('script').forEach(s => s.remove());
+
+                            const itemRows = doc.querySelectorAll('div[id$="-item-grid-row"]');
+                            const prices = [];
+                            const productNames = [];
+                            const productUrls = [];
+                            const imageUrls = [];
+
+                            itemRows.forEach(row => {{
+                                const priceSpan = row.querySelector('span[id$="-item-total-price"]');
+                                if (priceSpan) {{
+                                    prices.push(priceSpan.textContent?.trim() || '');
+                                }}
+
+                                const productLink = row.querySelector('a.a-link-normal.a-text-normal');
+                                if (productLink) {{
+                                    const nameSpan = productLink.querySelector('span');
+                                    if (nameSpan) {{
+                                        const name = nameSpan.textContent?.trim();
+                                        if (name) {{
+                                            productNames.push(name);
+                                        }}
+                                    }}
+                                    const href = productLink.getAttribute('href');
+                                    if (href) {{
+                                        productUrls.push(href);
+                                    }}
+                                }}
+
+                                const img = row.querySelector('div.ufpo-item-image-column img');
+                                if (img) {{
+                                    const src = img.getAttribute('src') || img.getAttribute('data-a-hires');
+                                    if (src) {{
+                                        imageUrls.push(src);
+                                    }}
+                                }}
+                            }});
+
+                            return {{
+                                prices,
+                                productNames,
+                                productUrls,
+                                imageUrls
+                            }};
+                        }}
+                    """)
+                    return {"order_id": order_id, **result}
+
+                case _:
+                    # Use regular order URL format
+                    url = f"https://www.amazon.com/gp/css/summary/print.html?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_invoice_pos"
+                    prices = await page.evaluate(f"""
+                        async () => {{
+                            const res = await fetch('{url}', {{
+                                method: 'GET',
+                                credentials: 'include',
+                            }});
+                            const text = await res.text();
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(text, 'text/html');
+                            doc.querySelectorAll('script').forEach(s => s.remove());
+
+                            const rows = doc.querySelectorAll("div.a-fixed-left-grid");
+                            const prices = Array.from(rows)
+                                .map(row => row.querySelector("span.a-price span.a-offscreen")?.textContent?.trim())
+                                .filter(Boolean);
+                            return prices;
+                        }}
+                    """)
+                    return {"order_id": order_id, "prices": prices}
 
         try:
-            order_prices_list = await asyncio.gather(*[
-                get_order_details(order["order_id"])  # pyright: ignore[reportArgumentType]
-                for order in orders
+            order_details_list = await asyncio.gather(*[
+                get_order_details(order) for order in orders
             ])
-            order_prices = {item["order_id"]: item["prices"] for item in order_prices_list}
+            order_details = {item["order_id"]: item for item in order_details_list}
             for order in orders:
-                if order_prices[order["order_id"]] is not None:
-                    order["product_prices"] = order_prices[order["order_id"]]
+                details = order_details[order["order_id"]]
+                if details.get("prices") is not None:
+                    order["product_prices"] = details["prices"]
+                # For Fresh/Whole Foods orders, replace product information with the complete details
+                if order.get("store_logo") and details.get("productNames"):
+                    order["product_names"] = details["productNames"]
+                    order["product_urls"] = details["productUrls"]
+                    order["image_urls"] = details["imageUrls"]
         except Exception as e:
             logger.error(f"Error getting order details for order: {e}")
             pass
