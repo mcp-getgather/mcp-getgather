@@ -1,0 +1,28 @@
+"""Tests for ESPN Tools: get_schedule."""
+
+import json
+import os
+
+import pytest
+from fastmcp import Client
+from mcp.types import TextContent
+
+config = {
+    "mcpServers": {"getgather": {"url": f"{os.environ.get('HOST', 'http://localhost:23456')}/mcp"}}
+}
+
+
+@pytest.mark.mcp
+@pytest.mark.asyncio
+async def test_espn_get_schedule():
+    """Test get schedule from ESPN."""
+    client = Client(config)
+    async with client:
+        mcp_call_result = await client.call_tool("espn_get_schedule")
+        assert isinstance(mcp_call_result.content[0], TextContent), (
+            f"Expected TextContent, got {type(mcp_call_result.content[0])}"
+        )
+        parsed_mcp_call_result = json.loads(mcp_call_result.content[0].text)
+        schedule = parsed_mcp_call_result.get("college_football_schedule")
+        assert schedule, "Expected 'college_football_schedule' to be non-empty"
+        assert isinstance(schedule, list), f"Expected list, got {type(schedule)}"
