@@ -2,7 +2,7 @@
   <body>
     <div
       gg-stop
-      gg-match-html=".AccountDetails-content:has-text('No orders are available.') span"
+      gg-match-html="//div[contains(@class,'AccountDetails-content') and contains(text(),'No orders')]//span"
     ></div>
   </body>
 </html>
