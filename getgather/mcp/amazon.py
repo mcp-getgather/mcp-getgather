@@ -68,6 +68,18 @@ async def get_browsing_history() -> dict[str, Any]:
         if "signin" in current_url:
             raise Exception("User is not signed in")
 
+        await page.wait_for_load_state("domcontentloaded")
+        is_empty = await page.locator(
+            "span:has-text('You have no recently viewed items.')"
+        ).is_visible()
+        if is_empty:
+            return {"browsing_history_data": []}
+
+        await page.goto(
+            "https://www.amazon.com/gp/history?ref_=nav_AccountFlyout_browsinghistory",
+            wait_until="commit",
+        )
+
         def _url_matches(resp: Response) -> bool:
             """Predicate that checks if the response URL contains the predicate string."""
 
