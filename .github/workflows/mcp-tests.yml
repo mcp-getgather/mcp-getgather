@@ -39,3 +39,5 @@ jobs:
           HOST: http://localhost:23456
           BBC_EMAIL: ${{ secrets.BBC_EMAIL }}
           BBC_PASSWORD: ${{ secrets.BBC_PASSWORD }}
+          GOODREADS_EMAIL: ${{ secrets.GOODREADS_EMAIL }}
+          GOODREADS_PASSWORD: ${{ secrets.GOODREADS_PASSWORD }}
