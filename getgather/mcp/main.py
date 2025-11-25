@@ -11,7 +11,6 @@ from pydantic import BaseModel
 
 from getgather.api.types import RequestInfo, request_info
 from getgather.logs import logger
-from getgather.mcp.activity import activity
 from getgather.mcp.auto_import import auto_import
 from getgather.mcp.calendar_utils import calendar_mcp
 from getgather.mcp.dpage import dpage_check, dpage_finalize, dpage_mcp_tool
@@ -59,19 +58,12 @@ class LocationProxyMiddleware(Middleware):
         tool = await context.fastmcp_context.fastmcp.get_tool(context.message.name)  # type: ignore
 
         if "general_tool" in tool.tags:
-            async with activity(
-                name=context.message.name,
-            ):
-                return await call_next(context)
+            return await call_next(context)
 
         brand_id = context.message.name.split("_")[0]
         context.fastmcp_context.set_state("brand_id", brand_id)
 
-        async with activity(
-            brand_id=brand_id,
-            name=context.message.name,
-        ):
-            return await call_next(context)
+        return await call_next(context)
 
 
 MCP_BUNDLES: dict[str, list[str]] = {
