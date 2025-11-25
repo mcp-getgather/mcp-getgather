@@ -3,9 +3,7 @@
     <title>Revolve Carts</title>
   </head>
   <body>
-    <div
-      gg-match="p:has-text('Your shopping bag is empty.  Start shopping and check out our new arrivals.')"
-    ></div>
+    <div gg-match="//p[contains(text(), 'Your shopping bag is empty')]"></div>
     <a gg-autoclick gg-match="a#js-header-signin-link"></a>
   </body>
 </html>
