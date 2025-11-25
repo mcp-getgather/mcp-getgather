@@ -480,6 +480,8 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
     max = TIMEOUT // TICK
 
     current = Match(name="", priority=-1, distilled="")
+    current_pattern_name: str | None = None
+    has_submitted_in_pattern = False
 
     if logger.isEnabledFor(logging.DEBUG):
         await zen_capture_page_artifacts(page, identifier=id, prefix="dpage_debug")
@@ -498,6 +500,12 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
         if match.distilled == current.distilled:
             logger.info(f"Still the same: {match.name}")
             continue
+
+        # Track pattern changes and reset submitted flag for new patterns
+        if match.name != current_pattern_name:
+            logger.debug(f"Pattern changed from {current_pattern_name} to {match.name}")
+            current_pattern_name = match.name
+            has_submitted_in_pattern = False
 
         current = match
         distilled = match.distilled
@@ -589,9 +597,17 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
             if len(names) > 0 and len(inputs) == len(names):
                 logger.info("Submitting form, all fields are filled...")
                 await zen_autoclick(page, distilled, SUBMIT_BUTTON)
+                has_submitted_in_pattern = True
                 continue
-            logger.warning("Not all form fields are filled")
-            return HTMLResponse(render(str(document.find("body")), options))
+
+            # Only return early if we haven't submitted yet in this pattern
+            if not has_submitted_in_pattern:
+                logger.warning("Not all form fields are filled")
+                return HTMLResponse(render(str(document.find("body")), options))
+
+            logger.debug(
+                "Form already submitted in this pattern, continuing to poll for navigation..."
+            )
 
     raise HTTPException(status_code=503, detail="Timeout reached")
 
