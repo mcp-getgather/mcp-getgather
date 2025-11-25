@@ -11,6 +11,7 @@ from urllib.parse import urlunparse
 
 import nanoid
 import sentry_sdk
+import websockets
 import zendriver as zd
 from bs4 import BeautifulSoup, Tag
 from nanoid import generate
@@ -256,9 +257,13 @@ async def get_new_page(browser: zd.Browser, location: str = "about:blank") -> zd
         if not should_deny:
             try:
                 await page.send(zd.cdp.fetch.continue_request(request_id=event.request_id))
-            except ProtocolException as e:
-                if "Invalid state for continueInterceptedRequest" in str(e):
+            except (ProtocolException, websockets.ConnectionClosedError) as e:
+                if isinstance(
+                    e, ProtocolException
+                ) and "Invalid state for continueInterceptedRequest" in str(e):
                     logger.debug(f"Request already processed: {request_url}")
+                elif isinstance(e, websockets.ConnectionClosedError):
+                    logger.debug(f"Page closed while continuing request: {request_url}")
                 else:
                     raise
             return
@@ -273,9 +278,13 @@ async def get_new_page(browser: zd.Browser, location: str = "about:blank") -> zd
                     error_reason=zd.cdp.network.ErrorReason.BLOCKED_BY_CLIENT,
                 )
             )
-        except ProtocolException as e:
-            if "Invalid state for continueInterceptedRequest" in str(e):
+        except (ProtocolException, websockets.ConnectionClosedError) as e:
+            if isinstance(
+                e, ProtocolException
+            ) and "Invalid state for continueInterceptedRequest" in str(e):
                 logger.debug(f"Request already processed: {request_url}")
+            elif isinstance(e, websockets.ConnectionClosedError):
+                logger.debug(f"Page closed while blocking request: {request_url}")
             else:
                 raise
 
