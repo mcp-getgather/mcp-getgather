@@ -3,8 +3,8 @@
     <title>Shopee Home</title>
   </head>
   <body>
-    <div gg-match="div:has-text('Kategori')"></div>
-    <div gg-match="span:has-text('REKOMENDASI')"></div>
+    <div gg-match="//div[contains(text(), 'Kategori')]"></div>
+    <div gg-match="//span[contains(text(), 'REKOMENDASI')]"></div>
     <button gg-autoclick gg-match="div.navbar__username"></button>
   </body>
 </html>
