@@ -5,6 +5,7 @@ import os
 import urllib.parse
 from typing import Any
 
+import zendriver as zd
 from bs4 import BeautifulSoup, Tag
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
@@ -30,27 +31,43 @@ from getgather.distill import (
 )
 from getgather.logs import logger
 from getgather.mcp.html_renderer import DEFAULT_TITLE, render_form
+from getgather.zen_distill import (
+    autoclick as zen_autoclick,
+    capture_page_artifacts as zen_capture_page_artifacts,
+    distill as zen_distill,
+    get_new_page,
+    init_zendriver_browser,
+    page_query_selector,
+    run_distillation_loop as zen_run_distillation_loop,
+    terminate_zendriver_browser,
+    zen_report_distill_error,
+)
 
 router = APIRouter(prefix="/dpage", tags=["dpage"])
 
 
-active_pages: dict[str, Page] = {}
+active_pages: dict[str, Page | zd.Tab] = {}
 distillation_results: dict[str, str | list[dict[str, str | list[str]]] | dict[str, Any]] = {}
 pending_actions: dict[str, dict[str, Any]] = {}  # Store actions to resume after signin
+
+# Patchright
 incognito_browser_profiles: dict[str, BrowserProfile] = {}
 global_browser_profile: BrowserProfile | None = None
 
+# Zendriver
+incognito_browsers: dict[str, zd.Browser] = {}
+zen_global_browser: zd.Browser | None = None
 
-async def dpage_add(browser_profile: BrowserProfile, location: str):
-    FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
+FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
+
+
+async def dpage_add(page: Page | zd.Tab, location: str, profile_id: str | None = None):
+    if isinstance(page, zd.Tab):
+        return await zen_dpage_add(page, location, profile_id)
+
     id = generate(FRIENDLY_CHARS, 8)
     if settings.HOSTNAME:
         id = f"{settings.HOSTNAME}-{id}"
-
-    session = BrowserSession.get(browser_profile)
-
-    session = await session.start()
-    page = await session.context.new_page()
 
     try:
         if not location.startswith("http"):
@@ -61,7 +78,30 @@ async def dpage_add(browser_profile: BrowserProfile, location: str):
         await report_distill_error(
             error=error,
             page=page,
-            profile_id=browser_profile.id,
+            profile_id=profile_id or "unknown",
+            location=location,
+            hostname=hostname,
+            iteration=0,
+        )
+    active_pages[id] = page
+    return id
+
+
+async def zen_dpage_add(page: zd.Tab, location: str, profile_id: str | None = None):
+    id = generate(FRIENDLY_CHARS, 8)
+    if settings.HOSTNAME:
+        id = f"{settings.HOSTNAME}-{id}"
+
+    try:
+        if not location.startswith("http"):
+            location = f"https://{location}"
+        await page.get(location)
+    except Exception as error:
+        hostname = urllib.parse.urlparse(location).hostname or "unknown"
+        await zen_report_distill_error(
+            error=error,
+            page=page,
+            profile_id=profile_id or "unknown",
             location=location,
             hostname=hostname,
             iteration=0,
@@ -96,6 +136,18 @@ async def dpage_finalize(id: str):
     if id in incognito_browser_profiles:
         await BrowserSession.get(incognito_browser_profiles[id]).stop()
         del incognito_browser_profiles[id]
+        return True
+    elif id in incognito_browsers:
+        browser = incognito_browsers[id]
+        await terminate_zendriver_browser(browser)
+        return True
+    raise ValueError(f"Browser profile for signin {id} not found in incognito browser profiles")
+
+
+async def zen_dpage_finalize(id: str):
+    if id in incognito_browsers:
+        browser = incognito_browsers[id]
+        await terminate_zendriver_browser(browser)
         return True
     raise ValueError(f"Browser profile for signin {id} not found in incognito browser profiles")
 
@@ -146,6 +198,8 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
         raise HTTPException(status_code=404, detail="Page not found")
 
     page = active_pages[id]
+    if isinstance(page, zd.Tab):
+        return await zen_post_dpage(page, id, request)
 
     form_data = await request.form()
     fields: dict[str, str] = {k: str(v) for k, v in form_data.items()}
@@ -379,10 +433,206 @@ async def dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) ->
             return {result_key: distillation_result}
 
     # If that didn't work, try signing in via distillation
-    id = await dpage_add(browser_profile, initial_url)
+    session = BrowserSession.get(browser_profile)
+    await session.start()
+    page = await session.context.new_page()
+    id = await dpage_add(page, initial_url, browser_profile.id)
 
     if incognito:
         incognito_browser_profiles[id] = browser_profile
+
+    host = headers.get("x-forwarded-host") or headers.get("host")
+    if host is None:
+        logger.warning("Missing Host header; defaulting to localhost")
+        base_url = "http://localhost:23456"
+    else:
+        default_scheme = "http" if is_local_address(host) else "https"
+        scheme = headers.get("x-forwarded-proto", default_scheme)
+        base_url = f"{scheme}://{host}"
+
+    url = f"{base_url}/dpage/{id}"
+    logger.info(f"Continue with the sign in at {url}", extra={"url": url, "id": id})
+    return {
+        "url": url,
+        "message": f"Continue to sign in in your browser at {url}.",
+        "signin_id": id,
+        "system_message": (
+            f"Try open the url {url} in a browser with a tool if available."
+            "Give the url to the user so the user can open it manually in their browser."
+            "Then call check_signin tool with the signin_id to check if the sign in process is completed. "
+            "Once it is completed successfully, then call this tool again to proceed with the action."
+        ),
+    }
+
+
+async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLResponse:
+    form_data = await request.form()
+    fields: dict[str, str] = {k: str(v) for k, v in form_data.items()}
+
+    path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
+    patterns = load_distillation_patterns(path)
+
+    logger.info(f"Continuing distillation for page {id}...")
+    logger.debug(f"Available distillation patterns: {len(patterns)}")
+
+    TICK = 1  # seconds
+    TIMEOUT = 15  # seconds
+    max = TIMEOUT // TICK
+
+    current = Match(name="", priority=-1, distilled="")
+
+    if logger.isEnabledFor(logging.DEBUG):
+        await zen_capture_page_artifacts(page, identifier=id, prefix="dpage_debug")
+
+    hostname: str | None = getattr(page, "hostname", None)  # type: ignore[assignment]
+
+    for iteration in range(max):
+        logger.debug(f"Iteration {iteration + 1} of {max}")
+        await asyncio.sleep(TICK)
+
+        match = await zen_distill(hostname, page, patterns)
+        if not match:
+            logger.info("No matched pattern found")
+            continue
+
+        if match.distilled == current.distilled:
+            logger.info(f"Still the same: {match.name}")
+            continue
+
+        current = match
+        distilled = match.distilled
+
+        title_element = BeautifulSoup(distilled, "html.parser").find("title")
+        title = title_element.get_text() if title_element is not None else DEFAULT_TITLE
+        action = f"/dpage/{id}"
+        options = {"title": title, "action": action}
+
+        if await terminate(distilled):
+            logger.info("Finished!")
+            converted = await convert(distilled)
+            await dpage_close(id)
+            if converted is not None:
+                print(converted)
+                distillation_results[id] = converted
+            else:
+                logger.info("No conversion found")
+                distillation_results[id] = distilled
+            return HTMLResponse(render(FINISHED_MSG, options))
+
+        names: list[str] = []
+        document = BeautifulSoup(distilled, "html.parser")
+        inputs = document.find_all("input")
+
+        if fields.get("button"):
+            button = document.find("button", value=str(fields.get("button")))
+            if button:
+                logger.info(f"Clicking button button[value={fields.get('button')}]")
+                await zen_autoclick(page, distilled, f"button[value={fields.get('button')}]")
+                continue
+
+        for input in inputs:
+            if isinstance(input, Tag):
+                gg_match = input.get("gg-match")
+                element = await page_query_selector(
+                    page, selector=str(gg_match) if gg_match is not None else ""
+                )
+                name = input.get("name")
+                input_type = input.get("type")
+
+                if element:
+                    if input_type == "checkbox":
+                        if not name:
+                            logger.warning(f"No name for the checkbox {gg_match}")
+                            continue
+                        value = fields.get(str(name))
+                        checked = value and len(str(value)) > 0
+                        names.append(str(name))
+                        logger.info(f"Status of checkbox {name}={checked}")
+                        await element.check()
+                    elif input_type == "radio":
+                        if name is not None:
+                            name_str = str(name)
+                            value = fields.get(name_str)
+                            if not value or len(value) == 0:
+                                logger.warning(f"No form data found for radio button group {name}")
+                                continue
+                            radio = document.find("input", {"type": "radio", "id": str(value)})
+                            if not radio or not isinstance(radio, Tag):
+                                logger.warning(f"No radio button found with id {value}")
+                                continue
+                            logger.info(f"Handling radio button group {name}")
+                            logger.info(f"Using form data {name}={value}")
+                            radio_element = await page_query_selector(
+                                page, selector=str(radio.get("gg-match"))
+                            )
+                            if radio_element:
+                                await radio_element.check()
+                                radio["checked"] = "checked"
+                                current.distilled = str(document)
+                                names.append(str(input.get("id")) if input.get("id") else "radio")
+                    elif name is not None:
+                        name_str = str(name)
+                        value = fields.get(name_str)
+                        if value and len(value) > 0:
+                            logger.info(f"Using form data {name}")
+                            names.append(name_str)
+                            input["value"] = value
+                            current.distilled = str(document)
+                            await element.type_text(value)
+                            del fields[name_str]
+                        else:
+                            logger.info(f"No form data found for {name}")
+
+        await zen_autoclick(page, distilled, "[gg-autoclick]:not(button)")
+        SUBMIT_BUTTON = "button[gg-autoclick], button[type=submit]"
+        if document.select(SUBMIT_BUTTON):
+            if len(names) > 0 and len(inputs) == len(names):
+                logger.info("Submitting form, all fields are filled...")
+                await zen_autoclick(page, distilled, SUBMIT_BUTTON)
+                continue
+            logger.warning("Not all form fields are filled")
+            return HTMLResponse(render(str(document.find("body")), options))
+
+    raise HTTPException(status_code=503, detail="Timeout reached")
+
+
+async def zen_dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2) -> dict[str, Any]:
+    """Generic MCP tool based on distillation with Zendriver"""
+    path = os.path.join(os.path.dirname(__file__), "patterns", "**/*.html")
+    patterns = load_distillation_patterns(path)
+
+    headers = get_http_headers(include_all=True)
+    incognito = headers.get("x-incognito", "0") == "1"
+    signin_id = headers.get("x-signin-id") or None
+
+    browser = None
+    if incognito:
+        browser = await init_zendriver_browser(signin_id)
+    else:
+        global zen_global_browser
+        if zen_global_browser is None:
+            logger.info("Creating global browser for Zendriver...")
+            zen_global_browser = await init_zendriver_browser()
+            await get_new_page(zen_global_browser)
+            logger.info(f"Global browser created with id {zen_global_browser.id}")  # type: ignore[attr-defined]
+        browser = zen_global_browser
+
+    if not incognito or signin_id is not None:
+        # First, try without any interaction as this will work if the user signed in previously
+        terminated, distilled, converted = await zen_run_distillation_loop(
+            initial_url, patterns, browser, timeout, interactive=False
+        )
+        if terminated:
+            distillation_result = converted if converted is not None else distilled
+            return {result_key: distillation_result}
+
+    page = await get_new_page(browser)
+    page.hostname = urllib.parse.urlparse(initial_url).hostname  # type: ignore[attr-defined]
+
+    id = await dpage_add(page, initial_url, browser.id)  # type: ignore[attr-defined]
+
+    if incognito:
+        incognito_browsers[id] = browser
 
     host = headers.get("x-forwarded-host") or headers.get("host")
     if host is None:
@@ -437,7 +687,10 @@ async def dpage_with_action(
         logger.info(f"Resuming action after signin with page_id={_page_id}")
         page = active_pages[_page_id]
         action_info = pending_actions[_page_id]
-        await page.goto(initial_url, wait_until="commit")
+        if isinstance(page, Page):
+            await page.goto(initial_url, wait_until="commit")
+        else:
+            await page.get(initial_url)
         result = await action(page, action_info["browser_profile"])
         return result
 
@@ -474,7 +727,10 @@ async def dpage_with_action(
             global_browser_profile = BrowserProfile()
         browser_profile = global_browser_profile
 
-    id = await dpage_add(browser_profile=browser_profile, location=initial_url)
+    session = BrowserSession.get(browser_profile)
+    await session.start()
+    page = await session.context.new_page()
+    id = await dpage_add(page, initial_url, browser_profile.id)
 
     # Store action for auto-resumption after signin
     pending_actions[id] = {

@@ -11,6 +11,7 @@ from urllib.parse import urlunparse
 
 import nanoid
 import sentry_sdk
+import websockets
 import zendriver as zd
 from bs4 import BeautifulSoup, Tag
 from nanoid import generate
@@ -80,7 +81,7 @@ async def capture_page_artifacts(
     return screenshot_path, html_path, html_content
 
 
-async def report_distill_error(
+async def zen_report_distill_error(
     *,
     error: Exception,
     page: zd.Tab | None,  # type: ignore[name-defined]
@@ -157,11 +158,14 @@ async def install_proxy_handler(username: str, password: str, page: zd.Tab):
     await page.send(zd.cdp.fetch.enable(handle_auth_requests=True))
 
 
-async def init_zendriver_browser() -> zd.Browser:
-    FRIENDLY_CHARS = "23456789abcdefghijkmnpqrstuvwxyz"
-    id = nanoid.generate(FRIENDLY_CHARS, 6)
-    user_data_dir: Path = settings.profiles_dir / id
+FRIENDLY_CHARS = "23456789abcdefghijkmnpqrstuvwxyz"
 
+
+async def _create_zendriver_browser(id: str | None = None) -> zd.Browser:
+    if id is None:
+        id = nanoid.generate(FRIENDLY_CHARS, 6)
+
+    user_data_dir: Path = settings.profiles_dir / id
     logger.info(
         f"Launching Zendriver browser with user_data_dir: {user_data_dir}",
         extra={"profile_id": id},
@@ -170,23 +174,37 @@ async def init_zendriver_browser() -> zd.Browser:
     browser_args = ["--no-sandbox", "--start-maximized"]
 
     proxy = await setup_proxy(id, request_info.get())
-    proxy_username = None
-    proxy_password = None
     if proxy:
-        proxy_username = proxy["username"]
-        proxy_password = proxy["password"]
         proxy_server = proxy["server"]
         browser_args.append(f"--proxy-server={proxy_server}")
 
     browser = await zd.start(user_data_dir=str(user_data_dir), browser_args=browser_args)
     browser.id = id  # type: ignore[attr-defined]
 
-    if proxy_username or proxy_password:
-        logger.debug("Setting up proxy authentication...")
-        page = await browser.get("about:blank")
-        await install_proxy_handler(proxy_username or "", proxy_password or "", page)
-
     return browser
+
+
+async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
+    MAX_ATTEMPTS = 3
+    CHECK_URL = "https://ip.fly.dev/all"
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        logger.info(f"Creating a new Zendriver browser (attempt {attempt}/{MAX_ATTEMPTS})...")
+        browser = await _create_zendriver_browser(id)
+        try:
+            logger.info(f"Validating browser at {CHECK_URL}...")
+            await get_new_page(browser, CHECK_URL)
+            logger.info(f"Browser validated on attempt {attempt}")
+            return browser
+        except Exception as e:
+            logger.warning(f"Browser validation failed on attempt {attempt}: {e}")
+            if attempt < MAX_ATTEMPTS:
+                try:
+                    await browser.stop()
+                except Exception:
+                    pass
+
+    logger.error(f"Failed to get a working browser after {MAX_ATTEMPTS} attempts!")
+    raise RuntimeError(f"Failed to get a working Zendriver browser after {MAX_ATTEMPTS} attempts!")
 
 
 async def terminate_zendriver_browser(browser: zd.Browser):
@@ -218,8 +236,8 @@ async def terminate_zendriver_browser(browser: zd.Browser):
                 logger.warning(f"Failed to remove {directory}: {e}")
 
 
-async def get_new_page(browser: zd.Browser) -> zd.Tab:
-    page = await browser.get()
+async def get_new_page(browser: zd.Browser, location: str = "about:blank") -> zd.Tab:
+    page = await browser.get(location, new_tab=True)
 
     if blocked_domains is None:
         await load_blocklists()
@@ -239,9 +257,13 @@ async def get_new_page(browser: zd.Browser) -> zd.Tab:
         if not should_deny:
             try:
                 await page.send(zd.cdp.fetch.continue_request(request_id=event.request_id))
-            except ProtocolException as e:
-                if "Invalid state for continueInterceptedRequest" in str(e):
+            except (ProtocolException, websockets.ConnectionClosedError) as e:
+                if isinstance(
+                    e, ProtocolException
+                ) and "Invalid state for continueInterceptedRequest" in str(e):
                     logger.debug(f"Request already processed: {request_url}")
+                elif isinstance(e, websockets.ConnectionClosedError):
+                    logger.debug(f"Page closed while continuing request: {request_url}")
                 else:
                     raise
             return
@@ -256,13 +278,29 @@ async def get_new_page(browser: zd.Browser) -> zd.Tab:
                     error_reason=zd.cdp.network.ErrorReason.BLOCKED_BY_CLIENT,
                 )
             )
-        except ProtocolException as e:
-            if "Invalid state for continueInterceptedRequest" in str(e):
+        except (ProtocolException, websockets.ConnectionClosedError) as e:
+            if isinstance(
+                e, ProtocolException
+            ) and "Invalid state for continueInterceptedRequest" in str(e):
                 logger.debug(f"Request already processed: {request_url}")
+            elif isinstance(e, websockets.ConnectionClosedError):
+                logger.debug(f"Page closed while blocking request: {request_url}")
             else:
                 raise
 
+    id = cast(str, browser.id)  # type: ignore[attr-defined]
+    proxy = await setup_proxy(id, request_info.get())
+    proxy_username = None
+    proxy_password = None
+    if proxy:
+        proxy_username = proxy["username"]
+        proxy_password = proxy["password"]
+        if proxy_username or proxy_password:
+            logger.debug("Setting up proxy authentication...")
+            await install_proxy_handler(proxy_username or "", proxy_password or "", page)
+
     page.add_handler(zd.cdp.fetch.RequestPaused, handle_request)  # type: ignore[reportUnknownMemberType]
+
     return page
 
 
@@ -292,6 +330,10 @@ class Element:
             await self.css_click()
         else:
             await self.xpath_click()
+        await asyncio.sleep(0.25)
+
+    async def check(self) -> None:
+        logger.error("TODO: Element#check")
         await asyncio.sleep(0.25)
 
     async def type_text(self, text: str) -> None:
@@ -426,7 +468,7 @@ async def distill(hostname: str | None, page: zd.Tab, patterns: list[Pattern]) -
                     if raw_text:
                         target.string = raw_text.strip()
                     if source.tag in ["input", "textarea", "select"]:
-                        target["value"] = source.element.value or ""
+                        target["value"] = source.element.get("value") or ""
                 match_count += 1
             else:
                 optional = target.get("gg-optional") is not None
@@ -458,8 +500,26 @@ async def distill(hostname: str | None, page: zd.Tab, patterns: list[Pattern]) -
         return match
 
 
+async def autoclick(page: zd.Tab, distilled: str, expr: str):
+    document = BeautifulSoup(distilled, "html.parser")
+    elements = document.select(expr)
+    for el in elements:
+        selector, _ = get_selector(str(el.get("gg-match")))
+        if selector:
+            target = await page_query_selector(page, selector)
+            if target:
+                logger.debug(f"Clicking {selector}")
+                await target.click()
+            else:
+                logger.warning(f"Selector {selector} not found, can't click on it")
+
+
 async def run_distillation_loop(
-    location: str, patterns: list[Pattern], browser: zd.Browser, timeout: int = 15
+    location: str,
+    patterns: list[Pattern],
+    browser: zd.Browser,
+    timeout: int = 15,
+    interactive: bool = True,
 ) -> tuple[bool, str, ConversionResult | None]:
     """Run the distillation loop with zendriver.
 
@@ -480,7 +540,7 @@ async def run_distillation_loop(
         await page.get(location)
     except Exception as error:
         logger.error(f"Failed to navigate to {location}: {error}")
-        await report_distill_error(
+        await zen_report_distill_error(
             error=error,
             page=page,
             profile_id=browser.id,  # type: ignore[attr-defined]
@@ -513,12 +573,16 @@ async def run_distillation_loop(
                     await page.close()
                     return (True, distilled, converted)
 
+                if interactive:
+                    await autoclick(page, distilled, "[gg-autoclick]")
+                    await autoclick(page, distilled, "button[type=submit]")
+
                 current.distilled = distilled
 
         else:
             logger.debug(f"No matched pattern found")
 
-    await report_distill_error(
+    await zen_report_distill_error(
         error=ValueError("No matched pattern found"),
         page=page,
         profile_id=browser.id,  # type: ignore[attr-defined]

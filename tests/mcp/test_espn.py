@@ -1,4 +1,4 @@
-"""Tests for NYTimes Tools: get_bestsellers_list."""
+"""Tests for ESPN Tools: get_schedule."""
 
 import json
 import os
@@ -14,15 +14,15 @@ config = {
 
 @pytest.mark.mcp
 @pytest.mark.asyncio
-async def test_nytimes_get_bestsellers_list():
-    """Test get bestsellers list from NY Times."""
+async def test_espn_get_schedule():
+    """Test get schedule from ESPN."""
     client = Client(config)
     async with client:
-        mcp_call_result = await client.call_tool("nytimes_get_bestsellers_list")
+        mcp_call_result = await client.call_tool("espn_get_schedule")
         assert isinstance(mcp_call_result.content[0], TextContent), (
             f"Expected TextContent, got {type(mcp_call_result.content[0])}"
         )
         parsed_mcp_call_result = json.loads(mcp_call_result.content[0].text)
-        best_sellers = parsed_mcp_call_result.get("best_sellers")
-        assert best_sellers, "Expected 'best_sellers' to be non-empty"
-        assert isinstance(best_sellers, list), f"Expected list, got {type(best_sellers)}"
+        schedule = parsed_mcp_call_result.get("college_football_schedule")
+        assert schedule, "Expected 'college_football_schedule' to be non-empty"
+        assert isinstance(schedule, list), f"Expected list, got {type(schedule)}"

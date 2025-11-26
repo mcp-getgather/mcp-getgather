@@ -5,10 +5,6 @@ from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
 from fastapi.routing import APIRoute
 
-from getgather.api.routes.activities.endpoints import router as activities_router
-from getgather.api.routes.auth.endpoints import router as auth_router
-from getgather.api.routes.brands.endpoints import router as brands_router
-from getgather.api.routes.link.endpoints import router as link_router
 from getgather.config import settings
 from getgather.mcp.main import MCPDoc, create_mcp_apps, mcp_app_docs
 
@@ -27,12 +23,6 @@ api_app = FastAPI(
     redoc_url="/redoc",
     generate_unique_id_function=custom_generate_unique_id,
 )
-
-
-api_app.include_router(activities_router)
-api_app.include_router(brands_router)
-api_app.include_router(auth_router)
-api_app.include_router(link_router)
 
 
 @api_app.get("/health")

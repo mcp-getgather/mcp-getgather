@@ -3,6 +3,8 @@
     <p gg-optional gg-match="div.error"></p>
     <input autofocus name="email" type="email" gg-match="input#signInName" placeholder="Email" />
     <input name="password" type="password" gg-match="input#password" placeholder="Password" />
-    <button type="submit" gg-match="button#next:has-text('Sign in')">Sign in</button>
+    <button type="submit" gg-match="//button[@id='next' and contains(text(), 'Sign in')]">
+      Sign in
+    </button>
   </body>
 </html>

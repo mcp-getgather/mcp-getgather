@@ -50,7 +50,9 @@ class BrowserProfile(FreezableModel):
         )
 
         # Setup proxy if configured
-        proxy = await setup_proxy(profile_id, request_info.get())
+        req_info = request_info.get()
+        proxy = await setup_proxy(profile_id, req_info)
+        timezone_id = req_info.timezone if req_info else None
 
         # Get viewport configuration from parent class
         viewport_config = self.get_viewport_config()
@@ -61,6 +63,7 @@ class BrowserProfile(FreezableModel):
             viewport=viewport_config,
             proxy=proxy,  # type: ignore[arg-type]
             bypass_csp=True,
+            timezone_id=timezone_id,
         )
         context.set_default_timeout(settings.BROWSER_TIMEOUT)
         return context

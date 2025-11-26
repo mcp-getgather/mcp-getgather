@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: "0.0.0.0",
       proxy: {
-        "^/(api|brands|link/create|link/status|parse|auth|replay|__static|live|mcp|dpage)": {
+        "^/(api|brands|parse|auth|replay|__static|live|mcp|dpage)": {
           target: "http://127.0.0.1:23456/",
           changeOrigin: false,
         },

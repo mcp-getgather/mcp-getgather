@@ -1,0 +1,61 @@
+<html gg-domain="wayfair">
+  <body>
+    <div>
+      <div
+        gg-match="div[data-hb-id='BoxV3'] > a[data-hb-id='Button'] > span:has-text('Back To Shopping')"
+      ></div>
+      <div gg-match="h1[data-hb-id='Heading']:has-text('My Cart')"></div>
+      <div gg-stop gg-match-html="div.BasketPage-leftCol"></div>
+    </div>
+    <script type="application/json" id="cart">
+      {
+        "rows": "div[data-codeception-id='basket-item']",
+        "columns": [
+          { "name": "manufacturer_info", "selector": "p.BasketGenericItem-manufacturerInfo" },
+          { "name": "sku", "selector": "span.BasketGenericItem-product-sku" },
+          {
+            "name": "image_url",
+            "selector": "div.BasketItemImage-imageWrapper img",
+            "attribute": "src"
+          },
+          {
+            "name": "product_name",
+            "selector": "h2.BasketGenericItem-product-name"
+          },
+          {
+            "name": "review",
+            "selector": "div[data-hb-id='ReviewStars'] > p[data-hb-id='VisuallyHidden']"
+          },
+          {
+            "name": "info_1",
+            "selector": "div.BasketItemDeliveryInfoCard-initialDeliveryInfo > div"
+          },
+          {
+            "name": "info_2",
+            "selector": "div.BasketItemDeliveryInfoCard-initialDeliveryInfo > span"
+          },
+          {
+            "name": "price",
+            "selector": "p[data-codeception-id='basket-item-product-price']"
+          },
+          {
+            "name": "price_strikethrough",
+            "selector": "p.BasketGenericItem-product-priceItem span.BasketGenericItem-product-strikethrough"
+          },
+          {
+            "name": "quantity",
+            "selector": "div[data-codeception-id='qtyDropdownSelector-singleValue']"
+          },
+          {
+            "name": "upsell_message_1",
+            "selector": "div.BasketGenericItem-additionalContent div[data-cyperss-id='upsellCartAddToCartNameAndPrice']:nth-of-type(1)"
+          },
+          {
+            "name": "upsell_message_2",
+            "selector": "div.BasketGenericItem-additionalContent div[data-cyperss-id='upsellCartAddToCartNameAndPrice']:nth-of-type(2)"
+          }
+        ]
+      }
+    </script>
+  </body>
+</html>

@@ -68,6 +68,18 @@ async def get_browsing_history() -> dict[str, Any]:
         if "signin" in current_url:
             raise Exception("User is not signed in")
 
+        await page.wait_for_load_state("domcontentloaded")
+        is_empty = await page.locator(
+            "span:has-text('You have no recently viewed items.')"
+        ).is_visible()
+        if is_empty:
+            return {"browsing_history_data": []}
+
+        await page.goto(
+            "https://www.amazon.com/gp/history?ref_=nav_AccountFlyout_browsinghistory",
+            wait_until="commit",
+        )
+
         def _url_matches(resp: Response) -> bool:
             """Predicate that checks if the response URL contains the predicate string."""
 
@@ -208,12 +220,22 @@ async def dpage_get_purchase_history_with_details(
 
         async def get_order_details(order: dict[str, Any]):
             order_id = order["order_id"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
-            is_fresh = order.get("is_fresh_order")  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            store_logo = order.get("store_logo")  # pyright: ignore[reportTypedDictNotRequiredAccess]
 
-            if is_fresh:
-                # Use the Fresh/Whole Foods URL format
-                url = f"https://www.amazon.com/uff/your-account/order-details?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_wwgs_yo_odp_A1VC38T7YXB528&page=itemmod"
-                result = await page.evaluate(f"""
+            # Determine order type based on brand logo alt text
+            order_type = "regular"
+            if store_logo:
+                store_logo_text = str(store_logo).lower()
+                if "whole foods" in store_logo_text:
+                    order_type = "wholefoods"
+                elif "fresh" in store_logo_text:
+                    order_type = "fresh"
+
+            match order_type:
+                case "wholefoods":
+                    # Use Whole Foods URL format
+                    url = f"https://www.amazon.com/fopo/order-details?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_wwgs_wfm_ATVPDKIKX0DER&page=itemmod"
+                    result = await page.evaluate(f"""
                         async () => {{
                             const res = await fetch('{url}', {{
                                 method: 'GET',
@@ -224,24 +246,16 @@ async def dpage_get_purchase_history_with_details(
                             const doc = parser.parseFromString(text, 'text/html');
                             doc.querySelectorAll('script').forEach(s => s.remove());
 
-                            // For Fresh orders, extract all item information
-                            const itemRows = doc.querySelectorAll('div[id$="-item-grid-row"]');
+                            const itemRows = doc.querySelectorAll('div.a-row.a-spacing-base');
                             const prices = [];
                             const productNames = [];
                             const productUrls = [];
                             const imageUrls = [];
 
                             itemRows.forEach(row => {{
-                                // Extract price from span with id like "{{ASIN}}-item-total-price"
-                                const priceSpan = row.querySelector('span[id$="-item-total-price"]');
-                                if (priceSpan) {{
-                                    prices.push(priceSpan.textContent?.trim() || '');
-                                }}
-
-                                // Extract product name and URL from the link
-                                const productLink = row.querySelector('a.a-link-normal.a-text-normal');
+                                const productLink = row.querySelector('div.a-column.a-span10 > a.a-size-small.a-link-normal');
                                 if (productLink) {{
-                                    const name = productLink.querySelector('span')?.textContent?.trim();
+                                    const name = productLink.textContent?.trim();
                                     if (name) {{
                                         productNames.push(name);
                                     }}
@@ -251,8 +265,12 @@ async def dpage_get_purchase_history_with_details(
                                     }}
                                 }}
 
-                                // Extract image URL
-                                const img = row.querySelector('img');
+                                const priceSpan = row.querySelector('div.a-column.a-span2.a-span-last div.a-text-right span.a-size-small');
+                                if (priceSpan) {{
+                                    prices.push(priceSpan.textContent?.trim() || '');
+                                }}
+
+                                const img = row.querySelector('img.ufpo-itemListWidget-image');
                                 if (img) {{
                                     const src = img.getAttribute('src') || img.getAttribute('data-a-hires');
                                     if (src) {{
@@ -269,11 +287,72 @@ async def dpage_get_purchase_history_with_details(
                             }};
                         }}
                     """)
-                return {"order_id": order_id, **result}
-            else:
-                # Use the regular order URL format
-                url = f"https://www.amazon.com/gp/css/summary/print.html?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_invoice_pos"
-                prices = await page.evaluate(f"""
+                    return {"order_id": order_id, **result}
+
+                case "fresh":
+                    # Use Fresh URL format
+                    url = f"https://www.amazon.com/uff/your-account/order-details?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_wwgs_yo_odp_A1VC38T7YXB528&page=itemmod"
+                    result = await page.evaluate(f"""
+                        async () => {{
+                            const res = await fetch('{url}', {{
+                                method: 'GET',
+                                credentials: 'include',
+                            }});
+                            const text = await res.text();
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(text, 'text/html');
+                            doc.querySelectorAll('script').forEach(s => s.remove());
+
+                            const itemRows = doc.querySelectorAll('div[id$="-item-grid-row"]');
+                            const prices = [];
+                            const productNames = [];
+                            const productUrls = [];
+                            const imageUrls = [];
+
+                            itemRows.forEach(row => {{
+                                const priceSpan = row.querySelector('span[id$="-item-total-price"]');
+                                if (priceSpan) {{
+                                    prices.push(priceSpan.textContent?.trim() || '');
+                                }}
+
+                                const productLink = row.querySelector('a.a-link-normal.a-text-normal');
+                                if (productLink) {{
+                                    const nameSpan = productLink.querySelector('span');
+                                    if (nameSpan) {{
+                                        const name = nameSpan.textContent?.trim();
+                                        if (name) {{
+                                            productNames.push(name);
+                                        }}
+                                    }}
+                                    const href = productLink.getAttribute('href');
+                                    if (href) {{
+                                        productUrls.push(href);
+                                    }}
+                                }}
+
+                                const img = row.querySelector('div.ufpo-item-image-column img');
+                                if (img) {{
+                                    const src = img.getAttribute('src') || img.getAttribute('data-a-hires');
+                                    if (src) {{
+                                        imageUrls.push(src);
+                                    }}
+                                }}
+                            }});
+
+                            return {{
+                                prices,
+                                productNames,
+                                productUrls,
+                                imageUrls
+                            }};
+                        }}
+                    """)
+                    return {"order_id": order_id, **result}
+
+                case _:
+                    # Use regular order URL format
+                    url = f"https://www.amazon.com/gp/css/summary/print.html?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_invoice_pos"
+                    prices = await page.evaluate(f"""
                         async () => {{
                             const res = await fetch('{url}', {{
                                 method: 'GET',
@@ -291,7 +370,7 @@ async def dpage_get_purchase_history_with_details(
                             return prices;
                         }}
                     """)
-                return {"order_id": order_id, "prices": prices}
+                    return {"order_id": order_id, "prices": prices}
 
         try:
             order_details_list = await asyncio.gather(*[
@@ -302,8 +381,8 @@ async def dpage_get_purchase_history_with_details(
                 details = order_details[order["order_id"]]
                 if details.get("prices") is not None:
                     order["product_prices"] = details["prices"]
-                # For Fresh orders, replace product information with the complete details
-                if order.get("is_fresh_order") and details.get("productNames"):
+                # For Fresh/Whole Foods orders, replace product information with the complete details
+                if order.get("store_logo") and details.get("productNames"):
                     order["product_names"] = details["productNames"]
                     order["product_urls"] = details["productUrls"]
                     order["image_urls"] = details["imageUrls"]

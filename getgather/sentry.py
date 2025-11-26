@@ -5,13 +5,12 @@ from typing import Any
 import sentry_sdk
 
 from getgather.config import settings
-from getgather.connectors.spec_loader import BrandIdEnum
 
 
 def setup_error_context(
     scope: sentry_sdk.Scope,
     e: Exception,
-    brand_id: BrandIdEnum,
+    brand_id: str,
     error_type: str,
     flow_state: dict[str, Any],
     browser_profile_id: str,

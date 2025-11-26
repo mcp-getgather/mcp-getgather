@@ -47,7 +47,7 @@ async def lifespan(app: FastAPI):
     async def timer_loop():
         while not stop_event.is_set():
             await cleanup_old_sessions()
-            await asyncio.sleep(60)
+            await asyncio.sleep(5 * 60)  # every 5 minutes
 
     background_task = asyncio.create_task(timer_loop())
 
@@ -81,7 +81,7 @@ logfire.configure(
         repository="https://github.com/mcp-getgather/mcp-getgather", revision="main"
     ),
 )
-logfire.instrument_fastapi(app)
+logfire.instrument_fastapi(app, capture_headers=True)
 
 
 STATIC_ASSETS_DIR = Path(__file__).parent / "static" / "assets"
