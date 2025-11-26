@@ -3,14 +3,15 @@
     <title>Shopee Purchase</title>
   </head>
   <body>
-    <div gg-stop gg-match-html="main[aria-role='tabpanel']:has-text('chat') > div"></div>
+    <div gg-match="div.YL_VlX"></div>
+    <div gg-stop gg-match-html="main"></div>
     <script type="application/json" id="purchase">
       {
         "rows": "div.YL_VlX",
         "columns": [
-          { "name": "store_name", "selector": "div[tabindex='0']:not(:has(svg))" },
-          { "name": "product_name", "selector": "span[tabindex='0']" },
-          { "name": "product_image", "selector": "img", "attribute": "src" },
+          { "name": "store_name", "selector": "div.UDaMW3" },
+          { "name": "product_name", "selector": "span.DWVWOJ" },
+          { "name": "product_image", "selector": "img.gQuHsZ", "attribute": "src" },
           {
             "name": "total_price",
             "selector": "div[aria-label*='Total Pesanan']"
