@@ -41,3 +41,5 @@ jobs:
           BBC_PASSWORD: ${{ secrets.BBC_PASSWORD }}
           GOODREADS_EMAIL: ${{ secrets.GOODREADS_EMAIL }}
           GOODREADS_PASSWORD: ${{ secrets.GOODREADS_PASSWORD }}
+          WAYFAIR_EMAIL: ${{ secrets.WAYFAIR_EMAIL }}
+          WAYFAIR_PASSWORD: ${{ secrets.WAYFAIR_PASSWORD }}
