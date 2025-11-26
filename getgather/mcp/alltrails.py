@@ -9,4 +9,6 @@ alltrails_mcp = GatherMCP(brand_id="alltrails", name="Alltrails MCP")
 @alltrails_mcp.tool
 async def get_feed() -> dict[str, Any]:
     """Get feed of alltrails."""
-    return await zen_dpage_mcp_tool("https://www.alltrails.com/my/profile/", "alltrails_feed")
+    return await zen_dpage_mcp_tool(
+        "https://www.alltrails.com/my/profile/", "alltrails_feed", timeout=10
+    )
