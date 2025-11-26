@@ -468,7 +468,7 @@ async def distill(hostname: str | None, page: zd.Tab, patterns: list[Pattern]) -
                     if raw_text:
                         target.string = raw_text.strip()
                     if source.tag in ["input", "textarea", "select"]:
-                        target["value"] = source.element.value or ""
+                        target["value"] = source.element.get("value") or ""
                 match_count += 1
             else:
                 optional = target.get("gg-optional") is not None
