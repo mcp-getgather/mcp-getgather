@@ -480,7 +480,6 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
     max = TIMEOUT // TICK
 
     current = Match(name="", priority=-1, distilled="")
-    current_pattern_name: str | None = None
     has_submitted_in_pattern = False
 
     if logger.isEnabledFor(logging.DEBUG):
@@ -502,9 +501,8 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
             continue
 
         # Track pattern changes and reset submitted flag for new patterns
-        if match.name != current_pattern_name:
-            logger.debug(f"Pattern changed from {current_pattern_name} to {match.name}")
-            current_pattern_name = match.name
+        if match.name != current.name:
+            logger.debug(f"Pattern changed from {current.name} to {match.name}")
             has_submitted_in_pattern = False
 
         current = match
