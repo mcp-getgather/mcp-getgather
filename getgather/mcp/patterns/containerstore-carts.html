@@ -1,7 +1,7 @@
 <html gg-domain="containerstore" priority="2">
   <body>
     <div>
-      <div gg-match="p:has-text('Shopping Cart')"></div>
+      <div gg-match="//p[contains(text(), 'Shopping Cart')]"></div>
       <div gg-stop gg-match-html="div#js-cartlist"></div>
     </div>
     <script type="application/json" id="carts">
