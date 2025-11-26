@@ -1,8 +1,8 @@
 <html gg-domain="wayfair">
   <body>
     <div>
-      <div gg-match="h1:has-text('Your Cart is Empty!')"></div>
-      <div gg-autoclick gg-match="button[data-hb-id='Button'] > span:has-text('Sign In')"></div>
+      <div gg-match="h1[data-enzyme-id='EmptyBasketHeadline']"></div>
+      <div gg-autoclick gg-match="a[data-codeception-id='cart-sign-in']"></div>
     </div>
   </body>
 </html>

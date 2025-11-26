@@ -1,10 +1,8 @@
 <html gg-domain="wayfair">
   <body>
     <div>
-      <div
-        gg-match="div[data-hb-id='BoxV3'] > a[data-hb-id='Button'] > span:has-text('Back To Shopping')"
-      ></div>
-      <div gg-match="h1[data-hb-id='Heading']:has-text('My Cart')"></div>
+      <div gg-match="div[data-hb-id='BoxV3'] > a[data-hb-id='Button']"></div>
+      <div gg-match="div[data-hb-id='BoxV3'] > h1[data-hb-id='Heading']"></div>
       <div gg-stop gg-match-html="div.BasketPage-leftCol"></div>
     </div>
     <script type="application/json" id="cart">
@@ -48,11 +46,11 @@
           },
           {
             "name": "upsell_message_1",
-            "selector": "div.BasketGenericItem-additionalContent div[data-cyperss-id='upsellCartAddToCartNameAndPrice']:nth-of-type(1)"
+            "selector": "div.BasketGenericItem-additionalContent > div[data-hb-id='BoxV3'] > div[data-hb-id='BoxV3']:nth-of-type(1) div[data-cypress-id='upsellCartAddToCartNameAndPrice']"
           },
           {
             "name": "upsell_message_2",
-            "selector": "div.BasketGenericItem-additionalContent div[data-cyperss-id='upsellCartAddToCartNameAndPrice']:nth-of-type(2)"
+            "selector": "div.BasketGenericItem-additionalContent > div[data-hb-id='BoxV3'] > div[data-hb-id='BoxV3']:nth-of-type(2) div[data-cypress-id='upsellCartAddToCartNameAndPrice']"
           }
         ]
       }
