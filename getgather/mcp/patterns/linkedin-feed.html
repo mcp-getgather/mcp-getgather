@@ -3,30 +3,29 @@
     <title>Linkedin Feed</title>
   </head>
   <body>
-    <div
-      gg-stop
-      gg-match-html="div[componentkey='container-update-list_mainFeed-lazy-container']"
-    ></div>
+    <!-- Wait for feed items to load -->
+    <div gg-match="div[data-view-name='feed-full-update']"></div>
+    <div gg-stop gg-match-html="div.scaffold-finite-scroll__content"></div>
     <script type="application/json" id="feed">
       {
         "rows": "div[data-view-name='feed-full-update']",
         "columns": [
           {
             "name": "profile_name",
-            "selector": "a[data-view-name='feed-actor-image'] + a p:first-of-type"
+            "selector": "span.update-components-actor__title span[dir='ltr']"
           },
           {
             "name": "profile_description",
-            "selector": "a[data-view-name='feed-actor-image'] + a p:nth-of-type(2)"
+            "selector": "span.update-components-actor__description"
           },
           {
             "name": "profile_image",
-            "selector": "a[data-view-name='feed-actor-image'] img",
+            "selector": "img.update-components-actor__avatar-image",
             "attribute": "src"
           },
           {
             "name": "post",
-            "selector": "p[data-view-name='feed-commentary'] span[data-testid='expandable-text-box']"
+            "selector": "div.update-components-update-v2__commentary span.tvm-parent-container"
           }
         ]
       }
