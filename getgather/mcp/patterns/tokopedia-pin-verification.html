@@ -3,8 +3,13 @@
     <title>Tokopedia PIN Verification</title>
   </head>
   <body>
-    <div gg-match="div:has-text('Masukkan Kode Verifikasi')">Masukkan Kode Verifikasi</div>
-    <div gg-optional gg-match="div:has-text('Masukkan 6 digit PIN Tokopedia kamu')"></div>
+    <div gg-match="//div[contains(text(), 'Masukkan Kode Verifikasi')]">
+      Masukkan Kode Verifikasi
+    </div>
+    <div
+      gg-optional
+      gg-match="//div[contains(text(), 'Masukkan 6 digit PIN Tokopedia kamu')]"
+    ></div>
     <input
       name="pin"
       type="tel"

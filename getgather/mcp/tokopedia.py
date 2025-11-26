@@ -5,7 +5,7 @@ from urllib.parse import quote, urlparse
 
 from getgather.actions import handle_graphql_response
 from getgather.logs import logger
-from getgather.mcp.dpage import dpage_mcp_tool, dpage_with_action
+from getgather.mcp.dpage import dpage_with_action, zen_dpage_mcp_tool
 from getgather.mcp.registry import GatherMCP
 
 tokopedia_mcp = GatherMCP(brand_id="tokopedia", name="Tokopedia MCP")
@@ -22,11 +22,11 @@ async def search_product(
     async def search_single_product(kw: str) -> dict[str, Any]:
         encoded_keyword = quote(kw)
         url = f"https://www.tokopedia.com/search?q={encoded_keyword}&page={page_number}"
-        result = await dpage_mcp_tool(
+        result = await zen_dpage_mcp_tool(
             initial_url=url,
             result_key="product_list",
         )
-        return {kw: result["product_list"]}
+        return {kw: result.get("product_list", result)}
 
     results_list = await asyncio.gather(*[search_single_product(kw) for kw in keywords])
 
@@ -40,7 +40,7 @@ async def search_product(
 @tokopedia_mcp.tool
 async def get_product_details(product_url: str) -> dict[str, Any]:
     """Get product details from tokopedia. Get product_url from search_product tool."""
-    return await dpage_mcp_tool(
+    return await zen_dpage_mcp_tool(
         initial_url=product_url,
         result_key="product_detail",
         timeout=10,  # Increased timeout for product pages to fully load
@@ -52,7 +52,7 @@ async def search_shop(keyword: str) -> dict[str, Any]:
     """Search shop on tokopedia."""
     encoded_keyword = quote(keyword)
     url = f"https://www.tokopedia.com/search?st=shop&q={encoded_keyword}"
-    return await dpage_mcp_tool(
+    return await zen_dpage_mcp_tool(
         initial_url=url,
         result_key="shop_list",
     )
@@ -108,7 +108,7 @@ async def get_shop_details(
     if not target_url:
         return {"error": "Could not determine valid shop URL"}
 
-    return await dpage_mcp_tool(
+    return await zen_dpage_mcp_tool(
         initial_url=target_url,
         result_key="shop_detail",
     )
