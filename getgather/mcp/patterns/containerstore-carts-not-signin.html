@@ -1,7 +1,7 @@
 <html gg-domain="containerstore" priority="2">
   <body>
     <div>
-      <div gg-match="p:has-text('Looks like your Shopping Cart is empty.')"></div>
+      <div gg-match="//p[contains(text(), 'Looks like your Shopping Cart is empty.')]"></div>
       <div gg-autoclick gg-match="button#js-cart-signin"></div>
     </div>
   </body>
