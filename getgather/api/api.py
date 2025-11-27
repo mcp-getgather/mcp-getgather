@@ -1,4 +1,3 @@
-import asyncio
 from datetime import datetime
 
 from fastapi import FastAPI
@@ -6,7 +5,6 @@ from fastapi.responses import PlainTextResponse
 from fastapi.routing import APIRoute
 
 from getgather.config import settings
-from getgather.mcp.main import MCPDoc, create_mcp_apps, mcp_app_docs
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -30,8 +28,3 @@ def health():
     return PlainTextResponse(
         content=f"API OK {int(datetime.now().timestamp())} GIT_REV: {settings.GIT_REV}"
     )
-
-
-@api_app.get("/docs-mcp")
-async def mcp_docs() -> list[MCPDoc]:
-    return await asyncio.gather(*[mcp_app_docs(mcp_app) for mcp_app in create_mcp_apps()])
