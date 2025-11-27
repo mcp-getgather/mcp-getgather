@@ -1,11 +1,10 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig } from "vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
   return {
     root: path.resolve(__dirname, "frontend"),
     plugins: [react(), tailwindcss(), viteSingleFile()],
@@ -15,9 +14,7 @@ export default defineConfig(({ mode }) => {
       assetsInlineLimit: 100000000, // inline all assets
       cssCodeSplit: false,
     },
-    define: {
-      "import.meta.env.MULTI_USER_ENABLED": env.MULTI_USER_ENABLED === "true",
-    },
+
     server: {
       host: "0.0.0.0",
       proxy: {
