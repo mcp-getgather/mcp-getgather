@@ -1,6 +1,8 @@
-<html gg-domain="ashley">
+<html gg-domain="ashley" gg-priority="3">
   <body>
-    <h4 gg-match="form h4:has-text('Please Enter Zip Code')"></h4>
-    <button gg-autoclick gg-match="button[title='Close']">Sign in</button>
+    <div gg-autoclick gg-match="//a[@class='user-account']//div[contains(text(), 'My Account')]">
+      My Account
+    </div>
+    <div gg-match="div.redesign-cart-empty"></div>
   </body>
 </html>
