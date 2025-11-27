@@ -1,4 +1,3 @@
-from functools import cached_property
 from pathlib import Path
 
 from pydantic import field_validator
@@ -108,7 +107,7 @@ class Settings(BaseSettings):
             logger.warning("SENTRY_DSN is not set, logging will not be captured in Sentry.")
         return v
 
-    @cached_property
+    @property
     def proxy_configs(self) -> dict[str, ProxyConfig]:
         """Load proxy configurations from YAML file or environment variable (cached).
 
