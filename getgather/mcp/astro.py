@@ -4,7 +4,7 @@ from urllib.parse import quote
 from patchright.async_api import Page
 
 from getgather.browser.profile import BrowserProfile
-from getgather.mcp.dpage import dpage_mcp_tool, dpage_with_action
+from getgather.mcp.dpage import dpage_mcp_tool, dpage_with_action, zen_dpage_mcp_tool
 from getgather.mcp.registry import GatherMCP
 
 astro_mcp = GatherMCP(brand_id="astro", name="Astro MCP")
@@ -35,7 +35,7 @@ async def get_product_details(product_url: str) -> dict[str, Any]:
     else:
         full_url = product_url
 
-    return await dpage_mcp_tool(full_url, "astro_product_detail")
+    return await zen_dpage_mcp_tool(full_url, "astro_product_detail")
 
 
 @astro_mcp.tool
