@@ -1,6 +1,5 @@
 import asyncio
 import os
-import random
 import re
 import shutil
 import urllib.parse

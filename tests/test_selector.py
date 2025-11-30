@@ -31,17 +31,17 @@ def test_hastext_parse_selector():
     hastext = HasText()
 
     # Single :has-text()
-    base, filters = hastext._parse_selector('h5:has-text("Cart")')
+    base, filters = hastext.parse_selector('h5:has-text("Cart")')
     assert base == "h5"
     assert filters == ["Cart"]
 
     # Multiple :has-text()
-    base, filters = hastext._parse_selector('div:has-text("foo"):has-text("bar")')
+    base, filters = hastext.parse_selector('div:has-text("foo"):has-text("bar")')
     assert base == "div"
     assert filters == ["foo", "bar"]
 
     # With CSS class
-    base, filters = hastext._parse_selector('button.primary:has-text("Submit")')
+    base, filters = hastext.parse_selector('button.primary:has-text("Submit")')
     assert base == "button.primary"
     assert filters == ["Submit"]
 
@@ -52,8 +52,8 @@ def test_hastext_parse_selector_invalid():
 
     # No base selector
     with pytest.raises(ValueError, match="must have a base element"):
-        hastext._parse_selector(':has-text("text")')
+        hastext.parse_selector(':has-text("text")')
 
     # Malformed
     with pytest.raises(ValueError, match="Malformed"):
-        hastext._parse_selector("div:has-text(no-quotes)")
+        hastext.parse_selector("div:has-text(no-quotes)")

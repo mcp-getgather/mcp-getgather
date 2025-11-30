@@ -72,7 +72,7 @@ class HasText(Selector):
         """:has-text() selectors contain the :has-text( substring."""
         return ":has-text(" in selector
 
-    def _parse_selector(self, selector: str) -> tuple[str, list[str]]:
+    def parse_selector(self, selector: str) -> tuple[str, list[str]]:
         """Parse :has-text() selector into base CSS selector and text filters.
 
         Args:
@@ -111,7 +111,7 @@ class HasText(Selector):
         3. Filter by text content in Python
         4. Return the first matching element
         """
-        base_selector, text_filters = self._parse_selector(selector)
+        base_selector, text_filters = self.parse_selector(selector)
 
         elements = await page.query_selector_all(base_selector)
         if not elements:
