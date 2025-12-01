@@ -3,7 +3,11 @@
     <title>Starbucks Sign In</title>
   </head>
   <body>
-    <div gg-optional gg-autoclick gg-match="button#truste-consent-button:has-text('Agree')">
+    <div
+      gg-optional
+      gg-autoclick
+      gg-match="xpath=//button[@id='truste-consent-button' and contains(text(), 'Agree')]"
+    >
       Agree
     </div>
     <span gg-optional gg-match="div[class*='alert___']"></span>
