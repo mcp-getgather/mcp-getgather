@@ -195,6 +195,21 @@ async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
             # Create page with proxy setup first, then navigate
             page = await get_new_page(browser)
             await page.get(CHECK_URL)
+
+            # Extract and log just the IP address
+            try:
+                await page.wait(2)
+                page_content = await page.get_content()
+                # Extract just IP (format: "ip_address X.X.X.X")
+
+                ip_match = re.search(r"ip_address\s+([\d.]+)", page_content)
+                if ip_match:
+                    logger.info(f"Browser IP address: {ip_match.group(1)}")
+                else:
+                    logger.warning("Could not extract IP address")
+            except Exception as e:
+                logger.warning(f"Failed to extract IP: {e}")
+
             logger.info(f"Browser validated on attempt {attempt}")
             return browser
         except Exception as e:
