@@ -47,7 +47,10 @@ async def lifespan(app: FastAPI):
     async def timer_loop():
         while not stop_event.is_set():
             await cleanup_old_sessions()
-            await asyncio.sleep(5 * 60)  # every 5 minutes
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=5 * 60)
+            except asyncio.TimeoutError:
+                pass  # Timeout = 5 minutes passed, continue loop
 
     background_task = asyncio.create_task(timer_loop())
 
