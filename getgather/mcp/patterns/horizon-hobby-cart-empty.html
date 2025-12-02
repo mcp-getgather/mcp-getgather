@@ -4,6 +4,6 @@
   </head>
   <body>
     <div gg-match="div[data-test='account-dropdown'] button[aria-label='My Account']"></div>
-    <div gg-stop gg-match-html="p:has-text('Your cart is empty.')"></div>
+    <div gg-stop gg-match-html="//p[contains(text(), 'Your cart is empty.')]"></div>
   </body>
 </html>

@@ -6,7 +6,11 @@
     <p gg-optional gg-match="form[data-test='login-form'] div.alert__root"></p>
     <input autofocus name="email" type="email" placeholder="Email" gg-match="input#email" />
     <input name="password" type="password" placeholder="Password" gg-match="input#password" />
-    <button type="submit" gg-autoclick gg-match="button[type=submit]:has-text('Sign In')">
+    <button
+      type="submit"
+      gg-autoclick
+      gg-match="//button[@type='submit' and contains(text(), 'Sign In')]"
+    >
       Sign in
     </button>
   </body>

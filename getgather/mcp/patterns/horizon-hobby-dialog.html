@@ -1,8 +1,12 @@
-<html gg-domain="horizonhobby" gg-priority="1">
+<html gg-domain="horizonhobby" gg-priority="0">
   <head>
     <title>Horizon Hobby Dialog</title>
   </head>
   <body>
-    <button gg-autoclick gg-match="button[aria-label='Close Email Signup Modal']"></button>
+    <div gg-match="div[role='dialog'][data-state='open']"></div>
+    <button
+      gg-autoclick
+      gg-match="div[role='dialog'] button[aria-label='Close Email Signup Modal']"
+    ></button>
   </body>
 </html>
