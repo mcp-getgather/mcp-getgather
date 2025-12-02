@@ -4,7 +4,7 @@ from urllib.parse import quote
 from patchright.async_api import Page
 
 from getgather.browser.profile import BrowserProfile
-from getgather.mcp.dpage import dpage_mcp_tool, dpage_with_action, zen_dpage_mcp_tool
+from getgather.mcp.dpage import dpage_with_action, zen_dpage_mcp_tool
 from getgather.mcp.registry import GatherMCP
 
 astro_mcp = GatherMCP(brand_id="astro", name="Astro MCP")
@@ -23,7 +23,7 @@ async def search_product(keyword: str) -> dict[str, Any]:
     """Search product on astro."""
     encoded_keyword = quote(keyword)
 
-    return await dpage_mcp_tool(
+    return await zen_dpage_mcp_tool(
         f"https://www.astronauts.id/search?q={encoded_keyword}", "astro_search_product"
     )
 
@@ -43,7 +43,7 @@ async def get_product_details(product_url: str) -> dict[str, Any]:
 @astro_mcp.tool
 async def get_cart_summary() -> dict[str, Any]:
     """Get cart summary from astro."""
-    return await dpage_mcp_tool("https://www.astronauts.id/cart", "astro_cart")
+    return await zen_dpage_mcp_tool("https://www.astronauts.id/cart", "astro_cart")
 
 
 @astro_mcp.tool
