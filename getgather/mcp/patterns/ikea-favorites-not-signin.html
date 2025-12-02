@@ -3,6 +3,9 @@
     <title>Ikea Favorites</title>
   </head>
   <body>
-    <p gg-autoclick gg-match=".list-ingka-btn__label:has-text('Log in')"></p>
+    <p
+      gg-autoclick
+      gg-match="//*[contains(@class, 'list-ingka-btn__label') and contains(text(), 'Log in')]"
+    ></p>
   </body>
 </html>

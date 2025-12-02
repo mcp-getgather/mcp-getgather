@@ -3,7 +3,7 @@
     <title>Ikea Favorites List</title>
   </head>
   <body>
-    <div gg-match="h1:has-text('Lists')"></div>
-    <button gg-autoclick gg-match="button[data-testid=select-list-item]"></button>
+    <div gg-match="//h1[contains(text(), 'Lists')]"></div>
+    <div gg-autoclick gg-match="button[data-testid=select-list-item]"></div>
   </body>
 </html>
