@@ -3,7 +3,9 @@
     <title>Shopping cart</title>
   </head>
   <body>
-    <div gg-match="//div[contains(@class, 'empty-cart') and not(.//button[@data-test-id='SIGN_IN'])]"></div>
+    <div
+      gg-match="//div[contains(@class, 'empty-cart') and not(.//button[@data-test-id='SIGN_IN'])]"
+    ></div>
     <div gg-stop gg-match-html="div.empty-cart span.text-display-span"></div>
   </body>
 </html>
