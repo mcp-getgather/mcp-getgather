@@ -3,12 +3,12 @@
     <title>Astro Verification</title>
   </head>
   <body>
-    <span gg-optional gg-match='[data-testid="otpErrorMessage"]'>Kode OTP tidak sesuai</span>
+    <span gg-optional gg-match='span[data-testid="otpErrorMessage"]'>Kode OTP tidak sesuai</span>
     <input
       type="text"
       name="otp"
       placeholder="One-time code"
-      gg-match='[data-testid="otpInput0"]'
+      gg-match='input[data-testid="otpInput0"]'
     />
   </body>
 </html>
