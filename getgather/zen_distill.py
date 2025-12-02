@@ -192,7 +192,9 @@ async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
         browser = await _create_zendriver_browser(id)
         try:
             logger.info(f"Validating browser at {CHECK_URL}...")
-            await get_new_page(browser, CHECK_URL)
+            # Create page with proxy setup first, then navigate
+            page = await get_new_page(browser)
+            await page.get(CHECK_URL)
             logger.info(f"Browser validated on attempt {attempt}")
             return browser
         except Exception as e:
@@ -236,8 +238,8 @@ async def terminate_zendriver_browser(browser: zd.Browser):
                 logger.warning(f"Failed to remove {directory}: {e}")
 
 
-async def get_new_page(browser: zd.Browser, location: str = "about:blank") -> zd.Tab:
-    page = await browser.get(location, new_tab=True)
+async def get_new_page(browser: zd.Browser) -> zd.Tab:
+    page = await browser.get("about:blank", new_tab=True)
 
     if blocked_domains is None:
         await load_blocklists()
