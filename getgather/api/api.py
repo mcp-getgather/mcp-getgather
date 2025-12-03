@@ -18,9 +18,6 @@ api_app = FastAPI(
     title="Get Gather API",
     description="API for Get Gather",
     version="0.1.0",
-    openapi_url="/openapi.json",
-    docs_url="/docs",
-    redoc_url="/redoc",
     generate_unique_id_function=custom_generate_unique_id,
 )
 
