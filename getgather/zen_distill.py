@@ -186,30 +186,31 @@ async def _create_zendriver_browser(id: str | None = None) -> zd.Browser:
 
 async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
     MAX_ATTEMPTS = 3
-    CHECK_URL = "https://ip.fly.dev/all"
+    LIVE_CHECK_URL = "https://ip.fly.dev/all"
+    IP_ONLY_CHECK_URL = "https://ip.fly.dev/ip"
     for attempt in range(1, MAX_ATTEMPTS + 1):
         logger.info(f"Creating a new Zendriver browser (attempt {attempt}/{MAX_ATTEMPTS})...")
         browser = await _create_zendriver_browser(id)
         try:
-            logger.info(f"Validating browser at {CHECK_URL}...")
+            logger.info(f"Validating browser at {LIVE_CHECK_URL}...")
             # Create page with proxy setup first, then navigate
             page = await get_new_page(browser)
-            await page.get(CHECK_URL)
+            await page.get(LIVE_CHECK_URL)
 
+            ip_page = await get_new_page(browser)
             # Extract and log just the IP address
             try:
-                await page.wait(2)
-                page_content = await page.get_content()
-                # Extract just IP (format: "ip_address X.X.X.X")
-
-                ip_match = re.search(r"ip_address\s+([\d.]+)", page_content)
-                if ip_match:
-                    logger.info(f"Browser IP address: {ip_match.group(1)}")
+                await ip_page.get(IP_ONLY_CHECK_URL)
+                await ip_page.wait(2)
+                body = await ip_page.select("body")
+                if body:
+                    ip_address = body.text.strip()
+                    logger.info(f"Browser IP address: {ip_address}")
                 else:
                     logger.warning("Could not extract IP address")
             except Exception as e:
                 logger.warning(f"Failed to extract IP: {e}")
-
+            await ip_page.close()
             logger.info(f"Browser validated on attempt {attempt}")
             return browser
         except Exception as e:
