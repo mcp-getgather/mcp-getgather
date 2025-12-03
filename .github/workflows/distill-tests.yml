@@ -28,9 +28,6 @@ jobs:
       - name: Prepare front-end environment
         uses: ./.github/actions/prepare-frontend
 
-      - name: Build the front-end
-        run: npm run build
-
       - name: Install Chromium for distillation tests
         run: uv run playwright install chromium
 

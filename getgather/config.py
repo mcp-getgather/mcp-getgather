@@ -44,8 +44,6 @@ class Settings(BaseSettings):
 
     HOSTNAME: str = ""
 
-    AUTH_BEARER_TOKEN: str = ""
-
     # Max session age, in minutes
     BROWSER_SESSION_AGE: int = 60
 

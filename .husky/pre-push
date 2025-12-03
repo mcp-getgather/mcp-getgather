@@ -13,7 +13,6 @@ if [ $check_exit_code -ne 0 ]; then
     echo "❌ Static analysis checks failed! Please fix issues before pushing."
     echo ""
     echo "To fix issues, run:"
-    echo "  npm run frontend:lint        # Check frontend linting"
     echo "  npm run frontend:format      # Fix frontend formatting"
     echo "  npm run backend:format       # Fix backend formatting"
     echo "  npm run backend:check:type-safety  # Check backend types"

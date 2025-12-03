@@ -22,19 +22,6 @@ jobs:
       - name: Check backend code style
         run: uv run ruff format --check .
 
-  frontend-lint:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 5
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Prepare front-end environment
-        uses: ./.github/actions/prepare-frontend
-
-      - name: Check frontend linting
-        run: npm run frontend:lint
-
   frontend-format:
     runs-on: ubuntu-22.04
     timeout-minutes: 5
