@@ -1,6 +1,9 @@
-<html gg-domain="sephora" priority="3">
+<html gg-domain="sephora" gg-priority="3">
   <body>
     <p gg-match="p[data-at='empty_basket_message']"></p>
-    <div gg-match="p[data-at='empty_basket_message'] + div:has-text('Shop New Arrivals')"></div>
+    <div
+      gg-stop
+      gg-match="//p[@data-at='empty_basket_message']/following-sibling::div[contains(., 'Shop New Arrivals')]"
+    ></div>
   </body>
 </html>

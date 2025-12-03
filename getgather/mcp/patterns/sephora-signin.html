@@ -1,4 +1,4 @@
-<html gg-domain="sephora" priority="1">
+<html gg-domain="sephora" gg-priority="2">
   <head>
     <title>Sephora Sign In</title>
   </head>
@@ -17,16 +17,16 @@
       placeholder="Password"
     />
     <input
-      name="stay_signed_in"
       type="checkbox"
-      checked
-      gg-match="span[data-at='stay_signed_in_label']"
+      name="stay_signed_in"
+      gg-autoclick
+      gg-match="input#signin_ssi"
       style="display: none"
     />
     <button
       type="submit"
       gg-autoclick
-      gg-match="button[data-at='sign_in_button']:has-text('Sign In'):not([disabled])"
+      gg-match="//button[@data-at='sign_in_button' and contains(., 'Sign In') and not(@disabled)]"
     >
       Sign In
     </button>
