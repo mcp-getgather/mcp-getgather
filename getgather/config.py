@@ -35,13 +35,6 @@ class Settings(BaseSettings):
     # If not set, no proxy will be used unless specified via x-proxy-type header
     DEFAULT_PROXY_TYPE: str = ""
 
-    # RRWeb Recording Settings
-    ENABLE_RRWEB_RECORDING: bool = False
-    RRWEB_SCRIPT_URL: str = (
-        "https://cdn.jsdelivr.net/npm/rrweb@2.0.0-alpha.14/dist/record/rrweb-record.min.js"
-    )
-    RRWEB_MASK_ALL_INPUTS: bool = True
-
     HOSTNAME: str = ""
 
     # Max session age, in minutes
@@ -82,13 +75,6 @@ class Settings(BaseSettings):
     @property
     def persistent_store_dir(self) -> Path:
         path = self.data_dir / "store"
-        path.mkdir(parents=True, exist_ok=True)
-        return path
-
-    @property
-    def recordings_dir(self) -> Path:
-        """Path to recordings directory for per-activity files."""
-        path = self.data_dir / "recordings"
         path.mkdir(parents=True, exist_ok=True)
         return path
 
