@@ -17,7 +17,7 @@
     <button
       type="submit"
       gg-autoclick
-      gg-match="dialog form button[type=submit]:has-text('Login'):not([disabled])"
+      gg-match="//dialog//form//button[@type='submit' and contains(text(), 'Login') and not(@disabled)]"
     >
       Sign in
     </button>

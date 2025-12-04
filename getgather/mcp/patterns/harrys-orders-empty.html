@@ -4,7 +4,10 @@
   </head>
   <body>
     <div>
-      <div gg-stop gg-match-html="p.body-2:has-text('placed any orders yet.')"></div>
+      <div
+        gg-stop
+        gg-match-html="//p[contains(@class, 'body-2') and contains(text(), 'placed any orders yet.')]"
+      ></div>
     </div>
   </body>
 </html>
