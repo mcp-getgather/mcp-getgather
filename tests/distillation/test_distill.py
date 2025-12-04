@@ -22,6 +22,7 @@ DISTILL_PATTERN_LOCATIONS = {
     "http://localhost:5001/auth/email-then-password": "acme_email_only.html",
     "http://localhost:5001/auth/email-and-password-checkbox": "acme_email_and_password_checkbox.html",
     "http://localhost:5001/universal-error-test": "acme_universal_error_test.html",
+    "http://localhost:5002/signin?redirect_uri=http://localhost:5001/cross-domain-callback": "acmeauth_signin.html",
 }
 
 SIGN_IN_PATTERN_ENDPOINTS = [
@@ -47,8 +48,13 @@ async def test_distill(location: str):
     assert patterns, "No patterns found to begin matching."
     async with browser_session(profile) as session:
         page = await session.page()
-        hostname = urllib.parse.urlparse(location).hostname
         await page.goto(location)
+
+        # Get hostname with port for cross-domain testing
+        parsed = urllib.parse.urlparse(page.url)
+        hostname = parsed.hostname
+        if parsed.port:
+            hostname = f"{hostname}:{parsed.port}"
 
         match = await distill(hostname, page, patterns)
         assert match, "No match found when one was expected."

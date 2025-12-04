@@ -35,8 +35,16 @@ jobs:
         run: uv run -m uvicorn tests.acme_corp.acme_corp:app --host 127.0.0.1 --port 5001 > >(tee /dev/stdout) 2> >(tee /dev/stderr
           >&2) &
 
+      - name: Run the Auth Server test server
+        run: uv run -m uvicorn tests.acme_corp.auth_server:app --host 127.0.0.1 --port 5002 > >(tee /dev/stdout) 2> >(tee /dev/stderr
+          >&2) &
+
       - name: Wait for the ACME server to start
         run: while ! curl -s 'http://localhost:5001' | grep 'ACME'; do sleep 1; done
+        timeout-minutes: 3
+
+      - name: Wait for the Auth server to start
+        run: while ! curl -s 'http://localhost:5002/signin' | grep 'Auth Server'; do sleep 1; done
         timeout-minutes: 3
 
       - name: Run the distillation tests

@@ -2,13 +2,17 @@ from typing import Any
 
 from fasthtml.common import (
     H1,
+    H2,
     A,
     Body,
+    Div,
     FastHTML,
     Head,
     Html,
     Li,
     Main,
+    P,
+    Redirect,
     Title,
     Ul,
     picolink,
@@ -142,6 +146,58 @@ def index() -> Any:
                         )
                     ),
                 ),
+                Ul(
+                    Li(
+                        A(
+                            "Cross-Domain Auth Test",
+                            href="/cross-domain",
+                        )
+                    ),
+                ),
+                cls="container",
+            )
+        ),
+    )
+
+
+@app.get("/cross-domain")
+def cross_domain():
+    """
+    Simulates cross-domain authentication flow
+    Redirects to auth server (different domain: localhost:5002)
+    """
+    callback_url = "http://localhost:5001/cross-domain-callback"
+    auth_server_url = f"http://localhost:5002/signin?redirect_uri={callback_url}"
+    return Redirect(auth_server_url)
+
+
+@app.get("/cross-domain-callback")
+def cross_domain_callback(auth_token: str = "", email: str = "") -> Any:
+    """
+    Callback endpoint after successful authentication from auth server
+    """
+    if not auth_token:
+        return Html(
+            Head(Title("Authentication Failed"), picolink),
+            Body(
+                Main(
+                    H1("Authentication Failed"),
+                    P("No auth token received"),
+                    A("Try again", href="/cross-domain"),
+                    cls="container",
+                )
+            ),
+        )
+
+    return Html(
+        Head(Title("ACME Corp - Success"), picolink),
+        Body(
+            Main(
+                H1("Cross-Domain Auth Successful"),
+                H2(f"Welcome back, {email}!"),
+                P(f"Auth Token: {auth_token}"),
+                P("Successfully authenticated via auth server (localhost:5002)"),
+                A("Back to home", href="/"),
                 cls="container",
             )
         ),
