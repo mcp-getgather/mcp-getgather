@@ -412,9 +412,13 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
 
         if domain and hostname:
             # Resolve domain alias if it exists
-            resolved_domain = DOMAIN_ALIASES.get(domain.lower(), domain) if isinstance(domain, str) else domain
+            resolved_domain = (
+                DOMAIN_ALIASES.get(domain.lower(), domain) if isinstance(domain, str) else domain
+            )
             if isinstance(resolved_domain, str) and resolved_domain.lower() not in hostname.lower():
-                logger.debug(f"Skipping {name} due to mismatched domain {domain} (resolved to {resolved_domain})")
+                logger.debug(
+                    f"Skipping {name} due to mismatched domain {domain} (resolved to {resolved_domain})"
+                )
                 continue
 
         logger.debug(f"Checking {name} with priority {priority}")
