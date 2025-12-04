@@ -1,6 +1,6 @@
 from typing import Any
 
-from getgather.mcp.dpage import dpage_mcp_tool
+from getgather.mcp.dpage import dpage_mcp_tool, zen_dpage_mcp_tool
 from getgather.mcp.registry import GatherMCP
 
 audible_mcp = GatherMCP(brand_id="audible", name="Audible MCP")
@@ -9,7 +9,7 @@ audible_mcp = GatherMCP(brand_id="audible", name="Audible MCP")
 @audible_mcp.tool
 async def get_book_list() -> dict[str, Any]:
     """Get book list from Audible.com."""
-    return await dpage_mcp_tool(
+    return await zen_dpage_mcp_tool(
         "https://www.audible.com/library/titles",
         "audible_book_list",
     )
