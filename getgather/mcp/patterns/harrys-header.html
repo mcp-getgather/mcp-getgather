@@ -1,5 +1,9 @@
-<html gg-domain="harrys" gg-priority="2">
+<html gg-domain="harrys" gg-priority="3">
   <body>
-    <div gg-autoclick gg-match="//button[contains(text(), 'Sign In')]">Sign in</div>
+    <div gg-match="//body[not(.//dialog[@open])]"></div>
+    <div
+      gg-match="//button[@aria-haspopup='dialog' and @aria-controls='login-register-customer' and contains(., 'Sign In')]"
+      gg-autoclick
+    ></div>
   </body>
 </html>
