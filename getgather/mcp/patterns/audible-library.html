@@ -1,7 +1,10 @@
 <html gg-domain="audible">
   <body>
     <div>
-      <div gg-stop gg-match="//a[contains(text(), 'All') and contains(@class, 'bc-tab-active')]"></div>
+      <div
+        gg-stop
+        gg-match="//a[contains(text(), 'All') and contains(@class, 'bc-tab-active')]"
+      ></div>
       <div gg-stop gg-match-html="div#adbl-library-content-main"></div>
     </div>
     <script type="application/json" id="library">
