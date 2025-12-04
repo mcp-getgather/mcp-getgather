@@ -506,7 +506,10 @@ async def run_distillation_loop(
         logger.error("No distillation patterns provided")
         raise ValueError("No distillation patterns provided")
 
-    hostname = urllib.parse.urlparse(location).hostname or ""
+    parsed = urllib.parse.urlparse(location)
+    hostname = parsed.hostname or ""
+    if parsed.port:
+        hostname = f"{hostname}:{parsed.port}"
 
     # Use provided profile or create new one
     profile = browser_profile or BrowserProfile()
