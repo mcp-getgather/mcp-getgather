@@ -5,7 +5,7 @@
 
   <body>
     <h1 gg-match="h1">Auth Server</h1>
-    <h2 gg-match="h2">Sign in to continue</h2>
+    <h2 gg-match="//h2[contains(text(), 'Sign in to continue')]">Sign in to continue</h2>
     <input name="email" type="email" placeholder="you@example.com" gg-match="input[type=email]" />
     <input
       name="password"
