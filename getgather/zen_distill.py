@@ -276,10 +276,13 @@ async def get_new_page(browser: zd.Browser) -> zd.Tab:
             try:
                 await page.send(zd.cdp.fetch.continue_request(request_id=event.request_id))
             except (ProtocolException, websockets.ConnectionClosedError) as e:
-                if isinstance(
-                    e, ProtocolException
-                ) and "Invalid state for continueInterceptedRequest" in str(e):
-                    logger.debug(f"Request already processed: {request_url}")
+                if isinstance(e, ProtocolException) and (
+                    "Invalid state for continueInterceptedRequest" in str(e)
+                    or "Invalid InterceptionId" in str(e)
+                ):
+                    logger.debug(
+                        f"Request already processed or invalid interception ID: {request_url}"
+                    )
                 elif isinstance(e, websockets.ConnectionClosedError):
                     logger.debug(f"Page closed while continuing request: {request_url}")
                 else:
@@ -297,10 +300,11 @@ async def get_new_page(browser: zd.Browser) -> zd.Tab:
                 )
             )
         except (ProtocolException, websockets.ConnectionClosedError) as e:
-            if isinstance(
-                e, ProtocolException
-            ) and "Invalid state for continueInterceptedRequest" in str(e):
-                logger.debug(f"Request already processed: {request_url}")
+            if isinstance(e, ProtocolException) and (
+                "Invalid state for continueInterceptedRequest" in str(e)
+                or "Invalid InterceptionId" in str(e)
+            ):
+                logger.debug(f"Request already processed or invalid interception ID: {request_url}")
             elif isinstance(e, websockets.ConnectionClosedError):
                 logger.debug(f"Page closed while blocking request: {request_url}")
             else:
