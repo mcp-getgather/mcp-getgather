@@ -1,18 +1,25 @@
-<html gg-domain="booking">
+<html gg-domain="booking" gg-priority="1">
   <head>
-    <title>Booking Sign In</title>
+    <title>Booking OTP</title>
   </head>
   <body>
     <p gg-optional gg-match="p.nw-step-description"></p>
     <p gg-optional gg-match="span.error-block"></p>
-    <input
-      autofocus
-      placeholder="Code"
-      name="code_0"
-      type="text"
-      gg-match="div:not(.app--loading) input[name='code_0']"
-      maxlength="6"
-    />
-    <button type="submit" gg-match="form button[type='submit'] span">Continue</button>
+    <span>6 Digit Verification Code:</span>
+    <div class="otp-container">
+      <input
+        autofocus
+        name="otp-1"
+        type="text"
+        inputmode="numeric"
+        gg-match="input[name='code_0']"
+      />
+      <input name="otp-2" type="text" inputmode="numeric" gg-match="input[name='code_1']" />
+      <input name="otp-3" type="text" inputmode="numeric" gg-match="input[name='code_2']" />
+      <input name="otp-4" type="text" inputmode="numeric" gg-match="input[name='code_3']" />
+      <input name="otp-5" type="text" inputmode="numeric" gg-match="input[name='code_4']" />
+      <input name="otp-6" type="text" inputmode="numeric" gg-match="input[name='code_5']" />
+    </div>
+    <button type="submit" gg-match="form button[type='submit']">Verify email</button>
   </body>
 </html>
