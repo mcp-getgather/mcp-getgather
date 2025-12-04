@@ -1,7 +1,10 @@
 <html gg-domain="hardcover" gg-priority="4">
   <body>
     <div>
-      <button gg-autoclick gg-match="a:not([href*='hardcover']) div:has(> img.avatar)"></button>
+      <div
+        gg-autoclick
+        gg-match="//a[not(contains(@href, 'hardcover'))]//div/img[contains(@class, 'avatar')]/parent::div"
+      ></div>
     </div>
   </body>
 </html>
