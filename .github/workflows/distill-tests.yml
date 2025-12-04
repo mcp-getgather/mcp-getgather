@@ -36,8 +36,8 @@ jobs:
           >&2) &
 
       - name: Run the Auth Server test server
-        run: uv run -m uvicorn tests.acme_corp.auth_server:app --host 127.0.0.1 --port 5002 > >(tee /dev/stdout) 2> >(tee /dev/stderr
-          >&2) &
+        run: uv run -m uvicorn tests.acme_corp.auth_server:app --host 127.0.0.1 --port 5002 > >(tee /dev/stdout) 2> >(tee
+          /dev/stderr >&2) &
 
       - name: Wait for the ACME server to start
         run: while ! curl -s 'http://localhost:5001' | grep 'ACME'; do sleep 1; done
