@@ -223,7 +223,6 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
         logger.debug(f"Iteration {iteration + 1} of {max}")
         await asyncio.sleep(TICK)
 
-        # like this
         location = page.url
         hostname = urllib.parse.urlparse(location).hostname
 
