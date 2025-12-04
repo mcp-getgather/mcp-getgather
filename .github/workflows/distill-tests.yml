@@ -53,3 +53,5 @@ jobs:
           ACME_EMAIL: joe@example.com
           ACME_PASSWORD: trustno1
           ACME_OTP: 123456
+          ACME_AUTH_EMAIL: joe@example.com
+          ACME_AUTH_PASSWORD: trustno1

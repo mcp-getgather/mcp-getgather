@@ -38,6 +38,12 @@ class Match:
 
 ConversionResult = list[dict[str, str | list[str]]]
 
+# Domain aliases for test environments
+DOMAIN_ALIASES = {
+    "acme": "localhost:5001",
+    "acme_auth": "localhost:5002",
+}
+
 
 def _safe_fragment(value: str) -> str:
     fragment = re.sub(r"[^a-zA-Z0-9_-]+", "-", value).strip("-")
@@ -405,8 +411,10 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
         domain = root.get("gg-domain") if isinstance(root, Tag) else None
 
         if domain and hostname:
-            if isinstance(domain, str) and domain.lower() not in hostname.lower():
-                logger.debug(f"Skipping {name} due to mismatched domain {domain}")
+            # Resolve domain alias if it exists
+            resolved_domain = DOMAIN_ALIASES.get(domain.lower(), domain) if isinstance(domain, str) else domain
+            if isinstance(resolved_domain, str) and resolved_domain.lower() not in hostname.lower():
+                logger.debug(f"Skipping {name} due to mismatched domain {domain} (resolved to {resolved_domain})")
                 continue
 
         logger.debug(f"Checking {name} with priority {priority}")
