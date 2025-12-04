@@ -10,5 +10,5 @@ hilton_mcp = GatherMCP(brand_id="hilton", name="Hilton MCP")
 async def get_activities() -> dict[str, Any]:
     """Get activities from Hilton."""
     return await zen_dpage_mcp_tool(
-        "https://www.hilton.com/en/hilton-honors/guest/activity/", "hilton_activities", timeout=15
+        "https://www.hilton.com/en/hilton-honors/guest/activity/", "hilton_activities"
     )
