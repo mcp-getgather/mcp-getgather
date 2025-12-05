@@ -4,7 +4,6 @@ import os
 from datetime import datetime
 from typing import Any, cast
 
-from bs4 import BeautifulSoup, Tag
 from patchright.async_api import Page, Response
 
 from getgather.browser.profile import BrowserProfile
@@ -413,27 +412,19 @@ async def get_purchase_with_details(page: Page, year: int, start_index: int) -> 
                 method: 'GET',
                 credentials: 'include',
             }});
-            return await res.text();
+            const text = await res.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, 'text/html');
+
+            const el = doc.querySelector("div.your-orders-content-container__content");
+            return el ? el.innerHTML : null;
         }}
     """)
-
-    parsed = BeautifulSoup(html, "html.parser")
-
-    orders_div = parsed.find(
-        "div", class_="your-orders-content-container__content")
-
-    if not isinstance(orders_div, Tag):
-        return []
-    inner_html: str = orders_div.decode_contents()
-
-    # write inner_html to file
-    with open("inner_html.html", "w") as f:
-        f.write(inner_html)
 
     distilled = f"""
         <html gg-domain="amazon">
             <body>
-                {inner_html}
+                {html}
             </body>
             <script type="application/json" id="orders">
                 {{
@@ -508,7 +499,7 @@ async def get_purchase_with_details(page: Page, year: int, start_index: int) -> 
 
 @amazon_mcp.tool
 async def dpage_get_purchase_history_optimized(
-    year: str | int | None = None, start_index: int = 0
+    year: str | int | None = None
 ) -> dict[str, Any]:
     """Get purchase/order history of a amazon with dpage."""
 
@@ -522,8 +513,6 @@ async def dpage_get_purchase_history_optimized(
     else:
         target_year = int(year)
 
-    target_year = 2021
-
     current_year = datetime.now().year
     if not (1900 <= target_year <= current_year + 1):
         raise ValueError(
@@ -536,23 +525,18 @@ async def dpage_get_purchase_history_optimized(
         if "signin" in current_url:
             raise Exception("User is not signed in")
 
-        a_start_index = start_index
+        start_index = 0
 
-        all_orders: Any = []
+        orders: Any = []
         hasItem = True
         while hasItem:
-            orders = await get_purchase_with_details(page, target_year, a_start_index)
-            if orders is None:
+            order_with_details = await get_purchase_with_details(page, target_year, start_index)
+            if order_with_details is None:
                 break
-            all_orders.extend(orders)
-            a_start_index += 10
-            if len(orders) < 10:
+            orders.extend(order_with_details)
+            start_index += 10
+            if len(order_with_details) < 10:
                 hasItem = False
-
-        orders = all_orders
-        print(f"=== all_orders done ===")
-        print(len(orders))
-        print(f"=== all_orders ===")
 
         async def get_order_details(order: dict[str, Any]):
             # pyright: ignore[reportTypedDictNotRequiredAccess]
@@ -731,6 +715,6 @@ async def dpage_get_purchase_history_optimized(
         return {"amazon_purchase_history": orders}
 
     return await dpage_with_action(
-        f"https://www.amazon.com/your-orders/orders?timeFilter=year-{target_year}&startIndex={start_index}",
+        f"https://www.amazon.com/your-orders/orders?timeFilter=year-{target_year}",
         action=get_order_details_action,
     )
