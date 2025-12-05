@@ -375,6 +375,7 @@ class Element:
                 element.scrollIntoView({{ block: "center" }});
                 element.dispatchEvent(new PointerEvent("pointerdown", {{ bubbles: true }}));
                 element.dispatchEvent(new PointerEvent("pointerup", {{ bubbles: true }}));
+                element.dispatchEvent(new MouseEvent("click", {{ bubbles: true, cancelable: true, view: window }}));
                 return true;
             }})()
             """
@@ -401,6 +402,7 @@ class Element:
                 element.scrollIntoView({{ block: "center" }});
                 element.dispatchEvent(new PointerEvent("pointerdown", {{ bubbles: true }}));
                 element.dispatchEvent(new PointerEvent("pointerup", {{ bubbles: true }}));
+                element.dispatchEvent(new MouseEvent("click", {{ bubbles: true, cancelable: true, view: window }}));
                 return true;
             }})()
             """
