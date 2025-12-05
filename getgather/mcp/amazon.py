@@ -33,8 +33,7 @@ async def dpage_get_purchase_history(
 
     current_year = datetime.now().year
     if not (1900 <= target_year <= current_year + 1):
-        raise ValueError(
-            f"Year {target_year} is out of valid range (1900-{current_year + 1})")
+        raise ValueError(f"Year {target_year} is out of valid range (1900-{current_year + 1})")
 
     return await dpage_mcp_tool(
         f"https://www.amazon.com/your-orders/orders?timeFilter=year-{target_year}&startIndex={start_index}",
@@ -100,12 +99,10 @@ async def get_browsing_history() -> dict[str, Any]:
         raw_attribute = await page.locator("div[data-client-recs-list]").get_attribute(
             "data-client-recs-list"
         )
-        output = [json.dumps(item)
-                  for item in json.loads(raw_attribute or "[]")]
+        output = [json.dumps(item) for item in json.loads(raw_attribute or "[]")]
 
         async def get_browsing_history(start_index: int, end_index: int):
-            logger.info(
-                f"Getting browsing history from {start_index} to {end_index}")
+            logger.info(f"Getting browsing history from {start_index} to {end_index}")
             re = await page.request.post(
                 url=browsing_history_url,
                 data=json.dumps({"ids": output[start_index:end_index]}),
@@ -196,8 +193,7 @@ async def dpage_get_purchase_history_with_details(
 
     current_year = datetime.now().year
     if not (1900 <= target_year <= current_year + 1):
-        raise ValueError(
-            f"Year {target_year} is out of valid range (1900-{current_year + 1})")
+        raise ValueError(f"Year {target_year} is out of valid range (1900-{current_year + 1})")
 
     async def get_order_details_action(
         page: Page, browser_profile: BrowserProfile
@@ -206,8 +202,7 @@ async def dpage_get_purchase_history_with_details(
         if "signin" in current_url:
             raise Exception("User is not signed in")
 
-        path = os.path.join(os.path.dirname(__file__),
-                            "patterns", "**/amazon-*.html")
+        path = os.path.join(os.path.dirname(__file__), "patterns", "**/amazon-*.html")
 
         logger.info(f"Loading patterns from {path}")
         patterns = load_distillation_patterns(path)
@@ -383,8 +378,7 @@ async def dpage_get_purchase_history_with_details(
             order_details_list = await asyncio.gather(*[
                 get_order_details(order) for order in orders
             ])
-            order_details = {item["order_id"]
-                : item for item in order_details_list}
+            order_details = {item["order_id"]: item for item in order_details_list}
             for order in orders:
                 details = order_details[order["order_id"]]
                 if details.get("prices") is not None:
@@ -498,9 +492,7 @@ async def get_purchase_with_details(page: Page, year: int, start_index: int) -> 
 
 
 @amazon_mcp.tool
-async def dpage_get_purchase_history_optimized(
-    year: str | int | None = None
-) -> dict[str, Any]:
+async def dpage_get_purchase_history_optimized(year: str | int | None = None) -> dict[str, Any]:
     """Get purchase/order history of a amazon with dpage."""
 
     if year is None:
@@ -515,8 +507,7 @@ async def dpage_get_purchase_history_optimized(
 
     current_year = datetime.now().year
     if not (1900 <= target_year <= current_year + 1):
-        raise ValueError(
-            f"Year {target_year} is out of valid range (1900-{current_year + 1})")
+        raise ValueError(f"Year {target_year} is out of valid range (1900-{current_year + 1})")
 
     async def get_order_details_action(
         page: Page, browser_profile: BrowserProfile
@@ -698,8 +689,7 @@ async def dpage_get_purchase_history_optimized(
             order_details_list = await asyncio.gather(*[
                 get_order_details(order) for order in orders
             ])
-            order_details = {item["order_id"]
-                : item for item in order_details_list}
+            order_details = {item["order_id"]: item for item in order_details_list}
             for order in orders:
                 details = order_details[order["order_id"]]
                 if details.get("prices") is not None:
