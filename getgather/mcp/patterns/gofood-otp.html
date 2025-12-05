@@ -1,11 +1,11 @@
-<html gg-domain="gofood">
+<html gg-domain="gofood" gg-priority="2">
   <head>
     <title>GoFood Verification</title>
   </head>
   <body>
     <h1 gg-match="p.gf-heading-xl">Verification code sent securely to SMS</h1>
     <p gg-match="p.gf-body-m">Enter the code we've just sent to</p>
-    <p gg-optional gg-match="p:has-text('Invalid verification code. Please try again')"></p>
+    <p gg-optional gg-match="//p[contains(text(), 'Invalid verification code')]"></p>
     <div class="otp-input">
       <label gg-match="p.gf-label-m">Enter code</label>
       <input name="otp" type="tel" gg-match="input[name='data.otp']" placeholder="4-digit OTP" />
