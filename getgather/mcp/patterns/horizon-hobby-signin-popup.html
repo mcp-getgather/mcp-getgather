@@ -3,11 +3,11 @@
     <title>Horizon Hobby Popup</title>
   </head>
   <body>
-    <button
+    <div
       gg-autoclick
-      gg-match="div[data-test='account-dropdown-content'] a:has-text('Sign In/Register')"
+      gg-match="//div[@data-test='account-dropdown-content']//a[.//p[contains(text(), 'Sign In/Register')]]"
     >
       Sign in
-    </button>
+    </div>
   </body>
 </html>
