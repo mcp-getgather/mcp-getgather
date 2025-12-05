@@ -41,14 +41,6 @@ class Settings(BaseSettings):
     BROWSER_SESSION_AGE: int = 60
 
     @property
-    def brand_spec_dir(self) -> Path:
-        return PROJECT_DIR / "getgather" / "connectors" / "brand_specs"
-
-    @property
-    def test_brand_spec_dir(self) -> Path:
-        return PROJECT_DIR / "tests" / "connectors" / "brand_specs"
-
-    @property
     def data_dir(self) -> Path:
         path = Path(self.DATA_DIR).resolve() if self.DATA_DIR else PROJECT_DIR / "data"
         path.mkdir(parents=True, exist_ok=True)
