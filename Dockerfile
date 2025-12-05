@@ -98,7 +98,10 @@ ENV DISPLAY=:99
 ARG PORT=23456
 ENV PORT=${PORT}
 
+# port for FastAPI server
 EXPOSE ${PORT}
+# port for VNC server
+EXPOSE 5900
 
 RUN useradd -m -s /bin/bash getgather && \
     chown -R getgather:getgather /app && \
