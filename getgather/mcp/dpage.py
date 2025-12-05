@@ -510,6 +510,25 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
         if await terminate(distilled):
             logger.info("Finished!")
             converted = await convert(distilled)
+
+            if id in pending_actions:
+                action_info = pending_actions[id]
+                logger.info(f"Signin completed for {id}, resuming action...")
+
+                action_result = await zen_dpage_with_action(
+                    initial_url=action_info["initial_url"],
+                    action=action_info["action"],
+                    timeout=action_info["timeout"],
+                    _signin_completed=True,
+                    _page_id=id,
+                )
+
+                distillation_results[id] = action_result
+
+                del pending_actions[id]
+                await dpage_close(id)
+                return HTMLResponse(render(FINISHED_MSG, options))
+
             await dpage_close(id)
             if converted is not None:
                 print(converted)
@@ -755,6 +774,126 @@ async def dpage_with_action(
 
     url = f"{base_url}/dpage/{id}"
     logger.info(f"dpage_with_action: Continue with sign in at {url}", extra={"url": url, "id": id})
+
+    message = "Continue to sign in in your browser"
+
+    return {
+        "url": url,
+        "message": f"{message} at {url}.",
+        "signin_id": id,
+        "system_message": (
+            f"Try open the url {url} in a browser with a tool if available."
+            "Give the url to the user so the user can open it manually in their browser."
+            f"Then call check_signin tool with the signin_id to check if the sign in process is completed. "
+        ),
+    }
+
+
+async def zen_dpage_with_action(
+    initial_url: str,
+    action: Any,
+    timeout: int = 2,
+    _signin_completed: bool = False,
+    _page_id: str | None = None,
+) -> dict[str, Any]:
+    """Execute an action after signin completion with Zendriver.
+
+    Args:
+        initial_url: URL to navigate to
+        action: Async function that receives a Page and returns a dict
+        timeout: Timeout in seconds
+        _signin_completed: Whether the signin process is completed
+        _page_id: ID of the page to resume from
+    Returns:
+        Dict with result or signin flow info
+    """
+    headers = get_http_headers(include_all=True)
+    incognito = headers.get("x-incognito", "0") == "1"
+    signin_id = headers.get("x-signin-id") or None
+    global zen_global_browser
+    global incognito_browsers
+
+    # Step 1: If resuming after signin completion, use the active page directly
+    if _signin_completed and _page_id is not None and _page_id in active_pages:
+        logger.info(f"Resuming action after signin with page_id={_page_id}")
+        page = active_pages[_page_id]
+
+        if not isinstance(page, zd.Tab):
+            raise ValueError(f"Expected Zendriver Tab for page {_page_id}, got {type(page)}")
+
+        action_info = pending_actions[_page_id]
+
+        try:
+            await page.get(initial_url)
+        except Exception as e:
+            logger.warning(f"Failed to navigate to {initial_url}: {e}")
+
+        result = await action(page, action_info["browser"])
+        return result
+
+    # Step 2: If global_browser_profile exists, try executing action directly
+    # This will work if user signed in previously and session is still valid
+    if (zen_global_browser is not None and not incognito) or signin_id is not None:
+        browser = None
+        if zen_global_browser is not None and not incognito:
+            browser = zen_global_browser
+        else:
+            browser = await init_zendriver_browser(signin_id)
+
+        try:
+            logger.info("Trying action with existing global browser session...")
+            page = await get_new_page(browser)
+            await page.get(initial_url)
+            result = await action(page, browser)
+            await page.close()
+            logger.info("Action succeeded with existing session!")
+            return result
+        except Exception as e:
+            logger.info(
+                f"zen_dpage_with_action failed with existing session (likely not signed in): {e}"
+            )
+
+    # Step 3: User not signed in - create interactive signin flow with action
+    browser_instance: zd.Browser
+    if incognito:
+        browser_instance = await init_zendriver_browser(signin_id)
+    else:
+        if zen_global_browser is None:
+            logger.info("Creating global browser for Zendriver signin flow...")
+            zen_global_browser = await init_zendriver_browser()
+            await get_new_page(zen_global_browser)
+        browser_instance = zen_global_browser
+
+    page = await get_new_page(browser_instance)
+    page.hostname = urllib.parse.urlparse(initial_url).hostname  # type: ignore
+
+    id = await dpage_add(page, initial_url, browser_instance.id)  # type: ignore
+
+    # Store action for auto-resumption after signin
+    pending_actions[id] = {
+        "action": action,
+        "initial_url": initial_url,
+        "timeout": timeout,
+        "page_id": id,
+        "browser": browser_instance,
+    }
+
+    if incognito:
+        incognito_browsers[id] = browser_instance
+
+    host = headers.get("x-forwarded-host") or headers.get("host")
+    if host is None:
+        logger.warning("Missing Host header; defaulting to localhost")
+        base_url = "http://localhost:23456"
+    else:
+        default_scheme = "http" if is_local_address(host) else "https"
+        scheme = headers.get("x-forwarded-proto", default_scheme)
+        base_url = f"{scheme}://{host}"
+
+    url = f"{base_url}/dpage/{id}"
+    logger.info(
+        f"zen_dpage_with_action: Continue with sign in at {url}", extra={"url": url, "id": id}
+    )
 
     message = "Continue to sign in in your browser"
 
