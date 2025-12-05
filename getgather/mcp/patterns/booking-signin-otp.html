@@ -1,18 +1,66 @@
-<html gg-domain="booking">
+<html gg-domain="booking" gg-priority="1">
   <head>
-    <title>Booking Sign In</title>
+    <title>Booking OTP</title>
   </head>
   <body>
     <p gg-optional gg-match="p.nw-step-description"></p>
     <p gg-optional gg-match="span.error-block"></p>
-    <input
-      autofocus
-      placeholder="Code"
-      name="code_0"
-      type="text"
-      gg-match="div:not(.app--loading) input[name='code_0']"
-      maxlength="6"
-    />
-    <button type="submit" gg-match="form button[type='submit'] span">Continue</button>
+    <span>6 Digit Verification Code:</span>
+    <div class="otp-container">
+      <input
+        autofocus
+        name="otp-1"
+        type="text"
+        inputmode="numeric"
+        gg-match="input[name='code_0']"
+      />
+      <input name="otp-2" type="text" inputmode="numeric" gg-match="input[name='code_1']" />
+      <input name="otp-3" type="text" inputmode="numeric" gg-match="input[name='code_2']" />
+      <input name="otp-4" type="text" inputmode="numeric" gg-match="input[name='code_3']" />
+      <input name="otp-5" type="text" inputmode="numeric" gg-match="input[name='code_4']" />
+      <input name="otp-6" type="text" inputmode="numeric" gg-match="input[name='code_5']" />
+    </div>
+    <button type="submit" gg-match="form button[type='submit']">Verify email</button>
+
+    <style>
+      .otp-container {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+      }
+
+      .otp-container input {
+        flex: 50px;
+        height: 50px;
+        font-size: 24px;
+        text-align: center;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        outline: none;
+        transition: border-color 0.2s ease;
+      }
+
+      .otp-container input:focus {
+        border-color: #007bff;
+      }
+    </style>
+    <script>
+      const inputs = document.querySelectorAll(".otp-container input");
+
+      inputs.forEach((input, index) => {
+        input.addEventListener("input", (e) => {
+          const value = e.target.value;
+          if (value && index < inputs.length - 1) {
+            inputs[index + 1].focus();
+          }
+        });
+
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Backspace" && !input.value && index > 0) {
+            inputs[index - 1].focus();
+          }
+        });
+      });
+    </script>
   </body>
 </html>
