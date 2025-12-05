@@ -21,5 +21,46 @@
       <input name="otp-6" type="text" inputmode="numeric" gg-match="input[name='code_5']" />
     </div>
     <button type="submit" gg-match="form button[type='submit']">Verify email</button>
+
+    <style>
+      .otp-container {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+      }
+
+      .otp-container input {
+        flex: 50px;
+        height: 50px;
+        font-size: 24px;
+        text-align: center;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        outline: none;
+        transition: border-color 0.2s ease;
+      }
+
+      .otp-container input:focus {
+        border-color: #007bff;
+      }
+    </style>
+    <script>
+      const inputs = document.querySelectorAll(".otp-container input");
+
+      inputs.forEach((input, index) => {
+        input.addEventListener("input", (e) => {
+          const value = e.target.value;
+          if (value && index < inputs.length - 1) {
+            inputs[index + 1].focus();
+          }
+        });
+
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Backspace" && !input.value && index > 0) {
+            inputs[index - 1].focus();
+          }
+        });
+      });
+    </script>
   </body>
 </html>
