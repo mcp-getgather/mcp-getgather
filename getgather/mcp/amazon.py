@@ -219,10 +219,8 @@ async def dpage_get_purchase_history_with_details(
             return {"amazon_purchase_history": []}
 
         async def get_order_details(order: dict[str, Any]):
-            # pyright: ignore[reportTypedDictNotRequiredAccess]
-            order_id = order["order_id"]
-            # pyright: ignore[reportTypedDictNotRequiredAccess]
-            store_logo = order.get("store_logo")
+            order_id = order["order_id"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            store_logo = order.get("store_logo")  # pyright: ignore[reportTypedDictNotRequiredAccess]
 
             # Determine order type based on brand logo alt text
             order_type = "regular"
