@@ -3,13 +3,13 @@
     <div>
       <div
         gg-stop
-        gg-match="//a[contains(text(), 'All') and contains(@class, 'bc-tab-active')]"
+        gg-match="//a[contains(text(), 'Wish List') and contains(@class, 'bc-tab-active')]"
       ></div>
       <div gg-stop gg-match-html="div#adbl-library-content-main"></div>
     </div>
     <script type="application/json" id="library">
       {
-        "rows": ".adbl-library-content-row",
+        "rows": "li.productListItem",
         "columns": [
           {
             "name": "cover",
