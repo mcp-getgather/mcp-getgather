@@ -3,6 +3,7 @@
     <title>Sign In to Ebay</title>
   </head>
   <body>
+    <h1 gg-match="//h1[contains(text(), 'Sign in to your account')]">Sign in to your account</h1>
     <p gg-optional gg-match="p#signin-error-msg"></p>
     <input
       autofocus
@@ -14,7 +15,7 @@
     <button
       type="submit"
       gg-autoclick
-      gg-match="[data-testid='signin-continue-btn']:not([disabled])"
+      gg-match="//button[@data-testid='signin-continue-btn' and not(@disabled)]"
     >
       Sign in
     </button>
