@@ -374,9 +374,13 @@ class Element:
             escaped_selector = self.css_selector.replace("\\", "\\\\").replace('"', '\\"')
             js_code = f"""
             (() => {{
-                let element = document.querySelector("{escaped_selector}");
-                if (element) {{ element.click(); return true; }}
-                return false;
+                const element = document.querySelector("{escaped_selector}");
+                if (!element) return false;
+                element.scrollIntoView({{ block: "center" }});
+                element.dispatchEvent(new PointerEvent("pointerdown", {{ bubbles: true }}));
+                element.dispatchEvent(new PointerEvent("pointerup", {{ bubbles: true }}));
+                element.dispatchEvent(new MouseEvent("click", {{ bubbles: true, cancelable: true, view: window }}));
+                return true;
             }})()
             """
             result = await self.page.evaluate(js_code)
@@ -398,8 +402,12 @@ class Element:
             js_code = f"""
             (() => {{
                 let element = document.evaluate("{escaped_selector}", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-                if (element) {{ element.click(); return true; }}
-                return false;
+                if (!element) return false;
+                element.scrollIntoView({{ block: "center" }});
+                element.dispatchEvent(new PointerEvent("pointerdown", {{ bubbles: true }}));
+                element.dispatchEvent(new PointerEvent("pointerup", {{ bubbles: true }}));
+                element.dispatchEvent(new MouseEvent("click", {{ bubbles: true, cancelable: true, view: window }}));
+                return true;
             }})()
             """
             result = await self.page.evaluate(js_code)
