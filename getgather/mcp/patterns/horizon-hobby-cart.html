@@ -18,8 +18,11 @@
           },
           { "name": "product_name", "selector": "div > a[title] > p" },
           { "name": "product_url", "selector": "div > a[title]", "attribute": "href" },
-          { "name": "product_price", "selector": "p:contains('Each:') + span" },
-          { "name": "product_price_original", "selector": "p:contains('Each:') + span + span" }
+          { "name": "product_price", "selector": "div[data-test='product-price'] span" },
+          {
+            "name": "product_price_original",
+            "selector": "div[data-test='product-price'] span:nth-of-type(2)"
+          }
         ]
       }
     </script>
