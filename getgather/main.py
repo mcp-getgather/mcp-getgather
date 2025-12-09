@@ -79,6 +79,7 @@ logfire.configure(
     code_source=logfire.CodeSource(
         repository="https://github.com/mcp-getgather/mcp-getgather", revision="main"
     ),
+    scrubbing=False,
 )
 logfire.instrument_fastapi(app, capture_headers=True)
 
