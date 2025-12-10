@@ -490,7 +490,7 @@ async def get_purchase_with_details(page: Page, year: int, start_index: int) -> 
 
 
 @amazon_mcp.tool
-async def dpage_get_purchase_history_optimized(year: str | int | None = None) -> dict[str, Any]:
+async def get_purchase_history_yearly(year: str | int | None = None) -> dict[str, Any]:
     """Get purchase/order history of a amazon with dpage."""
 
     if year is None:
