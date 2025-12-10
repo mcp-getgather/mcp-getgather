@@ -2,10 +2,11 @@
   <head>
     <title>Sign In to Nordstrom</title>
   </head>
+
   <body>
-    <h1 gg-match="span:has-text('Enter your code to sign in')"></h1>
+    <h1 gg-match="//span[contains(text(), 'Enter your code to sign in')]"></h1>
     <span gg-optional gg-match="span[data-cy='hit-a-snag-error']"></span>
-    <div gg-optional gg-match="section > div:has-text('We sent a code to:')"></div>
+    <div gg-optional gg-match="//section/div[contains(., 'We sent a code to:')]"></div>
     <input
       inputmode="numeric"
       autofocus
@@ -14,7 +15,7 @@
       gg-match="input[name='code']"
       placeholder="Code"
     />
-    <button type="submit" gg-match="button[type='button']:has-text('Verify and Sign in')">
+    <button type="submit" gg-match="//button[@type='button' and contains(., 'Verify and Sign in')]">
       Verify and Sign in
     </button>
   </body>

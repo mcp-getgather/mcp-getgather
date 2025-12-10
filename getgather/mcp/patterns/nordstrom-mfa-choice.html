@@ -6,7 +6,7 @@
     <div>
       <p gg-optional gg-match="h1"></p>
 
-      <p gg-match="strong:has-text('How should we send your code?')"></p>
+      <p gg-match="//strong[contains(text(), 'How should we send your code?')]"></p>
       <div class="vertical-radios">
         <div class="radio-wrapper">
           <div style="font-size: 0">
@@ -55,7 +55,7 @@
           </div>
         </div>
       </div>
-      <button type="submit" gg-match="button:has-text('Send Code')">Send Code</button>
+      <button type="submit" gg-match="//button[contains(text(), 'Send Code')]">Send Code</button>
     </div>
   </body>
 </html>

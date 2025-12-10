@@ -4,7 +4,7 @@ from patchright.async_api import Page
 
 from getgather.actions import handle_network_extraction
 from getgather.logs import logger
-from getgather.mcp.dpage import dpage_with_action
+from getgather.mcp.dpage import zen_dpage_mcp_tool
 from getgather.mcp.registry import GatherMCP
 
 nordstrom_mcp = GatherMCP(brand_id="nordstrom", name="Nordstrom MCP")
@@ -48,15 +48,25 @@ async def get_order_details_with_retry(
 # so we need to listen specifically to the order details api call
 
 
+# @nordstrom_mcp.tool
+# async def get_order_history(page_number: int = 1) -> dict[str, Any]:
+#     """Get the details of an order from Nordstrom"""
+
+#     async def get_order_details_action(page: Page, _) -> dict[str, Any]:
+#         """Get the details of an order from Nordstrom"""
+#         return await get_order_details_with_retry(page, page_number)
+
+#     return await dpage_with_action(
+#         "https://www.nordstrom.com/my-account",
+#         get_order_details_action,
+#     )
+
+
 @nordstrom_mcp.tool
 async def get_order_history(page_number: int = 1) -> dict[str, Any]:
     """Get the details of an order from Nordstrom"""
 
-    async def get_order_details_action(page: Page, _) -> dict[str, Any]:
-        """Get the details of an order from Nordstrom"""
-        return await get_order_details_with_retry(page, page_number)
-
-    return await dpage_with_action(
+    return await zen_dpage_mcp_tool(
         "https://www.nordstrom.com/my-account",
-        get_order_details_action,
+        "nordstrom_order_history",
     )

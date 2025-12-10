@@ -4,6 +4,9 @@
   </head>
   <body>
     <p gg-match="span[data-cy='hit-a-snag-error']"></p>
-    <div gg-autoclick gg-match="button#account-check-next-button:has-text('Next')"></div>
+    <div
+      gg-autoclick
+      gg-match="//button[@id='account-check-next-button' and contains(., 'Next')]"
+    ></div>
   </body>
 </html>
