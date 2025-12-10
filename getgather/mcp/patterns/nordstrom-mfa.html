@@ -5,6 +5,7 @@
   <body>
     <h1 gg-match="span:has-text('Enter your code to sign in')"></h1>
     <span gg-optional gg-match="span[data-cy='hit-a-snag-error']"></span>
+    <div gg-optional gg-match="section > div:has-text('We sent a code to:')"></div>
     <input
       inputmode="numeric"
       autofocus
