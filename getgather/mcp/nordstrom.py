@@ -54,7 +54,7 @@ async def get_order_details_with_retry(
         logger.info(f"Attempt {attempt}/{max_retries}")
         try:
             await tab.get("https://www.nordstrom.com/my-account")
-            select_element = await page_query_selector(tab, "div > label > select", 30_000)
+            select_element = await page_query_selector(tab, "div > label > select", timeout=10)
 
             orders = None
             if select_element:
@@ -75,8 +75,8 @@ async def get_order_details_with_retry(
 
             if page_number > 1:
                 logger.info(f"Looking for pagination link: ul li a[href='?page={page_number}']")
-                pagination_link = await tab.select(
-                    f"ul li a[href='?page={page_number}']", timeout=5
+                pagination_link = await page_query_selector(
+                    tab, f"ul li a[href='?page={page_number}']", timeout=10
                 )
                 if not pagination_link:
                     logger.warning(
