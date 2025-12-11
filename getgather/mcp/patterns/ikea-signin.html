@@ -4,8 +4,17 @@
   </head>
   <body>
     <span gg-optional gg-match="span.form-field__message"></span>
-    <input autofocus name="email" type="email" placeholder="Email" gg-match="input#username" />
-    <button type="submit" gg-match="button:has-text('Continue'):not(:has(.btn__loader))">
+    <input
+      autofocus
+      name="email"
+      type="email"
+      placeholder="Email"
+      gg-match="//input[@id='email' or @id='passwordless-primary-login-form-username']"
+    />
+    <button
+      type="submit"
+      gg-match="//button[@type='submit' and contains(., 'Continue') and not(.//span[contains(@class, 'btn__loader')])]"
+    >
       Continue
     </button>
   </body>

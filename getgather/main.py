@@ -16,7 +16,6 @@ from fastapi.responses import (
     Response,
 )
 from fastapi.routing import APIRoute
-from fastapi.security import HTTPBearer
 from fastapi.staticfiles import StaticFiles
 
 from getgather.api.api import api_app
@@ -47,7 +46,10 @@ async def lifespan(app: FastAPI):
     async def timer_loop():
         while not stop_event.is_set():
             await cleanup_old_sessions()
-            await asyncio.sleep(5 * 60)  # every 5 minutes
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=5 * 60)
+            except asyncio.TimeoutError:
+                pass  # Timeout = 5 minutes passed, continue loop
 
     background_task = asyncio.create_task(timer_loop())
 
@@ -65,9 +67,6 @@ app = FastAPI(
     title="Get Gather",
     description="GetGather mcp, frontend, and api",
     version="0.1.0",
-    openapi_url="/openapi.json",
-    docs_url="/docs",
-    redoc_url="/redoc",
     generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan,
 )
@@ -80,11 +79,13 @@ logfire.configure(
     code_source=logfire.CodeSource(
         repository="https://github.com/mcp-getgather/mcp-getgather", revision="main"
     ),
+    scrubbing=False,
 )
 logfire.instrument_fastapi(app, capture_headers=True)
 
 
-STATIC_ASSETS_DIR = Path(__file__).parent / "static" / "assets"
+STATIC_DIR = Path(__file__).parent / "static"
+STATIC_ASSETS_DIR = STATIC_DIR / "assets"
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 
 
@@ -240,28 +241,7 @@ async def mcp_slash_middleware(
     return await call_next(request)
 
 
-# Everything else is handled by the SPA
-@app.get("/{full_path:path}")
-def frontend_router(full_path: str):
-    logger.info(f"Routing {full_path} to frontend")
-    return FileResponse(FRONTEND_DIR / "index.html")
-
-
-bearer = HTTPBearer(auto_error=False)
-AUTH_SKIP_PATHS = {"/health", "/extended-health", "/docs", "/redoc", "/openapi.json", "/__static"}
-
-
-@app.middleware("http")
-async def bearer_token_auth_middleware(
-    request: Request, call_next: Callable[[Request], Awaitable[Response]]
-):
-    if not settings.AUTH_BEARER_TOKEN or any(
-        request.url.path.startswith(path) for path in AUTH_SKIP_PATHS
-    ):
-        return await call_next(request)
-
-    auth = await bearer(request)
-    if not auth or auth.credentials != settings.AUTH_BEARER_TOKEN:
-        return Response(status_code=401, content="Authorization header missing or invalid")
-
-    return await call_next(request)
+# Serve static homepage
+@app.get("/")
+def homepage():
+    return FileResponse(STATIC_DIR / "index.html")

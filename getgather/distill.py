@@ -495,6 +495,7 @@ async def run_distillation_loop(
     interactive: bool = True,
     stop_ok: bool = False,
     close_page: bool = False,
+    page: Page | None = None,
 ) -> tuple[bool, str, ConversionResult | None]:
     """Run the distillation loop.
 
@@ -513,7 +514,7 @@ async def run_distillation_loop(
     profile = browser_profile or BrowserProfile()
 
     async with browser_session(profile, stop_ok=stop_ok) as session:
-        page = await session.new_page()
+        page = page or await session.new_page()
 
         logger.info(f"Starting browser {profile.id}")
         logger.info(f"Navigating to {location}")

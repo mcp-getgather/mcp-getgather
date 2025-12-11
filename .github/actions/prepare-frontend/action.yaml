@@ -11,16 +11,3 @@ runs:
     - name: Install the project
       run: npm ci
       shell: bash
-
-    - name: Generate TypeScript types from OpenAPI (if available)
-      run: |
-        if [ -f .github/artifacts/openapi.json ]; then
-          echo "OpenAPI artifact found, generating TypeScript types..."
-          mkdir -p frontend/__generated__
-          npx openapi-typescript .github/artifacts/openapi.json -o frontend/__generated__/api.d.ts
-          echo "TypeScript types generated successfully"
-        else
-          echo "OpenAPI artifact not found, skipping TypeScript generation"
-          echo "This is normal for frontend-only workflows (lint, format)"
-        fi
-      shell: bash

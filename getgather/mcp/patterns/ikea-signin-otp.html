@@ -10,7 +10,7 @@
       type="text"
       inputmode="numeric"
       placeholder="OTP"
-      gg-match="input#otc-verification"
+      gg-match="input#passwordless-otp-verification-form-otp"
     />
     <input
       gg-autoclick
@@ -19,7 +19,10 @@
       gg-match="input#remember-me"
       style="display: none"
     />
-    <button type="submit" gg-match="button:has-text('Continue'):not(:has(.btn__loader))">
+    <button
+      type="submit"
+      gg-match="//button[@type='submit' and contains(., 'Continue') and not(.//span[contains(@class, 'btn__loader')])]"
+    >
       Continue
     </button>
   </body>

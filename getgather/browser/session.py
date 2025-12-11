@@ -13,7 +13,6 @@ from patchright.async_api import BrowserContext, Page, Playwright, async_playwri
 from getgather.browser.profile import BrowserProfile
 from getgather.browser.resource_blocker import configure_context
 from getgather.logs import logger
-from getgather.rrweb import rrweb_injector, rrweb_manager
 
 FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
 
@@ -121,14 +120,7 @@ class BrowserSession:
                     await debug_page.goto(debug_url)
 
                 # Intentionally create a new page to apply resources filtering (from blocklists)
-                page = await self.new_page()
-
-                page.on(
-                    "load",
-                    lambda page: asyncio.create_task(
-                        rrweb_injector.setup_rrweb(self.context, page)
-                    ),
-                )
+                await self.new_page()
 
                 return self
 
@@ -143,8 +135,6 @@ class BrowserSession:
                 "profile_id": self.profile.id,
             },
         )
-
-        await rrweb_manager.save_recording(self.session_id)
 
         try:
             if self._context and self.context.browser:

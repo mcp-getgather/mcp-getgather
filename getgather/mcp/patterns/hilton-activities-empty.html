@@ -1,14 +1,19 @@
-<html gg-domain="hilton">
+<html gg-domain="hilton" gg-priority="1">
   <head>
-    <title>Hilton Activities</title>
+    <title>Hilton Activities Empty</title>
   </head>
   <body>
     <div>
-      <h2 gg-stop gg-match-html="h2:has-text('No results found.')"></h2>
+      <h2
+        gg-stop
+        gg-match="//h2[contains(@class, 'text-lg') and contains(@class, 'font-bold') and contains(text(), 'No results found.')]"
+      >
+        No results found.
+      </h2>
       <span
         >Once you've booked your first stay with us, you'll be able to view your activity right
-        here.
-      </span>
+        here.</span
+      >
       <div>
         <p>New reservations and cancellations may take up to two hours to appear.</p>
         <p>

@@ -3,8 +3,8 @@
     <title>Tokopedia Verification</title>
   </head>
   <body>
-    <p gg-optional gg-match="span:has-text('Kode yang kamu masukkan salah.')"></p>
-    <div gg-match="div.header > div:has-text('Masukkan Kode Verifikasi')"></div>
+    <p gg-optional gg-match="//span[contains(text(), 'Kode yang kamu masukkan salah.')]"></p>
+    <div gg-match="//div[contains(text(), 'Masukkan Kode Verifikasi')]"></div>
     <input name="otp" type="tel" gg-match="input[type=tel]" placeholder="OTP" />
     <button type="submit">Submit</button>
   </body>

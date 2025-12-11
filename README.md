@@ -80,10 +80,6 @@ Choose one of the following options if you'd like the MCP clients to automatical
 
 ### 3. Read more
 
-Navigate to `http://localhost:23456/welcome` for more tools.
-
-Navigate to `http://localhost:23456/docs` to see the API docs.
-
 To live stream the container desktop, go to `http://localhost:23456/live`.
 
 Development documentation is located in the [docs](./docs) directory:

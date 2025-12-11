@@ -186,13 +186,31 @@ async def _create_zendriver_browser(id: str | None = None) -> zd.Browser:
 
 async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
     MAX_ATTEMPTS = 3
-    CHECK_URL = "https://ip.fly.dev/all"
+    LIVE_CHECK_URL = "https://ip.fly.dev/all"
+    IP_ONLY_CHECK_URL = "https://ip.fly.dev/ip"
     for attempt in range(1, MAX_ATTEMPTS + 1):
         logger.info(f"Creating a new Zendriver browser (attempt {attempt}/{MAX_ATTEMPTS})...")
         browser = await _create_zendriver_browser(id)
         try:
-            logger.info(f"Validating browser at {CHECK_URL}...")
-            await get_new_page(browser, CHECK_URL)
+            logger.info(f"Validating browser at {LIVE_CHECK_URL}...")
+            # Create page with proxy setup first, then navigate
+            page = await get_new_page(browser)
+            await page.get(LIVE_CHECK_URL)
+
+            ip_page = await get_new_page(browser)
+            # Extract and log just the IP address
+            try:
+                await ip_page.get(IP_ONLY_CHECK_URL)
+                await ip_page.wait(2)
+                body = await ip_page.select("body")
+                if body:
+                    ip_address = body.text.strip()
+                    logger.info(f"Browser IP address: {ip_address}")
+                else:
+                    logger.warning("Could not extract IP address")
+            except Exception as e:
+                logger.warning(f"Failed to extract IP: {e}")
+            await ip_page.close()
             logger.info(f"Browser validated on attempt {attempt}")
             return browser
         except Exception as e:
@@ -236,8 +254,8 @@ async def terminate_zendriver_browser(browser: zd.Browser):
                 logger.warning(f"Failed to remove {directory}: {e}")
 
 
-async def get_new_page(browser: zd.Browser, location: str = "about:blank") -> zd.Tab:
-    page = await browser.get(location, new_tab=True)
+async def get_new_page(browser: zd.Browser) -> zd.Tab:
+    page = await browser.get("about:blank", new_tab=True)
 
     if blocked_domains is None:
         await load_blocklists()
@@ -258,10 +276,13 @@ async def get_new_page(browser: zd.Browser, location: str = "about:blank") -> zd
             try:
                 await page.send(zd.cdp.fetch.continue_request(request_id=event.request_id))
             except (ProtocolException, websockets.ConnectionClosedError) as e:
-                if isinstance(
-                    e, ProtocolException
-                ) and "Invalid state for continueInterceptedRequest" in str(e):
-                    logger.debug(f"Request already processed: {request_url}")
+                if isinstance(e, ProtocolException) and (
+                    "Invalid state for continueInterceptedRequest" in str(e)
+                    or "Invalid InterceptionId" in str(e)
+                ):
+                    logger.debug(
+                        f"Request already processed or invalid interception ID: {request_url}"
+                    )
                 elif isinstance(e, websockets.ConnectionClosedError):
                     logger.debug(f"Page closed while continuing request: {request_url}")
                 else:
@@ -279,10 +300,11 @@ async def get_new_page(browser: zd.Browser, location: str = "about:blank") -> zd
                 )
             )
         except (ProtocolException, websockets.ConnectionClosedError) as e:
-            if isinstance(
-                e, ProtocolException
-            ) and "Invalid state for continueInterceptedRequest" in str(e):
-                logger.debug(f"Request already processed: {request_url}")
+            if isinstance(e, ProtocolException) and (
+                "Invalid state for continueInterceptedRequest" in str(e)
+                or "Invalid InterceptionId" in str(e)
+            ):
+                logger.debug(f"Request already processed or invalid interception ID: {request_url}")
             elif isinstance(e, websockets.ConnectionClosedError):
                 logger.debug(f"Page closed while blocking request: {request_url}")
             else:
@@ -332,6 +354,51 @@ class Element:
             await self.xpath_click()
         await asyncio.sleep(0.25)
 
+    async def select_option(self, value: str) -> None:
+        # Only support CSS selectors for now
+        if not self.css_selector:
+            logger.warning("Cannot perform CSS select_option: no css_selector available")
+            return
+        logger.debug(f"Attempting JavaScript CSS select_option for {self.css_selector}")
+        try:
+            escaped_selector = self.css_selector.replace("\\", "\\\\").replace('"', '\\"')
+            value_selector = f"option[value='{value}']"
+            js_code = f"""
+                (() => {{
+                    const select = document.querySelector("{escaped_selector}");
+                    const option = select?.querySelector("{value_selector}");
+                    if (!select || !option) return false;
+
+                    // Scroll into view
+                    select.scrollIntoView({{ block: "center" }});
+
+                    // Open dropdown (if needed)
+                    select.dispatchEvent(new PointerEvent("pointerdown", {{ bubbles: true }}));
+                    select.dispatchEvent(new PointerEvent("pointerup", {{ bubbles: true }}));
+                    select.dispatchEvent(new MouseEvent("click", {{ bubbles: true, cancelable: true, view: window }}));
+
+                    // Select the option
+                    option.selected = true;
+
+                    // Trigger change event
+                    select.dispatchEvent(new Event("change", {{ bubbles: true }}));
+
+                    return true;
+                }})();
+            """
+            result = await self.page.evaluate(js_code)
+            if result:
+                logger.info(f"JavaScript CSS select_option succeeded for {self.css_selector}")
+                return
+            else:
+                logger.warning(
+                    f"JavaScript CSS select_option could not find element {self.css_selector}"
+                )
+        except Exception as js_error:
+            logger.error(f"JavaScript CSS select_option failed: {js_error}")
+
+        await asyncio.sleep(0.25)
+
     async def check(self) -> None:
         logger.error("TODO: Element#check")
         await asyncio.sleep(0.25)
@@ -352,9 +419,13 @@ class Element:
             escaped_selector = self.css_selector.replace("\\", "\\\\").replace('"', '\\"')
             js_code = f"""
             (() => {{
-                let element = document.querySelector("{escaped_selector}");
-                if (element) {{ element.click(); return true; }}
-                return false;
+                const element = document.querySelector("{escaped_selector}");
+                if (!element) return false;
+                element.scrollIntoView({{ block: "center" }});
+                element.dispatchEvent(new PointerEvent("pointerdown", {{ bubbles: true }}));
+                element.dispatchEvent(new PointerEvent("pointerup", {{ bubbles: true }}));
+                element.dispatchEvent(new MouseEvent("click", {{ bubbles: true, cancelable: true, view: window }}));
+                return true;
             }})()
             """
             result = await self.page.evaluate(js_code)
@@ -376,8 +447,12 @@ class Element:
             js_code = f"""
             (() => {{
                 let element = document.evaluate("{escaped_selector}", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-                if (element) {{ element.click(); return true; }}
-                return false;
+                if (!element) return false;
+                element.scrollIntoView({{ block: "center" }});
+                element.dispatchEvent(new PointerEvent("pointerdown", {{ bubbles: true }}));
+                element.dispatchEvent(new PointerEvent("pointerup", {{ bubbles: true }}));
+                element.dispatchEvent(new MouseEvent("click", {{ bubbles: true, cancelable: true, view: window }}));
+                return true;
             }})()
             """
             result = await self.page.evaluate(js_code)

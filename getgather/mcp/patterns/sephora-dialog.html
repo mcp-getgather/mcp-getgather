@@ -1,6 +1,8 @@
-<html gg-domain="sephora" priority="1">
+<html gg-domain="sephora" gg-priority="1">
   <body>
-    <span gg-match="div#modal1Dialog p:has-text('This site does not ship to your country.')"></span>
+    <span
+      gg-match="//div[@id='modal1Dialog']//p[contains(., 'This site does not ship to your country.')]"
+    ></span>
     <button gg-autoclick gg-match="button[data-at='modal_close']"></button>
   </body>
 </html>

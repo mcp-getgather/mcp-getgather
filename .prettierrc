@@ -4,8 +4,5 @@
   "singleQuote": false,
   "tabWidth": 2,
   "printWidth": 100,
-  "importOrder": ["^@generated/(.*)$", "^@/(.*)$", "^[./]"],
-  "importOrderSeparation": true,
-  "importOrderSortSpecifiers": true,
-  "plugins": ["@trivago/prettier-plugin-sort-imports", "prettier-plugin-tailwindcss"]
+  "plugins": []
 }
