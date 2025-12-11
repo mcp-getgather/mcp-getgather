@@ -14,6 +14,7 @@ from getgather.mcp.registry import GatherMCP
 
 amazonca_mcp = GatherMCP(brand_id="amazonca", name="Amazon CA MCP")
 
+
 @amazonca_mcp.tool
 async def search_purchase_history(keyword: str, page_number: int = 1) -> dict[str, Any]:
     """Search purchase history from amazon ca."""
