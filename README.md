@@ -50,6 +50,8 @@ For VS Code, Cursor, and other MCP clients which support remote MCP servers:
 }
 ```
 
+For Gemini CLI, use `httpUrl` [instead of `url`](https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md#required-one-of-the-following).
+
 For Claude Desktop:
 
 ```json
