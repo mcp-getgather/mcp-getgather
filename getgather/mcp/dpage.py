@@ -484,11 +484,11 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
     if logger.isEnabledFor(logging.DEBUG):
         await zen_capture_page_artifacts(page, identifier=id, prefix="dpage_debug")
 
-    hostname: str | None = getattr(page, "hostname", None)  # type: ignore[assignment]
-
     for iteration in range(max):
         logger.debug(f"Iteration {iteration + 1} of {max}")
         await asyncio.sleep(TICK)
+
+        hostname: str | None = getattr(page, "hostname", None)  # type: ignore[assignment]
 
         match = await zen_distill(hostname, page, patterns)
         if not match:
