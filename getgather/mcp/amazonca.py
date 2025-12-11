@@ -79,7 +79,7 @@ async def dpage_get_purchase_history_with_details(
             browser_profile=browser_profile,
             interactive=False,
             timeout=2,
-            stop_ok=False,
+            page=page,
         )
         if orders is None:
             return {"amazon_purchase_history": []}
