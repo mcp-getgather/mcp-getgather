@@ -4,6 +4,11 @@
   </head>
   <body>
     <input autofocus name="email" type="text" gg-match="input[name='email']" placeholder="Email" />
-    <button type="submit" gg-match="button#account-check-next-button:has-text('Next')">Next</button>
+    <button
+      type="submit"
+      gg-match="//button[@id='account-check-next-button' and contains(., 'Next')]"
+    >
+      Next
+    </button>
   </body>
 </html>

@@ -4,6 +4,6 @@
   </head>
   <body>
     <p gg-match="span[data-cy='hit-a-snag-error']"></p>
-    <div gg-autoclick gg-match="button[alt='sign in button']:has-text('Sign In')"></div>
+    <div gg-autoclick gg-match="//button[@alt='sign in button' and contains(., 'Sign In')]"></div>
   </body>
 </html>

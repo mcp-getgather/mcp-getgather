@@ -4,7 +4,10 @@
   </head>
   <body>
     <div>
-      <div gg-stop gg-match-html="p:has-text('You have no purchases in this time period.')"></div>
+      <div
+        gg-stop
+        gg-match-html="//p[contains(text(), 'You have no purchases in this time period.')]"
+      ></div>
     </div>
   </body>
 </html>

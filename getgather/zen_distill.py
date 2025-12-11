@@ -354,6 +354,51 @@ class Element:
             await self.xpath_click()
         await asyncio.sleep(0.25)
 
+    async def select_option(self, value: str) -> None:
+        # Only support CSS selectors for now
+        if not self.css_selector:
+            logger.warning("Cannot perform CSS select_option: no css_selector available")
+            return
+        logger.debug(f"Attempting JavaScript CSS select_option for {self.css_selector}")
+        try:
+            escaped_selector = self.css_selector.replace("\\", "\\\\").replace('"', '\\"')
+            value_selector = f"option[value='{value}']"
+            js_code = f"""
+                (() => {{
+                    const select = document.querySelector("{escaped_selector}");
+                    const option = select?.querySelector("{value_selector}");
+                    if (!select || !option) return false;
+
+                    // Scroll into view
+                    select.scrollIntoView({{ block: "center" }});
+
+                    // Open dropdown (if needed)
+                    select.dispatchEvent(new PointerEvent("pointerdown", {{ bubbles: true }}));
+                    select.dispatchEvent(new PointerEvent("pointerup", {{ bubbles: true }}));
+                    select.dispatchEvent(new MouseEvent("click", {{ bubbles: true, cancelable: true, view: window }}));
+
+                    // Select the option
+                    option.selected = true;
+
+                    // Trigger change event
+                    select.dispatchEvent(new Event("change", {{ bubbles: true }}));
+
+                    return true;
+                }})();
+            """
+            result = await self.page.evaluate(js_code)
+            if result:
+                logger.info(f"JavaScript CSS select_option succeeded for {self.css_selector}")
+                return
+            else:
+                logger.warning(
+                    f"JavaScript CSS select_option could not find element {self.css_selector}"
+                )
+        except Exception as js_error:
+            logger.error(f"JavaScript CSS select_option failed: {js_error}")
+
+        await asyncio.sleep(0.25)
+
     async def check(self) -> None:
         logger.error("TODO: Element#check")
         await asyncio.sleep(0.25)
