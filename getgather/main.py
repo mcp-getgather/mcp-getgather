@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Awaitable, Callable, Final
 
 import httpx
-import logfire
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import (
     FileResponse,
@@ -39,7 +38,7 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await startup()
+    await startup(app)
 
     stop_event = asyncio.Event()
 
@@ -70,19 +69,6 @@ app = FastAPI(
     generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan,
 )
-logfire.configure(
-    service_name="mcp-getgather",
-    send_to_logfire="if-token-present",
-    token=settings.LOGFIRE_TOKEN or None,
-    environment=settings.ENVIRONMENT,
-    distributed_tracing=True,
-    code_source=logfire.CodeSource(
-        repository="https://github.com/mcp-getgather/mcp-getgather", revision="main"
-    ),
-    scrubbing=False,
-)
-logfire.instrument_fastapi(app, capture_headers=True)
-
 
 STATIC_DIR = Path(__file__).parent / "static"
 STATIC_ASSETS_DIR = STATIC_DIR / "assets"
