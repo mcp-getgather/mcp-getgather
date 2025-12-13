@@ -1,9 +1,15 @@
+import contextvars
 import logging
 from typing import Any
 
 from rich.logging import RichHandler
 
 LOGGER_NAME = "getgather"
+
+# Context variable to store logging context (session IDs, etc.)
+logging_context: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextVar(
+    "logging_context", default={}
+)
 
 
 def setup_logging(level: str = "INFO"):
@@ -25,7 +31,48 @@ def setup_logging(level: str = "INFO"):
     logging.getLogger(LOGGER_NAME).setLevel(level)
 
 
-logger = logging.getLogger(LOGGER_NAME)
+class ContextLogger(logging.Logger):
+    """Logger that automatically includes context variables in all log messages."""
+
+    def append_context(self, key: str, value: Any):
+        """Add key-value pair to the current context."""
+        current = logging_context.get()
+        logging_context.set({**current, key: value})
+
+    def set_context(self, **kwargs):
+        """Set multiple context values at once."""
+        current = logging_context.get()
+        logging_context.set({**current, **kwargs})
+
+    def clear_context(self):
+        """Clear the logging context."""
+        logging_context.set({})
+
+    def _wrap_extra(self, extra):
+        """Merge context vars with provided extra dict."""
+        context = logging_context.get()
+        safe_extra = extra or {}
+        return {**context, **safe_extra}
+
+    def debug(self, msg, *args, extra=None, **kwargs):
+        super().debug(msg, *args, extra=self._wrap_extra(extra), **kwargs)
+
+    def info(self, msg, *args, extra=None, **kwargs):
+        super().info(msg, *args, extra=self._wrap_extra(extra), **kwargs)
+
+    def warning(self, msg, *args, extra=None, **kwargs):
+        super().warning(msg, *args, extra=self._wrap_extra(extra), **kwargs)
+
+    def error(self, msg, *args, extra=None, **kwargs):
+        super().error(msg, *args, extra=self._wrap_extra(extra), **kwargs)
+
+    def critical(self, msg, *args, extra=None, **kwargs):
+        super().critical(msg, *args, extra=self._wrap_extra(extra), **kwargs)
+
+
+# Set custom logger class and create logger instance
+logging.setLoggerClass(ContextLogger)
+logger: ContextLogger = logging.getLogger(LOGGER_NAME)  # type: ignore
 
 
 class StructuredFormatter(logging.Formatter):

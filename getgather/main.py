@@ -207,11 +207,61 @@ async def extended_health():
     return PlainTextResponse(content=f"OK IP: {ip_text}")
 
 
-app.include_router(dpage_router)
-app.mount("/api", api_app)
+@app.middleware("http")
+async def mcp_logging_context_middleware(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+):
+    """Set logging context with session IDs for MCP requests."""
+    if request.url.path.startswith("/mcp"):
+        logger.info(f"[MIDDLEWARE] Processing MCP request to {request.url.path}")
+        try:
+            # Extract session IDs from headers
+            browser_session_id = request.headers.get("x-browser-session-id")
+            mcp_session_id = request.headers.get("mcp-session-id")
 
-for mcp_app in mcp_apps:
-    app.mount(mcp_app.route, mcp_app.app)
+            logger.info(
+                f"[MIDDLEWARE] Extracted headers: browser_session_id={browser_session_id}, mcp_session_id={mcp_session_id}"
+            )
+
+            # Set context for all logs in this request
+            if browser_session_id:
+                logger.append_context("browser_session_id", browser_session_id)
+                request.state.browser_session_id = browser_session_id
+                logger.info(f"[MIDDLEWARE] Set browser_session_id context")
+            if mcp_session_id:
+                logger.append_context("mcp_session_id", mcp_session_id)
+                request.state.mcp_session_id = mcp_session_id
+                logger.info(f"[MIDDLEWARE] Set mcp_session_id context")
+
+            # Try to extract signin_id from request body if POST
+            if request.method == "POST":
+                try:
+                    import json
+
+                    body = await request.body()
+                    if body:
+                        body_json = json.loads(body.decode("utf-8"))
+                        if isinstance(body_json, dict):
+                            params = body_json.get("params", {})
+                            if isinstance(params, dict):
+                                signin_id = params.get("signin_id")
+                                if signin_id:
+                                    logger.append_context("signin_id", signin_id)
+                except Exception:
+                    pass
+
+            response = await call_next(request)
+
+            # Extract mcp-session-id from response if not in request
+            if not mcp_session_id and "mcp-session-id" in response.headers:
+                logger.append_context("mcp_session_id", response.headers["mcp-session-id"])
+
+            return response
+        finally:
+            # Always clear context after request, even if there's an exception
+            logger.clear_context()
+
+    return await call_next(request)
 
 
 @app.middleware("http")
@@ -225,6 +275,14 @@ async def mcp_slash_middleware(
         if request.scope.get("raw_path"):
             request.scope["raw_path"] = f"{path}/".encode()
     return await call_next(request)
+
+
+# Mount routers and apps AFTER middleware
+app.include_router(dpage_router)
+app.mount("/api", api_app)
+
+for mcp_app in mcp_apps:
+    app.mount(mcp_app.route, mcp_app.app)
 
 
 # Serve static homepage

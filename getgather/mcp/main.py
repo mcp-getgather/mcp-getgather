@@ -33,6 +33,15 @@ class LocationProxyMiddleware(Middleware):
 
         headers = get_http_headers(include_all=True)
 
+        # Set logging context with session IDs
+        mcp_session_id = headers.get("mcp-session-id")
+        browser_session_id = headers.get("x-browser-session-id")
+
+        if mcp_session_id:
+            logger.append_context("mcp_session_id", mcp_session_id)
+        if browser_session_id:
+            logger.append_context("browser_session_id", browser_session_id)
+
         # Initialize request_info data
         info_data: dict[str, str | None] = {}
 
@@ -63,7 +72,11 @@ class LocationProxyMiddleware(Middleware):
         brand_id = context.message.name.split("_")[0]
         context.fastmcp_context.set_state("brand_id", brand_id)
 
-        return await call_next(context)
+        try:
+            return await call_next(context)
+        finally:
+            # Clear logging context after tool execution
+            logger.clear_context()
 
 
 MCP_BUNDLES: dict[str, list[str]] = {
