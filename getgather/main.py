@@ -237,15 +237,16 @@ async def mcp_logging_context_middleware(
             if request.method == "POST":
                 try:
                     import json
+                    from typing import Any
 
                     body = await request.body()
                     if body:
-                        body_json = json.loads(body.decode("utf-8"))
+                        body_json: Any = json.loads(body.decode("utf-8"))
                         if isinstance(body_json, dict):
-                            params = body_json.get("params", {})
-                            if isinstance(params, dict):
-                                signin_id = params.get("signin_id")
-                                if signin_id:
+                            params: Any = body_json.get("params", {})  # type: ignore[misc]
+                            if isinstance(params, dict):  # type: ignore[arg-type]
+                                signin_id: Any = params.get("signin_id")  # type: ignore[misc]
+                                if signin_id:  # type: ignore[arg-type]
                                     logger.append_context("signin_id", signin_id)
                 except Exception:
                     pass

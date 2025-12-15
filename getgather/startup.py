@@ -24,6 +24,7 @@ async def startup(app: FastAPI | None = None):
             repository="https://github.com/mcp-getgather/mcp-getgather", revision="main"
         ),
         scrubbing=False,
+        console=False,
     )
 
     # Add LogfireLoggingHandler to all existing loggers

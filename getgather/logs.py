@@ -39,34 +39,44 @@ class ContextLogger(logging.Logger):
         current = logging_context.get()
         logging_context.set({**current, key: value})
 
-    def set_context(self, **kwargs):
+    def set_context(self, **kwargs: Any) -> None:
         """Set multiple context values at once."""
         current = logging_context.get()
         logging_context.set({**current, **kwargs})
 
-    def clear_context(self):
+    def clear_context(self) -> None:
         """Clear the logging context."""
         logging_context.set({})
 
-    def _wrap_extra(self, extra):
+    def _wrap_extra(self, extra: dict[str, Any] | None) -> dict[str, Any]:
         """Merge context vars with provided extra dict."""
         context = logging_context.get()
         safe_extra = extra or {}
         return {**context, **safe_extra}
 
-    def debug(self, msg, *args, extra=None, **kwargs):
+    def debug(
+        self, msg: Any, *args: Any, extra: dict[str, Any] | None = None, **kwargs: Any
+    ) -> None:  # type: ignore
         super().debug(msg, *args, extra=self._wrap_extra(extra), **kwargs)
 
-    def info(self, msg, *args, extra=None, **kwargs):
+    def info(
+        self, msg: Any, *args: Any, extra: dict[str, Any] | None = None, **kwargs: Any
+    ) -> None:  # type: ignore
         super().info(msg, *args, extra=self._wrap_extra(extra), **kwargs)
 
-    def warning(self, msg, *args, extra=None, **kwargs):
+    def warning(
+        self, msg: Any, *args: Any, extra: dict[str, Any] | None = None, **kwargs: Any
+    ) -> None:  # type: ignore
         super().warning(msg, *args, extra=self._wrap_extra(extra), **kwargs)
 
-    def error(self, msg, *args, extra=None, **kwargs):
+    def error(
+        self, msg: Any, *args: Any, extra: dict[str, Any] | None = None, **kwargs: Any
+    ) -> None:  # type: ignore
         super().error(msg, *args, extra=self._wrap_extra(extra), **kwargs)
 
-    def critical(self, msg, *args, extra=None, **kwargs):
+    def critical(
+        self, msg: Any, *args: Any, extra: dict[str, Any] | None = None, **kwargs: Any
+    ) -> None:  # type: ignore
         super().critical(msg, *args, extra=self._wrap_extra(extra), **kwargs)
 
 
