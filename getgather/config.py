@@ -15,7 +15,6 @@ class Settings(BaseSettings):
         env_file=PROJECT_DIR / ".env", env_ignore_empty=True, extra="ignore"
     )
     ENVIRONMENT: str = "local"
-    APP_NAME: str = "getgather-local"
     LOG_LEVEL: str = "INFO"
     GIT_REV: str = ""
     LOGFIRE_TOKEN: str = ""
