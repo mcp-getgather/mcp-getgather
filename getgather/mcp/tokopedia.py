@@ -3,10 +3,13 @@ import json
 from typing import Any, Literal
 from urllib.parse import quote, urlparse
 
+import zendriver as zd
+
 from getgather.actions import handle_graphql_response
 from getgather.logs import logger
-from getgather.mcp.dpage import dpage_with_action, zen_dpage_mcp_tool
+from getgather.mcp.dpage import dpage_with_action, zen_dpage_mcp_tool, zen_dpage_with_action
 from getgather.mcp.registry import GatherMCP
+from getgather.zen_distill import page_query_selector
 
 tokopedia_mcp = GatherMCP(brand_id="tokopedia", name="Tokopedia MCP")
 
@@ -173,16 +176,26 @@ async def get_purchase_history(
 async def get_cart() -> dict[str, Any]:
     """Get cart of a tokopedia."""
 
-    async def action(page: Any, _) -> dict[str, Any]:
-        await page.goto(f"https://www.tokopedia.com/cart")
-        raw_data = await handle_graphql_response(
-            page,
-            "https://gql.tokopedia.com/graphql/cart_revamp_v4",
-            "cart_revamp_v4",
-        )
+    async def action(tab: zd.Tab, _) -> dict[str, Any]:
         results: list[dict[str, Any]] = []
+
+        async with tab.expect_response(".*gql.tokopedia.com/graphql/cart_revamp_v4.*") as resp:
+            await tab.get("https://www.tokopedia.com/cart")
+
+            response_event = await resp.value
+            logger.info(
+                f"Received response: {response_event.response.status} {response_event.response.url}"
+            )
+
+            body, _ = await resp.response_body
+            try:
+                raw_data: list[dict[str, Any]] = json.loads(body)
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse cart JSON response: {e}")
+                raw_data = []
+
         if raw_data:
-            carts = (
+            carts: list[dict[str, Any]] = (
                 raw_data[0]
                 .get("data", {})
                 .get("cart_revamp_v4", {})
@@ -205,16 +218,20 @@ async def get_cart() -> dict[str, Any]:
                                 "discount_percentage": product.get("slash_price_label", ""),
                                 "checked": product.get("checkbox_state", ""),
                             })
-                result = {
+                result: dict[str, Any] = {
                     "shop_name": cart.get("group_information", {}).get("name", ""),
                     "products": products,
                 }
                 results.append(result)
 
-        total_price = await page.locator("div[data-testid='cartSummaryTotalPrice']").inner_html()
+        total_price_element = await page_query_selector(
+            tab, "div[data-testid='cartSummaryTotalPrice']", timeout=5
+        )
+        total_price = await total_price_element.inner_html() if total_price_element else ""
+
         return {"cart": results, "total_price": total_price}
 
-    return await dpage_with_action(
+    return await zen_dpage_with_action(
         "https://www.tokopedia.com/cart",
         action,
     )
