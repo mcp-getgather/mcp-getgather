@@ -496,10 +496,16 @@ async def page_query_selector(page: zd.Tab, selector: str, timeout: float = 0) -
                 return Element(elements[0], xpath_selector=selector)
             return None
 
-        element = await page.select_all(selector, timeout=timeout, include_frames=True)
-        if element and len(element) > 0:
-            return Element(element[0], css_selector=selector)
-        return None
+        try:
+            element = await page.select(selector, timeout=timeout)
+            if element:
+                return Element(element, css_selector=selector)
+            return None
+        except (asyncio.TimeoutError, Exception):
+            element = await page.select_all(selector, timeout=timeout, include_frames=True)
+            if element and len(element) > 0:
+                return Element(element[0], css_selector=selector)
+            return None
     except (asyncio.TimeoutError, Exception):
         return None
 
