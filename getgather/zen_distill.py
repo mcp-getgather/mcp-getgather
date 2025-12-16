@@ -347,6 +347,48 @@ class Element:
     async def inner_text(self) -> str:
         return self.element.text
 
+    async def is_visible(self) -> bool:
+        if self.xpath_selector:
+            escaped_selector = self.xpath_selector.replace("\\", "\\\\").replace('"', '\\"')
+            js_code = f"""
+                (() => {{
+                    const element = document
+                        .evaluate("{escaped_selector}", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+                        .singleNodeValue;
+                    if (!element) return false;
+                    const style = window.getComputedStyle(element);
+                    if (style.visibility === "hidden" || style.display === "none") return false;
+                    const rect = element.getBoundingClientRect();
+                    return !!(rect.width && rect.height);
+                }})()
+                """
+            try:
+                return bool(await self.page.evaluate(js_code))
+            except Exception as e:
+                logger.error(f"JavaScript XPath is_visible failed: {e}")
+                return False
+
+        if self.css_selector:
+            escaped_selector = self.css_selector.replace("\\", "\\\\").replace('"', '\\"')
+            js_code = f"""
+                (() => {{
+                    const element = document.querySelector("{escaped_selector}");
+                    if (!element) return false;
+                    const style = window.getComputedStyle(element);
+                    if (style.visibility === "hidden" || style.display === "none") return false;
+                    const rect = element.getBoundingClientRect();
+                    return !!(rect.width && rect.height);
+                }})()
+                """
+            try:
+                return bool(await self.page.evaluate(js_code))
+            except Exception as e:
+                logger.error(f"JavaScript CSS is_visible failed: {e}")
+                return False
+
+        logger.error(f"No selector available for is_visible")
+        return False
+
     async def click(self) -> None:
         if self.css_selector:
             await self.css_click()
@@ -472,12 +514,16 @@ async def page_query_selector(page: zd.Tab, selector: str, timeout: float = 0) -
         if selector.startswith("//"):
             elements = await page.xpath(selector, timeout)
             if elements and len(elements) > 0:
-                return Element(elements[0], xpath_selector=selector)
+                element = Element(elements[0], xpath_selector=selector)
+                if await element.is_visible():
+                    return element
             return None
 
         element = await page.select(selector, timeout=timeout)
         if element:
-            return Element(element, css_selector=selector)
+            element = Element(element, css_selector=selector)
+            if await element.is_visible():
+                return element
         return None
     except (asyncio.TimeoutError, Exception):
         return None
