@@ -1,7 +1,10 @@
 <html gg-domain="shein" gg-priority="1">
   <body>
     <p gg-match="div.sui-dialog__body div.head"></p>
-    <p gg-match="div.sui-dialog__body div.email"></p>
+    <div>
+      <span gg-match="div.sui-dialog__body div.email span:nth-of-type(1)"></span>
+      <span gg-match="div.sui-dialog__body div.email span:nth-of-type(2)"></span>
+    </div>
     <p gg-optional gg-match="p.error-tip"></p>
     <input
       autofocus
@@ -10,6 +13,6 @@
       maxlength="5"
       gg-match="div.code-input input[maxlength='5']"
     />
-    <button type="submit" gg-match="button:has-text('SUBMIT')">SUBMIT</button>
+    <button type="submit" gg-match="div.sui-dialog__body button.confirm-btn">SUBMIT</button>
   </body>
 </html>
