@@ -28,6 +28,7 @@ dependencies = [
   "pytest-asyncio>=1.0.0",
   "logfire[fastapi]>=4.13.2",
   "zendriver>=0.14.2",
+  "loguru>=0.7.3",
 ]
 
 [dependency-groups]

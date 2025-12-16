@@ -1,6 +1,5 @@
 import asyncio
 import ipaddress
-import logging
 import os
 import urllib.parse
 from typing import Any
@@ -216,7 +215,7 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
 
     current = Match(name="", priority=-1, distilled="")
 
-    if logger.isEnabledFor(logging.DEBUG):
+    if settings.LOG_LEVEL == "DEBUG":
         await capture_page_artifacts(page, identifier=id, prefix="dpage_debug")
 
     for iteration in range(max):
@@ -481,7 +480,7 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
 
     current = Match(name="", priority=-1, distilled="")
 
-    if logger.isEnabledFor(logging.DEBUG):
+    if settings.LOG_LEVEL == "DEBUG":
         await zen_capture_page_artifacts(page, identifier=id, prefix="dpage_debug")
 
     for iteration in range(max):
