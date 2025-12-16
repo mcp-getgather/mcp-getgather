@@ -1,9 +1,10 @@
 import asyncio
+import json
 import socket
 from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Awaitable, Callable, Final
+from typing import Any, Awaitable, Callable, Final
 
 import httpx
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
@@ -213,54 +214,45 @@ async def mcp_logging_context_middleware(
 ):
     """Set logging context with session IDs for MCP requests."""
     if request.url.path.startswith("/mcp"):
-        logger.info(f"[MIDDLEWARE] Processing MCP request to {request.url.path}")
-        try:
-            # Extract session IDs from headers
-            browser_session_id = request.headers.get("x-browser-session-id")
-            mcp_session_id = request.headers.get("mcp-session-id")
+        # Extract session IDs from headers
+        browser_session_id = request.headers.get("x-browser-session-id")
+        mcp_session_id = request.headers.get("mcp-session-id")
 
-            logger.info(
-                f"[MIDDLEWARE] Extracted headers: browser_session_id={browser_session_id}, mcp_session_id={mcp_session_id}"
-            )
+        # Build context dict
+        context = {}
+        if browser_session_id:
+            context["browser_session_id"] = browser_session_id
+            request.state.browser_session_id = browser_session_id
+        if mcp_session_id:
+            context["mcp_session_id"] = mcp_session_id
+            request.state.mcp_session_id = mcp_session_id
 
-            # Set context for all logs in this request
-            if browser_session_id:
-                logger.append_context("browser_session_id", browser_session_id)
-                request.state.browser_session_id = browser_session_id
-                logger.info(f"[MIDDLEWARE] Set browser_session_id context")
-            if mcp_session_id:
-                logger.append_context("mcp_session_id", mcp_session_id)
-                request.state.mcp_session_id = mcp_session_id
-                logger.info(f"[MIDDLEWARE] Set mcp_session_id context")
+        # Try to extract signin_id from request body if POST
+        if request.method == "POST":
+            try:
+                body = await request.body()
+                if body:
+                    body_json: Any = json.loads(body.decode("utf-8"))
+                    if isinstance(body_json, dict):
+                        params: Any = body_json.get("params", {})  # type: ignore[misc]
+                        if isinstance(params, dict):  # type: ignore[arg-type]
+                            signin_id: Any = params.get("signin_id")  # type: ignore[misc]
+                            if signin_id:  # type: ignore[arg-type]
+                                context["signin_id"] = signin_id
+            except Exception:
+                pass
 
-            # Try to extract signin_id from request body if POST
-            if request.method == "POST":
-                try:
-                    import json
-                    from typing import Any
-
-                    body = await request.body()
-                    if body:
-                        body_json: Any = json.loads(body.decode("utf-8"))
-                        if isinstance(body_json, dict):
-                            params: Any = body_json.get("params", {})  # type: ignore[misc]
-                            if isinstance(params, dict):  # type: ignore[arg-type]
-                                signin_id: Any = params.get("signin_id")  # type: ignore[misc]
-                                if signin_id:  # type: ignore[arg-type]
-                                    logger.append_context("signin_id", signin_id)
-                except Exception:
-                    pass
-
+        # Use contextualize to set context for all logs in this request
+        with logger.contextualize(**context):
+            logger.info(f"[MIDDLEWARE] Processing MCP request to {request.url.path}")
             response = await call_next(request)
 
             # Extract mcp-session-id from response if not in request
             if not mcp_session_id and "mcp-session-id" in response.headers:
-                logger.append_context("mcp_session_id", response.headers["mcp-session-id"])
+                with logger.contextualize(mcp_session_id=response.headers["mcp-session-id"]):
+                    logger.debug("Added mcp_session_id from response")
 
             return response
-        finally:
-            # Always clear context after request, even if there's an exception
-            logger.clear_context()
 
     return await call_next(request)
 

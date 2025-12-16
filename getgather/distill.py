@@ -1,6 +1,5 @@
 import asyncio
 import json
-import logging
 import os
 import re
 import urllib.parse
@@ -532,7 +531,7 @@ async def run_distillation_loop(
             )
             raise ValueError(f"Failed to navigate to {location}: {error}")
 
-        if logger.isEnabledFor(logging.DEBUG):
+        if settings.LOG_LEVEL == "DEBUG":
             await capture_page_artifacts(
                 page,
                 identifier=profile.id,
