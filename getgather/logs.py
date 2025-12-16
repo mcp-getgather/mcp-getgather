@@ -14,25 +14,6 @@ if TYPE_CHECKING:
 LOGGER_NAME = "getgather"
 DEBUG = "DEBUG"
 
-# Configure default format immediately on import with Rich
-logger.remove()
-
-# Create a Rich handler that doesn't add timestamps (we'll use Loguru's)
-_default_rich_handler = RichHandler(
-    console=Console(stderr=True),
-    show_time=False,  # Disable Rich's timestamp
-    show_level=False,  # Disable Rich's level (we'll format it ourselves)
-    show_path=False,
-    rich_tracebacks=True,
-    markup=True,
-)
-
-logger.add(
-    _default_rich_handler,
-    format="{time:HH:mm:ss YYYY-MM-DD} | <level>{level: <8}</level> | <cyan>{name}:{function}:{line}</cyan> - <level>{message}</level>",
-    level="INFO",
-)
-
 
 def setup_logging(level: str = "INFO", logs_dir: Path | None = None):
     """Configure Loguru with structured logging."""
@@ -52,7 +33,7 @@ def setup_logging(level: str = "INFO", logs_dir: Path | None = None):
 
     def _format_loguru(record: "Record") -> str:
         # Format: time, level, location, message, extras
-        time_fmt = "{time:HH:mm:ss YYYY-MM-DD}"
+        time_fmt = "{time:HH:mm:ss}"
         level_fmt = "<level>{level: <8}</level>"
         location_fmt = "<cyan>{name}:{function}:{line}</cyan>"
         message_fmt = "<level>{message}</level>"
