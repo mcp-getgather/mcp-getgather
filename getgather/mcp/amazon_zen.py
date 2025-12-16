@@ -40,3 +40,12 @@ async def get_purchase_history(
         f"https://www.amazon.com/your-orders/orders?timeFilter=year-{target_year}&startIndex={start_index}",
         "amazon_purchase_history",
     )
+
+
+@amazon_zen_mcp.tool
+async def search_product(keyword: str) -> dict[str, Any]:
+    """Search product on amazon."""
+    return await zen_dpage_mcp_tool(
+        f"https://www.amazon.com/s?k={keyword}",
+        "product_list",
+    )
