@@ -419,7 +419,28 @@ class Element:
             escaped_selector = self.css_selector.replace("\\", "\\\\").replace('"', '\\"')
             js_code = f"""
             (() => {{
-                const element = document.querySelector("{escaped_selector}");
+                const selector = "{escaped_selector}";
+                function findInDocument(doc) {{
+                    try {{
+                        const el = doc.querySelector(selector);
+                        if (el) return el;
+                    }} catch (e) {{
+                        // Cross-origin iframe → skip
+                    }}
+                    // Look inside all iframes of this document
+                    const iframes = doc.querySelectorAll("iframe");
+                    for (const frame of iframes) {{
+                        try {{
+                            const childDoc = frame.contentDocument || frame.contentWindow.document;
+                            const found = findInDocument(childDoc);   // recursion
+                            if (found) return found;
+                        }} catch (e) {{
+                            // Cross-origin iframe → skip
+                        }}
+                    }}
+                    return null;
+                }}
+                const element = findInDocument(document);
                 if (!element) return false;
                 element.scrollIntoView({{ block: "center" }});
                 element.dispatchEvent(new PointerEvent("pointerdown", {{ bubbles: true }}));
@@ -475,9 +496,9 @@ async def page_query_selector(page: zd.Tab, selector: str, timeout: float = 0) -
                 return Element(elements[0], xpath_selector=selector)
             return None
 
-        element = await page.select(selector, timeout=timeout)
-        if element:
-            return Element(element, css_selector=selector)
+        element = await page.select_all(selector, timeout=timeout, include_frames=True)
+        if element and len(element) > 0:
+            return Element(element[0], css_selector=selector)
         return None
     except (asyncio.TimeoutError, Exception):
         return None
