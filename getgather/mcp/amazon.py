@@ -142,7 +142,9 @@ async def get_browsing_history() -> dict[str, Any]:
                     # Filter out invalid URLs - Amazon may return '/404' href for deleted/unavailable products
                     # This causes navigation to amazon.com/404 which doesn't exist
                     if url.endswith("/404"):
-                        logger.info(f"Filtering out 404 URL for item: {item.get('title', 'unknown')}")
+                        logger.info(
+                            f"Filtering out 404 URL for item: {item.get('title', 'unknown')}"
+                        )
                         continue
 
                     item["url"] = f"https://www.amazon.com{url}"
