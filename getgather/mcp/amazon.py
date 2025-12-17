@@ -75,7 +75,7 @@ async def get_browsing_history() -> dict[str, Any]:
         )
         output = [json.dumps(item) for item in json.loads(raw_attribute or "[]")]
 
-        async def get_browsing_history(start_index: int, end_index: int):
+        async def get_browsing_history(start_index: int, end_index: int) -> list[dict[str, Any]]:
             logger.info(f"Getting browsing history from {start_index} to {end_index}")
             re = await page.request.post(
                 url=browsing_history_url,
@@ -132,10 +132,23 @@ async def get_browsing_history() -> dict[str, Any]:
                 </html>
             """
             converted = await convert(distilled)
+            valid_items: list[dict[str, Any]] = []
             if converted is not None:
                 for item in converted:
-                    item["url"] = f"https://www.amazon.com{item['url']}"
-            return converted
+                    url = item.get("url", "")
+                    if not url:
+                        continue
+
+                    # Filter out invalid URLs - Amazon may return '/404' href for deleted/unavailable products
+                    # This causes navigation to amazon.com/404 which doesn't exist
+                    if url.endswith("/404"):
+                        logger.info(f"Filtering out 404 URL for item: {item.get('title', 'unknown')}")
+                        continue
+
+                    item["url"] = f"https://www.amazon.com{url}"
+                    valid_items.append(item)
+
+            return valid_items
 
         browsing_history_list = await asyncio.gather(*[
             get_browsing_history(i, i + 100) for i in range(0, len(output), 100)

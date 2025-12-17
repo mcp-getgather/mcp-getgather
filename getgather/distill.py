@@ -159,7 +159,7 @@ def extract_value(item: Tag, attribute: str | None = None) -> str:
     return item.get_text(strip=True)
 
 
-async def convert(distilled: str):
+async def convert(distilled: str) -> list[dict[str, Any]] | None:
     document = BeautifulSoup(distilled, "html.parser")
     snippet = document.find("script", {"type": "application/json"})
     if snippet:
