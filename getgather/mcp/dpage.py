@@ -370,6 +370,17 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
             logger.warning("Not all form fields are filled")
             return HTMLResponse(render(str(document.find("body")), options))
 
+    location = page.url
+    hostname = urllib.parse.urlparse(location).hostname or "unknown"
+    timeout_error = TimeoutError("Timeout reached in post_dpage")
+    await report_distill_error(
+        error=timeout_error,
+        page=page,
+        profile_id=id,
+        location=location,
+        hostname=hostname,
+        iteration=max,
+    )
     raise HTTPException(status_code=503, detail="Timeout reached")
 
 
@@ -611,6 +622,17 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
             logger.warning("Not all form fields are filled")
             return HTMLResponse(render(str(document.find("body")), options))
 
+    hostname_attr: str | None = getattr(page, "hostname", None)  # type: ignore[assignment]
+    location = getattr(page, "url", "unknown")  # type: ignore[assignment]
+    timeout_error = TimeoutError("Timeout reached in zen_post_dpage")
+    await zen_report_distill_error(
+        error=timeout_error,
+        page=page,
+        profile_id=id,
+        location=location,
+        hostname=hostname_attr or "unknown",
+        iteration=max,
+    )
     raise HTTPException(status_code=503, detail="Timeout reached")
 
 
