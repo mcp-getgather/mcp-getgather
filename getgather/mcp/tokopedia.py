@@ -9,7 +9,7 @@ from getgather.actions import handle_graphql_response
 from getgather.logs import logger
 from getgather.mcp.dpage import dpage_with_action, zen_dpage_mcp_tool, zen_dpage_with_action
 from getgather.mcp.registry import GatherMCP
-from getgather.zen_distill import page_query_selector
+from getgather.zen_distill import page_query_selector, zen_navigate_with_retry
 
 tokopedia_mcp = GatherMCP(brand_id="tokopedia", name="Tokopedia MCP")
 
@@ -180,7 +180,7 @@ async def get_cart() -> dict[str, Any]:
         results: list[dict[str, Any]] = []
 
         async with tab.expect_response(".*gql.tokopedia.com/graphql/cart_revamp_v4.*") as resp:
-            await tab.get("https://www.tokopedia.com/cart")
+            await zen_navigate_with_retry(tab, "https://www.tokopedia.com/cart")
 
             response_event = await resp.value
             logger.info(
