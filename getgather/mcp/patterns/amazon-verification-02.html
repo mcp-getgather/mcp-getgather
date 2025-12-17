@@ -1,0 +1,16 @@
+<html gg-domain="amazon" gg-priority="9">
+  <head>
+    <title>Amazon Verification</title>
+  </head>
+  <body>
+    <h1 gg-match="h1:has-text('Verify mobile number')">Verify mobile number</h1>
+    <input
+      autofocus
+      name="otpCode"
+      type="tel"
+      placeholder="Enter code"
+      gg-match="input[name='code']"
+    />
+    <button type="submit" gg-match="input[type=submit]">Sign in</button>
+  </body>
+</html>
