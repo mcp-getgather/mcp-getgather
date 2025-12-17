@@ -71,7 +71,7 @@ async def dpage_add(page: Page | zd.Tab, location: str, profile_id: str | None =
     try:
         if not location.startswith("http"):
             location = f"https://{location}"
-        await page.goto(location, timeout=settings.BROWSER_TIMEOUT)
+        await page.goto(location, timeout=settings.BROWSER_TIMEOUT, wait_until="domcontentloaded")
     except Exception as error:
         hostname = urllib.parse.urlparse(location).hostname or "unknown"
         await report_distill_error(
