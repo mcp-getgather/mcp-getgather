@@ -323,6 +323,38 @@ async def get_new_page(browser: zd.Browser) -> zd.Tab:
 
     page.add_handler(zd.cdp.fetch.RequestPaused, handle_request)  # type: ignore[reportUnknownMemberType]
 
+    # Add retry wrapper to page.get() method for resilient navigation
+    _original_get = page.get
+
+    async def get_with_retry(url: str, **kwargs: Any) -> zd.Tab:
+        MAX_RETRIES = 3
+        FIRST_TIMEOUT = 45  # seconds, extended for first attempt
+        NORMAL_TIMEOUT = 30  # seconds, for retry attempts
+
+        last_error: Exception | None = None
+        for attempt in range(MAX_RETRIES):
+            timeout = FIRST_TIMEOUT if attempt == 0 else NORMAL_TIMEOUT
+            try:
+                result = await asyncio.wait_for(_original_get(url, **kwargs), timeout=timeout)
+                # Grace period for DOM rendering after successful navigation
+                await page.wait(2)
+                return result
+            except Exception as error:
+                last_error = error
+                if attempt < MAX_RETRIES - 1:
+                    logger.warning(
+                        f"Navigation to {url} failed (attempt {attempt + 1}/{MAX_RETRIES}): {error}. "
+                        f"Retrying in 1 second..."
+                    )
+                    await asyncio.sleep(1)
+                else:
+                    logger.error(f"Failed to navigate to {url} after {MAX_RETRIES} attempts")
+
+        # This should never be reached, but satisfies type checker
+        raise last_error or Exception(f"Failed to navigate to {url}")
+
+    page.get = get_with_retry  # type: ignore[method-assign]
+
     return page
 
 
@@ -612,9 +644,9 @@ async def run_distillation_loop(
     page = await get_new_page(browser)
     logger.info(f"Navigating to {location}")
     try:
-        await page.get(location)
+        await page.get(location)  # Now has built-in retry logic
     except Exception as error:
-        logger.error(f"Failed to navigate to {location}: {error}")
+        # Error already logged by retry wrapper, just report and re-raise
         await zen_report_distill_error(
             error=error,
             page=page,
