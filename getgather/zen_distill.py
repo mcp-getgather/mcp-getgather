@@ -195,7 +195,7 @@ async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
             logger.info(f"Validating browser at {LIVE_CHECK_URL}...")
             # Create page with proxy setup first, then navigate
             page = await get_new_page(browser)
-            await page.get(LIVE_CHECK_URL)
+            await zen_navigate_with_retry(page, LIVE_CHECK_URL)
 
             ip_page = await get_new_page(browser)
             # Extract and log just the IP address
@@ -252,6 +252,58 @@ async def terminate_zendriver_browser(browser: zd.Browser):
                 shutil.rmtree(path)
             except Exception as e:
                 logger.warning(f"Failed to remove {directory}: {e}")
+
+
+async def zen_navigate_with_retry(page: zd.Tab, url: str) -> zd.Tab:
+    """Navigate to URL with retry logic for resilient navigation.
+
+    Args:
+        page: Zendriver tab to navigate
+        url: URL to navigate to
+        **kwargs: Additional arguments to pass to page.get()
+
+    Returns:
+        The page after successful navigation
+
+    Raises:
+        Exception: If navigation fails after all retries
+    """
+    MAX_RETRIES = 3
+    FIRST_TIMEOUT = 45  # seconds, extended for first attempt
+    NORMAL_TIMEOUT = 30  # seconds, for retry attempts
+
+    last_error: Exception | None = None
+    for attempt in range(MAX_RETRIES):
+        timeout = FIRST_TIMEOUT if attempt == 0 else NORMAL_TIMEOUT
+        try:
+
+            async def navigate_and_wait() -> zd.Tab:
+                await page.send(zd.cdp.page.navigate(url))
+                # Wait for network idle or domcontentloaded event
+                try:
+                    await page.wait_for_ready_state(
+                        "interactive"
+                    )  # rough equivalent to domcontentloaded (https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState)
+                except Exception:
+                    # If wait fails, that's okay - page might already be loaded
+                    pass
+                return page
+
+            result = await asyncio.wait_for(navigate_and_wait(), timeout=timeout)
+            return result
+        except Exception as error:
+            last_error = error
+            if attempt < MAX_RETRIES - 1:
+                logger.warning(
+                    f"Navigation to {url} failed (attempt {attempt + 1}/{MAX_RETRIES}): {error}. "
+                    f"Retrying in 1 second..."
+                )
+                await asyncio.sleep(1)
+            else:
+                logger.error(f"Failed to navigate to {url} after {MAX_RETRIES} attempts")
+
+    # This should never be reached, but satisfies type checker
+    raise last_error or Exception(f"Failed to navigate to {url}")
 
 
 async def get_new_page(browser: zd.Browser) -> zd.Tab:
@@ -612,9 +664,9 @@ async def run_distillation_loop(
     page = await get_new_page(browser)
     logger.info(f"Navigating to {location}")
     try:
-        await page.get(location)
+        await zen_navigate_with_retry(page, location)
     except Exception as error:
-        logger.error(f"Failed to navigate to {location}: {error}")
+        # Error already logged by retry wrapper, just report and re-raise
         await zen_report_distill_error(
             error=error,
             page=page,

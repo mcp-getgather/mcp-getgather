@@ -39,6 +39,7 @@ from getgather.zen_distill import (
     page_query_selector,
     run_distillation_loop as zen_run_distillation_loop,
     terminate_zendriver_browser,
+    zen_navigate_with_retry,
     zen_report_distill_error,
 )
 
@@ -94,7 +95,7 @@ async def zen_dpage_add(page: zd.Tab, location: str, profile_id: str | None = No
     try:
         if not location.startswith("http"):
             location = f"https://{location}"
-        await page.get(location)
+        await zen_navigate_with_retry(page, location)
     except Exception as error:
         hostname = urllib.parse.urlparse(location).hostname or "unknown"
         await zen_report_distill_error(
@@ -735,7 +736,7 @@ async def dpage_with_action(
         if isinstance(page, Page):
             await page.goto(initial_url, wait_until="commit")
         else:
-            await page.get(initial_url)
+            await zen_navigate_with_retry(page, initial_url)
         result = await action(page, action_info["browser_profile"])
         return result
 
@@ -850,7 +851,7 @@ async def zen_dpage_with_action(
         action_info = pending_actions[_page_id]
 
         try:
-            await page.get(initial_url)
+            await zen_navigate_with_retry(page, initial_url)
         except Exception as e:
             logger.warning(f"Failed to navigate to {initial_url}: {e}")
 
@@ -869,7 +870,7 @@ async def zen_dpage_with_action(
         try:
             logger.info("Trying action with existing global browser session...")
             page = await get_new_page(browser)
-            await page.get(initial_url)
+            await zen_navigate_with_retry(page, initial_url)
             result = await action(page, browser)
             await page.close()
             logger.info("Action succeeded with existing session!")
