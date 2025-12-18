@@ -1,0 +1,16 @@
+<html gg-domain="amazon" gg-priority="3">
+  <head>
+    <title>Verify with WhatsApp</title>
+  </head>
+  <body>
+    <div
+      gg-match="div.a-alert-content div.cvf-alert-section:has-text('unable to send an SMS')"
+    ></div>
+    <div
+      gg-autoclick
+      gg-match="span#secondary_channel_button span#secondary_channel_button-announce:has-text('Verify using WhatsApp')"
+    >
+      Verify using WhatsApp
+    </div>
+  </body>
+</html>
