@@ -230,17 +230,22 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
             logger.info("No matched pattern found")
             continue
 
-        if match.distilled == current.distilled:
-            logger.info(f"Still the same: {match.name}")
-            continue
-
-        current = match
         distilled = match.distilled
-
+        document = BeautifulSoup(distilled, "html.parser")
         title_element = BeautifulSoup(distilled, "html.parser").find("title")
         title = title_element.get_text() if title_element is not None else DEFAULT_TITLE
         action = f"/dpage/{id}"
         options = {"title": title, "action": action}
+        inputs = document.find_all("input")
+
+        if match.distilled == current.distilled:
+            logger.info(f"Still the same: {match.name}")
+            if iteration == max - 1 and len(inputs) > 0:
+                logger.info("Still the same after timeout and need inputs, render the page...")
+                return HTMLResponse(render(str(document.find("body")), options))
+            continue
+
+        current = match
 
         if await terminate(distilled):
             logger.info("Finished!")
@@ -274,8 +279,6 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
             return HTMLResponse(render(FINISHED_MSG, options))
 
         names: list[str] = []
-        document = BeautifulSoup(distilled, "html.parser")
-        inputs = document.find_all("input")
 
         if fields.get("button"):
             button = document.find("button", value=str(fields.get("button")))
