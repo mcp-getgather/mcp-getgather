@@ -388,7 +388,9 @@ def load_distillation_patterns(path: str) -> list[Pattern]:
     return patterns
 
 
-async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> Match | None:
+async def distill(
+    hostname: str | None, page: Page, patterns: list[Pattern], reload_on_error: bool = True
+) -> Match | None:
     result: list[Match] = []
 
     for item in patterns:
@@ -483,6 +485,16 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
             logger.debug(f" - {item.name} with priority {item.priority}")
         match = result[0]
         logger.info(f"✓ Best match: {match.name}")
+
+        if reload_on_error and (
+            "err-timed-out" in match.name
+            or "err-ssl-protocol-error" in match.name
+            or "err-tunnel-connection-failed" in match.name
+        ):
+            logger.info(f"Error pattern detected: {match.name}")
+            await page.reload(timeout=settings.BROWSER_TIMEOUT, wait_until="domcontentloaded")
+            logger.info("Retrying distillation after error...")
+            return await distill(hostname, page, patterns, reload_on_error=False)
         return match
 
 
