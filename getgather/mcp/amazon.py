@@ -439,6 +439,12 @@ async def get_purchase_history_yearly(year: str | int | None = None) -> dict[str
             order_details_list = await asyncio.gather(
                 *[get_order_details(order) for order in orders], return_exceptions=True
             )
+
+            for i, item in enumerate(order_details_list):
+                if isinstance(item, BaseException):
+                    order_id = orders[i]["order_id"]
+                    logger.warning(f"Error getting order details for order: {order_id}: {item}")
+
             order_details = {
                 item["order_id"]: item
                 for item in order_details_list
@@ -693,6 +699,12 @@ async def get_purchase_history_with_details(
             order_details_list = await asyncio.gather(
                 *[get_order_details(order) for order in orders], return_exceptions=True
             )
+
+            for i, item in enumerate(order_details_list):
+                if isinstance(item, BaseException):
+                    order_id = orders[i]["order_id"]
+                    logger.warning(f"Error getting order details for order: {order_id}: {item}")
+
             order_details = {
                 item["order_id"]: item
                 for item in order_details_list
