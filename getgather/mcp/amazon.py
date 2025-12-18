@@ -436,12 +436,18 @@ async def get_purchase_history_yearly(year: str | int | None = None) -> dict[str
                     return {"order_id": order_id, "prices": prices}
 
         try:
-            order_details_list = await asyncio.gather(*[
-                get_order_details(order) for order in orders
-            ])
-            order_details = {item["order_id"]: item for item in order_details_list}
+            order_details_list = await asyncio.gather(
+                *[get_order_details(order) for order in orders], return_exceptions=True
+            )
+            order_details = {
+                item["order_id"]: item
+                for item in order_details_list
+                if not isinstance(item, BaseException)
+            }
             for order in orders:
-                details = order_details[order["order_id"]]
+                details = order_details.get(order["order_id"])
+                if details is None:
+                    continue
                 if details.get("prices") is not None:
                     order["product_prices"] = details["prices"]
                 # For Fresh/Whole Foods orders, replace product information with the complete details
@@ -684,12 +690,18 @@ async def get_purchase_history_with_details(
                     return {"order_id": order_id, "prices": prices}
 
         try:
-            order_details_list = await asyncio.gather(*[
-                get_order_details(order) for order in orders
-            ])
-            order_details = {item["order_id"]: item for item in order_details_list}
+            order_details_list = await asyncio.gather(
+                *[get_order_details(order) for order in orders], return_exceptions=True
+            )
+            order_details = {
+                item["order_id"]: item
+                for item in order_details_list
+                if not isinstance(item, BaseException)
+            }
             for order in orders:
-                details = order_details[order["order_id"]]
+                details = order_details.get(order["order_id"])
+                if details is None:
+                    continue
                 if details.get("prices") is not None:
                     order["product_prices"] = details["prices"]
                 # For Fresh/Whole Foods orders, replace product information with the complete details
