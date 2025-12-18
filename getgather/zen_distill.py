@@ -254,7 +254,7 @@ async def terminate_zendriver_browser(browser: zd.Browser):
                 logger.warning(f"Failed to remove {directory}: {e}")
 
 
-async def zen_navigate_with_retry(page: zd.Tab, url: str, **kwargs: Any) -> zd.Tab:
+async def zen_navigate_with_retry(page: zd.Tab, url: str) -> zd.Tab:
     """Navigate to URL with retry logic for resilient navigation.
 
     Args:
@@ -276,9 +276,20 @@ async def zen_navigate_with_retry(page: zd.Tab, url: str, **kwargs: Any) -> zd.T
     for attempt in range(MAX_RETRIES):
         timeout = FIRST_TIMEOUT if attempt == 0 else NORMAL_TIMEOUT
         try:
-            result = await asyncio.wait_for(page.get(url, **kwargs), timeout=timeout)
-            # Grace period for DOM rendering after successful navigation
-            await page.wait(2)
+
+            async def navigate_and_wait() -> zd.Tab:
+                await page.send(zd.cdp.page.navigate(url))
+                # Wait for network idle or domcontentloaded event
+                try:
+                    await page.wait_for_ready_state(
+                        "interactive"
+                    )  # rough equivalent to domcontentloaded (https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState)
+                except Exception:
+                    # If wait fails, that's okay - page might already be loaded
+                    pass
+                return page
+
+            result = await asyncio.wait_for(navigate_and_wait(), timeout=timeout)
             return result
         except Exception as error:
             last_error = error
