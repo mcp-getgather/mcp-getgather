@@ -240,7 +240,9 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
 
         if match.distilled == current.distilled:
             logger.info(f"Still the same: {match.name}")
-            if iteration == max - 1 and len(inputs) > 0:
+            has_inputs = len(inputs) > 0
+            max_reached = iteration == max - 1
+            if max_reached and has_inputs:
                 logger.info("Still the same after timeout and need inputs, render the page...")
                 return HTMLResponse(render(str(document.find("body")), options))
             continue
