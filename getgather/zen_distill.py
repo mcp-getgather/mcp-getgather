@@ -330,9 +330,34 @@ async def get_new_page(browser: zd.Browser) -> zd.Tab:
         deny_url = await should_be_blocked(request_url)
         should_deny = deny_type or deny_url
 
-        if not should_deny:
+        try:
+            if not should_deny:
+                try:
+                    await page.send(zd.cdp.fetch.continue_request(request_id=event.request_id))
+                except (ProtocolException, websockets.ConnectionClosedError) as e:
+                    if isinstance(e, ProtocolException) and (
+                        "Invalid state for continueInterceptedRequest" in str(e)
+                        or "Invalid InterceptionId" in str(e)
+                    ):
+                        logger.debug(
+                            f"Request already processed or invalid interception ID: {request_url}"
+                        )
+                    elif isinstance(e, websockets.ConnectionClosedError):
+                        logger.debug(f"Page closed while continuing request: {request_url}")
+                    else:
+                        raise
+                return
+
+            kind = "URL" if deny_url else "resource"
+            logger.debug(f" DENY {kind}: {request_url}")
+
             try:
-                await page.send(zd.cdp.fetch.continue_request(request_id=event.request_id))
+                await page.send(
+                    zd.cdp.fetch.fail_request(
+                        request_id=event.request_id,
+                        error_reason=zd.cdp.network.ErrorReason.BLOCKED_BY_CLIENT,
+                    )
+                )
             except (ProtocolException, websockets.ConnectionClosedError) as e:
                 if isinstance(e, ProtocolException) and (
                     "Invalid state for continueInterceptedRequest" in str(e)
@@ -342,31 +367,11 @@ async def get_new_page(browser: zd.Browser) -> zd.Tab:
                         f"Request already processed or invalid interception ID: {request_url}"
                     )
                 elif isinstance(e, websockets.ConnectionClosedError):
-                    logger.debug(f"Page closed while continuing request: {request_url}")
+                    logger.debug(f"Page closed while blocking request: {request_url}")
                 else:
                     raise
-            return
-
-        kind = "URL" if deny_url else "resource"
-        logger.debug(f" DENY {kind}: {request_url}")
-
-        try:
-            await page.send(
-                zd.cdp.fetch.fail_request(
-                    request_id=event.request_id,
-                    error_reason=zd.cdp.network.ErrorReason.BLOCKED_BY_CLIENT,
-                )
-            )
-        except (ProtocolException, websockets.ConnectionClosedError) as e:
-            if isinstance(e, ProtocolException) and (
-                "Invalid state for continueInterceptedRequest" in str(e)
-                or "Invalid InterceptionId" in str(e)
-            ):
-                logger.debug(f"Request already processed or invalid interception ID: {request_url}")
-            elif isinstance(e, websockets.ConnectionClosedError):
-                logger.debug(f"Page closed while blocking request: {request_url}")
-            else:
-                raise
+        except Exception:
+            pass  # Swallow any remaining errors when page is closed
 
     id = cast(str, browser.id)  # type: ignore[attr-defined]
     proxy = await setup_proxy(id, request_info.get())
