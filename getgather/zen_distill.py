@@ -139,19 +139,25 @@ async def zen_report_distill_error(
 async def install_proxy_handler(username: str, password: str, page: zd.Tab):
     async def auth_challenge_handler(event: zd.cdp.fetch.AuthRequired):
         logger.debug("Supplying proxy authentication...")
-        await page.send(
-            zd.cdp.fetch.continue_with_auth(
-                request_id=event.request_id,
-                auth_challenge_response=zd.cdp.fetch.AuthChallengeResponse(
-                    response="ProvideCredentials",
-                    username=username,
-                    password=password,
-                ),
+        try:
+            await page.send(
+                zd.cdp.fetch.continue_with_auth(
+                    request_id=event.request_id,
+                    auth_challenge_response=zd.cdp.fetch.AuthChallengeResponse(
+                        response="ProvideCredentials",
+                        username=username,
+                        password=password,
+                    ),
+                )
             )
-        )
+        except Exception:
+            pass  # Swallow errors when page is closed or request is stale
 
     async def req_paused(event: zd.cdp.fetch.RequestPaused) -> None:
-        await page.send(zd.cdp.fetch.continue_request(request_id=event.request_id))
+        try:
+            await page.send(zd.cdp.fetch.continue_request(request_id=event.request_id))
+        except Exception:
+            pass  # Swallow errors when page is closed or request is stale
 
     page.add_handler(zd.cdp.fetch.RequestPaused, req_paused)  # type: ignore[arg-type]
     page.add_handler(zd.cdp.fetch.AuthRequired, auth_challenge_handler)  # type: ignore[arg-type]
