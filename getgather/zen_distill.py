@@ -151,13 +151,13 @@ async def install_proxy_handler(username: str, password: str, page: zd.Tab):
                 )
             )
         except Exception:
-            pass  # Swallow errors when page is closed or request is stale
+            pass
 
     async def req_paused(event: zd.cdp.fetch.RequestPaused) -> None:
         try:
             await page.send(zd.cdp.fetch.continue_request(request_id=event.request_id))
         except Exception:
-            pass  # Swallow errors when page is closed or request is stale
+            pass
 
     page.add_handler(zd.cdp.fetch.RequestPaused, req_paused)  # type: ignore[arg-type]
     page.add_handler(zd.cdp.fetch.AuthRequired, auth_challenge_handler)  # type: ignore[arg-type]
@@ -371,7 +371,7 @@ async def get_new_page(browser: zd.Browser) -> zd.Tab:
                 else:
                     raise
         except Exception:
-            pass  # Swallow any remaining errors when page is closed
+            pass
 
     id = cast(str, browser.id)  # type: ignore[attr-defined]
     proxy = await setup_proxy(id, request_info.get())
