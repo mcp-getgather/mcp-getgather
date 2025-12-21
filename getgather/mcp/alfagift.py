@@ -29,9 +29,7 @@ async def get_order_done() -> dict[str, Any]:
     async def action(page: Page, _) -> dict[str, Any]:
         await page.goto(f"https://alfagift.id/order-done")
         data = await handle_network_extraction(page, "order-ereceipt-service/list/complete")
-        return {"alfagift_order_done": data["data"]}    
-        logger.info("Extracted cart data from network response. with data: {data}")
-        return {"alfagift_cart": data["data"]["listCartDetail"]}
+        return {"alfagift_order_done": data["data"]}
 
     return await dpage_with_action(
         "https://alfagift.id",
