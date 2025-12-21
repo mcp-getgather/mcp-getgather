@@ -1,16 +1,23 @@
 from typing import Any
 
-from getgather.mcp.dpage import zen_dpage_mcp_tool
+from patchright.async_api import Page
+
+from getgather.actions import handle_network_extraction
+from getgather.mcp.dpage import dpage_with_action
 from getgather.mcp.registry import GatherMCP
 
 alfagift_mcp = GatherMCP(brand_id="alfagift", name="Alfagift MCP")
 
 @alfagift_mcp.tool
-async def get_order_sent() -> dict[str, Any]:
-    """Get order sent alfagift."""
-    return await zen_dpage_mcp_tool("https://alfagift.id/order-sent", "alfagift_order_sent")
-
-@alfagift_mcp.tool
 async def get_cart() -> dict[str, Any]:
     """Get cart alfagift."""
-    return await zen_dpage_mcp_tool("https://alfagift.id/cart", "alfagift_cart")
+
+    async def action(page: Page, _) -> dict[str, Any]:
+        data = await handle_network_extraction(page, "active-cart-by-memberId")
+
+        return {"alfagift_cart": data["data"]["listCartDetail"]}
+
+    return await dpage_with_action(
+        "https://alfagift.id/cart",
+        action,
+    )
