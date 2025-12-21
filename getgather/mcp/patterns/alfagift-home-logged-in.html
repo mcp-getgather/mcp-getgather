@@ -4,7 +4,6 @@
   </head>
   <body>
     <div gg-match="//p[contains(text(), 'Terbaru')]"></div>
-    <div gg-match="//p[contains(text(), 'Rekomendasi')]"></div>
-    <a gg-autoclick gg-match="//button[@aria-label='Basket']"></a>
+    <div gg-stop gg-match="//p[contains(text(), 'Rekomendasi')]"></div>
   </body>
 </html>
