@@ -171,17 +171,38 @@ async def _create_zendriver_browser(id: str | None = None) -> zd.Browser:
         extra={"profile_id": id},
     )
 
-    browser_args = ["--no-sandbox", "--start-maximized"]
+    browser_args = ["--start-maximized"]
 
     proxy = await setup_proxy(id, request_info.get())
     if proxy:
         proxy_server = proxy["server"]
         browser_args.append(f"--proxy-server={proxy_server}")
 
-    browser = await zd.start(user_data_dir=str(user_data_dir), browser_args=browser_args)
-    browser.id = id  # type: ignore[attr-defined]
+    MAX_START_ATTEMPTS = 3
+    last_error: Exception | None = None
+    for attempt in range(1, MAX_START_ATTEMPTS + 1):
+        try:
+            browser = await zd.start(
+                user_data_dir=str(user_data_dir),
+                sandbox=False,  # Required when running as root; safer than --no-sandbox arg
+                browser_args=browser_args,
+            )
+            browser.id = id  # type: ignore[attr-defined]
+            return browser
+        except Exception as e:
+            last_error = e
+            if attempt < MAX_START_ATTEMPTS:
+                logger.warning(
+                    f"Browser start failed (attempt {attempt}/{MAX_START_ATTEMPTS}): {e}. Retrying...",
+                    extra={"profile_id": id},
+                )
+                await asyncio.sleep(0.5)
 
-    return browser
+    logger.error(
+        f"Failed to start browser after {MAX_START_ATTEMPTS} attempts",
+        extra={"profile_id": id},
+    )
+    raise last_error or RuntimeError("Failed to start browser")
 
 
 async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
