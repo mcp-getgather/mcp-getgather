@@ -128,3 +128,4 @@ def setup_logging(level: str = "INFO", logs_dir: Path | None = None):
         lib_logger = logging.getLogger(logger_name)
         lib_logger.handlers = [InterceptHandler()]
         lib_logger.propagate = False
+        lib_logger.setLevel(level)
