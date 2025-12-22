@@ -137,6 +137,12 @@ async def zen_report_distill_error(
 
 
 async def install_proxy_handler(username: str, password: str, page: zd.Tab):
+    """Install proxy authentication handler for the page.
+
+    Note: This only handles authentication challenges. Request continuation
+    is handled by the resource blocker in get_new_page().
+    """
+
     async def auth_challenge_handler(event: zd.cdp.fetch.AuthRequired):
         logger.debug("Supplying proxy authentication...")
         await page.send(
@@ -150,10 +156,6 @@ async def install_proxy_handler(username: str, password: str, page: zd.Tab):
             )
         )
 
-    async def req_paused(event: zd.cdp.fetch.RequestPaused) -> None:
-        await page.send(zd.cdp.fetch.continue_request(request_id=event.request_id))
-
-    page.add_handler(zd.cdp.fetch.RequestPaused, req_paused)  # type: ignore[arg-type]
     page.add_handler(zd.cdp.fetch.AuthRequired, auth_challenge_handler)  # type: ignore[arg-type]
     await page.send(zd.cdp.fetch.enable(handle_auth_requests=True))
 
@@ -210,7 +212,7 @@ async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
                     logger.warning("Could not extract IP address")
             except Exception as e:
                 logger.warning(f"Failed to extract IP: {e}")
-            await ip_page.close()
+            await safe_close_page(ip_page)
             logger.info(f"Browser validated on attempt {attempt}")
             return browser
         except Exception as e:
@@ -362,6 +364,8 @@ async def get_new_page(browser: zd.Browser) -> zd.Tab:
             else:
                 raise
 
+    page.add_handler(zd.cdp.fetch.RequestPaused, handle_request)  # type: ignore[reportUnknownMemberType]
+
     id = cast(str, browser.id)  # type: ignore[attr-defined]
     proxy = await setup_proxy(id, request_info.get())
     proxy_username = None
@@ -373,9 +377,32 @@ async def get_new_page(browser: zd.Browser) -> zd.Tab:
             logger.debug("Setting up proxy authentication...")
             await install_proxy_handler(proxy_username or "", proxy_password or "", page)
 
-    page.add_handler(zd.cdp.fetch.RequestPaused, handle_request)  # type: ignore[reportUnknownMemberType]
-
     return page
+
+
+async def safe_close_page(page: zd.Tab) -> None:
+    """Safely close a page by disabling fetch domain first to prevent orphaned tasks.
+
+    When page.close() is called while fetch handlers are pending, it can leave
+    orphaned tasks waiting for CDP responses that will never arrive. This function
+    disables the fetch domain first to clean up handlers before closing.
+    """
+    try:
+        # Disable fetch domain to cancel pending request handlers
+        await page.send(zd.cdp.fetch.disable())
+        logger.debug("Fetch domain disabled before page close")
+    except (ProtocolException, websockets.ConnectionClosedError) as e:
+        # Page/connection already closed, which is fine
+        logger.debug(f"Could not disable fetch (connection already closed): {e}")
+    except Exception as e:
+        # Log but don't fail - we still want to close the page
+        logger.warning(f"Unexpected error disabling fetch domain: {e}")
+
+    try:
+        await page.close()
+        logger.debug("Page closed successfully")
+    except Exception as e:
+        logger.warning(f"Error closing page: {e}")
 
 
 class Element:
@@ -697,7 +724,7 @@ async def run_distillation_loop(
 
                 if await terminate(distilled):
                     converted = await convert(distilled)
-                    await page.close()
+                    await safe_close_page(page)
                     return (True, distilled, converted)
 
                 if interactive:
@@ -717,7 +744,7 @@ async def run_distillation_loop(
         hostname=hostname,
         iteration=max,
     )
-    await page.close()
+    await safe_close_page(page)
     return (False, current.distilled, None)
 
 
