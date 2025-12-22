@@ -15,22 +15,6 @@ LOGGER_NAME = "getgather"
 DEBUG = "DEBUG"
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-LIBRARY_LOGGERS = (
-    "uvicorn",
-    "uvicorn.access",
-    "uvicorn.error",
-    "fastapi",
-    "fastmcp",
-)
-
-NOISY_LOGGERS = (
-    "websockets",
-    "websockets.client",
-    "websockets.server",
-    "websockets.protocol",
-    "urllib3.connectionpool",
-)
-
 
 def _resolve_log_level(level: str) -> tuple[str, int]:
     """Return loguru and stdlib representations of the desired level."""
@@ -184,16 +168,17 @@ def setup_logging(level: str = "INFO", logs_dir: Path | None = None):
             )
 
     # Override the loggers of external libraries to ensure consistent formatting
-    logging.basicConfig(handlers=[InterceptHandler()], level=std_level, force=True)
-    for logger_name in LIBRARY_LOGGERS:
+    logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
+    for logger_name in (
+        "uvicorn",
+        "uvicorn.access",
+        "uvicorn.error",
+        "fastapi",
+        "fastmcp",
+        "sse_starlette",
+    ):
         lib_logger = logging.getLogger(logger_name)
         lib_logger.handlers = [InterceptHandler()]
         lib_logger.setLevel(std_level)
         lib_logger.propagate = False
-
-    noisy_level = max(std_level, logging.INFO)
-    for logger_name in NOISY_LOGGERS:
-        noisy_logger = logging.getLogger(logger_name)
-        noisy_logger.handlers = [InterceptHandler()]
-        noisy_logger.setLevel(noisy_level)
-        noisy_logger.propagate = False
+        lib_logger.setLevel(level)
