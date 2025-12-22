@@ -179,6 +179,7 @@ async def _create_zendriver_browser(id: str | None = None) -> zd.Browser:
         browser_args.append(f"--proxy-server={proxy_server}")
 
     MAX_START_ATTEMPTS = 3
+    BASE_RETRY_DELAY = 0.5
     last_error: Exception | None = None
     for attempt in range(1, MAX_START_ATTEMPTS + 1):
         try:
@@ -193,13 +194,18 @@ async def _create_zendriver_browser(id: str | None = None) -> zd.Browser:
             last_error = e
             if attempt < MAX_START_ATTEMPTS:
                 logger.warning(
-                    f"Browser start failed (attempt {attempt}/{MAX_START_ATTEMPTS}): {e}. Retrying...",
+                    "Browser start failed (attempt %s/%s): %s. Retrying...",
+                    attempt,
+                    MAX_START_ATTEMPTS,
+                    e,
                     extra={"profile_id": id},
                 )
-                await asyncio.sleep(0.5)
+                # Simple backoff to avoid retry storms
+                await asyncio.sleep(BASE_RETRY_DELAY * attempt)
 
     logger.error(
-        f"Failed to start browser after {MAX_START_ATTEMPTS} attempts",
+        "Failed to start browser after %s attempts",
+        MAX_START_ATTEMPTS,
         extra={"profile_id": id},
     )
     raise last_error or RuntimeError("Failed to start browser")
