@@ -123,6 +123,7 @@ def setup_logging(level: str = "INFO", logs_dir: Path | None = None):
         "uvicorn.error",
         "fastapi",
         "fastmcp",
+        "sse_starlette",
     ):
         lib_logger = logging.getLogger(logger_name)
         lib_logger.handlers = [InterceptHandler()]
