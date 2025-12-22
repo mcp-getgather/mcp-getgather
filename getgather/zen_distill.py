@@ -535,7 +535,9 @@ async def page_query_selector(page: zd.Tab, selector: str, timeout: float = 0) -
         return None
 
 
-async def distill(hostname: str | None, page: zd.Tab, patterns: list[Pattern]) -> Match | None:
+async def distill(
+    hostname: str | None, page: zd.Tab, patterns: list[Pattern], reload_on_error: bool = True
+) -> Match | None:
     result: list[Match] = []
 
     for item in patterns:
@@ -624,6 +626,20 @@ async def distill(hostname: str | None, page: zd.Tab, patterns: list[Pattern]) -
             logger.debug(f" - {item.name} with priority {item.priority}")
         match = result[0]
         logger.info(f"✓ Best match: {match.name}")
+
+        if reload_on_error and (
+            "err-timed-out" in match.name
+            or "err-ssl-protocol-error" in match.name
+            or "err-tunnel-connection-failed" in match.name
+        ):
+            logger.info(f"Error pattern detected: {match.name}")
+            try:
+                await page.send(zd.cdp.page.reload())
+                await page.wait_for_ready_state("interactive")
+            except Exception as e:
+                logger.warning(f"Failed to reload page: {e}")
+            logger.info("Retrying distillation after error...")
+            return await distill(hostname, page, patterns, reload_on_error=False)
         return match
 
 
