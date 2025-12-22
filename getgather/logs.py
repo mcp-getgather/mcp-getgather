@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Mapping
 
 import logfire
 import yaml
@@ -13,11 +13,63 @@ if TYPE_CHECKING:
 
 LOGGER_NAME = "getgather"
 DEBUG = "DEBUG"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+LIBRARY_LOGGERS = (
+    "uvicorn",
+    "uvicorn.access",
+    "uvicorn.error",
+    "fastapi",
+    "fastmcp",
+)
+
+NOISY_LOGGERS = (
+    "websockets",
+    "websockets.client",
+    "websockets.server",
+    "websockets.protocol",
+    "urllib3.connectionpool",
+)
+
+
+def _resolve_log_level(level: str) -> tuple[str, int]:
+    """Return loguru and stdlib representations of the desired level."""
+
+    normalized = level.upper()
+    std_level = getattr(logging, normalized, logging.INFO)
+
+    try:
+        logger.level(normalized)
+    except ValueError:
+        normalized = DEBUG
+
+    return normalized, std_level
+
+
+def _clean_extra(extra: Mapping[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in extra.items() if not key.startswith("_logger_")}
+
+
+def _format_path_hint(path: str | Path | None) -> str:
+    if not path:
+        return ""
+
+    try:
+        resolved = Path(path).resolve()
+        return resolved.relative_to(PROJECT_ROOT).as_posix()
+    except Exception:
+        return str(path)
+
+
+def _escape_markup(value: str) -> str:
+    return value.replace("{", "{{").replace("}", "}}").replace("<", r"\<").replace(">", r"\>")
 
 
 def setup_logging(level: str = "INFO", logs_dir: Path | None = None):
     """Configure Loguru with structured logging."""
     from getgather.config import settings
+
+    loguru_level, std_level = _resolve_log_level(level or settings.LOG_LEVEL)
 
     logger.remove()
 
@@ -35,20 +87,28 @@ def setup_logging(level: str = "INFO", logs_dir: Path | None = None):
         # Format: time, level, location, message, extras
         time_fmt = "{time:HH:mm:ss}"
         level_fmt = "<level>{level: <8}</level>"
-        location_fmt = "<cyan>{name}:{function}:{line}</cyan>"
+        extra = record["extra"]
+        location_parts = (
+            _format_path_hint(extra.get("_logger_pathname"))
+            or extra.get("_logger_name")
+            or record["name"],
+            extra.get("_logger_func") or record["function"],
+            extra.get("_logger_lineno") or record["line"],
+        )
+        escaped_location = tuple(_escape_markup(str(part)) for part in location_parts)
+        location_fmt = (
+            f"<cyan>{escaped_location[0]}:{escaped_location[1]}:{escaped_location[2]}</cyan>"
+        )
         message_fmt = "<level>{message}</level>"
 
         base = f"{time_fmt} | {level_fmt} | {location_fmt} - {message_fmt}"
 
-        if record["extra"]:
-            extra = yaml.dump(record["extra"], sort_keys=False, default_flow_style=False)
-            extra_escaped = (
-                extra.rstrip()
-                .replace("{", "{{")
-                .replace("}", "}}")
-                .replace("<", r"\<")
-                .replace(">", r"\>")
-            )
+        cleaned_extra = _clean_extra(extra)
+        if cleaned_extra:
+            extra_yaml = yaml.dump(
+                cleaned_extra, sort_keys=False, default_flow_style=False
+            ).rstrip()
+            extra_escaped = _escape_markup(extra_yaml)
             return f"{base}\n{extra_escaped}\n"
 
         return base
@@ -57,7 +117,7 @@ def setup_logging(level: str = "INFO", logs_dir: Path | None = None):
         {
             "sink": rich_handler,
             "format": _format_loguru,
-            "level": level,
+            "level": loguru_level,
             "backtrace": True,
             "diagnose": True,
         }
@@ -113,17 +173,27 @@ def setup_logging(level: str = "INFO", logs_dir: Path | None = None):
                 frame = frame.f_back
                 depth += 1
 
-            logger.opt(depth=depth, exception=record.exc_info).log(level_name, record.getMessage())
+            bound_logger = logger.bind(
+                _logger_name=record.name,
+                _logger_pathname=_format_path_hint(record.pathname),
+                _logger_func=record.funcName,
+                _logger_lineno=record.lineno,
+            )
+            bound_logger.opt(depth=depth, exception=record.exc_info).log(
+                level_name, record.getMessage()
+            )
 
     # Override the loggers of external libraries to ensure consistent formatting
-    logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
-    for logger_name in (
-        "uvicorn",
-        "uvicorn.access",
-        "uvicorn.error",
-        "fastapi",
-        "fastmcp",
-    ):
+    logging.basicConfig(handlers=[InterceptHandler()], level=std_level, force=True)
+    for logger_name in LIBRARY_LOGGERS:
         lib_logger = logging.getLogger(logger_name)
         lib_logger.handlers = [InterceptHandler()]
+        lib_logger.setLevel(std_level)
         lib_logger.propagate = False
+
+    noisy_level = max(std_level, logging.INFO)
+    for logger_name in NOISY_LOGGERS:
+        noisy_logger = logging.getLogger(logger_name)
+        noisy_logger.handlers = [InterceptHandler()]
+        noisy_logger.setLevel(noisy_level)
+        noisy_logger.propagate = False
