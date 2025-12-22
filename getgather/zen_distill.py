@@ -631,6 +631,7 @@ async def distill(
             "err-timed-out" in match.name
             or "err-ssl-protocol-error" in match.name
             or "err-tunnel-connection-failed" in match.name
+            or "err-proxy-connection-failed" in match.name
         ):
             logger.info(f"Error pattern detected: {match.name}")
             try:
