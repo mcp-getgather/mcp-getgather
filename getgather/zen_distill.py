@@ -359,7 +359,7 @@ class Element:
                     const style = window.getComputedStyle(element);
                     if (style.visibility === "hidden" || style.display === "none") return false;
                     const rect = element.getBoundingClientRect();
-                    return !!(rect.width && rect.height);
+                    return rect.width > 0 && rect.height > 0;
                 }})()
                 """
             try:
@@ -377,7 +377,7 @@ class Element:
                     const style = window.getComputedStyle(element);
                     if (style.visibility === "hidden" || style.display === "none") return false;
                     const rect = element.getBoundingClientRect();
-                    return !!(rect.width && rect.height);
+                    return rect.width > 0 && rect.height > 0;
                 }})()
                 """
             try:
