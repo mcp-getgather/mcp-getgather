@@ -16,7 +16,13 @@ jobs:
 
       - run: docker build -t getgather .
 
-      - run: docker run -p 23456:23456 --name getgather -d -e SENTRY_DSN=${{ secrets.SENTRY_DSN }} -e ENVIRONMENT=test getgather
+      - run: |
+          docker run -p 23456:23456 --name getgather -d \
+            -e SENTRY_DSN=${{ secrets.SENTRY_DSN }} \
+            -e ENVIRONMENT=test \
+            -e DEFAULT_PROXY_TYPE=proxy-0 \
+            -e PROXIES_CONFIG="${{ secrets.PROXIES_CONFIG }}" \
+            getgather
         timeout-minutes: 3
 
       - name: Run the health check validation
