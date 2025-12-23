@@ -15,6 +15,17 @@ from getgather.mcp.registry import GatherMCP
 amazon_mcp = GatherMCP(brand_id="amazon", name="Amazon MCP")
 
 
+def normalize_order_id(order_id: str | list[str] | None) -> str | list[str] | None:
+    # Normalize order IDs (e.g. turn 'Order #114-3381700-2661062' into '114-3381700-2661062')
+    if order_id is None:
+        return order_id
+    if isinstance(order_id, list):
+        return order_id
+    if order_id.startswith("Order #"):
+        return order_id.replace("Order #", "").strip()
+    return order_id
+
+
 @amazon_mcp.tool
 async def search_purchase_history(keyword: str, page_number: int = 1) -> dict[str, Any]:
     """Search purchase history from amazon."""
@@ -280,9 +291,7 @@ async def get_purchase_history_yearly(year: str | int | None = None) -> dict[str
                 hasItem = False
 
         async def get_order_details(order: dict[str, Any]):
-            # pyright: ignore[reportTypedDictNotRequiredAccess]
             order_id = order["order_id"]
-            # pyright: ignore[reportTypedDictNotRequiredAccess]
             store_logo = order.get("store_logo")
 
             # Determine order type based on brand logo alt text
@@ -435,6 +444,8 @@ async def get_purchase_history_yearly(year: str | int | None = None) -> dict[str
                     """)
                     return {"order_id": order_id, "prices": prices}
 
+        for order in orders:
+            order["order_id"] = normalize_order_id(order.get("order_id")) or ""
         try:
             order_details_list = await asyncio.gather(
                 *[get_order_details(order) for order in orders], return_exceptions=True
@@ -541,9 +552,12 @@ async def get_purchase_history_with_details(
         if orders is None:
             return {"amazon_purchase_history": []}
 
+        for order in orders:
+            order["order_id"] = normalize_order_id(order.get("order_id")) or ""
+
         async def get_order_details(order: dict[str, Any]):
-            order_id = order["order_id"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
-            store_logo = order.get("store_logo")  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            order_id = order["order_id"]
+            store_logo = order.get("store_logo")
 
             # Determine order type based on brand logo alt text
             order_type = "regular"
