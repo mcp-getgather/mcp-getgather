@@ -21,6 +21,7 @@ async def get_order_history_details(order_id: str) -> dict[str, Any]:
     return await zen_dpage_mcp_tool(
         f"https://www.wayfair.com/v/account/order/details?order_id={order_id}",
         "wayfair_order_history_details",
+        timeout=30,
     )
 
 
@@ -28,7 +29,7 @@ async def get_order_history_details(order_id: str) -> dict[str, Any]:
 async def get_cart() -> dict[str, Any]:
     """Get order history details of wayfair."""
     return await zen_dpage_mcp_tool(
-        "https://www.wayfair.com/v/checkout/basket/show", "wayfair_cart", timeout=10
+        "https://www.wayfair.com/v/checkout/basket/show", "wayfair_cart", timeout=30
     )
 
 
@@ -36,7 +37,7 @@ async def get_cart() -> dict[str, Any]:
 async def get_wishlists() -> dict[str, Any]:
     """Get wishlists of wayfair."""
     return await zen_dpage_mcp_tool(
-        "https://www.wayfair.com/lists", "wayfair_wishlists", timeout=10
+        "https://www.wayfair.com/lists", "wayfair_wishlists", timeout=30
     )
 
 
@@ -44,5 +45,5 @@ async def get_wishlists() -> dict[str, Any]:
 async def get_wishlist_details(url: str) -> dict[str, Any]:
     """Get wishlist details of wayfair."""
     return await zen_dpage_mcp_tool(
-        f"https://www.wayfair.com{url}", "wayfair_wishlist_details", timeout=10
+        f"https://www.wayfair.com{url}", "wayfair_wishlist_details", timeout=30
     )
