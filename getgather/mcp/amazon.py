@@ -293,6 +293,10 @@ async def get_purchase_history_yearly(year: str | int | None = None) -> dict[str
         async def get_order_details(order: dict[str, Any]):
             order_id = order["order_id"]
             store_logo = order.get("store_logo")
+            # If we already have product prices, return early
+            product_prices = order.get("product_prices")
+            if isinstance(product_prices, list):
+                return {"order_id": order_id}
 
             # Determine order type based on brand logo alt text
             order_type = "regular"
@@ -558,6 +562,11 @@ async def get_purchase_history_with_details(
         async def get_order_details(order: dict[str, Any]):
             order_id = order["order_id"]
             store_logo = order.get("store_logo")
+
+            # If we already have product prices, return early
+            product_prices = order.get("product_prices")
+            if isinstance(product_prices, list):
+                return {"order_id": order_id}
 
             # Determine order type based on brand logo alt text
             order_type = "regular"
