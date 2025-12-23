@@ -29,9 +29,17 @@ class LocationProxyMiddleware(Middleware):
         if not context.fastmcp_context:
             return await call_next(context)
 
-        logger.info(f"[AuthMiddleware Context]: {context.message}")
-
         headers = get_http_headers(include_all=True)
+
+        # Build logging context with session IDs
+        log_context = {}
+        mcp_session_id = headers.get("mcp-session-id")
+        browser_session_id = headers.get("x-browser-session-id")
+
+        if mcp_session_id:
+            log_context["mcp_session_id"] = mcp_session_id
+        if browser_session_id:
+            log_context["browser_session_id"] = browser_session_id
 
         # Initialize request_info data
         info_data: dict[str, str | None] = {}
@@ -43,13 +51,13 @@ class LocationProxyMiddleware(Middleware):
                 location_data: dict[str, str | None] = json.loads(location)
                 info_data.update(location_data)
             except json.JSONDecodeError:
-                logger.warning(f"Failed to parse x-location header as JSON, {location}")
+                with logger.contextualize(**log_context):
+                    logger.warning(f"Failed to parse x-location header as JSON, {location}")
 
         # Handle x-proxy-type header (e.g., "proxy-0", "proxy-1", etc.)
         proxy_type = headers.get("x-proxy-type", None)
         if proxy_type is not None:
             info_data["proxy_type"] = proxy_type
-            logger.info(f"Received x-proxy-type header: {proxy_type}")
 
         # Set request_info if we have any data
         if info_data:
@@ -58,12 +66,18 @@ class LocationProxyMiddleware(Middleware):
         tool = await context.fastmcp_context.fastmcp.get_tool(context.message.name)  # type: ignore
 
         if "general_tool" in tool.tags:
-            return await call_next(context)
+            with logger.contextualize(**log_context):
+                return await call_next(context)
 
         brand_id = context.message.name.split("_")[0]
         context.fastmcp_context.set_state("brand_id", brand_id)
 
-        return await call_next(context)
+        # Use contextualize to set context for all logs during tool execution
+        with logger.contextualize(**log_context):
+            logger.info(f"[AuthMiddleware Context]: {context.message}")
+            if proxy_type:
+                logger.info(f"Received x-proxy-type header: {proxy_type}")
+            return await call_next(context)
 
 
 MCP_BUNDLES: dict[str, list[str]] = {

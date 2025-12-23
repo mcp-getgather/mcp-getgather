@@ -3,9 +3,9 @@
     <title>Google Activity</title>
   </head>
   <body>
-    <h2 gg-match="div:has-text('My Google Activity')"></h2>
+    <h2 gg-match="//div[contains(normalize-space(.), 'My Google Activity')]"></h2>
     <p
-      gg-match="p:has-text('You can see and delete your activity using the controls on this page.')"
+      gg-match="//p[contains(normalize-space(.), 'You can see and delete your activity using the controls on this page.')]"
     ></p>
     <div gg-stop gg-match-html="body"></div>
 

@@ -1,6 +1,5 @@
 import asyncio
 import ipaddress
-import logging
 import os
 import urllib.parse
 from typing import Any
@@ -40,6 +39,7 @@ from getgather.zen_distill import (
     page_query_selector,
     run_distillation_loop as zen_run_distillation_loop,
     terminate_zendriver_browser,
+    zen_navigate_with_retry,
     zen_report_distill_error,
 )
 
@@ -72,7 +72,7 @@ async def dpage_add(page: Page | zd.Tab, location: str, profile_id: str | None =
     try:
         if not location.startswith("http"):
             location = f"https://{location}"
-        await page.goto(location, timeout=settings.BROWSER_TIMEOUT)
+        await page.goto(location, timeout=settings.BROWSER_TIMEOUT, wait_until="domcontentloaded")
     except Exception as error:
         hostname = urllib.parse.urlparse(location).hostname or "unknown"
         await report_distill_error(
@@ -95,7 +95,7 @@ async def zen_dpage_add(page: zd.Tab, location: str, profile_id: str | None = No
     try:
         if not location.startswith("http"):
             location = f"https://{location}"
-        await page.get(location)
+        await zen_navigate_with_retry(page, location)
     except Exception as error:
         hostname = urllib.parse.urlparse(location).hostname or "unknown"
         await zen_report_distill_error(
@@ -216,7 +216,7 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
 
     current = Match(name="", priority=-1, distilled="")
 
-    if logger.isEnabledFor(logging.DEBUG):
+    if settings.LOG_LEVEL == "DEBUG":
         await capture_page_artifacts(page, identifier=id, prefix="dpage_debug")
 
     for iteration in range(max):
@@ -231,17 +231,24 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
             logger.info("No matched pattern found")
             continue
 
-        if match.distilled == current.distilled:
-            logger.info(f"Still the same: {match.name}")
-            continue
-
-        current = match
         distilled = match.distilled
-
+        document = BeautifulSoup(distilled, "html.parser")
         title_element = BeautifulSoup(distilled, "html.parser").find("title")
         title = title_element.get_text() if title_element is not None else DEFAULT_TITLE
         action = f"/dpage/{id}"
         options = {"title": title, "action": action}
+        inputs = document.find_all("input")
+
+        if match.distilled == current.distilled:
+            logger.info(f"Still the same: {match.name}")
+            has_inputs = len(inputs) > 0
+            max_reached = iteration == max - 1
+            if max_reached and has_inputs:
+                logger.info("Still the same after timeout and need inputs, render the page...")
+                return HTMLResponse(render(str(document.find("body")), options))
+            continue
+
+        current = match
 
         if await terminate(distilled):
             logger.info("Finished!")
@@ -275,8 +282,6 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
             return HTMLResponse(render(FINISHED_MSG, options))
 
         names: list[str] = []
-        document = BeautifulSoup(distilled, "html.parser")
-        inputs = document.find_all("input")
 
         if fields.get("button"):
             button = document.find("button", value=str(fields.get("button")))
@@ -371,6 +376,17 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
             logger.warning("Not all form fields are filled")
             return HTMLResponse(render(str(document.find("body")), options))
 
+    location = page.url
+    hostname = urllib.parse.urlparse(location).hostname or "unknown"
+    timeout_error = TimeoutError("Timeout reached in post_dpage")
+    await report_distill_error(
+        error=timeout_error,
+        page=page,
+        profile_id=id,
+        location=location,
+        hostname=hostname,
+        iteration=max,
+    )
     raise HTTPException(status_code=503, detail="Timeout reached")
 
 
@@ -481,7 +497,7 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
 
     current = Match(name="", priority=-1, distilled="")
 
-    if logger.isEnabledFor(logging.DEBUG):
+    if settings.LOG_LEVEL == "DEBUG":
         await zen_capture_page_artifacts(page, identifier=id, prefix="dpage_debug")
 
     for iteration in range(max):
@@ -575,9 +591,9 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
                             if not value or len(value) == 0:
                                 logger.warning(f"No form data found for radio button group {name}")
                                 continue
-                            radio = document.find("input", {"type": "radio", "id": str(value)})
+                            radio = document.find("input", {"type": "radio", "value": str(value)})
                             if not radio or not isinstance(radio, Tag):
-                                logger.warning(f"No radio button found with id {value}")
+                                logger.warning(f"No radio button found with value {value}")
                                 continue
                             logger.info(f"Handling radio button group {name}")
                             logger.info(f"Using form data {name}={value}")
@@ -585,7 +601,7 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
                                 page, selector=str(radio.get("gg-match"))
                             )
                             if radio_element:
-                                await radio_element.check()
+                                await radio_element.click()
                                 radio["checked"] = "checked"
                                 current.distilled = str(document)
                                 names.append(str(input.get("id")) if input.get("id") else "radio")
@@ -612,6 +628,17 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
             logger.warning("Not all form fields are filled")
             return HTMLResponse(render(str(document.find("body")), options))
 
+    hostname_attr: str | None = getattr(page, "hostname", None)  # type: ignore[assignment]
+    location = getattr(page, "url", "unknown")  # type: ignore[assignment]
+    timeout_error = TimeoutError("Timeout reached in zen_post_dpage")
+    await zen_report_distill_error(
+        error=timeout_error,
+        page=page,
+        profile_id=id,
+        location=location,
+        hostname=hostname_attr or "unknown",
+        iteration=max,
+    )
     raise HTTPException(status_code=503, detail="Timeout reached")
 
 
@@ -709,7 +736,7 @@ async def dpage_with_action(
         if isinstance(page, Page):
             await page.goto(initial_url, wait_until="commit")
         else:
-            await page.get(initial_url)
+            await zen_navigate_with_retry(page, initial_url)
         result = await action(page, action_info["browser_profile"])
         return result
 
@@ -824,7 +851,7 @@ async def zen_dpage_with_action(
         action_info = pending_actions[_page_id]
 
         try:
-            await page.get(initial_url)
+            await zen_navigate_with_retry(page, initial_url)
         except Exception as e:
             logger.warning(f"Failed to navigate to {initial_url}: {e}")
 
@@ -843,7 +870,7 @@ async def zen_dpage_with_action(
         try:
             logger.info("Trying action with existing global browser session...")
             page = await get_new_page(browser)
-            await page.get(initial_url)
+            await zen_navigate_with_retry(page, initial_url)
             result = await action(page, browser)
             await page.close()
             logger.info("Action succeeded with existing session!")

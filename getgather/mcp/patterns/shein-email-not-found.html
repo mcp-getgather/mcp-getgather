@@ -10,6 +10,8 @@
       value="none"
       style="display: none"
     />
-    <button type="submit" gg-match="div.go-back">Go Back</button>
+    <button type="submit" gg-match="div:not([style*='display: none']) > div.go-back">
+      Go Back
+    </button>
   </body>
 </html>

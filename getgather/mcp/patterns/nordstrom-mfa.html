@@ -6,7 +6,13 @@
   <body>
     <h1 gg-match="//span[contains(text(), 'Enter your code to sign in')]"></h1>
     <span gg-optional gg-match="span[data-cy='hit-a-snag-error']"></span>
-    <div gg-optional gg-match="//section/div[contains(., 'We sent a code to:')]"></div>
+    <div>
+      <div gg-optional gg-match="//section/div[contains(., 'We sent a code to:')]"></div>
+      <strong
+        gg-optional
+        gg-match="//section/div[contains(., 'We sent a code to:')]/div/strong"
+      ></strong>
+    </div>
     <input
       inputmode="numeric"
       autofocus

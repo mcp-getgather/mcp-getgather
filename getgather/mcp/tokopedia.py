@@ -5,11 +5,11 @@ from urllib.parse import quote, urlparse
 
 import zendriver as zd
 
-from getgather.actions import handle_graphql_response
 from getgather.logs import logger
-from getgather.mcp.dpage import dpage_with_action, zen_dpage_mcp_tool, zen_dpage_with_action
+from getgather.mcp.dpage import zen_dpage_mcp_tool, zen_dpage_with_action
 from getgather.mcp.registry import GatherMCP
-from getgather.zen_distill import page_query_selector
+from getgather.zen_actions import parse_response_json
+from getgather.zen_distill import page_query_selector, zen_navigate_with_retry
 
 tokopedia_mcp = GatherMCP(brand_id="tokopedia", name="Tokopedia MCP")
 
@@ -124,20 +124,19 @@ async def get_purchase_history(
 ) -> dict[str, Any]:
     """Get purchase history of a tokopedia."""
 
-    async def action(page: Any, _) -> dict[str, Any]:
-        await page.goto(f"https://www.tokopedia.com/order-list?page={page_number}")
-        raw_data = await handle_graphql_response(
-            page,
-            "https://gql.tokopedia.com/graphql/GetOrderHistory",
-            "GetOrderHistory",
-        )
+    async def action(tab: zd.Tab, _) -> dict[str, Any]:
         results: list[dict[str, Any]] = []
+
+        async with tab.expect_response(".*gql.tokopedia.com/graphql/GetOrderHistory.*") as resp:
+            await tab.get(f"https://www.tokopedia.com/order-list?page={page_number}")
+            raw_data = await parse_response_json(resp, [], "purchase history")
+
         if raw_data:
-            uoh_orders = raw_data[0].get("data", {}).get("uohOrders", {})
-            orders = uoh_orders.get("orders", [])
+            uoh_orders: dict[str, Any] = raw_data[0].get("data", {}).get("uohOrders", {})
+            orders: list[dict[str, Any]] = uoh_orders.get("orders", [])
             for order in orders:
-                metadata = order.get("metadata", {})
-                shop = json.loads(metadata.get("queryParams", "{}"))
+                metadata: dict[str, Any] = order.get("metadata", {})
+                shop: dict[str, Any] = json.loads(metadata.get("queryParams", "{}"))
                 list_product_str = order.get("metadata", {}).get("listProducts", "[]")
 
                 product_results: list[dict[str, Any]] = order.get("metadata", {}).get(
@@ -145,16 +144,16 @@ async def get_purchase_history(
                 )
                 if list_product_str != "":
                     product_results = []
-                    products = json.loads(list_product_str)
+                    products: list[dict[str, Any]] = json.loads(list_product_str)
                     for product in products:
-                        product_result = {
+                        product_result: dict[str, Any] = {
                             "product_name": product.get("product_name", ""),
                             "product_price": product.get("product_price", ""),
                             "original_price": product.get("original_price", ""),
                             "quantity": product.get("quantity", ""),
                         }
                         product_results.append(product_result)
-                result = {
+                result: dict[str, Any] = {
                     "shop_name": shop.get("shop_name", ""),
                     "products": product_results,
                     "purchase_detail_url": f"https://www.tokopedia.com{metadata.get('detailURL', {}).get('webURL')}",
@@ -166,7 +165,7 @@ async def get_purchase_history(
 
         return {"purchase_history": results, "page": page_number}
 
-    return await dpage_with_action(
+    return await zen_dpage_with_action(
         "https://www.tokopedia.com/order-list",
         action,
     )
@@ -180,19 +179,8 @@ async def get_cart() -> dict[str, Any]:
         results: list[dict[str, Any]] = []
 
         async with tab.expect_response(".*gql.tokopedia.com/graphql/cart_revamp_v4.*") as resp:
-            await tab.get("https://www.tokopedia.com/cart")
-
-            response_event = await resp.value
-            logger.info(
-                f"Received response: {response_event.response.status} {response_event.response.url}"
-            )
-
-            body, _ = await resp.response_body
-            try:
-                raw_data: list[dict[str, Any]] = json.loads(body)
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse cart JSON response: {e}")
-                raw_data = []
+            await zen_navigate_with_retry(tab, "https://www.tokopedia.com/cart")
+            raw_data = await parse_response_json(resp, [], "cart")
 
         if raw_data:
             carts: list[dict[str, Any]] = (
@@ -241,19 +229,22 @@ async def get_cart() -> dict[str, Any]:
 async def get_wishlist(page_number: int = 1) -> dict[str, Any]:
     """Get wishlist from tokopedia."""
 
-    async def action(page: Any, _) -> dict[str, Any]:
-        await page.goto(f"https://www.tokopedia.com/wishlist/all?page={page_number}")
-        raw_data = await handle_graphql_response(
-            page,
-            "https://gql.tokopedia.com/graphql/GetWishlistCollectionItems",
-            "GetWishlistCollectionItems",
-        )
+    async def action(tab: zd.Tab, _) -> dict[str, Any]:
         results: list[dict[str, Any]] = []
+
+        async with tab.expect_response(
+            ".*gql.tokopedia.com/graphql/GetWishlistCollectionItems.*"
+        ) as resp:
+            await tab.get(f"https://www.tokopedia.com/wishlist/all?page={page_number}")
+            raw_data = await parse_response_json(resp, [], "wishlist")
+
         if raw_data:
-            uoh_orders = raw_data[0].get("data", {}).get("get_wishlist_collection_items", {})
-            wishlists = uoh_orders.get("items", [])
+            wishlist_data: dict[str, Any] = (
+                raw_data[0].get("data", {}).get("get_wishlist_collection_items", {})
+            )
+            wishlists: list[dict[str, Any]] = wishlist_data.get("items", [])
             for wishlist in wishlists:
-                result = {
+                result: dict[str, Any] = {
                     "product_name": wishlist.get("name", ""),
                     "available": wishlist.get("available", ""),
                     "label_stock": wishlist.get("label_stock", ""),
@@ -267,7 +258,7 @@ async def get_wishlist(page_number: int = 1) -> dict[str, Any]:
 
         return {"wishlist": results}
 
-    return await dpage_with_action("https://www.tokopedia.com", action)
+    return await zen_dpage_with_action("https://www.tokopedia.com", action)
 
 
 @tokopedia_mcp.tool
@@ -282,7 +273,7 @@ async def action_product_in_cart(
 
     product_ids = [product_id] if isinstance(product_id, str) else product_id
 
-    async def perform_action(page: Any, _) -> dict[str, Any]:
+    async def perform_action(tab: zd.Tab, _) -> dict[str, Any]:
         results_list: list[dict[str, str]] = []
         for pid in product_ids:
             if action == "toggle_checklist":
@@ -291,16 +282,16 @@ async def action_product_in_cart(
                 # The SVG has the data-testid, but we need to click the parent button
                 selector = f"div[data-testid='productInfoAvailable-{pid}'] button:has(svg[data-testid='cartBtnDelete'])"
 
-            await page.wait_for_timeout(1000)
-            await page.wait_for_selector(selector)
-            await page.locator(selector).scroll_into_view_if_needed()
-            await page.click(selector)
-            await page.wait_for_timeout(1000)
+            await asyncio.sleep(1)
+            element = await page_query_selector(tab, selector, timeout=10)
+            if element:
+                await element.click()
+            await asyncio.sleep(1)
             results_list.append({"message": f"Product {action}ed in cart", "product_id": pid})
 
         return {"results": results_list}
 
-    return await dpage_with_action(
+    return await zen_dpage_with_action(
         "https://www.tokopedia.com/cart",
         perform_action,
     )
