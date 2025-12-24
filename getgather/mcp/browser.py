@@ -20,11 +20,6 @@ class BrowserManager:
         """Check if an incognito browser exists by ID."""
         return id in self._incognito_browsers
 
-    def remove_incognito_browser(self, id: str) -> None:
-        """Remove an incognito browser by ID."""
-        if id in self._incognito_browsers:
-            del self._incognito_browsers[id]
-
     def get_global_browser(self) -> zd.Browser | None:
         """Get the global browser instance."""
         return self._zen_global_browser

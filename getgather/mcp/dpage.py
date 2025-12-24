@@ -138,7 +138,6 @@ async def dpage_finalize(id: str):
         browser = browser_manager.get_incognito_browser(id)
         if browser:
             await terminate_zendriver_browser(browser)
-        browser_manager.remove_incognito_browser(id)
         return True
     raise ValueError(f"Browser profile for signin {id} not found in incognito browser profiles")
 
@@ -148,7 +147,6 @@ async def zen_dpage_finalize(id: str):
         browser = browser_manager.get_incognito_browser(id)
         if browser:
             await terminate_zendriver_browser(browser)
-        browser_manager.remove_incognito_browser(id)
         return True
     raise ValueError(f"Browser profile for signin {id} not found in incognito browser profiles")
 
