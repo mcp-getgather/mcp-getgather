@@ -216,8 +216,7 @@ async def _create_zendriver_browser(id: str | None = None) -> zd.Browser:
 
 async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
     if id is not None:
-        browser = browser_manager.get_incognito_browser(id)
-        if browser is not None:
+        if browser := browser_manager.get_incognito_browser(id):
             return browser
         else:
             raise ValueError(f"Browser profile for signin {id} not found")
