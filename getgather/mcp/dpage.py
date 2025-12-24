@@ -583,7 +583,7 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
                         checked = value and len(str(value)) > 0
                         names.append(str(name))
                         logger.info(f"Status of checkbox {name}={checked}")
-                        await element.check()
+                        await element.click()
                     elif input_type == "radio":
                         if name is not None:
                             name_str = str(name)
