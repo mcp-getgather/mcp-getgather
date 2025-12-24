@@ -590,9 +590,9 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
                             if not value or len(value) == 0:
                                 logger.warning(f"No form data found for radio button group {name}")
                                 continue
-                            radio = document.find("input", {"type": "radio", "id": str(value)})
+                            radio = document.find("input", {"type": "radio", "value": str(value)})
                             if not radio or not isinstance(radio, Tag):
-                                logger.warning(f"No radio button found with id {value}")
+                                logger.warning(f"No radio button found with value {value}")
                                 continue
                             logger.info(f"Handling radio button group {name}")
                             logger.info(f"Using form data {name}={value}")
@@ -600,7 +600,7 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
                                 page, selector=str(radio.get("gg-match"))
                             )
                             if radio_element:
-                                await radio_element.check()
+                                await radio_element.click()
                                 radio["checked"] = "checked"
                                 current.distilled = str(document)
                                 names.append(str(input.get("id")) if input.get("id") else "radio")

@@ -11,7 +11,7 @@
       name="email"
       type="email"
       placeholder="Email or mobile phone number"
-      gg-match="input#ap_email"
+      gg-match="//input[@id='ap_email' and not(@type='hidden')]"
     />
     <input name="password" type="password" placeholder="Password" gg-match="input#ap_password" />
     <button type="submit" gg-match="input#signInSubmit[type=submit]">Sign in</button>
