@@ -653,15 +653,13 @@ async def zen_dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2
     if incognito:
         browser = await init_zendriver_browser(signin_id)
     else:
-        if browser_manager.get_global_browser() is None:
-            logger.info("Creating global browser for Zendriver...")
-            global_browser = await init_zendriver_browser()
-            browser_manager.set_global_browser(global_browser)
-            await get_new_page(global_browser)
-            logger.info(f"Global browser created with id {global_browser.id}")  # type: ignore[attr-defined]
         browser = browser_manager.get_global_browser()
-
-    assert browser is not None
+        if browser is None:
+            logger.info("Creating global browser for Zendriver...")
+            browser = await init_zendriver_browser()
+            browser_manager.set_global_browser(browser)
+            await get_new_page(browser)
+            logger.info(f"Global browser created with id {browser.id}")  # type: ignore[attr-defined]
 
     if not incognito or signin_id is not None:
         # First, try without any interaction as this will work if the user signed in previously
