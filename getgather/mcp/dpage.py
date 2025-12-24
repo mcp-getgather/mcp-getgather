@@ -858,15 +858,12 @@ async def zen_dpage_with_action(
 
     # Step 2: If global_browser_profile exists, try executing action directly
     # This will work if user signed in previously and session is still valid
-    if (
-        browser_manager.get_global_browser() is not None and not incognito
-    ) or signin_id is not None:
-        if browser_manager.get_global_browser() is not None and not incognito:
-            browser = browser_manager.get_global_browser()
+    global_browser = browser_manager.get_global_browser()
+    if (global_browser and not incognito) or signin_id:
+        if global_browser and not incognito:
+            browser = global_browser
         else:
             browser = await init_zendriver_browser(signin_id)
-
-        assert browser is not None
 
         try:
             logger.info("Trying action with existing global browser session...")
