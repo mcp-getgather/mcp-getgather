@@ -226,7 +226,7 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
         location = page.url
         hostname = urllib.parse.urlparse(location).hostname
 
-        match = await distill(hostname, page, patterns)
+        match = await distill(hostname, page, patterns, profile_id=id)
         if not match:
             logger.info("No matched pattern found")
             continue
