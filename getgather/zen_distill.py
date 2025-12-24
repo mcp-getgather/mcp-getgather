@@ -27,6 +27,7 @@ from getgather.distill import (
     Pattern,
     convert,
     get_selector,
+    get_stop_error,
     load_distillation_patterns,
     terminate,
 )
@@ -775,6 +776,9 @@ async def run_distillation_loop(
                 current = match
 
                 if await terminate(distilled):
+                    error = get_stop_error(distilled)
+                    if error:
+                        logger.warning(f"Distillation ended with error: {error}")
                     converted = await convert(distilled)
                     await safe_close_page(page)
                     return (True, distilled, converted)
