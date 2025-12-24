@@ -379,6 +379,21 @@ async def terminate(distilled: str) -> bool:
     return False
 
 
+def get_stop_error(distilled: str) -> str | None:
+    """Check if the distilled HTML contains an error indicator on stop elements.
+
+    Returns the error type (e.g., 'captcha') if gg-error is present, None otherwise.
+    """
+    document = BeautifulSoup(distilled, "html.parser")
+    stops = document.find_all(attrs={"gg-stop": True})
+    for stop in stops:
+        if isinstance(stop, Tag):
+            error = stop.get("gg-error")
+            if error:
+                return str(error) if isinstance(error, str) else str(error[0])
+    return None
+
+
 def load_distillation_patterns(path: str) -> list[Pattern]:
     patterns: list[Pattern] = []
     for name in glob(path, recursive=True):
@@ -570,6 +585,9 @@ async def run_distillation_loop(
                     current = match
 
                     if await terminate(distilled):
+                        error = get_stop_error(distilled)
+                        if error:
+                            logger.warning(f"Distillation ended with error: {error}")
                         converted = await convert(distilled)
                         if close_page:
                             await page.close()
