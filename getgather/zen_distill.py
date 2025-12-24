@@ -214,6 +214,14 @@ async def _create_zendriver_browser(id: str | None = None) -> zd.Browser:
 
 
 async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
+    from getgather.mcp.dpage import incognito_browsers
+
+    if id is not None:
+        if id in incognito_browsers:
+            return incognito_browsers[id]
+        else:
+            raise ValueError(f"Browser profile for signin {id} not found")
+
     MAX_ATTEMPTS = 3
     LIVE_CHECK_URL = "https://ip.fly.dev/all"
     IP_ONLY_CHECK_URL = "https://ip.fly.dev/ip"
