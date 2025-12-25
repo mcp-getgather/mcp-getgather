@@ -624,12 +624,16 @@ async def get_purchase_history_with_details(
                                     }}
                                 }}
                             }});
-
+                            let paymentInfo = "";
+                            if (doc.querySelector("span#wfm-0-card-brand")){{
+                                paymentInfo = doc.querySelector("span#wfm-0-card-brand")?.textContent?.trim() + " " + doc.querySelector("span#wfm-0-card-tail")?.textContent?.trim();
+                            }}
                             return {{
                                 prices,
                                 productNames,
                                 productUrls,
-                                imageUrls
+                                imageUrls,
+                                paymentInfo
                             }};
                         }}
                     """)
@@ -685,11 +689,22 @@ async def get_purchase_history_with_details(
                                 }}
                             }});
 
+                            const paymentInfo = doc.querySelector("li.pmts-payments-instrument-detail-box-paystationpaymentmethod")?.textContent?.trim();
+                            const paymentInfoDetail = doc.querySelector("li.pmts-payments-instrument-detail-box-paystationpaymentmethod:nth-of-type(2)")?.textContent?.trim();
+                            let paymentMethod = "";
+                            let paymentGiftCardAmount = "";
+                            if (paymentInfoDetail?.includes("gift card")){{
+                                paymentMethod = "GIFT_CARD";
+                                paymentGiftCardAmount = doc.querySelector("span#ufpo-giftCardAmount-amount")?.textContent?.trim();
+                            }}
+                            
                             return {{
                                 prices,
                                 productNames,
                                 productUrls,
-                                imageUrls
+                                imageUrls,
+                                paymentInfo,
+                                paymentInfoDetail
                             }};
                         }}
                     """)
@@ -715,22 +730,29 @@ async def get_purchase_history_with_details(
                                 .filter(Boolean);
                                 
                             const paymentElement = doc.querySelector("div.pmts-payment-instrument-billing-address");
-                            const paymentInfoElements = doc?.querySelectorAll("span.pmts-payments-instrument-detail-box-paystationpaymentmethod");
-                            let paymentInfoDetail = paymentElement?.querySelector("span.pmts-payments-instrument-supplemental-box-paystationpaymentmethod")?.textContent?.trim();
+                            const paymentInfoElements = Array.from(doc.querySelectorAll("span.pmts-payments-instrument-detail-box-paystationpaymentmethod"));
                             
-                            let paymentInfo = "";
+                            const isGiftCard = !!paymentInfoElements?.find(el => el.textContent?.toLowerCase().includes("gift card"));
+                            
+                            // This element only exists for BNPL orders
+                            const bnplElement = paymentElement?.querySelector("span.pmts-payments-instrument-supplemental-box-paystationpaymentmethod");
+                            
+                            let paymentInfo = paymentInfoElements[0]?.textContent?.trim();
+                            let paymentInfoDetail = "";
                             let paymentGiftCardAmount = "";
                             let paymentMethod = "";
                             
-                            if (paymentInfoDetail) {{
-                                paymentMethod = "BNPL";
-                            }}
                             
-                            if (paymentInfoElements.length === 1) {{
-                                paymentInfo = paymentInfoElements[0].textContent?.trim();
-                            }} else if (paymentInfoElements.length === 2) {{
-                                paymentInfoDetail = paymentInfoElements[0].textContent?.trim();
-                                paymentInfo = paymentInfoElements[1].textContent?.trim();
+                            if (bnplElement) {{
+                                paymentInfoDetail = bnplElement?.textContent?.trim();
+                                paymentMethod = "BNPL";
+                            }} else if (isGiftCard) {{
+                                paymentInfoDetail = paymentInfoElements[0]?.textContent?.trim();
+                                paymentInfo = paymentInfoElements[1]?.textContent?.trim();
+                                if (paymentInfo?.includes("gift card")){{
+                                    paymentInfoDetail = paymentInfoElements[1]?.textContent?.trim();
+                                    paymentInfo = paymentInfoElements[0]?.textContent?.trim();
+                                }}
                                 paymentGiftCardAmount = Array.from(doc.querySelectorAll("div#od-subtotals span.a-list-item"))
                                                             .find(el => el.textContent?.includes("Gift Card"))
                                                             ?.querySelector("div.a-span-last")
