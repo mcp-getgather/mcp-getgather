@@ -720,10 +720,10 @@ async def get_purchase_history_with_details(
                             
                             let paymentInfo = "";
                             let paymentGiftCardAmount = "";
-                            let paymentType = "";
+                            let paymentMethod = "";
                             
                             if (paymentInfoDetail) {{
-                                paymentType = "BNPL";
+                                paymentMethod = "BNPL";
                             }}
                             
                             if (paymentInfoElements.length === 1) {{
@@ -736,7 +736,7 @@ async def get_purchase_history_with_details(
                                                             ?.querySelector("div.a-span-last")
                                                             ?.textContent
                                                             ?.trim();
-                                paymentType = "GIFT_CARD";
+                                paymentMethod = "GIFT_CARD";
                             }}
                             
                             return {{
@@ -744,7 +744,7 @@ async def get_purchase_history_with_details(
                                 paymentInfo,
                                 paymentInfoDetail,
                                 paymentGiftCardAmount,
-                                paymentType,
+                                paymentMethod,
                             }};
                         }}
                     """)
@@ -778,7 +778,7 @@ async def get_purchase_history_with_details(
                     order["image_urls"] = details["imageUrls"]
                 order["payment_info"] = details.get("paymentInfo") or ""
                 order["payment_info_detail"] = details.get("paymentInfoDetail") or ""
-                order["payment_type"] = details.get("paymentType") or ""
+                order["payment_method"] = details.get("paymentMethod") or ""
                 order["payment_gift_card_amount"] = details.get("paymentGiftCardAmount") or ""
         except Exception as e:
             logger.error(f"Error getting order details for order: {e}")
