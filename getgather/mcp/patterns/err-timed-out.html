@@ -3,7 +3,7 @@
     <title>Error: Timed Out</title>
   </head>
   <body>
-    <div gg-match="div#main-message p:has-text('took too long to respond')"></div>
-    <div gg-match="div.error-code:has-text('ERR_TIMED_OUT')"></div>
+    <div gg-match="//div[@id='main-message']//p[contains(., 'took too long to respond')]"></div>
+    <div gg-match="//div[contains(@class, 'error-code')][contains(., 'ERR_TIMED_OUT')]"></div>
   </body>
 </html>

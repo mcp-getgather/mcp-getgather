@@ -3,7 +3,9 @@
     <title>Error: SSL Protocol Error</title>
   </head>
   <body>
-    <div gg-match="div#main-message p:has-text('sent an invalid response')"></div>
-    <div gg-match="div.error-code:has-text('ERR_SSL_PROTOCOL_ERROR')"></div>
+    <div gg-match="//div[@id='main-message']//p[contains(., 'sent an invalid response')]"></div>
+    <div
+      gg-match="//div[contains(@class, 'error-code')][contains(., 'ERR_SSL_PROTOCOL_ERROR')]"
+    ></div>
   </body>
 </html>
