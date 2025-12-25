@@ -23,7 +23,6 @@ from getgather.distill import (
     distill,
     get_incognito_browser_profile,
     get_selector,
-    get_stop_error,
     load_distillation_patterns,
     report_distill_error,
     run_distillation_loop,
@@ -252,9 +251,6 @@ async def post_dpage(id: str, request: Request) -> HTMLResponse:
         current = match
 
         if await terminate(distilled):
-            error = get_stop_error(distilled)
-            if error:
-                logger.warning(f"Signin ended with error: {error}")
             logger.info("Finished!")
             converted = await convert(distilled)
 
@@ -528,9 +524,6 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
         options = {"title": title, "action": action}
 
         if await terminate(distilled):
-            error = get_stop_error(distilled)
-            if error:
-                logger.warning(f"Signin ended with error: {error}")
             logger.info("Finished!")
             converted = await convert(distilled)
 
