@@ -3,8 +3,11 @@
     <title>Google Activity</title>
   </head>
   <body>
-    <span gg-match="span:has-text('2-Step Verification')"></span>
-    <div gg-autoclick gg-match="li:has-text('Tap Yes on your phone or tablet')">
+    <span gg-match="//span[contains(normalize-space(.), '2-Step Verification')]"></span>
+    <div
+      gg-autoclick
+      gg-match="//li//div//div[contains(normalize-space(.), 'Tap Yes on your phone or tablet')]      "
+    >
       Tap Yes on your phone or tablet
     </div>
   </body>

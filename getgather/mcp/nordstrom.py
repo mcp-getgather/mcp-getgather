@@ -6,7 +6,7 @@ import zendriver as zd
 from getgather.logs import logger
 from getgather.mcp.dpage import zen_dpage_with_action
 from getgather.mcp.registry import GatherMCP
-from getgather.zen_distill import page_query_selector
+from getgather.zen_distill import page_query_selector, zen_navigate_with_retry
 
 nordstrom_mcp = GatherMCP(brand_id="nordstrom", name="Nordstrom MCP")
 
@@ -53,7 +53,7 @@ async def get_order_details_with_retry(
     for attempt in range(1, max_retries + 1):
         logger.info(f"Attempt {attempt}/{max_retries}")
         try:
-            await tab.get("https://www.nordstrom.com/my-account")
+            await zen_navigate_with_retry(tab, "https://www.nordstrom.com/my-account")
             select_element = await page_query_selector(tab, "div > label > select", timeout=10)
 
             orders = None

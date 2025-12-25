@@ -3,15 +3,13 @@
     <title>Shein Orders</title>
   </head>
   <body>
-    <div>
-      <input
-        autofocus
-        placeholder="Email"
-        type="text"
-        name="username"
-        gg-match="input[aria-label='Email Address:']"
-      />
-      <button type="submit" gg-match="button span:has-text('Continue')">Continue</button>
-    </div>
+    <input
+      autofocus
+      placeholder="Email"
+      type="text"
+      name="username"
+      gg-match="input[aria-label='Email Address:']"
+    />
+    <button type="submit" gg-match="div.login-point_button > button">Continue</button>
   </body>
 </html>

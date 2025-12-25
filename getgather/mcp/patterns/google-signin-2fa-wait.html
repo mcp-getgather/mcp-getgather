@@ -3,9 +3,9 @@
     <title>Google Activity</title>
   </head>
   <body>
-    <span gg-match="span:has-text('2-Step Verification')"></span>
+    <span gg-match="//span[contains(normalize-space(.), '2-Step Verification')]"></span>
     <div
-      gg-match="form span section:nth-of-type(2) section section div:has-text('Google sent a notification to your')"
+      gg-match="//form//span//section[2]//section//section//div[contains(normalize-space(.), 'Google sent a notification to your')]"
     ></div>
     <input type="text" value="submit" name="submit" style="display: none" />
     <button type="submit" gg-autoclick>I've done this</button>

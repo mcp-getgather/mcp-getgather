@@ -15,6 +15,17 @@ from getgather.mcp.registry import GatherMCP
 amazon_mcp = GatherMCP(brand_id="amazon", name="Amazon MCP")
 
 
+def normalize_order_id(order_id: str | list[str] | None) -> str | list[str] | None:
+    # Normalize order IDs (e.g. turn 'Order #114-3381700-2661062' into '114-3381700-2661062')
+    if order_id is None:
+        return order_id
+    if isinstance(order_id, list):
+        return order_id
+    if order_id.startswith("Order #"):
+        return order_id.replace("Order #", "").strip()
+    return order_id
+
+
 @amazon_mcp.tool
 async def search_purchase_history(keyword: str, page_number: int = 1) -> dict[str, Any]:
     """Search purchase history from amazon."""
@@ -280,10 +291,12 @@ async def get_purchase_history_yearly(year: str | int | None = None) -> dict[str
                 hasItem = False
 
         async def get_order_details(order: dict[str, Any]):
-            # pyright: ignore[reportTypedDictNotRequiredAccess]
             order_id = order["order_id"]
-            # pyright: ignore[reportTypedDictNotRequiredAccess]
             store_logo = order.get("store_logo")
+            # If we already have product prices, return early
+            product_prices = order.get("product_prices")
+            if isinstance(product_prices, list):
+                return {"order_id": order_id}
 
             # Determine order type based on brand logo alt text
             order_type = "regular"
@@ -435,13 +448,27 @@ async def get_purchase_history_yearly(year: str | int | None = None) -> dict[str
                     """)
                     return {"order_id": order_id, "prices": prices}
 
+        for order in orders:
+            order["order_id"] = normalize_order_id(order.get("order_id")) or ""
         try:
-            order_details_list = await asyncio.gather(*[
-                get_order_details(order) for order in orders
-            ])
-            order_details = {item["order_id"]: item for item in order_details_list}
+            order_details_list = await asyncio.gather(
+                *[get_order_details(order) for order in orders], return_exceptions=True
+            )
+
+            for i, item in enumerate(order_details_list):
+                if isinstance(item, BaseException):
+                    order_id = orders[i]["order_id"]
+                    logger.warning(f"Error getting order details for order: {order_id}: {item}")
+
+            order_details = {
+                item["order_id"]: item
+                for item in order_details_list
+                if not isinstance(item, BaseException)
+            }
             for order in orders:
-                details = order_details[order["order_id"]]
+                details = order_details.get(order["order_id"])
+                if details is None:
+                    continue
                 if details.get("prices") is not None:
                     order["product_prices"] = details["prices"]
                 # For Fresh/Whole Foods orders, replace product information with the complete details
@@ -524,14 +551,22 @@ async def get_purchase_history_with_details(
             browser_profile=browser_profile,
             interactive=False,
             timeout=2,
-            close_page=True,
+            page=page,
         )
         if orders is None:
             return {"amazon_purchase_history": []}
 
+        for order in orders:
+            order["order_id"] = normalize_order_id(order.get("order_id")) or ""
+
         async def get_order_details(order: dict[str, Any]):
-            order_id = order["order_id"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
-            store_logo = order.get("store_logo")  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            order_id = order["order_id"]
+            store_logo = order.get("store_logo")
+
+            # If we already have product prices, return early
+            product_prices = order.get("product_prices")
+            if isinstance(product_prices, list):
+                return {"order_id": order_id}
 
             # Determine order type based on brand logo alt text
             order_type = "regular"
@@ -684,12 +719,24 @@ async def get_purchase_history_with_details(
                     return {"order_id": order_id, "prices": prices}
 
         try:
-            order_details_list = await asyncio.gather(*[
-                get_order_details(order) for order in orders
-            ])
-            order_details = {item["order_id"]: item for item in order_details_list}
+            order_details_list = await asyncio.gather(
+                *[get_order_details(order) for order in orders], return_exceptions=True
+            )
+
+            for i, item in enumerate(order_details_list):
+                if isinstance(item, BaseException):
+                    order_id = orders[i]["order_id"]
+                    logger.warning(f"Error getting order details for order: {order_id}: {item}")
+
+            order_details = {
+                item["order_id"]: item
+                for item in order_details_list
+                if not isinstance(item, BaseException)
+            }
             for order in orders:
-                details = order_details[order["order_id"]]
+                details = order_details.get(order["order_id"])
+                if details is None:
+                    continue
                 if details.get("prices") is not None:
                     order["product_prices"] = details["prices"]
                 # For Fresh/Whole Foods orders, replace product information with the complete details

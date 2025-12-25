@@ -1,11 +1,9 @@
 from pathlib import Path
 
-from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from getgather.browser.proxy_loader import load_proxy_configs
 from getgather.browser.proxy_types import ProxyConfig
-from getgather.logs import logger, setup_logging
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 
@@ -15,7 +13,6 @@ class Settings(BaseSettings):
         env_file=PROJECT_DIR / ".env", env_ignore_empty=True, extra="ignore"
     )
     ENVIRONMENT: str = "local"
-    APP_NAME: str = "getgather-local"
     LOG_LEVEL: str = "INFO"
     GIT_REV: str = ""
     LOGFIRE_TOKEN: str = ""
@@ -69,19 +66,6 @@ class Settings(BaseSettings):
         path = self.data_dir / "store"
         path.mkdir(parents=True, exist_ok=True)
         return path
-
-    @field_validator("LOG_LEVEL", mode="after")
-    @classmethod
-    def set_log_level(cls, v: str) -> str:
-        setup_logging(v)
-        return v
-
-    @field_validator("SENTRY_DSN", mode="after")
-    @classmethod
-    def validate_sentry_dsn(cls, v: str) -> str:
-        if not v:
-            logger.warning("SENTRY_DSN is not set, logging will not be captured in Sentry.")
-        return v
 
     @property
     def proxy_configs(self) -> dict[str, ProxyConfig]:
