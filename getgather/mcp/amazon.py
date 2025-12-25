@@ -698,7 +698,7 @@ async def get_purchase_history_with_details(
                 case _:
                     # Use regular order URL format
                     url = f"https://www.amazon.com/gp/css/summary/print.html?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_invoice_pos"
-                    prices = await page.evaluate(f"""
+                    result = await page.evaluate(f"""
                         async () => {{
                             const res = await fetch('{url}', {{
                                 method: 'GET',
@@ -713,10 +713,42 @@ async def get_purchase_history_with_details(
                             const prices = Array.from(rows)
                                 .map(row => row.querySelector("span.a-price span.a-offscreen")?.textContent?.trim())
                                 .filter(Boolean);
-                            return prices;
+                                
+                            const paymentElement = doc.querySelector("div.pmts-payment-instrument-billing-address");
+                            const paymentInfoElements = doc?.querySelectorAll("span.pmts-payments-instrument-detail-box-paystationpaymentmethod");
+                            let paymentInfoDetail = paymentElement?.querySelector("span.pmts-payments-instrument-supplemental-box-paystationpaymentmethod")?.textContent?.trim();
+                            
+                            let paymentInfo = "";
+                            let paymentGiftCardAmount = "";
+                            let paymentType = "";
+                            
+                            if (paymentInfoDetail) {{
+                                paymentType = "BNPL";
+                            }}
+                            
+                            if (paymentInfoElements.length === 1) {{
+                                paymentInfo = paymentInfoElements[0].textContent?.trim();
+                            }} else if (paymentInfoElements.length === 2) {{
+                                paymentInfoDetail = paymentInfoElements[0].textContent?.trim();
+                                paymentInfo = paymentInfoElements[1].textContent?.trim();
+                                paymentGiftCardAmount = Array.from(doc.querySelectorAll("div#od-subtotals span.a-list-item"))
+                                                            .find(el => el.textContent?.includes("Gift Card"))
+                                                            ?.querySelector("div.a-span-last")
+                                                            ?.textContent
+                                                            ?.trim();
+                                paymentType = "GIFT_CARD";
+                            }}
+                            
+                            return {{
+                                prices,
+                                paymentInfo,
+                                paymentInfoDetail,
+                                paymentGiftCardAmount,
+                                paymentType,
+                            }};
                         }}
                     """)
-                    return {"order_id": order_id, "prices": prices}
+                    return {"order_id": order_id, **result}
 
         try:
             order_details_list = await asyncio.gather(
@@ -744,6 +776,10 @@ async def get_purchase_history_with_details(
                     order["product_names"] = details["productNames"]
                     order["product_urls"] = details["productUrls"]
                     order["image_urls"] = details["imageUrls"]
+                order["payment_info"] = details.get("paymentInfo") or ""
+                order["payment_info_detail"] = details.get("paymentInfoDetail") or ""
+                order["payment_type"] = details.get("paymentType") or ""
+                order["payment_gift_card_amount"] = details.get("paymentGiftCardAmount") or ""
         except Exception as e:
             logger.error(f"Error getting order details for order: {e}")
             pass
