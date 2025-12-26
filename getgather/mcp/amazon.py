@@ -624,12 +624,16 @@ async def get_purchase_history_with_details(
                                     }}
                                 }}
                             }});
-
+                            let paymentInfo = "";
+                            if (doc.querySelector("span#wfm-0-card-brand")){{
+                                paymentInfo = doc.querySelector("span#wfm-0-card-brand")?.textContent?.trim() + " " + doc.querySelector("span#wfm-0-card-tail")?.textContent?.trim();
+                            }}
                             return {{
                                 prices,
                                 productNames,
                                 productUrls,
-                                imageUrls
+                                imageUrls,
+                                paymentInfo
                             }};
                         }}
                     """)
@@ -685,11 +689,22 @@ async def get_purchase_history_with_details(
                                 }}
                             }});
 
+                            const paymentInfo = doc.querySelector("li.pmts-payments-instrument-detail-box-paystationpaymentmethod")?.textContent?.trim();
+                            const paymentInfoDetail = doc.querySelector("li.pmts-payments-instrument-detail-box-paystationpaymentmethod:nth-of-type(2)")?.textContent?.trim();
+                            let paymentMethod = "";
+                            let paymentGiftCardAmount = "";
+                            if (paymentInfoDetail?.includes("gift card")){{
+                                paymentMethod = "GIFT_CARD";
+                                paymentGiftCardAmount = doc.querySelector("span#ufpo-giftCardAmount-amount")?.textContent?.trim();
+                            }}
+                            
                             return {{
                                 prices,
                                 productNames,
                                 productUrls,
-                                imageUrls
+                                imageUrls,
+                                paymentInfo,
+                                paymentInfoDetail
                             }};
                         }}
                     """)
@@ -698,7 +713,7 @@ async def get_purchase_history_with_details(
                 case _:
                     # Use regular order URL format
                     url = f"https://www.amazon.com/gp/css/summary/print.html?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_invoice_pos"
-                    prices = await page.evaluate(f"""
+                    result = await page.evaluate(f"""
                         async () => {{
                             const res = await fetch('{url}', {{
                                 method: 'GET',
@@ -713,10 +728,49 @@ async def get_purchase_history_with_details(
                             const prices = Array.from(rows)
                                 .map(row => row.querySelector("span.a-price span.a-offscreen")?.textContent?.trim())
                                 .filter(Boolean);
-                            return prices;
+                                
+                            const paymentElement = doc.querySelector("div.pmts-payment-instrument-billing-address");
+                            const paymentInfoElements = Array.from(doc.querySelectorAll("span.pmts-payments-instrument-detail-box-paystationpaymentmethod"));
+                            
+                            const isGiftCard = !!paymentInfoElements?.find(el => el.textContent?.toLowerCase().includes("gift card"));
+                            
+                            // This element only exists for BNPL orders
+                            const bnplElement = paymentElement?.querySelector("span.pmts-payments-instrument-supplemental-box-paystationpaymentmethod");
+                            
+                            let paymentInfo = paymentInfoElements[0]?.textContent?.trim();
+                            let paymentInfoDetail = "";
+                            let paymentGiftCardAmount = "";
+                            let paymentMethod = "";
+                            
+                            
+                            if (bnplElement) {{
+                                paymentInfoDetail = bnplElement?.textContent?.trim();
+                                paymentMethod = "BNPL";
+                            }} else if (isGiftCard) {{
+                                paymentInfoDetail = paymentInfoElements[0]?.textContent?.trim();
+                                paymentInfo = paymentInfoElements[1]?.textContent?.trim();
+                                if (paymentInfo?.includes("gift card")){{
+                                    paymentInfoDetail = paymentInfoElements[1]?.textContent?.trim();
+                                    paymentInfo = paymentInfoElements[0]?.textContent?.trim();
+                                }}
+                                paymentGiftCardAmount = Array.from(doc.querySelectorAll("div#od-subtotals span.a-list-item"))
+                                                            .find(el => el.textContent?.includes("Gift Card"))
+                                                            ?.querySelector("div.a-span-last")
+                                                            ?.textContent
+                                                            ?.trim();
+                                paymentMethod = "GIFT_CARD";
+                            }}
+                            
+                            return {{
+                                prices,
+                                paymentInfo,
+                                paymentInfoDetail,
+                                paymentGiftCardAmount,
+                                paymentMethod,
+                            }};
                         }}
                     """)
-                    return {"order_id": order_id, "prices": prices}
+                    return {"order_id": order_id, **result}
 
         try:
             order_details_list = await asyncio.gather(
@@ -744,6 +798,10 @@ async def get_purchase_history_with_details(
                     order["product_names"] = details["productNames"]
                     order["product_urls"] = details["productUrls"]
                     order["image_urls"] = details["imageUrls"]
+                order["payment_info"] = details.get("paymentInfo") or ""
+                order["payment_info_detail"] = details.get("paymentInfoDetail") or ""
+                order["payment_method"] = details.get("paymentMethod") or ""
+                order["payment_gift_card_amount"] = details.get("paymentGiftCardAmount") or ""
         except Exception as e:
             logger.error(f"Error getting order details for order: {e}")
             pass
