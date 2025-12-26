@@ -1,6 +1,5 @@
 import asyncio
 import json
-import logging
 import os
 import re
 import urllib.parse
@@ -389,7 +388,13 @@ def load_distillation_patterns(path: str) -> list[Pattern]:
     return patterns
 
 
-async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> Match | None:
+async def distill(
+    hostname: str | None,
+    page: Page,
+    patterns: list[Pattern],
+    reload_on_error: bool = True,
+    profile_id: str | None = None,
+) -> Match | None:
     result: list[Match] = []
 
     for item in patterns:
@@ -455,7 +460,19 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
 
                     tag = await source.evaluate("el => el.tagName.toLowerCase()")
                     if tag in ["input", "textarea", "select"]:
-                        input_value = await source.input_value()
+                        try:
+                            input_value = await source.input_value()
+                        except Exception as e:
+                            logger.warning(f"Failed to get input value for {selector}: {e}")
+                            input_value = ""
+                            await report_distill_error(
+                                error=e,
+                                page=page,
+                                profile_id=profile_id or "",
+                                location=page.url,
+                                hostname=hostname or "",
+                                iteration=0,
+                            )
                         target["value"] = input_value
             else:
                 optional = target.get("gg-optional") is not None
@@ -484,6 +501,17 @@ async def distill(hostname: str | None, page: Page, patterns: list[Pattern]) -> 
             logger.debug(f" - {item.name} with priority {item.priority}")
         match = result[0]
         logger.info(f"✓ Best match: {match.name}")
+
+        if reload_on_error and (
+            "err-timed-out" in match.name
+            or "err-ssl-protocol-error" in match.name
+            or "err-tunnel-connection-failed" in match.name
+            or "err-proxy-connection-failed" in match.name
+        ):
+            logger.info(f"Error pattern detected: {match.name}")
+            await page.reload(timeout=settings.BROWSER_TIMEOUT, wait_until="domcontentloaded")
+            logger.info("Retrying distillation after error...")
+            return await distill(hostname, page, patterns, reload_on_error=False)
         return match
 
 
@@ -532,7 +560,7 @@ async def run_distillation_loop(
             )
             raise ValueError(f"Failed to navigate to {location}: {error}")
 
-        if logger.isEnabledFor(logging.DEBUG):
+        if settings.LOG_LEVEL == "DEBUG":
             await capture_page_artifacts(
                 page,
                 identifier=profile.id,

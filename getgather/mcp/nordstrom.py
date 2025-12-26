@@ -1,45 +1,14 @@
-import json
-from typing import Any, cast
+from typing import Any
 
 import zendriver as zd
 
 from getgather.logs import logger
 from getgather.mcp.dpage import zen_dpage_with_action
 from getgather.mcp.registry import GatherMCP
-from getgather.zen_distill import page_query_selector
+from getgather.zen_actions import parse_response_json
+from getgather.zen_distill import page_query_selector, zen_navigate_with_retry
 
 nordstrom_mcp = GatherMCP(brand_id="nordstrom", name="Nordstrom MCP")
-
-
-async def _parse_response_body(body: str) -> dict[str, Any]:
-    """Parse response body as JSON, handling base64 encoding if needed."""
-    try:
-        logger.info("Parsing JSON from response body...")
-        parsed: Any = json.loads(body)
-        logger.info(f"Successfully parsed JSON. Type: {type(parsed).__name__}")
-
-        if isinstance(parsed, dict):
-            orders_dict = cast(dict[str, Any], parsed)
-            keys: list[str] = list(orders_dict.keys())
-            logger.info(f"Response keys: {keys}")
-            if "orders" not in orders_dict:
-                logger.warning(f"'orders' key not found in response. Available keys: {keys}")
-            else:
-                orders_list: Any = orders_dict.get("orders", [])
-                orders_count: int | str
-                if isinstance(orders_list, list):
-                    orders_count = len(cast(list[Any], orders_list))
-                else:
-                    orders_count = "N/A"
-                logger.info(f"Found 'orders' key with {orders_count} items")
-            return orders_dict
-        else:
-            logger.info(f"Response is not a dict, it's a {type(parsed).__name__}")
-            return {"orders": []}
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse JSON response: {e}")
-        logger.info(f"Response body preview (first 500 chars): {body[:500] if body else 'None'}")
-        return {"orders": []}
 
 
 async def get_order_details_with_retry(
@@ -53,7 +22,7 @@ async def get_order_details_with_retry(
     for attempt in range(1, max_retries + 1):
         logger.info(f"Attempt {attempt}/{max_retries}")
         try:
-            await tab.get("https://www.nordstrom.com/my-account")
+            await zen_navigate_with_retry(tab, "https://www.nordstrom.com/my-account")
             select_element = await page_query_selector(tab, "div > label > select", timeout=10)
 
             orders = None
@@ -61,15 +30,7 @@ async def get_order_details_with_retry(
                 async with tab.expect_response(".*/orders.*") as resp:
                     logger.info("Response listener active. Triggering select_option('all')...")
                     await select_element.select_option(value="all")
-                    logger.info("select_option triggered. Waiting for API response...")
-
-                    response_event = await resp.value
-                    logger.info(
-                        f"Received response: {response_event.response.status} {response_event.response.url}"
-                    )
-
-                    body, _ = await resp.response_body
-                    orders = await _parse_response_body(body)
+                    orders = await parse_response_json(resp, {"orders": []}, "orders")
             else:
                 logger.warning("Select element not found. Skipping dropdown selection.")
 
@@ -89,15 +50,7 @@ async def get_order_details_with_retry(
                 )
                 async with tab.expect_response(".*/orders.*") as resp:
                     await pagination_link.click()
-                    logger.info("Pagination link clicked. Waiting for API response...")
-
-                    response_event = await resp.value
-                    logger.info(f"Received pagination response: {response_event.response.status}")
-                    logger.info(f"Response URL: {response_event.response.url}")
-
-                    body, _ = await resp.response_body
-                    logger.info(f"Pagination response body fetched")
-                    orders = await _parse_response_body(body)
+                    orders = await parse_response_json(resp, {"orders": []}, "pagination orders")
             else:
                 logger.info("Page 1 - no pagination needed")
 

@@ -1,12 +1,12 @@
 import asyncio
+import json
 import socket
 from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Awaitable, Callable, Final
+from typing import Any, Awaitable, Callable, Final
 
 import httpx
-import logfire
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import (
     FileResponse,
@@ -39,7 +39,7 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await startup()
+    await startup(app)
 
     stop_event = asyncio.Event()
 
@@ -70,19 +70,6 @@ app = FastAPI(
     generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan,
 )
-logfire.configure(
-    service_name="mcp-getgather",
-    send_to_logfire="if-token-present",
-    token=settings.LOGFIRE_TOKEN or None,
-    environment=settings.ENVIRONMENT,
-    distributed_tracing=True,
-    code_source=logfire.CodeSource(
-        repository="https://github.com/mcp-getgather/mcp-getgather", revision="main"
-    ),
-    scrubbing=False,
-)
-logfire.instrument_fastapi(app, capture_headers=True)
-
 
 STATIC_DIR = Path(__file__).parent / "static"
 STATIC_ASSETS_DIR = STATIC_DIR / "assets"
@@ -221,11 +208,53 @@ async def extended_health():
     return PlainTextResponse(content=f"OK IP: {ip_text}")
 
 
-app.include_router(dpage_router)
-app.mount("/api", api_app)
+@app.middleware("http")
+async def mcp_logging_context_middleware(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+):
+    """Set logging context with session IDs for MCP requests."""
+    if request.url.path.startswith("/mcp"):
+        # Extract session IDs from headers
+        browser_session_id = request.headers.get("x-browser-session-id")
+        mcp_session_id = request.headers.get("mcp-session-id")
 
-for mcp_app in mcp_apps:
-    app.mount(mcp_app.route, mcp_app.app)
+        # Build context dict
+        context = {}
+        if browser_session_id:
+            context["browser_session_id"] = browser_session_id
+            request.state.browser_session_id = browser_session_id
+        if mcp_session_id:
+            context["mcp_session_id"] = mcp_session_id
+            request.state.mcp_session_id = mcp_session_id
+
+        # Try to extract signin_id from request body if POST
+        if request.method == "POST":
+            try:
+                body = await request.body()
+                if body:
+                    body_json: Any = json.loads(body.decode("utf-8"))
+                    if isinstance(body_json, dict):
+                        params: Any = body_json.get("params", {})  # type: ignore[misc]
+                        if isinstance(params, dict):  # type: ignore[arg-type]
+                            signin_id: Any = params.get("signin_id")  # type: ignore[misc]
+                            if signin_id:  # type: ignore[arg-type]
+                                context["signin_id"] = signin_id
+            except Exception:
+                pass
+
+        # Use contextualize to set context for all logs in this request
+        with logger.contextualize(**context):
+            logger.info(f"[MIDDLEWARE] Processing MCP request to {request.url.path}")
+            response = await call_next(request)
+
+            # Extract mcp-session-id from response if not in request
+            if not mcp_session_id and "mcp-session-id" in response.headers:
+                with logger.contextualize(mcp_session_id=response.headers["mcp-session-id"]):
+                    logger.debug("Added mcp_session_id from response")
+
+            return response
+
+    return await call_next(request)
 
 
 @app.middleware("http")
@@ -239,6 +268,14 @@ async def mcp_slash_middleware(
         if request.scope.get("raw_path"):
             request.scope["raw_path"] = f"{path}/".encode()
     return await call_next(request)
+
+
+# Mount routers and apps AFTER middleware
+app.include_router(dpage_router)
+app.mount("/api", api_app)
+
+for mcp_app in mcp_apps:
+    app.mount(mcp_app.route, mcp_app.app)
 
 
 # Serve static homepage

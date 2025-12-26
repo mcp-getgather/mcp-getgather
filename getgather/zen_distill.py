@@ -137,6 +137,12 @@ async def zen_report_distill_error(
 
 
 async def install_proxy_handler(username: str, password: str, page: zd.Tab):
+    """Install proxy authentication handler for the page.
+
+    Note: This only handles authentication challenges. Request continuation
+    is handled by the resource blocker in get_new_page().
+    """
+
     async def auth_challenge_handler(event: zd.cdp.fetch.AuthRequired):
         logger.debug("Supplying proxy authentication...")
         await page.send(
@@ -150,10 +156,6 @@ async def install_proxy_handler(username: str, password: str, page: zd.Tab):
             )
         )
 
-    async def req_paused(event: zd.cdp.fetch.RequestPaused) -> None:
-        await page.send(zd.cdp.fetch.continue_request(request_id=event.request_id))
-
-    page.add_handler(zd.cdp.fetch.RequestPaused, req_paused)  # type: ignore[arg-type]
     page.add_handler(zd.cdp.fetch.AuthRequired, auth_challenge_handler)  # type: ignore[arg-type]
     await page.send(zd.cdp.fetch.enable(handle_auth_requests=True))
 
@@ -171,20 +173,55 @@ async def _create_zendriver_browser(id: str | None = None) -> zd.Browser:
         extra={"profile_id": id},
     )
 
-    browser_args = ["--no-sandbox", "--start-maximized"]
+    browser_args = ["--start-maximized"]
 
     proxy = await setup_proxy(id, request_info.get())
     if proxy:
         proxy_server = proxy["server"]
         browser_args.append(f"--proxy-server={proxy_server}")
 
-    browser = await zd.start(user_data_dir=str(user_data_dir), browser_args=browser_args)
-    browser.id = id  # type: ignore[attr-defined]
+    MAX_START_ATTEMPTS = 3
+    BASE_RETRY_DELAY = 0.5
+    last_error: Exception | None = None
+    for attempt in range(1, MAX_START_ATTEMPTS + 1):
+        try:
+            browser = await zd.start(
+                user_data_dir=str(user_data_dir),
+                sandbox=False,  # Required when running as root; safer than --no-sandbox arg
+                browser_args=browser_args,
+            )
+            browser.id = id  # type: ignore[attr-defined]
+            return browser
+        except Exception as e:
+            last_error = e
+            if attempt < MAX_START_ATTEMPTS:
+                logger.warning(
+                    "Browser start failed (attempt %s/%s): %s. Retrying...",
+                    attempt,
+                    MAX_START_ATTEMPTS,
+                    e,
+                    extra={"profile_id": id},
+                )
+                # Simple backoff to avoid retry storms
+                await asyncio.sleep(BASE_RETRY_DELAY * attempt)
 
-    return browser
+    logger.error(
+        "Failed to start browser after %s attempts",
+        MAX_START_ATTEMPTS,
+        extra={"profile_id": id},
+    )
+    raise last_error or RuntimeError("Failed to start browser")
 
 
 async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
+    from getgather.mcp.dpage import incognito_browsers
+
+    if id is not None:
+        if id in incognito_browsers:
+            return incognito_browsers[id]
+        else:
+            raise ValueError(f"Browser profile for signin {id} not found")
+
     MAX_ATTEMPTS = 3
     LIVE_CHECK_URL = "https://ip.fly.dev/all"
     IP_ONLY_CHECK_URL = "https://ip.fly.dev/ip"
@@ -195,7 +232,7 @@ async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
             logger.info(f"Validating browser at {LIVE_CHECK_URL}...")
             # Create page with proxy setup first, then navigate
             page = await get_new_page(browser)
-            await page.get(LIVE_CHECK_URL)
+            await zen_navigate_with_retry(page, LIVE_CHECK_URL)
 
             ip_page = await get_new_page(browser)
             # Extract and log just the IP address
@@ -210,7 +247,7 @@ async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
                     logger.warning("Could not extract IP address")
             except Exception as e:
                 logger.warning(f"Failed to extract IP: {e}")
-            await ip_page.close()
+            await safe_close_page(ip_page)
             logger.info(f"Browser validated on attempt {attempt}")
             return browser
         except Exception as e:
@@ -252,6 +289,58 @@ async def terminate_zendriver_browser(browser: zd.Browser):
                 shutil.rmtree(path)
             except Exception as e:
                 logger.warning(f"Failed to remove {directory}: {e}")
+
+
+async def zen_navigate_with_retry(page: zd.Tab, url: str) -> zd.Tab:
+    """Navigate to URL with retry logic for resilient navigation.
+
+    Args:
+        page: Zendriver tab to navigate
+        url: URL to navigate to
+        **kwargs: Additional arguments to pass to page.get()
+
+    Returns:
+        The page after successful navigation
+
+    Raises:
+        Exception: If navigation fails after all retries
+    """
+    MAX_RETRIES = 3
+    FIRST_TIMEOUT = 45  # seconds, extended for first attempt
+    NORMAL_TIMEOUT = 30  # seconds, for retry attempts
+
+    last_error: Exception | None = None
+    for attempt in range(MAX_RETRIES):
+        timeout = FIRST_TIMEOUT if attempt == 0 else NORMAL_TIMEOUT
+        try:
+
+            async def navigate_and_wait() -> zd.Tab:
+                await page.send(zd.cdp.page.navigate(url))
+                # Wait for network idle or domcontentloaded event
+                try:
+                    await page.wait_for_ready_state(
+                        "interactive"
+                    )  # rough equivalent to domcontentloaded (https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState)
+                except Exception:
+                    # If wait fails, that's okay - page might already be loaded
+                    pass
+                return page
+
+            result = await asyncio.wait_for(navigate_and_wait(), timeout=timeout)
+            return result
+        except Exception as error:
+            last_error = error
+            if attempt < MAX_RETRIES - 1:
+                logger.warning(
+                    f"Navigation to {url} failed (attempt {attempt + 1}/{MAX_RETRIES}): {error}. "
+                    f"Retrying in 1 second..."
+                )
+                await asyncio.sleep(1)
+            else:
+                logger.error(f"Failed to navigate to {url} after {MAX_RETRIES} attempts")
+
+    # This should never be reached, but satisfies type checker
+    raise last_error or Exception(f"Failed to navigate to {url}")
 
 
 async def get_new_page(browser: zd.Browser) -> zd.Tab:
@@ -310,6 +399,8 @@ async def get_new_page(browser: zd.Browser) -> zd.Tab:
             else:
                 raise
 
+    page.add_handler(zd.cdp.fetch.RequestPaused, handle_request)  # type: ignore[reportUnknownMemberType]
+
     id = cast(str, browser.id)  # type: ignore[attr-defined]
     proxy = await setup_proxy(id, request_info.get())
     proxy_username = None
@@ -321,9 +412,32 @@ async def get_new_page(browser: zd.Browser) -> zd.Tab:
             logger.debug("Setting up proxy authentication...")
             await install_proxy_handler(proxy_username or "", proxy_password or "", page)
 
-    page.add_handler(zd.cdp.fetch.RequestPaused, handle_request)  # type: ignore[reportUnknownMemberType]
-
     return page
+
+
+async def safe_close_page(page: zd.Tab) -> None:
+    """Safely close a page by disabling fetch domain first to prevent orphaned tasks.
+
+    When page.close() is called while fetch handlers are pending, it can leave
+    orphaned tasks waiting for CDP responses that will never arrive. This function
+    disables the fetch domain first to clean up handlers before closing.
+    """
+    try:
+        # Disable fetch domain to cancel pending request handlers
+        await page.send(zd.cdp.fetch.disable())
+        logger.debug("Fetch domain disabled before page close")
+    except (ProtocolException, websockets.ConnectionClosedError) as e:
+        # Page/connection already closed, which is fine
+        logger.debug(f"Could not disable fetch (connection already closed): {e}")
+    except Exception as e:
+        # Log but don't fail - we still want to close the page
+        logger.warning(f"Unexpected error disabling fetch domain: {e}")
+
+    try:
+        await page.close()
+        logger.debug("Page closed successfully")
+    except Exception as e:
+        logger.warning(f"Error closing page: {e}")
 
 
 class Element:
@@ -346,6 +460,48 @@ class Element:
 
     async def inner_text(self) -> str:
         return self.element.text
+
+    async def is_visible(self) -> bool:
+        if self.xpath_selector:
+            escaped_selector = self.xpath_selector.replace("\\", "\\\\").replace('"', '\\"')
+            js_code = f"""
+                (() => {{
+                    const element = document
+                        .evaluate("{escaped_selector}", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+                        .singleNodeValue;
+                    if (!element) return false;
+                    const style = window.getComputedStyle(element);
+                    if (style.visibility === "hidden" || style.display === "none") return false;
+                    const rect = element.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0;
+                }})()
+                """
+            try:
+                return bool(await self.page.evaluate(js_code))
+            except Exception as e:
+                logger.error(f"JavaScript XPath is_visible failed: {e}")
+                return False
+
+        if self.css_selector:
+            escaped_selector = self.css_selector.replace("\\", "\\\\").replace('"', '\\"')
+            js_code = f"""
+                (() => {{
+                    const element = document.querySelector("{escaped_selector}");
+                    if (!element) return false;
+                    const style = window.getComputedStyle(element);
+                    if (style.visibility === "hidden" || style.display === "none") return false;
+                    const rect = element.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0;
+                }})()
+                """
+            try:
+                return bool(await self.page.evaluate(js_code))
+            except Exception as e:
+                logger.error(f"JavaScript CSS is_visible failed: {e}")
+                return False
+
+        logger.error(f"No selector available for is_visible")
+        return False
 
     async def click(self) -> None:
         if self.css_selector:
@@ -493,24 +649,32 @@ async def page_query_selector(page: zd.Tab, selector: str, timeout: float = 0) -
         if selector.startswith("//"):
             elements = await page.xpath(selector, timeout)
             if elements and len(elements) > 0:
-                return Element(elements[0], xpath_selector=selector)
+                element = Element(elements[0], xpath_selector=selector)
+                if await element.is_visible():
+                    return element
             return None
 
         try:
             element = await page.select(selector, timeout=timeout)
             if element:
-                return Element(element, css_selector=selector)
+                element = Element(element, css_selector=selector)
+                if await element.is_visible():
+                    return element
             return None
         except (asyncio.TimeoutError, Exception):
             element = await page.select_all(selector, timeout=timeout, include_frames=True)
             if element and len(element) > 0:
-                return Element(element[0], css_selector=selector)
+                element = Element(element[0], css_selector=selector)
+                if await element.is_visible():
+                    return element
             return None
     except (asyncio.TimeoutError, Exception):
         return None
 
 
-async def distill(hostname: str | None, page: zd.Tab, patterns: list[Pattern]) -> Match | None:
+async def distill(
+    hostname: str | None, page: zd.Tab, patterns: list[Pattern], reload_on_error: bool = True
+) -> Match | None:
     result: list[Match] = []
 
     for item in patterns:
@@ -599,6 +763,21 @@ async def distill(hostname: str | None, page: zd.Tab, patterns: list[Pattern]) -
             logger.debug(f" - {item.name} with priority {item.priority}")
         match = result[0]
         logger.info(f"✓ Best match: {match.name}")
+
+        if reload_on_error and (
+            "err-timed-out" in match.name
+            or "err-ssl-protocol-error" in match.name
+            or "err-tunnel-connection-failed" in match.name
+            or "err-proxy-connection-failed" in match.name
+        ):
+            logger.info(f"Error pattern detected: {match.name}")
+            try:
+                await page.send(zd.cdp.page.reload())
+                await page.wait_for_ready_state("interactive")
+            except Exception as e:
+                logger.warning(f"Failed to reload page: {e}")
+            logger.info("Retrying distillation after error...")
+            return await distill(hostname, page, patterns, reload_on_error=False)
         return match
 
 
@@ -639,9 +818,9 @@ async def run_distillation_loop(
     page = await get_new_page(browser)
     logger.info(f"Navigating to {location}")
     try:
-        await page.get(location)
+        await zen_navigate_with_retry(page, location)
     except Exception as error:
-        logger.error(f"Failed to navigate to {location}: {error}")
+        # Error already logged by retry wrapper, just report and re-raise
         await zen_report_distill_error(
             error=error,
             page=page,
@@ -672,7 +851,7 @@ async def run_distillation_loop(
 
                 if await terminate(distilled):
                     converted = await convert(distilled)
-                    await page.close()
+                    await safe_close_page(page)
                     return (True, distilled, converted)
 
                 if interactive:
@@ -692,7 +871,7 @@ async def run_distillation_loop(
         hostname=hostname,
         iteration=max,
     )
-    await page.close()
+    await safe_close_page(page)
     return (False, current.distilled, None)
 
 
