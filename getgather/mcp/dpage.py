@@ -29,6 +29,7 @@ from getgather.distill import (
     terminate,
 )
 from getgather.logs import logger
+from getgather.mcp.browser import browser_manager
 from getgather.mcp.html_renderer import DEFAULT_TITLE, render_form
 from getgather.zen_distill import (
     autoclick as zen_autoclick,
@@ -53,10 +54,6 @@ pending_actions: dict[str, dict[str, Any]] = {}  # Store actions to resume after
 # Patchright
 incognito_browser_profiles: dict[str, BrowserProfile] = {}
 global_browser_profile: BrowserProfile | None = None
-
-# Zendriver
-incognito_browsers: dict[str, zd.Browser] = {}
-zen_global_browser: zd.Browser | None = None
 
 FRIENDLY_CHARS: str = "23456789abcdefghijkmnpqrstuvwxyz"
 
@@ -137,16 +134,14 @@ async def dpage_finalize(id: str):
         await BrowserSession.get(incognito_browser_profiles[id]).stop()
         del incognito_browser_profiles[id]
         return True
-    elif id in incognito_browsers:
-        browser = incognito_browsers[id]
+    elif browser := browser_manager.get_incognito_browser(id):
         await terminate_zendriver_browser(browser)
         return True
     raise ValueError(f"Browser profile for signin {id} not found in incognito browser profiles")
 
 
 async def zen_dpage_finalize(id: str):
-    if id in incognito_browsers:
-        browser = incognito_browsers[id]
+    if browser := browser_manager.get_incognito_browser(id):
         await terminate_zendriver_browser(browser)
         return True
     raise ValueError(f"Browser profile for signin {id} not found in incognito browser profiles")
@@ -656,17 +651,16 @@ async def zen_dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2
     incognito = headers.get("x-incognito", "0") == "1"
     signin_id = headers.get("x-signin-id") or None
 
-    browser = None
     if incognito:
         browser = await init_zendriver_browser(signin_id)
     else:
-        global zen_global_browser
-        if zen_global_browser is None:
+        browser = browser_manager.get_global_browser()
+        if browser is None:
             logger.info("Creating global browser for Zendriver...")
-            zen_global_browser = await init_zendriver_browser()
-            await get_new_page(zen_global_browser)
-            logger.info(f"Global browser created with id {zen_global_browser.id}")  # type: ignore[attr-defined]
-        browser = zen_global_browser
+            browser = await init_zendriver_browser()
+            browser_manager.set_global_browser(browser)
+            await get_new_page(browser)
+            logger.info(f"Global browser created with id {browser.id}")  # type: ignore[attr-defined]
 
     if not incognito or signin_id is not None:
         # First, try without any interaction as this will work if the user signed in previously
@@ -683,7 +677,7 @@ async def zen_dpage_mcp_tool(initial_url: str, result_key: str, timeout: int = 2
     id = await dpage_add(page, initial_url, browser.id)  # type: ignore[attr-defined]
 
     if incognito:
-        incognito_browsers[id] = browser
+        browser_manager.set_incognito_browser(id, browser)
 
     host = headers.get("x-forwarded-host") or headers.get("host")
     if host is None:
@@ -842,8 +836,6 @@ async def zen_dpage_with_action(
     headers = get_http_headers(include_all=True)
     incognito = headers.get("x-incognito", "0") == "1"
     signin_id = headers.get("x-signin-id") or None
-    global zen_global_browser
-    global incognito_browsers
 
     # Step 1: If resuming after signin completion, use the active page directly
     if _signin_completed and _page_id is not None and _page_id in active_pages:
@@ -865,10 +857,10 @@ async def zen_dpage_with_action(
 
     # Step 2: If global_browser_profile exists, try executing action directly
     # This will work if user signed in previously and session is still valid
-    if (zen_global_browser is not None and not incognito) or signin_id is not None:
-        browser = None
-        if zen_global_browser is not None and not incognito:
-            browser = zen_global_browser
+    global_browser = browser_manager.get_global_browser()
+    if (global_browser and not incognito) or signin_id:
+        if global_browser and not incognito:
+            browser = global_browser
         else:
             browser = await init_zendriver_browser(signin_id)
 
@@ -890,11 +882,12 @@ async def zen_dpage_with_action(
     if incognito:
         browser_instance = await init_zendriver_browser(signin_id)
     else:
-        if zen_global_browser is None:
+        if browser_manager.get_global_browser() is None:
             logger.info("Creating global browser for Zendriver signin flow...")
-            zen_global_browser = await init_zendriver_browser()
-            await get_new_page(zen_global_browser)
-        browser_instance = zen_global_browser
+            global_browser = await init_zendriver_browser()
+            browser_manager.set_global_browser(global_browser)
+            await get_new_page(global_browser)
+        browser_instance = browser_manager.get_global_browser()  # type: ignore
 
     page = await get_new_page(browser_instance)
     page.hostname = urllib.parse.urlparse(initial_url).hostname  # type: ignore
@@ -911,7 +904,7 @@ async def zen_dpage_with_action(
     }
 
     if incognito:
-        incognito_browsers[id] = browser_instance
+        browser_manager.set_incognito_browser(id, browser_instance)
 
     host = headers.get("x-forwarded-host") or headers.get("host")
     if host is None:

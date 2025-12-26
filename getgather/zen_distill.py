@@ -31,6 +31,7 @@ from getgather.distill import (
     terminate,
 )
 from getgather.logs import logger
+from getgather.mcp.browser import browser_manager
 
 
 def _safe_fragment(value: str) -> str:
@@ -214,14 +215,11 @@ async def _create_zendriver_browser(id: str | None = None) -> zd.Browser:
 
 
 async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
-    from getgather.mcp.dpage import incognito_browsers
-
     if id is not None:
-        if id in incognito_browsers:
-            return incognito_browsers[id]
+        if browser := browser_manager.get_incognito_browser(id):
+            return browser
         else:
             raise ValueError(f"Browser profile for signin {id} not found")
-
     MAX_ATTEMPTS = 3
     LIVE_CHECK_URL = "https://ip.fly.dev/all"
     IP_ONLY_CHECK_URL = "https://ip.fly.dev/ip"
