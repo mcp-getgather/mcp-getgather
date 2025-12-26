@@ -172,6 +172,11 @@ def render_form(content: str, title: str = DEFAULT_TITLE, action: str = "") -> s
         flex-direction: column;
         gap: 1rem;
       }}
+      
+    .content-wrapper
+      :is(a, div, p, span, h1, h2, h3, h4, h5, h6):empty {{
+      display: none;
+    }}
 
       @media (max-width: 640px) {{
         .card {{
