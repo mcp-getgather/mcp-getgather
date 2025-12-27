@@ -389,7 +389,11 @@ def load_distillation_patterns(path: str) -> list[Pattern]:
 
 
 async def distill(
-    hostname: str | None, page: Page, patterns: list[Pattern], reload_on_error: bool = True
+    hostname: str | None,
+    page: Page,
+    patterns: list[Pattern],
+    reload_on_error: bool = True,
+    profile_id: str | None = None,
 ) -> Match | None:
     result: list[Match] = []
 
@@ -456,7 +460,19 @@ async def distill(
 
                     tag = await source.evaluate("el => el.tagName.toLowerCase()")
                     if tag in ["input", "textarea", "select"]:
-                        input_value = await source.input_value()
+                        try:
+                            input_value = await source.input_value()
+                        except Exception as e:
+                            logger.warning(f"Failed to get input value for {selector}: {e}")
+                            input_value = ""
+                            await report_distill_error(
+                                error=e,
+                                page=page,
+                                profile_id=profile_id or "",
+                                location=page.url,
+                                hostname=hostname or "",
+                                iteration=0,
+                            )
                         target["value"] = input_value
             else:
                 optional = target.get("gg-optional") is not None
@@ -490,6 +506,7 @@ async def distill(
             "err-timed-out" in match.name
             or "err-ssl-protocol-error" in match.name
             or "err-tunnel-connection-failed" in match.name
+            or "err-proxy-connection-failed" in match.name
         ):
             logger.info(f"Error pattern detected: {match.name}")
             await page.reload(timeout=settings.BROWSER_TIMEOUT, wait_until="domcontentloaded")
