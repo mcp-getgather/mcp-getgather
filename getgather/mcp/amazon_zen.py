@@ -123,7 +123,8 @@ async def get_browsing_history() -> dict[str, Any]:
             )
 
             try:
-                html = await page.evaluate(f"""
+                html = await page.evaluate(
+                    f"""
                     (async () => {{
                         const headers = {headers_js};
                         const ids = {ids_js};
@@ -138,7 +139,9 @@ async def get_browsing_history() -> dict[str, Any]:
                         }}
                         return await res.text();
                     }})()
-                """, True)
+                """,
+                    True,
+                )
             except Exception as e:
                 logger.info(f"Error fetching browsing history batch {start_index}-{end_index}: {e}")
                 raise
