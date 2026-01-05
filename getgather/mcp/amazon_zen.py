@@ -1,17 +1,29 @@
 import asyncio
 import json
+import os
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 import zendriver as zd
 
-from getgather.distill import convert
+from getgather.distill import convert, load_distillation_patterns
 from getgather.logs import logger
 from getgather.mcp.dpage import zen_dpage_mcp_tool, zen_dpage_with_action
 from getgather.mcp.registry import GatherMCP
-from getgather.zen_distill import page_query_selector
+from getgather.zen_distill import page_query_selector, run_distillation_loop
 
 amazon_zen_mcp = GatherMCP(brand_id="amazon_zen", name="Amazon Zen MCP")
+
+
+def normalize_order_id(order_id: str | list[str] | None) -> str | list[str] | None:
+    # Normalize order IDs (e.g. turn 'Order #114-3381700-2661062' into '114-3381700-2661062')
+    if order_id is None:
+        return order_id
+    if isinstance(order_id, list):
+        return order_id
+    if order_id.startswith("Order #"):
+        return order_id.replace("Order #", "").strip()
+    return order_id
 
 
 @amazon_zen_mcp.tool
@@ -224,4 +236,301 @@ async def get_browsing_history() -> dict[str, Any]:
     return await zen_dpage_with_action(
         "https://www.amazon.com/gp/history?ref_=nav_AccountFlyout_browsinghistory",
         action=get_browsing_history_action,
+    )
+
+
+@amazon_zen_mcp.tool
+async def get_purchase_history_with_details(
+    year: str | int | None = None, start_index: int = 0
+) -> dict[str, Any]:
+    """Get purchase/order history of a amazon with dpage."""
+
+    if year is None:
+        target_year = datetime.now().year
+    elif isinstance(year, str):
+        try:
+            target_year = int(year)
+        except ValueError:
+            target_year = datetime.now().year
+    else:
+        target_year = int(year)
+
+    current_year = datetime.now().year
+    if not (1900 <= target_year <= current_year + 1):
+        raise ValueError(f"Year {target_year} is out of valid range (1900-{current_year + 1})")
+
+    async def get_order_details_action(page: zd.Tab, browser: zd.Browser) -> dict[str, Any]:
+        current_url = page.url
+        if current_url is None or "signin" in current_url:
+            raise Exception("User is not signed in")
+
+        path = os.path.join(os.path.dirname(__file__), "patterns", "**/amazon-*.html")
+
+        logger.info(f"Loading patterns from {path}")
+        patterns = load_distillation_patterns(path)
+        logger.info(f"Loaded {len(patterns)} patterns")
+        _, _, orders = await run_distillation_loop(
+            f"https://www.amazon.com/your-orders/orders?timeFilter=year-{target_year}&startIndex={start_index}",
+            patterns,
+            browser=browser,
+            interactive=False,
+            timeout=2,
+        )
+        if orders is None:
+            return {"amazon_purchase_history": []}
+
+        for order in orders:
+            order["order_id"] = normalize_order_id(order.get("order_id")) or ""
+
+        async def get_order_details(order: dict[str, Any]):
+            order_id = order["order_id"]
+            store_logo = order.get("store_logo")
+
+            # If we already have product prices, return early
+            product_prices = order.get("product_prices")
+            if isinstance(product_prices, list):
+                return {"order_id": order_id}
+
+            # Determine order type based on brand logo alt text
+            order_type = "regular"
+            if store_logo:
+                store_logo_text = str(store_logo).lower()
+                if "whole foods" in store_logo_text:
+                    order_type = "wholefoods"
+                elif "fresh" in store_logo_text:
+                    order_type = "fresh"
+
+            match order_type:
+                case "wholefoods":
+                    # Use Whole Foods URL format
+                    url = f"https://www.amazon.com/fopo/order-details?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_wwgs_wfm_ATVPDKIKX0DER&page=itemmod"
+                    js_code = f"""
+                        (async () => {{
+                            const res = await fetch('{url}', {{
+                                method: 'GET',
+                                credentials: 'include',
+                            }});
+                            const text = await res.text();
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(text, 'text/html');
+                            doc.querySelectorAll('script').forEach(s => s.remove());
+
+                            const itemRows = doc.querySelectorAll('div.a-row.a-spacing-base');
+                            const prices = [];
+                            const productNames = [];
+                            const productUrls = [];
+                            const imageUrls = [];
+
+                            itemRows.forEach(row => {{
+                                const productLink = row.querySelector('div.a-column.a-span10 > a.a-size-small.a-link-normal');
+                                if (productLink) {{
+                                    const name = productLink.textContent?.trim();
+                                    if (name) {{
+                                        productNames.push(name);
+                                    }}
+                                    const href = productLink.getAttribute('href');
+                                    if (href) {{
+                                        productUrls.push(href);
+                                    }}
+                                }}
+
+                                const priceSpan = row.querySelector('div.a-column.a-span2.a-span-last div.a-text-right span.a-size-small');
+                                if (priceSpan) {{
+                                    prices.push(priceSpan.textContent?.trim() || '');
+                                }}
+
+                                const img = row.querySelector('img.ufpo-itemListWidget-image');
+                                if (img) {{
+                                    const src = img.getAttribute('src') || img.getAttribute('data-a-hires');
+                                    if (src) {{
+                                        imageUrls.push(src);
+                                    }}
+                                }}
+                            }});
+                            let paymentInfo = "";
+                            if (doc.querySelector("span#wfm-0-card-brand")){{
+                                paymentInfo = doc.querySelector("span#wfm-0-card-brand")?.textContent?.trim() + " " + doc.querySelector("span#wfm-0-card-tail")?.textContent?.trim();
+                            }}
+                            return {{
+                                prices,
+                                productNames,
+                                productUrls,
+                                imageUrls,
+                                paymentInfo
+                            }};
+                        }})()
+                    """
+
+                case "fresh":
+                    # Use Fresh URL format
+                    url = f"https://www.amazon.com/uff/your-account/order-details?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_wwgs_yo_odp_A1VC38T7YXB528&page=itemmod"
+                    js_code = f"""
+                        (async () => {{
+                            const res = await fetch('{url}', {{
+                                method: 'GET',
+                                credentials: 'include',
+                            }});
+                            const text = await res.text();
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(text, 'text/html');
+                            doc.querySelectorAll('script').forEach(s => s.remove());
+
+                            const itemRows = doc.querySelectorAll('div[id$="-item-grid-row"]');
+                            const prices = [];
+                            const productNames = [];
+                            const productUrls = [];
+                            const imageUrls = [];
+
+                            itemRows.forEach(row => {{
+                                const priceSpan = row.querySelector('span[id$="-item-total-price"]');
+                                if (priceSpan) {{
+                                    prices.push(priceSpan.textContent?.trim() || '');
+                                }}
+
+                                const productLink = row.querySelector('a.a-link-normal.a-text-normal');
+                                if (productLink) {{
+                                    const nameSpan = productLink.querySelector('span');
+                                    if (nameSpan) {{
+                                        const name = nameSpan.textContent?.trim();
+                                        if (name) {{
+                                            productNames.push(name);
+                                        }}
+                                    }}
+                                    const href = productLink.getAttribute('href');
+                                    if (href) {{
+                                        productUrls.push(href);
+                                    }}
+                                }}
+
+                                const img = row.querySelector('div.ufpo-item-image-column img');
+                                if (img) {{
+                                    const src = img.getAttribute('src') || img.getAttribute('data-a-hires');
+                                    if (src) {{
+                                        imageUrls.push(src);
+                                    }}
+                                }}
+                            }});
+
+                            const paymentInfo = doc.querySelector("li.pmts-payments-instrument-detail-box-paystationpaymentmethod")?.textContent?.trim();
+                            const paymentInfoDetail = doc.querySelector("li.pmts-payments-instrument-detail-box-paystationpaymentmethod:nth-of-type(2)")?.textContent?.trim();
+                            let paymentMethod = "";
+                            let paymentGiftCardAmount = "";
+                            if (paymentInfoDetail?.includes("gift card")){{
+                                paymentMethod = "GIFT_CARD";
+                                paymentGiftCardAmount = doc.querySelector("span#ufpo-giftCardAmount-amount")?.textContent?.trim();
+                            }}
+                            
+                            return {{
+                                prices,
+                                productNames,
+                                productUrls,
+                                imageUrls,
+                                paymentInfo,
+                                paymentInfoDetail
+                            }};
+                        }})()
+                    """
+
+                case _:
+                    # Use regular order URL format
+                    url = f"https://www.amazon.com/gp/css/summary/print.html?orderID={order_id}&ref=ppx_yo2ov_dt_b_fed_invoice_pos"
+                    js_code = f"""
+                        (async () => {{
+                            const res = await fetch('{url}', {{
+                                method: 'GET',
+                                credentials: 'include',
+                            }});
+                            const text = await res.text();
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(text, 'text/html');
+                            doc.querySelectorAll('script').forEach(s => s.remove());
+
+                            const rows = doc.querySelectorAll("div.a-fixed-left-grid");
+                            const prices = Array.from(rows)
+                                .map(row => row.querySelector("span.a-price span.a-offscreen")?.textContent?.trim())
+                                .filter(Boolean);
+                                
+                            const paymentElement = doc.querySelector("div.pmts-payment-instrument-billing-address");
+                            const paymentInfoElements = Array.from(doc.querySelectorAll("span.pmts-payments-instrument-detail-box-paystationpaymentmethod"));
+                            
+                            const isGiftCard = !!paymentInfoElements?.find(el => el.textContent?.toLowerCase().includes("gift card"));
+                            
+                            // This element only exists for BNPL orders
+                            const bnplElement = paymentElement?.querySelector("span.pmts-payments-instrument-supplemental-box-paystationpaymentmethod");
+                            
+                            let paymentInfo = paymentInfoElements[0]?.textContent?.trim();
+                            let paymentInfoDetail = "";
+                            let paymentGiftCardAmount = "";
+                            let paymentMethod = "";
+                            
+                            
+                            if (bnplElement) {{
+                                paymentInfoDetail = bnplElement?.textContent?.trim();
+                                paymentMethod = "BNPL";
+                            }} else if (isGiftCard) {{
+                                paymentInfoDetail = paymentInfoElements[0]?.textContent?.trim();
+                                paymentInfo = paymentInfoElements[1]?.textContent?.trim();
+                                if (paymentInfo?.includes("gift card")){{
+                                    paymentInfoDetail = paymentInfoElements[1]?.textContent?.trim();
+                                    paymentInfo = paymentInfoElements[0]?.textContent?.trim();
+                                }}
+                                paymentGiftCardAmount = Array.from(doc.querySelectorAll("div#od-subtotals span.a-list-item"))
+                                                            .find(el => el.textContent?.includes("Gift Card"))
+                                                            ?.querySelector("div.a-span-last")
+                                                            ?.textContent
+                                                            ?.trim();
+                                paymentMethod = "GIFT_CARD";
+                            }}
+                            
+                            return {{
+                                prices,
+                                paymentInfo,
+                                paymentInfoDetail,
+                                paymentGiftCardAmount,
+                                paymentMethod,
+                            }};
+                        }})()
+                    """
+
+            result = await page.evaluate(js_code, True)
+            return {"order_id": order_id, **cast(dict[str, Any], result)}
+
+        try:
+            order_details_list = await asyncio.gather(
+                *[get_order_details(order) for order in orders], return_exceptions=True
+            )
+
+            for i, item in enumerate(order_details_list):
+                if isinstance(item, BaseException):
+                    order_id = orders[i]["order_id"]
+                    logger.warning(f"Error getting order details for order: {order_id}: {item}")
+
+            order_details = {
+                item["order_id"]: item
+                for item in order_details_list
+                if not isinstance(item, BaseException)
+            }
+            for order in orders:
+                details = order_details.get(order["order_id"])
+                if details is None:
+                    continue
+                if details.get("prices") is not None:
+                    order["product_prices"] = details["prices"]
+                # For Fresh/Whole Foods orders, replace product information with the complete details
+                if order.get("store_logo") and details.get("productNames"):
+                    order["product_names"] = details["productNames"]
+                    order["product_urls"] = details["productUrls"]
+                    order["image_urls"] = details["imageUrls"]
+                order["payment_info"] = details.get("paymentInfo") or ""
+                order["payment_info_detail"] = details.get("paymentInfoDetail") or ""
+                order["payment_method"] = details.get("paymentMethod") or ""
+                order["payment_gift_card_amount"] = details.get("paymentGiftCardAmount") or ""
+        except Exception as e:
+            logger.error(f"Error getting order details for order: {e}")
+            pass
+        return {"amazon_purchase_history": orders}
+
+    return await zen_dpage_with_action(
+        f"https://www.amazon.com/your-orders/orders?timeFilter=year-{target_year}&startIndex={start_index}",
+        action=get_order_details_action,
     )
