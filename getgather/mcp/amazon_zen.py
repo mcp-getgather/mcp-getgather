@@ -139,10 +139,6 @@ async def get_browsing_history() -> dict[str, Any]:
                         return await res.text();
                     }})()
                 """, True)
-                logger.info(
-                    f"Received HTML response for batch {start_index}-{end_index}, length: {len(html) if html else 0} characters"
-                )
-                logger.info(f"HTML: {html[:200] if html and len(html) > 200 else html}")
             except Exception as e:
                 logger.info(f"Error fetching browsing history batch {start_index}-{end_index}: {e}")
                 raise
@@ -211,10 +207,6 @@ async def get_browsing_history() -> dict[str, Any]:
         browsing_history_list = await asyncio.gather(*[
             get_browsing_history(i, i + 100) for i in range(0, len(output), 100)
         ])
-        logger.info(f"Completed fetching all {num_batches} batch(es)")
-
-        # Flatten the list of lists
-        logger.info("Flattening browsing history results")
         flattened_history: list[Any] = []
         for idx, batch in enumerate(browsing_history_list):
             if batch is not None:
