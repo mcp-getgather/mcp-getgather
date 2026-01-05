@@ -138,7 +138,7 @@ async def get_browsing_history() -> dict[str, Any]:
                         }}
                         return await res.text();
                     }})()
-                """)
+                """, True)
                 logger.info(
                     f"Received HTML response for batch {start_index}-{end_index}, length: {len(html) if html else 0} characters"
                 )
