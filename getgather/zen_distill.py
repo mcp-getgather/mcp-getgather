@@ -220,32 +220,21 @@ async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
         else:
             raise ValueError(f"Browser profile for signin {id} not found")
     MAX_ATTEMPTS = 3
-    LIVE_CHECK_URL = "https://ip.fly.dev/all"
-    IP_ONLY_CHECK_URL = "https://ip.fly.dev/ip"
+    IP_CHECK_URL = "https://ip.fly.dev/ip"
     for attempt in range(1, MAX_ATTEMPTS + 1):
         logger.info(f"Creating a new Zendriver browser (attempt {attempt}/{MAX_ATTEMPTS})...")
         browser = await _create_zendriver_browser(id)
         try:
-            logger.info(f"Validating browser at {LIVE_CHECK_URL}...")
-            # Create page with proxy setup first, then navigate
+            logger.info(f"Validating browser at {IP_CHECK_URL}...")
             page = await get_new_page(browser)
-            await zen_navigate_with_retry(page, LIVE_CHECK_URL)
-
-            ip_page = await get_new_page(browser)
-            # Extract and log just the IP address
-            try:
-                await ip_page.get(IP_ONLY_CHECK_URL)
-                await ip_page.wait(2)
-                body = await ip_page.select("body")
-                if body:
-                    ip_address = body.text.strip()
-                    logger.info(f"Browser IP address: {ip_address}")
-                else:
-                    logger.warning("Could not extract IP address")
-            except Exception as e:
-                logger.warning(f"Failed to extract IP: {e}")
-            await safe_close_page(ip_page)
-            logger.info(f"Browser validated on attempt {attempt}")
+            await zen_navigate_with_retry(page, IP_CHECK_URL)
+            await page.wait(2)
+            body = await page.select("body")
+            if body:
+                ip_address = body.text.strip()
+                logger.info(f"Browser validated. IP address: {ip_address}")
+            else:
+                logger.info("Browser validated (could not extract IP)")
             return browser
         except Exception as e:
             logger.warning(f"Browser validation failed on attempt {attempt}: {e}")
