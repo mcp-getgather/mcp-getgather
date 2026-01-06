@@ -2,7 +2,6 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from getgather.browser.proxy_loader import load_proxy_configs
 from getgather.browser.proxy_types import ProxyConfig
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
@@ -74,6 +73,8 @@ class Settings(BaseSettings):
         Returns:
             dict: Mapping of proxy identifiers (e.g., 'proxy-0') to ProxyConfig objects
         """
+        from getgather.browser.proxy_loader import load_proxy_configs
+
         return load_proxy_configs()
 
 
