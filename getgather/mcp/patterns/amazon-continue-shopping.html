@@ -4,7 +4,6 @@
   </head>
   <body>
     <h4 gg-match="//h4[contains(text(), 'Click the button below to continue shopping')]"></h4>
-    <div gg-match="form[action='/errors/continue-shopping']"></div>
-    <div type="submit" gg-autoclick gg-match="button:has-text('Continue shopping')"></div>
+    <div gg-autoclick gg-match="//button[contains(text(), 'Continue shopping')]"></div>
   </body>
 </html>
