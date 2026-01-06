@@ -6,23 +6,21 @@
     <div
       gg-optional
       gg-autoclick
-      gg-match="button.ot-pc-refuse-all-handler:has-text('Reject All')"
+      gg-match="//button[contains(@class, 'ot-pc-refuse-all-handler') and contains(., 'Reject All')]"
     ></div>
     <p gg-optional gg-match="adc-inline-notification[role='alert'][kind='error']"></p>
     <input
       type="text"
-      gg-match="input[name='username']"
+      gg-match="adc-text-input[name='username']"
       placeholder="AAdvantage® # or username"
       name="username"
     />
     <input
       type="password"
-      gg-match="input[name='password']"
+      gg-match="adc-text-input[name='password']"
       placeholder="Password"
       name="password"
     />
-    <button type="submit" gg-match="body:not(:has(.adc-loading)) div.loginButton adc-button">
-      Sign in
-    </button>
+    <button type="submit" gg-match="div.loginButton adc-button">Log in</button>
   </body>
 </html>
