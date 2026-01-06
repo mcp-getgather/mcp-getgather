@@ -228,7 +228,6 @@ async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
             logger.info(f"Validating browser at {IP_CHECK_URL}...")
             page = await get_new_page(browser)
             await zen_navigate_with_retry(page, IP_CHECK_URL)
-            await page.wait(2)
             body = await page.select("body")
             if body:
                 ip_address = body.text.strip()
