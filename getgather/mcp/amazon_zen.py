@@ -241,7 +241,7 @@ async def get_browsing_history() -> dict[str, Any]:
 
 @amazon_zen_mcp.tool
 async def get_purchase_history_with_details(
-    year: str | int | None = None, start_index: int = 0
+    year: str | int | None = None, start_index: int = 0, timeFilter: str | None = None
 ) -> dict[str, Any]:
     """Get purchase/order history of a amazon with dpage."""
 
@@ -254,6 +254,9 @@ async def get_purchase_history_with_details(
             target_year = datetime.now().year
     else:
         target_year = int(year)
+
+    if timeFilter is None:
+        timeFilter = f"year-{target_year}"
 
     current_year = datetime.now().year
     if not (1900 <= target_year <= current_year + 1):
@@ -270,7 +273,7 @@ async def get_purchase_history_with_details(
         patterns = load_distillation_patterns(path)
         logger.info(f"Loaded {len(patterns)} patterns")
         _, _, orders = await run_distillation_loop(
-            f"https://www.amazon.com/your-orders/orders?timeFilter=year-{target_year}&startIndex={start_index}",
+            f"https://www.amazon.com/your-orders/orders?timeFilter={timeFilter}&startIndex={start_index}",
             patterns,
             browser=browser,
             interactive=False,
@@ -531,6 +534,6 @@ async def get_purchase_history_with_details(
         return {"amazon_purchase_history": orders}
 
     return await zen_dpage_with_action(
-        f"https://www.amazon.com/your-orders/orders?timeFilter=year-{target_year}&startIndex={start_index}",
+        f"https://www.amazon.com/your-orders/orders?timeFilter={timeFilter}&startIndex={start_index}",
         action=get_order_details_action,
     )
