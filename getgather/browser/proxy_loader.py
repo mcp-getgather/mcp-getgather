@@ -38,10 +38,6 @@ def load_proxy_configs() -> dict[str, ProxyConfig]:
     # Option 2: Load from local file (development)
     yaml_path = settings.data_dir / "proxies.yaml"
 
-    print("--- yaml_content", yaml_content)
-    print("--- yaml_path", yaml_path)
-    print("--- yaml_path.exists()", yaml_path.exists())
-
     if yaml_path.exists():
         logger.info(f"Loading proxy configurations from {yaml_path}")
         try:
