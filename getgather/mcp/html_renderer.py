@@ -222,6 +222,33 @@ def render_form(content: str, title: str = DEFAULT_TITLE, action: str = "") -> s
       form {{
         position: relative;
       }}
+
+      /* Shared OTP/PIN input container styles */
+      .otp-container,
+      .pin-container {{
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+      }}
+
+      .otp-container input,
+      .pin-container input {{
+        flex: 0 0 50px;
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+        text-align: center;
+        border: 2px solid var(--gray-300);
+        border-radius: 8px;
+        outline: none;
+        transition: border-color 0.2s ease;
+        padding: 0;
+      }}
+
+      .otp-container input:focus,
+      .pin-container input:focus {{
+        border-color: var(--primary);
+      }}
     </style>
     <script>
       document.addEventListener("DOMContentLoaded", function () {{
@@ -235,12 +262,46 @@ def render_form(content: str, title: str = DEFAULT_TITLE, action: str = "") -> s
 
             const spinner = document.createElement("div");
             spinner.className = "spinner";
-            spinner.style.borderTopColor = "#333"; 
+            spinner.style.borderTopColor = "#333";
 
             overlay.appendChild(spinner);
             form.appendChild(overlay);
           }});
         }}
+
+        // Auto-focus for OTP/PIN containers
+        const otpContainers = document.querySelectorAll(".otp-container, .pin-container");
+        otpContainers.forEach(function(container) {{
+          const inputs = container.querySelectorAll("input");
+          inputs.forEach(function(input, index) {{
+            input.addEventListener("input", function(e) {{
+              if (e.target.value && index < inputs.length - 1) {{
+                inputs[index + 1].focus();
+              }}
+            }});
+            input.addEventListener("keydown", function(e) {{
+              if (e.key === "Backspace" && !input.value && index > 0) {{
+                inputs[index - 1].focus();
+              }}
+            }});
+            input.addEventListener("paste", function(e) {{
+              e.preventDefault();
+              const pastedData = e.clipboardData.getData("text").trim();
+              const digits = pastedData.replace(/\D/g, "").split("");
+              digits.forEach(function(digit, i) {{
+                if (index + i < inputs.length) {{
+                  inputs[index + i].value = digit;
+                }}
+              }});
+              if (digits.length > 0) {{
+                const lastFilledIndex = Math.min(index + digits.length - 1, inputs.length - 1);
+                if (inputs[lastFilledIndex]) {{
+                  inputs[lastFilledIndex].focus();
+                }}
+              }}
+            }});
+          }});
+        }});
       }});
     </script>
   </head>

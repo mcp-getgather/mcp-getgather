@@ -1,11 +1,12 @@
+import asyncio
 from typing import Any
 from urllib.parse import quote
 
-from patchright.async_api import Page
+import zendriver as zd
 
-from getgather.browser.profile import BrowserProfile
-from getgather.mcp.dpage import dpage_with_action, zen_dpage_mcp_tool
+from getgather.mcp.dpage import zen_dpage_mcp_tool, zen_dpage_with_action
 from getgather.mcp.registry import GatherMCP
+from getgather.zen_distill import page_query_selector
 
 astro_mcp = GatherMCP(brand_id="astro", name="Astro MCP")
 
@@ -55,32 +56,66 @@ async def add_item_to_cart(product_url: str) -> dict[str, Any]:
     else:
         full_url = product_url
 
-    async def action(page: Page, _: BrowserProfile) -> dict[str, Any]:
+    async def action(page: zd.Tab, browser: zd.Browser) -> dict[str, Any]:
         # Wait for page to be ready
-        main_element = page.locator("main")
-        await main_element.is_visible(timeout=5000)
+        main_element = await page_query_selector(page, "main")
+        if not main_element:
+            return {"error": "Page failed to load"}
 
-        cart_button = page.locator('button[data-testid="pdp-atc-btn"]')
-        await cart_button.click()
+        cart_button = await page_query_selector(page, 'button[data-testid="pdp-atc-btn"]')
+        if cart_button:
+            await cart_button.click()
 
         # Click needs sometime to finish
-        await page.wait_for_timeout(2000)
+        await asyncio.sleep(2)
 
         return {"added_to_cart": {"product_url": product_url}}
 
-    return await dpage_with_action(action=action, initial_url=full_url)
+    return await zen_dpage_with_action(initial_url=full_url, action=action)
 
 
 @astro_mcp.tool
 async def update_cart_quantity(product_name: str, quantity: int) -> dict[str, Any]:
     """Update cart item quantity on astro (set quantity to 0 to remove item). Use product name from cart summary."""
 
-    async def action(page: Page, browser_profile: BrowserProfile) -> dict[str, Any]:
-        await page.wait_for_selector("main.MuiBox-root")
+    async def action(page: zd.Tab, browser: zd.Browser) -> dict[str, Any]:
+        # Wait for page to be ready
+        main_element = await page_query_selector(page, "main.MuiBox-root")
+        if not main_element:
+            await asyncio.sleep(2)  # Give it more time to load
+            main_element = await page_query_selector(page, "main.MuiBox-root")
+            if not main_element:
+                return {"error": "Cart page failed to load"}
 
-        product_name_item = page.locator(f"span:has-text('{product_name}')")
+        # Use JavaScript to find and interact with cart items
+        escaped_name = product_name.replace("'", "\\'").replace('"', '\\"')
 
-        if not await product_name_item.is_visible():
+        # Find the product and get current quantity
+        find_product_js = f"""
+            (() => {{
+                const spans = document.querySelectorAll('span');
+                for (const span of spans) {{
+                    if (span.textContent && span.textContent.includes('{escaped_name}')) {{
+                        // Navigate up to find the container with quantity controls
+                        let container = span.parentElement?.parentElement;
+                        if (!container) return null;
+
+                        // Find quantity display
+                        const quantitySpan = container.querySelector('span.MuiTypography-body-small');
+                        if (!quantitySpan) return null;
+
+                        return {{
+                            found: true,
+                            currentQuantity: parseInt(quantitySpan.textContent?.trim() || '0', 10)
+                        }};
+                    }}
+                }}
+                return null;
+            }})()
+        """
+
+        result = await page.evaluate(find_product_js)
+        if not result:
             return {
                 "success": False,
                 "message": f"Product '{product_name}' not found in cart",
@@ -88,54 +123,66 @@ async def update_cart_quantity(product_name: str, quantity: int) -> dict[str, An
                 "action": "update_failed",
             }
 
-        # Find the container that has the quantity controls
-        item = product_name_item.locator("xpath=../..")
-
-        # Get current quantity
-        quantity_element = item.locator("span.MuiTypography-body-small")
-        current_quantity_text = await quantity_element.text_content()
-        if not current_quantity_text:
-            return {
-                "success": False,
-                "message": f"Cannot find current quantity",
-                "product_name": product_name,
-                "action": "update_failed",
-            }
-
-        current_quantity = int(current_quantity_text.strip())
-
-        # Calculate how many clicks we need
+        current_quantity = int(result.get("currentQuantity", 0))  # type: ignore[union-attr]
         clicks_needed = quantity - current_quantity
 
         if clicks_needed == 0:
             return {"product_name": product_name, "quantity": quantity, "action": "no_change"}
 
-        # Find the button container
-        button_container = item.locator("div.MuiBox-root.css-1aek3i0")
+        # Click increment or decrement buttons
+        button_index = 1 if clicks_needed > 0 else 0  # 1 for increment, 0 for decrement
+        click_count: int = abs(clicks_needed)
 
-        if clicks_needed > 0:
-            # Click increment button (plus button - last div)
-            increment_button = button_container.locator("div.MuiBox-root.css-70qvj9").nth(1)
-            for _ in range(clicks_needed):
-                await increment_button.click()
-                await page.wait_for_timeout(300)  # Small delay between clicks
-        else:
-            # Click decrement button (minus button - first div)
-            decrement_button = button_container.locator("div.MuiBox-root.css-70qvj9").nth(0)
-            for _ in range(abs(clicks_needed)):
-                await decrement_button.click()
-                await page.wait_for_timeout(300)  # Small delay between clicks
+        for _ in range(click_count):
+            click_button_js = f"""
+                (() => {{
+                    const spans = document.querySelectorAll('span');
+                    for (const span of spans) {{
+                        if (span.textContent && span.textContent.includes('{escaped_name}')) {{
+                            let container = span.parentElement?.parentElement;
+                            if (!container) return false;
 
-        # Wait a bit for the final update to process
-        await page.wait_for_timeout(500)
+                            const buttonContainer = container.querySelector('div.MuiBox-root.css-1aek3i0');
+                            if (!buttonContainer) return false;
+
+                            const buttons = buttonContainer.querySelectorAll('div.MuiBox-root.css-70qvj9');
+                            if (buttons.length > {button_index}) {{
+                                buttons[{button_index}].click();
+                                return true;
+                            }}
+                            return false;
+                        }}
+                    }}
+                    return false;
+                }})()
+            """
+            await page.evaluate(click_button_js)
+            await asyncio.sleep(0.3)  # Small delay between clicks
+
+        # Wait for the final update to process
+        await asyncio.sleep(0.5)
 
         # Get final quantity (if item still exists)
         if quantity == 0:
-            # Item should be removed
             return {"product_name": product_name, "quantity": 0, "action": "removed"}
-        else:
-            final_quantity_text = await quantity_element.text_content()
-            final_quantity = int(final_quantity_text.strip()) if final_quantity_text else 0
-            return {"product_name": product_name, "quantity": final_quantity, "action": "updated"}
 
-    return await dpage_with_action(action=action, initial_url="https://www.astronauts.id/cart")
+        # Get updated quantity
+        get_quantity_js = f"""
+            (() => {{
+                const spans = document.querySelectorAll('span');
+                for (const span of spans) {{
+                    if (span.textContent && span.textContent.includes('{escaped_name}')) {{
+                        let container = span.parentElement?.parentElement;
+                        if (!container) return 0;
+                        const quantitySpan = container.querySelector('span.MuiTypography-body-small');
+                        return parseInt(quantitySpan?.textContent?.trim() || '0', 10);
+                    }}
+                }}
+                return 0;
+            }})()
+        """
+
+        final_quantity = await page.evaluate(get_quantity_js)
+        return {"product_name": product_name, "quantity": final_quantity, "action": "updated"}
+
+    return await zen_dpage_with_action(initial_url="https://www.astronauts.id/cart", action=action)

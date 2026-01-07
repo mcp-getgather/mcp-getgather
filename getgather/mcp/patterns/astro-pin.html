@@ -1,49 +1,48 @@
-<html gg-domain="astronauts.id" gg-priority="1">
+<html gg-domain="astronauts.id" gg-priority="2">
   <head>
-    <title>Astro Verification</title>
+    <title>Astro PIN Entry</title>
   </head>
   <body>
-    <p gg-optional gg-match='span[data-testid="otpErrorMessage"]' style="color: red"></p>
-    <div gg-match='div[data-testid="otpContainer"]'></div>
-    <div class="otp-container">
+    <h2 gg-match='//h2[contains(text(), "Masukkan kode PIN")]'>Enter your PIN</h2>
+    <div class="pin-container">
       <input
         autofocus
-        name="otp-0"
+        name="pin-0"
         type="tel"
         inputmode="numeric"
         gg-match='input[data-testid="otpInput0"]'
       />
       <input
-        name="otp-1"
+        name="pin-1"
         type="tel"
         inputmode="numeric"
         gg-match='input[data-testid="otpInput1"]'
       />
       <input
-        name="otp-2"
+        name="pin-2"
         type="tel"
         inputmode="numeric"
         gg-match='input[data-testid="otpInput2"]'
       />
       <input
-        name="otp-3"
+        name="pin-3"
         type="tel"
         inputmode="numeric"
         gg-match='input[data-testid="otpInput3"]'
       />
       <input
-        name="otp-4"
+        name="pin-4"
         type="tel"
         inputmode="numeric"
         gg-match='input[data-testid="otpInput4"]'
       />
       <input
-        name="otp-5"
+        name="pin-5"
         type="tel"
         inputmode="numeric"
         gg-match='input[data-testid="otpInput5"]'
       />
     </div>
-    <button type="submit">Verify OTP</button>
+    <button type="submit">Submit PIN</button>
   </body>
 </html>
