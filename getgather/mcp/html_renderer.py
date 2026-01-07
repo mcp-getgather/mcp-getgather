@@ -287,7 +287,7 @@ def render_form(content: str, title: str = DEFAULT_TITLE, action: str = "") -> s
             input.addEventListener("paste", function(e) {{
               e.preventDefault();
               const pastedData = e.clipboardData.getData("text").trim();
-              const digits = pastedData.replace(/\D/g, "").split("");
+              const digits = pastedData.replace(/[^0-9]/g, "").split("");
               digits.forEach(function(digit, i) {{
                 if (index + i < inputs.length) {{
                   inputs[index + i].value = digit;
