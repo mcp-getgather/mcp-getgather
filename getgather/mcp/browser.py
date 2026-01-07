@@ -77,6 +77,13 @@ class BrowserManager:
             self._browser_information[id] = {"last_active_timestamp": datetime.now()}
         self._browser_information[id]["last_active_timestamp"] = datetime.now()
 
+    def remove_incognito_browser(self, id: str):
+        """Remove a browser by ID."""
+        if id in self._incognito_browsers:
+            self._incognito_browsers.pop(id)
+        if id in self._browser_information:
+            self._browser_information.pop(id)
+
     async def cleanup_incognito_browsers(self):
         """Cleanup incognito browsers that have not been used in the last 1 hour."""
         current_time = datetime.now()
