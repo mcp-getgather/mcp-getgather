@@ -1,14 +1,11 @@
 import os
-from pathlib import Path
 from typing import Any
 
 import yaml
 
 from getgather.browser.proxy_types import ProxyConfig
+from getgather.config import settings
 from getgather.logs import logger
-
-# Project root directory (where proxies.yaml should be)
-PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 def load_proxy_configs() -> dict[str, ProxyConfig]:
@@ -39,7 +36,7 @@ def load_proxy_configs() -> dict[str, ProxyConfig]:
             raise
 
     # Option 2: Load from local file (development)
-    yaml_path = PROJECT_DIR / "proxies.yaml"
+    yaml_path = settings.data_dir / "proxies.yaml"
 
     if yaml_path.exists():
         logger.info(f"Loading proxy configurations from {yaml_path}")
