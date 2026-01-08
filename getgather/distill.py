@@ -37,6 +37,14 @@ class Match:
 
 ConversionResult = list[dict[str, str | list[str]]]
 
+NETWORK_ERROR_PATTERNS = (
+    "err-timed-out",
+    "err-ssl-protocol-error",
+    "err-tunnel-connection-failed",
+    "err-proxy-connection-failed",
+    "err-service-unavailable",
+)
+
 
 def _safe_fragment(value: str) -> str:
     fragment = re.sub(r"[^a-zA-Z0-9_-]+", "-", value).strip("-")
@@ -502,12 +510,7 @@ async def distill(
         match = result[0]
         logger.info(f"✓ Best match: {match.name}")
 
-        if reload_on_error and (
-            "err-timed-out" in match.name
-            or "err-ssl-protocol-error" in match.name
-            or "err-tunnel-connection-failed" in match.name
-            or "err-proxy-connection-failed" in match.name
-        ):
+        if reload_on_error and any(pattern in match.name for pattern in NETWORK_ERROR_PATTERNS):
             logger.info(f"Error pattern detected: {match.name}")
             await page.reload(timeout=settings.BROWSER_TIMEOUT, wait_until="domcontentloaded")
             logger.info("Retrying distillation after error...")
