@@ -21,6 +21,7 @@ from getgather.browser.proxy import setup_proxy
 from getgather.browser.resource_blocker import blocked_domains, load_blocklists, should_be_blocked
 from getgather.config import settings
 from getgather.distill import (
+    NETWORK_ERROR_PATTERNS,
     ConversionResult,
     Match,
     Pattern,
@@ -720,13 +721,7 @@ async def distill(
         match = result[0]
         logger.info(f"✓ Best match: {match.name}")
 
-        if reload_on_error and (
-            "err-timed-out" in match.name
-            or "err-ssl-protocol-error" in match.name
-            or "err-tunnel-connection-failed" in match.name
-            or "err-proxy-connection-failed" in match.name
-            or "err-service-unavailable" in match.name
-        ):
+        if reload_on_error and any(pattern in match.name for pattern in NETWORK_ERROR_PATTERNS):
             logger.info(f"Error pattern detected: {match.name}")
             try:
                 await page.send(zd.cdp.page.reload())
