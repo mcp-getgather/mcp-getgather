@@ -46,8 +46,14 @@ async def lifespan(app: FastAPI):
 
     async def timer_loop():
         while not stop_event.is_set():
-            await cleanup_old_sessions()
-            await browser_manager.cleanup_incognito_browsers()
+            try:
+                await cleanup_old_sessions()
+            except Exception as e:
+                logger.error(f"Error in cleanup_old_sessions: {e}", exc_info=True)
+            try:
+                await browser_manager.cleanup_incognito_browsers()
+            except Exception as e:
+                logger.error(f"Error in cleanup_incognito_browsers: {e}", exc_info=True)
             try:
                 await asyncio.wait_for(stop_event.wait(), timeout=5 * 60)
             except asyncio.TimeoutError:
