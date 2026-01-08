@@ -45,6 +45,7 @@ NETWORK_ERROR_PATTERNS = (
     "err-service-unavailable",
 )
 
+
 def _safe_fragment(value: str) -> str:
     fragment = re.sub(r"[^a-zA-Z0-9_-]+", "-", value).strip("-")
     return fragment or "distill"
