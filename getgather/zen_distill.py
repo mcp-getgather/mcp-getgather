@@ -757,6 +757,8 @@ async def run_distillation_loop(
     browser: zd.Browser,
     timeout: int = 15,
     interactive: bool = True,
+    close_page: bool = True,
+    page: zd.Tab | None = None,
 ) -> tuple[bool, str, ConversionResult | None]:
     """Run the distillation loop with zendriver.
 
@@ -771,7 +773,8 @@ async def run_distillation_loop(
 
     hostname = urllib.parse.urlparse(location).hostname or ""
 
-    page = await get_new_page(browser)
+    if page is None:
+        page = await get_new_page(browser)
     logger.info(f"Navigating to {location}")
     try:
         await zen_navigate_with_retry(page, location)
@@ -807,7 +810,8 @@ async def run_distillation_loop(
 
                 if await terminate(distilled):
                     converted = await convert(distilled)
-                    await safe_close_page(page)
+                    if close_page:
+                        await safe_close_page(page)
                     return (True, distilled, converted)
 
                 if interactive:
