@@ -219,11 +219,13 @@ async def init_zendriver_browser(id: str | None = None) -> zd.Browser:
             return browser
         else:
             raise ValueError(f"Browser profile for signin {id} not found")
+
     MAX_ATTEMPTS = 3
     IP_CHECK_URL = "https://ip.fly.dev/ip"
     for attempt in range(1, MAX_ATTEMPTS + 1):
         logger.info(f"Creating a new Zendriver browser (attempt {attempt}/{MAX_ATTEMPTS})...")
         browser = await _create_zendriver_browser(id)
+
         try:
             logger.info(f"Validating browser at {IP_CHECK_URL}...")
             page = await get_new_page(browser)
@@ -273,14 +275,18 @@ async def zen_navigate_with_retry(page: zd.Tab, url: str, wait_for_ready: bool =
         try:
 
             async def navigate_and_wait() -> zd.Tab:
-                await page.send(zd.cdp.page.navigate(url))
+                _frame_id, _loader_id, error_text = await page.send(zd.cdp.page.navigate(url))
+
+                # Check for navigation errors (connection refused, DNS failure, SSL errors, etc.)
+                if error_text:
+                    raise ConnectionError(f"Navigation failed: {error_text}")
+
                 if not wait_for_ready:
                     return page
-                # Wait for network idle or domcontentloaded event
+
+                # Wait for page to be interactive
                 try:
-                    await page.wait_for_ready_state(
-                        "interactive"
-                    )  # rough equivalent to domcontentloaded (https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState)
+                    await page.wait_for_ready_state("interactive")
                 except Exception:
                     # If wait fails, that's okay - page might already be loaded
                     pass
