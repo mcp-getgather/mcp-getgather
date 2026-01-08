@@ -19,6 +19,7 @@ from getgather.distill import (
     Match,
     autoclick,
     capture_page_artifacts,
+    check_error,
     convert,
     distill,
     get_incognito_browser_profile,
@@ -522,9 +523,10 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
 
         if await terminate(distilled):
             logger.info("Finished!")
-            converted = await convert(distilled)
 
-            if id in pending_actions:
+            error = await check_error(distilled)
+
+            if id in pending_actions and not error:
                 action_info = pending_actions[id]
                 logger.info(f"Signin completed for {id}, resuming action...")
 
@@ -542,6 +544,7 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
                 await dpage_close(id)
                 return HTMLResponse(render(FINISHED_MSG, options))
 
+            converted = await convert(distilled)
             await dpage_close(id)
             if converted is not None:
                 print(converted)

@@ -387,6 +387,15 @@ async def terminate(distilled: str) -> bool:
     return False
 
 
+async def check_error(distilled: str) -> bool:
+    document = BeautifulSoup(distilled, "html.parser")
+    errors = document.find_all(attrs={"gg-error": True})
+    if len(errors) > 0:
+        logger.info("Found error elements...")
+        return True
+    return False
+
+
 def load_distillation_patterns(path: str) -> list[Pattern]:
     patterns: list[Pattern] = []
     for name in glob(path, recursive=True):
