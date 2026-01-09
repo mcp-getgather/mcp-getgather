@@ -113,10 +113,11 @@ class BrowserManager:
                         logger.warning(f"Signin ID {signin_id} not found, skipping termination")
                         continue
                     await terminate_zendriver_browser(browser)
-                    self.remove_incognito_browser(signin_id)
                     logger.info(f"Successfully stopped browser with signin ID {signin_id}")
                 except Exception as e:
                     logger.error(f"Failed to stop browser with signin ID {signin_id}: {e}")
+                finally:
+                    self.remove_incognito_browser(signin_id)
 
 
 browser_manager = BrowserManager()
