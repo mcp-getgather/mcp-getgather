@@ -88,7 +88,7 @@ class BrowserManager:
         """Cleanup incognito browsers that have not been used in the last 1 hour."""
         current_time = datetime.now()
         max_session_age = timedelta(minutes=settings.BROWSER_SESSION_AGE)
-        signin_ids = self._incognito_browsers.keys()
+        signin_ids = list(self._incognito_browsers.keys())
 
         logger.info(f"Checking for old browsers to stop. Found {len(signin_ids)} browsers")
 
@@ -102,7 +102,6 @@ class BrowserManager:
                 continue
 
             last_active_timestamp = browser_information.get("last_active_timestamp")
-
             session_age = current_time - last_active_timestamp
             if session_age > max_session_age:
                 try:
