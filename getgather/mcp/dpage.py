@@ -490,7 +490,7 @@ async def zen_post_dpage(page: zd.Tab, id: str, request: Request) -> HTMLRespons
     logger.debug(f"Available distillation patterns: {len(patterns)}")
 
     TICK = 1  # seconds
-    TIMEOUT = 15  # seconds
+    TIMEOUT = pending_actions.get(id, {}).get("dpage_timeout", 15)  # seconds
     max = TIMEOUT // TICK
 
     current = Match(name="", priority=-1, distilled="")
@@ -830,6 +830,7 @@ async def zen_dpage_with_action(
     initial_url: str,
     action: Any,
     timeout: int = 2,
+    dpage_timeout: int = 15,
     _signin_completed: bool = False,
     _page_id: str | None = None,
 ) -> dict[str, Any]:
@@ -912,6 +913,7 @@ async def zen_dpage_with_action(
         "timeout": timeout,
         "page_id": id,
         "browser": browser_instance,
+        "dpage_timeout": dpage_timeout,
     }
 
     if incognito:
