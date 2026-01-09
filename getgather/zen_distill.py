@@ -40,6 +40,32 @@ def _safe_fragment(value: str) -> str:
     return fragment or "distill"
 
 
+async def wait_for_ready_state(
+    page: zd.Tab,
+    timeout: int = 10,
+) -> bool:
+    """
+    Waits for the page to reach a certain ready state (interactive or complete).
+    :param timeout: The maximum number of seconds to wait.
+    :type timeout: int
+    :raises asyncio.TimeoutError: If the timeout is reached before the ready state is reached.
+    :return: True if the ready state is reached.
+    :rtype: bool
+    """
+    loop = asyncio.get_event_loop()
+    start_time = loop.time()
+
+    while True:
+        state = await page.evaluate("document.readyState")
+        if state == "interactive" or state == "complete":
+            return True
+
+        if loop.time() - start_time > timeout:
+            raise asyncio.TimeoutError("time ran out while waiting for load page until %s" % state)
+
+        await asyncio.sleep(0.1)
+
+
 async def capture_page_artifacts(
     page: zd.Tab,  # type: ignore[name-defined]
     *,
@@ -287,7 +313,7 @@ async def zen_navigate_with_retry(page: zd.Tab, url: str, wait_for_ready: bool =
 
                 # Wait for page to be interactive
                 try:
-                    await page.wait_for_ready_state("interactive")
+                    await wait_for_ready_state(page)
                 except Exception:
                     # If wait fails, that's okay - page might already be loaded
                     pass
@@ -735,7 +761,7 @@ async def distill(
             logger.info(f"Error pattern detected: {match.name}")
             try:
                 await page.send(zd.cdp.page.reload())
-                await page.wait_for_ready_state("interactive")
+                await wait_for_ready_state(page)
             except Exception as e:
                 logger.warning(f"Failed to reload page: {e}")
             logger.info("Retrying distillation after error...")
